@@ -29,6 +29,8 @@
     .btn-danger{background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:13px;margin-right:4px}
     .btn-edit{background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:13px;margin-right:4px}
     .btn-cancel{padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#f8fafc}
+    .btn-admin{background:none;border:1px solid rgba(255,255,255,0.3);color:#fff;border-radius:8px;padding:6px 14px;cursor:pointer;font-size:13px;font-weight:600}
+    .btn-admin.active{background:#22c55e;border-color:#22c55e}
     table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
     th{padding:10px 12px;text-align:left;font-weight:600;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;background:#f1f5f9}
     td{padding:10px 12px;vertical-align:middle;border-bottom:1px solid #e2e8f0}
@@ -38,6 +40,7 @@
     .today-td{background:#f0f9ff !important}
     .day-input{width:52px;border:1px solid #cbd5e1;border-radius:4px;padding:2px 4px;text-align:center;font-size:12px}
     .day-input:focus{border-color:#3b82f6;outline:none}
+    .day-input:disabled{background:#f1f5f9;color:#94a3b8;cursor:not-allowed}
     .status-badge{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap}
     .red{background:#fee2e2;border:2px solid #ef4444;color:#991b1b}
     .yellow{background:#fef9c3;border:2px solid #eab308;color:#854d0e}
@@ -65,15 +68,23 @@
     .overflow{overflow-x:auto}
     .week-banner{background:#f3e8ff;border:1px solid #8b5cf6;border-radius:10px;padding:10px 16px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
     .week-banner span{color:#6d28d9;font-size:13px;font-weight:600}
-
-    /* ── Mobile ── */
+    .readonly-banner{background:#fef9c3;border:1px solid #eab308;border-radius:10px;padding:10px 16px;margin-bottom:16px;font-size:13px;color:#854d0e;font-weight:600;text-align:center}
+    /* PIN pad */
+    .pin-pad{display:flex;flex-direction:column;align-items:center;gap:16px}
+    .pin-display{display:flex;gap:10px;margin:8px 0}
+    .pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid #cbd5e1;background:#fff;transition:.2s}
+    .pin-dot.filled{background:#3b82f6;border-color:#3b82f6}
+    .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .pin-btn{width:64px;height:64px;border-radius:50%;border:2px solid #e2e8f0;background:#fff;font-size:22px;font-weight:700;cursor:pointer;color:#1e293b;transition:.1s}
+    .pin-btn:active{background:#eff6ff;border-color:#3b82f6}
+    .pin-error{color:#ef4444;font-size:13px;font-weight:600;min-height:20px}
+    /* Mobile */
     @media(max-width:640px){
       .header{padding:10px 16px}
       .logo-name{font-size:18px}
       .content{padding:12px}
       .tab{padding:10px 14px;font-size:13px}
       .search-box{max-width:100%}
-      .desktop-only{display:none}
       .mobile-day-selector{display:flex;gap:6px;overflow-x:auto;margin-bottom:12px;padding-bottom:4px}
       .day-pill{padding:6px 14px;border-radius:20px;border:none;cursor:pointer;font-weight:600;font-size:13px;background:#e2e8f0;color:#475569;white-space:nowrap}
       .day-pill.active{background:#3b82f6;color:#fff}
@@ -82,17 +93,44 @@
       .mobile-card.red{background:#fff5f5;border-color:#ef4444}
       .mobile-card.yellow{background:#fffbeb;border-color:#eab308}
     }
-    @media(min-width:641px){
-      .mobile-only{display:none}
-    }
+    @media(min-width:641px){.mobile-only{display:none}}
+    @media(max-width:640px){.desktop-only{display:none}}
   </style>
 </head>
 <body>
+<div id="app"></div>
 
-<div id="app">
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;color:#475569">
-    <div style="font-size:40px;margin-bottom:12px">🔥</div>
-    <div style="font-weight:700;font-size:18px">Connexion à Firebase…</div>
+<!-- MODAL PIN -->
+<div id="modal-pin" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>🔐 Accès Administrateur</h3>
+      <button class="close-btn" onclick="closePinModal()">✕</button>
+    </div>
+    <div class="pin-pad">
+      <p style="color:#64748b;font-size:13px;text-align:center">Entrez votre code PIN à 4 chiffres</p>
+      <div class="pin-display">
+        <div class="pin-dot" id="dot0"></div>
+        <div class="pin-dot" id="dot1"></div>
+        <div class="pin-dot" id="dot2"></div>
+        <div class="pin-dot" id="dot3"></div>
+      </div>
+      <div class="pin-error" id="pin-error"></div>
+      <div class="pin-grid">
+        <button class="pin-btn" onclick="pinPress('1')">1</button>
+        <button class="pin-btn" onclick="pinPress('2')">2</button>
+        <button class="pin-btn" onclick="pinPress('3')">3</button>
+        <button class="pin-btn" onclick="pinPress('4')">4</button>
+        <button class="pin-btn" onclick="pinPress('5')">5</button>
+        <button class="pin-btn" onclick="pinPress('6')">6</button>
+        <button class="pin-btn" onclick="pinPress('7')">7</button>
+        <button class="pin-btn" onclick="pinPress('8')">8</button>
+        <button class="pin-btn" onclick="pinPress('9')">9</button>
+        <button class="pin-btn" onclick="pinPress('')" style="font-size:14px;color:#94a3b8">✕</button>
+        <button class="pin-btn" onclick="pinPress('0')">0</button>
+        <button class="pin-btn" onclick="pinBackspace()" style="font-size:18px">⌫</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -146,12 +184,17 @@
     <p style="color:#475569;font-size:14px;margin-bottom:16px">Cette action va <strong>archiver les données de la semaine courante</strong> et remettre tous les champs journaliers à zéro. Voulez-vous continuer ?</p>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeWeekModal()">Annuler</button>
-      <button class="btn-week" onclick="confirmNewWeek()">✅ Confirmer la nouvelle semaine</button>
+      <button class="btn-week" onclick="confirmNewWeek()">✅ Confirmer</button>
     </div>
   </div>
 </div>
 
 <script>
+// ── 🔐 CHANGEZ VOS CODES ICI ─────────────────────────────
+const ADMIN_PIN    = "8902"; // Code administrateur
+const EMPLOYEE_PIN = "1234"; // Code employé
+// ─────────────────────────────────────────────────────────
+
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyC27HzALz_DoIN5huqGwVBsKTLHg37rUuc",
   authDomain: "bochica-inventaire.firebaseapp.com",
@@ -163,7 +206,7 @@ const FIREBASE_CONFIG = {
 
 const DAYS = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
 const SECTIONS = ["Cuisine","Emballage","Bar","Autre"];
-const TODAY_IDX = (new Date().getDay() + 6) % 7; // 0=Lun
+const TODAY_IDX = (new Date().getDay() + 6) % 7;
 const TODAY = DAYS[TODAY_IDX];
 
 firebase.initializeApp(FIREBASE_CONFIG);
@@ -172,8 +215,9 @@ const db = firebase.firestore();
 let products = [], suppliers = [];
 let activeTab = "inventaire", activeSection = "Cuisine";
 let editingProductId = null, editingSupplierID = null;
-let searchQuery = "";
-let mobileDay = TODAY;
+let searchQuery = "", mobileDay = TODAY;
+let isAdmin = false, isLoggedIn = false;
+let pinBuffer = "";
 
 function genId(){ return Math.random().toString(36).slice(2,10); }
 
@@ -182,37 +226,120 @@ function getCurrentStock(p){
   if(!entries.length) return Number(p.orderQty||0);
   return Number(entries[entries.length-1]);
 }
-
 function getStatus(p){
   const s=getCurrentStock(p), m=Number(p.minimum);
   if(s<=m) return "red";
   if(s<=m*1.2) return "yellow";
   return "green";
 }
-
 function statusLabel(st){ return st==="red"?"⚠️ Commander":st==="yellow"?"🟡 Bientôt bas":"✅ OK"; }
 
 db.collection("products").onSnapshot(snap=>{
   products = snap.docs.map(d=>({id:d.id,...d.data()}));
-  render();
+  if(isLoggedIn) render(); else showLogin();
 });
 db.collection("suppliers").onSnapshot(snap=>{
   suppliers = snap.docs.map(d=>({id:d.id,...d.data()}));
-  render();
+  if(isLoggedIn) render();
 });
 
+// ── LOGIN SCREEN ──────────────────────────────────────────
+function showLogin(){
+  document.getElementById("app").innerHTML=`
+  <div style="min-height:100vh;background:linear-gradient(135deg,#1e293b,#334155);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+    <div style="margin-bottom:24px;text-align:center">
+      <div style="font-weight:900;font-size:32px;letter-spacing:6px;color:#fff">BOCHICA</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.6);letter-spacing:2px;margin-top:4px">Restaurant Colombien</div>
+      <div style="display:flex;height:3px;width:160px;margin:8px auto 0">
+        <div style="flex:1;background:#f5a623"></div>
+        <div style="flex:1;background:#4a90e2"></div>
+        <div style="flex:1;background:#e74c3c"></div>
+      </div>
+    </div>
+    <div style="background:#fff;border-radius:20px;padding:32px 28px;width:100%;max-width:340px;box-shadow:0 25px 60px rgba(0,0,0,0.3)">
+      <h2 style="text-align:center;color:#1e293b;font-size:18px;margin-bottom:6px">🔐 Connexion</h2>
+      <p style="text-align:center;color:#94a3b8;font-size:13px;margin-bottom:20px">Entrez votre code PIN</p>
+      <div class="pin-pad">
+        <div class="pin-display">
+          <div class="pin-dot" id="dot0"></div>
+          <div class="pin-dot" id="dot1"></div>
+          <div class="pin-dot" id="dot2"></div>
+          <div class="pin-dot" id="dot3"></div>
+        </div>
+        <div class="pin-error" id="pin-error"></div>
+        <div class="pin-grid">
+          <button class="pin-btn" onclick="pinPress('1')">1</button>
+          <button class="pin-btn" onclick="pinPress('2')">2</button>
+          <button class="pin-btn" onclick="pinPress('3')">3</button>
+          <button class="pin-btn" onclick="pinPress('4')">4</button>
+          <button class="pin-btn" onclick="pinPress('5')">5</button>
+          <button class="pin-btn" onclick="pinPress('6')">6</button>
+          <button class="pin-btn" onclick="pinPress('7')">7</button>
+          <button class="pin-btn" onclick="pinPress('8')">8</button>
+          <button class="pin-btn" onclick="pinPress('9')">9</button>
+          <button class="pin-btn" onclick="pinClear()" style="font-size:13px;color:#94a3b8">Effacer</button>
+          <button class="pin-btn" onclick="pinPress('0')">0</button>
+          <button class="pin-btn" onclick="pinBackspace()" style="font-size:18px">⌫</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function checkPin(){
+  if(pinBuffer===ADMIN_PIN){
+    isAdmin=true; isLoggedIn=true;
+    closePinModal(); render();
+  } else if(pinBuffer===EMPLOYEE_PIN){
+    isAdmin=false; isLoggedIn=true;
+    closePinModal(); render();
+  } else {
+    const err=document.getElementById("pin-error");
+    if(err) err.textContent="❌ Code PIN incorrect";
+    pinBuffer=""; updatePinDots();
+  }
+}
+
+function logout(){
+  isAdmin=false; isLoggedIn=false;
+  pinBuffer=""; showLogin();
+}
+
+// ── PIN ───────────────────────────────────────────────────
+function openPinModal(){
+  pinBuffer="";
+  updatePinDots();
+  document.getElementById("pin-error").textContent="";
+  document.getElementById("modal-pin").style.display="flex";
+}
+function closePinModal(){ document.getElementById("modal-pin").style.display="none"; }
+
+function pinPress(d){
+  if(pinBuffer.length>=4) return;
+  pinBuffer+=d;
+  updatePinDots();
+  if(pinBuffer.length===4) checkPin();
+}
+function pinClear(){ pinBuffer=""; updatePinDots(); }
+function pinBackspace(){ pinBuffer=pinBuffer.slice(0,-1); updatePinDots(); }
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    const dot=document.getElementById("dot"+i);
+    if(dot) dot.classList.toggle("filled", i<pinBuffer.length);
+  }
+}
+
+// ── RENDER ────────────────────────────────────────────────
 function render(){
   const lowCount = products.filter(p=>["red","yellow"].includes(getStatus(p))).length;
   const toOrder  = products.filter(p=>["red","yellow"].includes(getStatus(p)));
-  const isMobile = window.innerWidth <= 640;
-
-  // Filter by search
-  const filtered = products.filter(p =>
-    p.section === activeSection &&
-    (searchQuery === "" || p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+  const isMobile = window.innerWidth<=640;
+  const filtered = products.filter(p=>
+    p.section===activeSection &&
+    (searchQuery===""||p.name.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
-  let html = `
+  let html=`
   <div class="header">
     <div>
       <div class="logo-name">BOCHICA</div>
@@ -225,6 +352,9 @@ function render(){
     </div>
     <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
       ${lowCount>0?`<div class="alert-bar">⚠️ ${lowCount} produit${lowCount>1?"s":""} à commander</div>`:""}
+      ${isAdmin
+        ? `<button class="btn-admin active" onclick="logout()">👑 Admin — Déconnexion</button>`
+        : `<button class="btn-admin" onclick="logout()">🚪 Déconnexion</button>`}
     </div>
   </div>
   <div class="tabs">
@@ -235,29 +365,30 @@ function render(){
   <div class="content">`;
 
   if(activeTab==="inventaire"){
-    html += `
+    if(!isAdmin){
+      html+=`<div class="readonly-banner">👁️ Mode lecture — Vous pouvez saisir les chiffres journaliers. Cliquez sur 🔐 Admin pour accéder à toutes les fonctions.</div>`;
+    }
+    html+=`
     <div class="week-banner">
       <span>📅 Semaine en cours — Aujourd'hui : <strong>${TODAY}</strong></span>
-      <button class="btn-week" onclick="openWeekModal()">🗓️ Nouvelle semaine</button>
+      ${isAdmin?`<button class="btn-week" onclick="openWeekModal()">🗓️ Nouvelle semaine</button>`:""}
     </div>
     <div class="section-tabs">`;
     SECTIONS.forEach(s=>{
       const cnt=products.filter(p=>p.section===s&&["red","yellow"].includes(getStatus(p))).length;
       html+=`<button class="sec-btn ${s===activeSection?"active":""}" onclick="setSection('${s}')">${s}${cnt>0?`<span class="badge">${cnt}</span>`:""}</button>`;
     });
-    html+=`</div>
-    <div class="toolbar">
+    html+=`</div><div class="toolbar">
       <div class="search-box">
         <span>🔍</span>
         <input type="text" placeholder="Rechercher un produit..." value="${searchQuery}" oninput="setSearch(this.value)"/>
       </div>
-      <button class="btn-primary" onclick="openProductModal()">+ Ajouter un produit</button>
+      ${isAdmin?`<button class="btn-primary" onclick="openProductModal()">+ Ajouter un produit</button>`:""}
     </div>`;
 
     if(!filtered.length){
-      html+=`<div class="empty"><div class="icon">${searchQuery?"🔍":"📭"}</div>${searchQuery?`Aucun résultat pour "${searchQuery}"` :"Aucun produit dans cette section."}</div>`;
+      html+=`<div class="empty"><div class="icon">${searchQuery?"🔍":"📭"}</div>${searchQuery?`Aucun résultat pour "${searchQuery}"`:"Aucun produit dans cette section."}</div>`;
     } else if(isMobile){
-      // ── Vue mobile : sélecteur de jour + cartes ──
       html+=`<div class="mobile-only mobile-day-selector">`;
       DAYS.forEach(d=>{
         html+=`<button class="day-pill ${d===mobileDay?"active":""}" onclick="setMobileDay('${d}')">${d}${d===TODAY?" ●":""}</button>`;
@@ -289,19 +420,19 @@ function render(){
             </div>
           </div>
           ${sup?`<div style="margin-top:8px;font-size:12px;color:#64748b">🏪 ${sup.name}</div>`:""}
-          <div style="display:flex;gap:6px;margin-top:10px">
+          ${isAdmin?`<div style="display:flex;gap:6px;margin-top:10px">
             <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ Modifier</button>
             <button class="btn-danger" onclick="deleteProduct('${p.id}')">🗑️</button>
-          </div>
+          </div>`:""}
         </div>`;
       });
       html+=`</div>`;
     } else {
-      // ── Vue desktop : tableau complet ──
       html+=`<div class="overflow"><table><thead><tr>
         <th>Produit</th>
-        ${DAYS.map((d,i)=>`<th class="${d===TODAY?"today-col":""}">${d}${d===TODAY?" 📍":""}</th>`).join("")}
-        <th>Stock actuel</th><th>Minimum</th><th>Fournisseur</th><th>Statut</th><th>Qté à commander</th><th>Actions</th>
+        ${DAYS.map(d=>`<th class="${d===TODAY?"today-col":""}">${d}${d===TODAY?" 📍":""}</th>`).join("")}
+        <th>Stock actuel</th><th>Minimum</th><th>Fournisseur</th><th>Statut</th><th>Qté à commander</th>
+        ${isAdmin?"<th>Actions</th>":""}
       </tr></thead><tbody>`;
       filtered.forEach(p=>{
         const st=getStatus(p), stock=getCurrentStock(p);
@@ -315,10 +446,10 @@ function render(){
           <td>${sup?sup.name:"—"}</td>
           <td><span class="status-badge ${st}">${statusLabel(st)}</span></td>
           <td style="font-weight:600;color:#3b82f6;text-align:center">${p.orderQty||0}</td>
-          <td>
+          ${isAdmin?`<td>
             <button class="btn-edit" onclick="editProduct('${p.id}')">✏️</button>
             <button class="btn-danger" onclick="deleteProduct('${p.id}')">🗑️</button>
-          </td>
+          </td>`:""}
         </tr>`;
       });
       html+=`</tbody></table></div>`;
@@ -368,7 +499,7 @@ function render(){
   if(activeTab==="fournisseurs"){
     html+=`<div class="toolbar">
       <h2 style="font-size:18px;color:#1e293b">Fournisseurs</h2>
-      <button class="btn-primary" onclick="openSupplierModal()">+ Ajouter un fournisseur</button>
+      ${isAdmin?`<button class="btn-primary" onclick="openSupplierModal()">+ Ajouter un fournisseur</button>`:""}
     </div>`;
     if(!suppliers.length){
       html+=`<div class="empty"><div class="icon">🏪</div>Aucun fournisseur enregistré.</div>`;
@@ -384,10 +515,10 @@ function render(){
               ${s.email?`<div style="color:#64748b;font-size:13px">✉️ ${s.email}</div>`:""}
               ${s.notes?`<div style="color:#94a3b8;font-size:12px;margin-top:6px;font-style:italic">${s.notes}</div>`:""}
             </div>
-            <div>
+            ${isAdmin?`<div>
               <button class="btn-edit" onclick="editSupplier('${s.id}')">✏️</button>
               <button class="btn-danger" onclick="deleteSupplier('${s.id}')">🗑️</button>
-            </div>
+            </div>`:""}
           </div>
           ${linked.length?`<div class="linked-products">
             <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;font-weight:600">PRODUITS LIÉS</div>
@@ -405,7 +536,6 @@ function render(){
 }
 
 window.addEventListener("resize", render);
-
 function setTab(t){ activeTab=t; render(); }
 function setSection(s){ activeSection=s; searchQuery=""; render(); }
 function setSearch(v){ searchQuery=v; render(); }
@@ -417,13 +547,13 @@ async function updateDaily(id, day, val){
   await db.collection("products").doc(id).update({dailyEntries});
 }
 
-async function deleteProduct(id){ if(confirm("Supprimer ce produit ?")) await db.collection("products").doc(id).delete(); }
-async function deleteSupplier(id){ if(confirm("Supprimer ce fournisseur ?")) await db.collection("suppliers").doc(id).delete(); }
+async function deleteProduct(id){ if(!isAdmin) return; if(confirm("Supprimer ce produit ?")) await db.collection("products").doc(id).delete(); }
+async function deleteSupplier(id){ if(!isAdmin) return; if(confirm("Supprimer ce fournisseur ?")) await db.collection("suppliers").doc(id).delete(); }
 
-function openProductModal(){ editingProductId=null; document.getElementById("modal-product-title").textContent="Ajouter un produit"; document.getElementById("p-name").value=""; document.getElementById("p-unit").value=""; document.getElementById("p-orderqty").value=0; document.getElementById("p-minimum").value=0; document.getElementById("p-section").value=activeSection; document.getElementById("p-supplier").value=""; document.getElementById("modal-product").style.display="flex"; }
+function openProductModal(){ if(!isAdmin) return; editingProductId=null; document.getElementById("modal-product-title").textContent="Ajouter un produit"; document.getElementById("p-name").value=""; document.getElementById("p-unit").value=""; document.getElementById("p-orderqty").value=0; document.getElementById("p-minimum").value=0; document.getElementById("p-section").value=activeSection; document.getElementById("p-supplier").value=""; document.getElementById("modal-product").style.display="flex"; }
 function closeProductModal(){ document.getElementById("modal-product").style.display="none"; }
 
-function editProduct(id){
+function editProduct(id){ if(!isAdmin) return;
   const p=products.find(x=>x.id===id); if(!p) return;
   editingProductId=id;
   document.getElementById("modal-product-title").textContent="Modifier le produit";
@@ -444,10 +574,10 @@ async function saveProduct(){
   closeProductModal();
 }
 
-function openSupplierModal(){ editingSupplierID=null; document.getElementById("modal-supplier-title").textContent="Ajouter un fournisseur"; document.getElementById("s-name").value=""; document.getElementById("s-contact").value=""; document.getElementById("s-email").value=""; document.getElementById("s-notes").value=""; document.getElementById("modal-supplier").style.display="flex"; }
+function openSupplierModal(){ if(!isAdmin) return; editingSupplierID=null; document.getElementById("modal-supplier-title").textContent="Ajouter un fournisseur"; document.getElementById("s-name").value=""; document.getElementById("s-contact").value=""; document.getElementById("s-email").value=""; document.getElementById("s-notes").value=""; document.getElementById("modal-supplier").style.display="flex"; }
 function closeSupplierModal(){ document.getElementById("modal-supplier").style.display="none"; }
 
-function editSupplier(id){
+function editSupplier(id){ if(!isAdmin) return;
   const s=suppliers.find(x=>x.id===id); if(!s) return;
   editingSupplierID=id;
   document.getElementById("modal-supplier-title").textContent="Modifier le fournisseur";
@@ -466,20 +596,17 @@ async function saveSupplier(){
   closeSupplierModal();
 }
 
-function openWeekModal(){ document.getElementById("modal-week").style.display="flex"; }
+function openWeekModal(){ if(!isAdmin) return; document.getElementById("modal-week").style.display="flex"; }
 function closeWeekModal(){ document.getElementById("modal-week").style.display="none"; }
 
 async function confirmNewWeek(){
-  // Archive current week and reset daily entries
-  const batch = db.batch();
-  const weekKey = `semaine_${new Date().toISOString().slice(0,10)}`;
+  const batch=db.batch();
+  const weekKey=`semaine_${new Date().toISOString().slice(0,10)}`;
   products.forEach(p=>{
-    // Archive
-    const archRef = db.collection("archives").doc(`${p.id}_${weekKey}`);
-    batch.set(archRef, { productId:p.id, name:p.name, section:p.section, weekOf:weekKey, dailyEntries:p.dailyEntries||{} });
-    // Reset
-    const prodRef = db.collection("products").doc(p.id);
-    batch.update(prodRef, { dailyEntries:{} });
+    const archRef=db.collection("archives").doc(`${p.id}_${weekKey}`);
+    batch.set(archRef,{productId:p.id,name:p.name,section:p.section,weekOf:weekKey,dailyEntries:p.dailyEntries||{}});
+    const prodRef=db.collection("products").doc(p.id);
+    batch.update(prodRef,{dailyEntries:{}});
   });
   await batch.commit();
   closeWeekModal();
