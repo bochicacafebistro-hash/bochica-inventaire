@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Bochica — Inventaire</title>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,sans-serif;background:#f8fafc;min-height:100vh}
+    .header{background:linear-gradient(135deg,#1e293b,#334155);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between}
+    .logo-name{font-weight:900;font-size:22px;letter-spacing:4px;line-height:1}
+    .logo-sub{font-size:10px;opacity:.7;letter-spacing:1px}
+    .logo-bar{display:flex;height:2px;margin-top:3px;width:120px}
+    .tabs{display:flex;background:#fff;border-bottom:1px solid #e2e8f0;padding:0 24px}
+    .tab{padding:12px 20px;font-weight:600;font-size:14px;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#64748b}
+    .tab.active{border-bottom:3px solid #3b82f6;color:#3b82f6}
+    .content{padding:24px;max-width:1200px;margin:0 auto}
+    .section-tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+    .sec-btn{padding:8px 20px;border-radius:20px;border:none;cursor:pointer;font-weight:600;font-size:14px;background:#e2e8f0;color:#475569}
+    .sec-btn.active{background:#3b82f6;color:#fff}
+    .badge{background:#ef4444;color:#fff;border-radius:10px;padding:1px 6px;font-size:11px;margin-left:4px}
+    .row-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .btn-primary{background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px}
+    .btn-danger{background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:13px;margin-right:4px}
+    .btn-edit{background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:13px;margin-right:4px}
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{padding:10px 12px;text-align:left;font-weight:600;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;background:#f1f5f9}
+    td{padding:10px 12px;vertical-align:middle}
+    tr{border-bottom:1px solid #e2e8f0}
+    .day-input{width:52px;border:1px solid #cbd5e1;border-radius:4px;padding:2px 4px;text-align:center;font-size:12px}
+    .status-badge{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap}
+    .red{background:#fee2e2;border:2px solid #ef4444;color:#991b1b}
+    .yellow{background:#fef9c3;border:2px solid #eab308;color:#854d0e}
+    .green{background:#dcfce7;border:2px solid #22c55e;color:#166534}
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+    .modal{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .modal h3{font-size:17px;color:#1e293b}
+    .close-btn{border:none;background:none;font-size:20px;cursor:pointer;color:#94a3b8}
+    label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:#475569;margin-bottom:10px}
+    input,select,textarea{padding:8px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:14px;outline:none;width:100%}
+    .form-row{display:flex;gap:12px}
+    .form-row label{flex:1}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
+    .btn-cancel{padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#f8fafc}
+    .empty{text-align:center;color:#94a3b8;margin-top:60px;font-size:15px}
+    .empty .icon{font-size:40px;margin-bottom:8px}
+    .supplier-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+    .supplier-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px}
+    .card-header{display:flex;justify-content:space-between}
+    .linked-products{margin-top:12px;border-top:1px solid #f1f5f9;padding-top:10px}
+    .tag{background:#eff6ff;color:#3b82f6;border-radius:12px;padding:2px 10px;font-size:12px;display:inline-block;margin:2px}
+    .alert-bar{background:#ef4444;border-radius:20px;padding:4px 14px;font-size:13px;font-weight:600;color:#fff}
+    .summary-cards{display:flex;gap:12px;margin-bottom:20px}
+    .summary-card{flex:1;border-radius:10px;padding:12px 16px;border:1px solid}
+    .loading{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;color:#475569}
+    .overflow{overflow-x:auto}
+  </style>
+</head>
+<body>
+
+<div id="app">
+  <div class="loading"><div style="font-size:40px;margin-bottom:12px">🔥</div><div style="font-weight:700;font-size:18px">Connexion à Firebase…</div></div>
+</div>
+
+<!-- MODAL PRODUIT -->
+<div id="modal-product" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-product-title">Ajouter un produit</h3>
+      <button class="close-btn" onclick="closeProductModal()">✕</button>
+    </div>
+    <label>Nom du produit<input id="p-name" placeholder="ex: Tomates"/></label>
+    <label>Unité<input id="p-unit" placeholder="ex: kg, boîte, litre..."/></label>
+    <label>Section<select id="p-section"></select></label>
+    <div class="form-row">
+      <label>Qté à commander<input id="p-orderqty" type="number" value="0"/></label>
+      <label>Minimum requis<input id="p-minimum" type="number" value="0"/></label>
+    </div>
+    <label>Fournisseur<select id="p-supplier"><option value="">— Aucun —</option></select></label>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeProductModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveProduct()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL FOURNISSEUR -->
+<div id="modal-supplier" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-supplier-title">Ajouter un fournisseur</h3>
+      <button class="close-btn" onclick="closeSupplierModal()">✕</button>
+    </div>
+    <label>Nom du fournisseur<input id="s-name" placeholder="ex: Distribution ABC"/></label>
+    <label>Téléphone<input id="s-contact" placeholder="ex: 514-555-0000"/></label>
+    <label>Courriel<input id="s-email" placeholder="ex: commandes@abc.com"/></label>
+    <label>Notes<textarea id="s-notes" style="height:70px;resize:vertical" placeholder="Jours de livraison, conditions..."></textarea></label>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeSupplierModal()">Annuler</button>
+      <button class="btn-primary" onclick="saveSupplier()">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyC27HzALz_DoIN5huqGwVBsKTLHg37rUuc",
+  authDomain: "bochica-inventaire.firebaseapp.com",
+  projectId: "bochica-inventaire",
+  storageBucket: "bochica-inventaire.firebasestorage.app",
+  messagingSenderId: "261321722710",
+  appId: "1:261321722710:web:5a7aa0039fa0fd1a20a4f7"
+};
+
+const DAYS = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+const SECTIONS = ["Cuisine","Emballage","Bar","Autre"];
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const db = firebase.firestore();
+
+let products = [], suppliers = [];
+let activeTab = "inventaire", activeSection = "Cuisine";
+let editingProductId = null, editingSupplierID = null;
+
+function genId(){ return Math.random().toString(36).slice(2,10); }
+
+function getCurrentStock(p){
+  const entries = DAYS.map(d=>p.dailyEntries?.[d]).filter(v=>v!==undefined&&v!=="");
+  if(!entries.length) return Number(p.orderQty||0);
+  return Number(entries[entries.length-1]);
+}
+
+function getStatus(p){
+  const s=getCurrentStock(p), m=Number(p.minimum);
+  if(s<=m) return "red";
+  if(s<=m*1.2) return "yellow";
+  return "green";
+}
+
+function statusLabel(st){ return st==="red"?"⚠️ Commander":st==="yellow"?"🟡 Bientôt bas":"✅ OK"; }
+
+// Firebase listeners
+db.collection("products").onSnapshot(snap=>{
+  products = snap.docs.map(d=>({id:d.id,...d.data()}));
+  render();
+});
+db.collection("suppliers").onSnapshot(snap=>{
+  suppliers = snap.docs.map(d=>({id:d.id,...d.data()}));
+  render();
+});
+
+function render(){
+  const lowCount = products.filter(p=>["red","yellow"].includes(getStatus(p))).length;
+  const toOrder  = products.filter(p=>["red","yellow"].includes(getStatus(p)));
+  const secProds = products.filter(p=>p.section===activeSection);
+
+  let html = `
+  <div class="header">
+    <div>
+      <div class="logo-name">BOCHICA</div>
+      <div class="logo-sub">Restaurant Colombien</div>
+      <div class="logo-bar">
+        <div style="flex:1;background:#f5a623"></div>
+        <div style="flex:1;background:#4a90e2"></div>
+        <div style="flex:1;background:#e74c3c"></div>
+      </div>
+    </div>
+    ${lowCount>0?`<div class="alert-bar">⚠️ ${lowCount} produit${lowCount>1?"s":""} à commander</div>`:""}
+  </div>
+  <div class="tabs">
+    <button class="tab ${activeTab==="inventaire"?"active":""}" onclick="setTab('inventaire')">📦 Inventaire</button>
+    <button class="tab ${activeTab==="rapport"?"active":""}" onclick="setTab('rapport')">📋 Rapport${lowCount>0?` (${lowCount})`:""}</button>
+    <button class="tab ${activeTab==="fournisseurs"?"active":""}" onclick="setTab('fournisseurs')">🏪 Fournisseurs</button>
+  </div>
+  <div class="content">`;
+
+  if(activeTab==="inventaire"){
+    html += `<div class="section-tabs">`;
+    SECTIONS.forEach(s=>{
+      const cnt=products.filter(p=>p.section===s&&["red","yellow"].includes(getStatus(p))).length;
+      html+=`<button class="sec-btn ${s===activeSection?"active":""}" onclick="setSection('${s}')">${s}${cnt>0?`<span class="badge">${cnt}</span>`:""}</button>`;
+    });
+    html+=`</div>
+    <div class="row-header">
+      <h2 style="font-size:18px;color:#1e293b">Section : ${activeSection}</h2>
+      <button class="btn-primary" onclick="openProductModal()">+ Ajouter un produit</button>
+    </div>`;
+
+    if(!secProds.length){
+      html+=`<div class="empty"><div class="icon">📭</div>Aucun produit dans cette section.</div>`;
+    } else {
+      html+=`<div class="overflow"><table><thead><tr>
+        <th>Produit</th><th>Unité</th><th>Qté à commander</th>
+        ${DAYS.map(d=>`<th>${d}</th>`).join("")}
+        <th>Stock actuel</th><th>Minimum</th><th>Fournisseur</th><th>Statut</th><th>Actions</th>
+      </tr></thead><tbody>`;
+      secProds.forEach(p=>{
+        const st=getStatus(p), stock=getCurrentStock(p);
+        const sup=suppliers.find(s=>s.id===p.supplierId);
+        const rowBg=st==="red"?"#fff5f5":st==="yellow"?"#fffbeb":"#fff";
+        html+=`<tr style="background:${rowBg}">
+          <td><strong>${p.name}</strong></td>
+          <td>${p.unit||""}</td>
+          <td style="font-weight:600;color:#3b82f6">${p.orderQty||0}</td>
+          ${DAYS.map(d=>`<td><input class="day-input" type="number" value="${p.dailyEntries?.[d]??""}" placeholder="—" onchange="updateDaily('${p.id}','${d}',this.value)"/></td>`).join("")}
+          <td class="${st}" style="font-weight:700;font-size:15px;text-align:center">${stock}</td>
+          <td>${p.minimum||0}</td>
+          <td>${sup?sup.name:"—"}</td>
+          <td><span class="status-badge ${st}">${statusLabel(st)}</span></td>
+          <td>
+            <button class="btn-edit" onclick="editProduct('${p.id}')">✏️</button>
+            <button class="btn-danger" onclick="deleteProduct('${p.id}')">🗑️</button>
+          </td>
+        </tr>`;
+      });
+      html+=`</tbody></table></div>`;
+    }
+  }
+
+  if(activeTab==="rapport"){
+    html+=`<div class="row-header">
+      <div><h2 style="font-size:18px;color:#1e293b">Rapport de commande</h2>
+      <p style="color:#64748b;font-size:13px;margin-top:4px">Produits sous le minimum ou à moins de 20% du seuil</p></div>
+      <button class="btn-primary" ${!toOrder.length?"disabled":""} onclick="printReport()">🖨️ Exporter / Imprimer</button>
+    </div>`;
+    if(!toOrder.length){
+      html+=`<div class="empty"><div class="icon">✅</div>Tous les produits sont en quantité suffisante !</div>`;
+    } else {
+      const redCnt=toOrder.filter(p=>getStatus(p)==="red").length;
+      const yelCnt=toOrder.filter(p=>getStatus(p)==="yellow").length;
+      html+=`<div class="summary-cards">
+        <div class="summary-card red" style="border-color:#ef4444"><div style="font-weight:700;font-size:22px;color:#991b1b">${redCnt}</div><div style="font-size:13px;color:#991b1b">⚠️ À commander immédiatement</div></div>
+        <div class="summary-card yellow" style="border-color:#eab308"><div style="font-weight:700;font-size:22px;color:#854d0e">${yelCnt}</div><div style="font-size:13px;color:#854d0e">🟡 Bientôt bas (&lt; 20% du min)</div></div>
+      </div>`;
+      SECTIONS.forEach(section=>{
+        const items=toOrder.filter(p=>p.section===section);
+        if(!items.length) return;
+        html+=`<div style="margin-bottom:24px">
+          <h3 style="font-size:15px;color:#475569;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px">📁 ${section}</h3>
+          <div class="overflow"><table><thead><tr>
+            <th>Produit</th><th>Unité</th><th>Stock actuel</th><th>Minimum</th><th>Qté à commander</th><th>Fournisseur</th><th>Contact</th><th>Statut</th>
+          </tr></thead><tbody>`;
+        items.forEach(p=>{
+          const st=getStatus(p), stock=getCurrentStock(p);
+          const sup=suppliers.find(s=>s.id===p.supplierId);
+          html+=`<tr style="background:${st==="red"?"#fff5f5":"#fffbeb"}">
+            <td><strong>${p.name}</strong></td><td>${p.unit||""}</td>
+            <td class="${st}" style="font-weight:700;text-align:center">${stock}</td>
+            <td>${p.minimum||0}</td>
+            <td style="font-weight:700;color:#3b82f6">${p.orderQty||0}</td>
+            <td>${sup?sup.name:"—"}</td><td>${sup?sup.contact||"—":"—"}</td>
+            <td><span class="status-badge ${st}">${statusLabel(st)}</span></td>
+          </tr>`;
+        });
+        html+=`</tbody></table></div></div>`;
+      });
+    }
+  }
+
+  if(activeTab==="fournisseurs"){
+    html+=`<div class="row-header">
+      <h2 style="font-size:18px;color:#1e293b">Fournisseurs</h2>
+      <button class="btn-primary" onclick="openSupplierModal()">+ Ajouter un fournisseur</button>
+    </div>`;
+    if(!suppliers.length){
+      html+=`<div class="empty"><div class="icon">🏪</div>Aucun fournisseur enregistré.</div>`;
+    } else {
+      html+=`<div class="supplier-grid">`;
+      suppliers.forEach(s=>{
+        const linked=products.filter(p=>p.supplierId===s.id);
+        html+=`<div class="supplier-card">
+          <div class="card-header">
+            <div>
+              <div style="font-weight:700;font-size:16px;color:#1e293b">🏪 ${s.name}</div>
+              ${s.contact?`<div style="color:#64748b;font-size:13px;margin-top:4px">📞 ${s.contact}</div>`:""}
+              ${s.email?`<div style="color:#64748b;font-size:13px">✉️ ${s.email}</div>`:""}
+              ${s.notes?`<div style="color:#94a3b8;font-size:12px;margin-top:6px;font-style:italic">${s.notes}</div>`:""}
+            </div>
+            <div>
+              <button class="btn-edit" onclick="editSupplier('${s.id}')">✏️</button>
+              <button class="btn-danger" onclick="deleteSupplier('${s.id}')">🗑️</button>
+            </div>
+          </div>
+          ${linked.length?`<div class="linked-products">
+            <div style="font-size:11px;color:#94a3b8;margin-bottom:4px;font-weight:600">PRODUITS LIÉS</div>
+            ${linked.map(p=>`<span class="tag">${p.name}</span>`).join("")}
+          </div>`:""}
+        </div>`;
+      });
+      html+=`</div>`;
+    }
+  }
+
+  html+=`</div>`;
+  document.getElementById("app").innerHTML=html;
+  updateSupplierSelect();
+}
+
+function setTab(t){ activeTab=t; render(); }
+function setSection(s){ activeSection=s; render(); }
+
+async function updateDaily(id, day, val){
+  const p=products.find(x=>x.id===id); if(!p) return;
+  const dailyEntries={...p.dailyEntries,[day]:val===""?"":Number(val)};
+  await db.collection("products").doc(id).update({dailyEntries});
+}
+
+async function deleteProduct(id){ if(confirm("Supprimer ce produit ?")) await db.collection("products").doc(id).delete(); }
+async function deleteSupplier(id){ if(confirm("Supprimer ce fournisseur ?")) await db.collection("suppliers").doc(id).delete(); }
+
+function openProductModal(){ editingProductId=null; document.getElementById("modal-product-title").textContent="Ajouter un produit"; document.getElementById("p-name").value=""; document.getElementById("p-unit").value=""; document.getElementById("p-orderqty").value=0; document.getElementById("p-minimum").value=0; document.getElementById("p-section").value=activeSection; document.getElementById("p-supplier").value=""; document.getElementById("modal-product").style.display="flex"; }
+function closeProductModal(){ document.getElementById("modal-product").style.display="none"; }
+
+function editProduct(id){
+  const p=products.find(x=>x.id===id); if(!p) return;
+  editingProductId=id;
+  document.getElementById("modal-product-title").textContent="Modifier le produit";
+  document.getElementById("p-name").value=p.name||"";
+  document.getElementById("p-unit").value=p.unit||"";
+  document.getElementById("p-orderqty").value=p.orderQty||0;
+  document.getElementById("p-minimum").value=p.minimum||0;
+  document.getElementById("p-section").value=p.section||activeSection;
+  document.getElementById("p-supplier").value=p.supplierId||"";
+  document.getElementById("modal-product").style.display="flex";
+}
+
+async function saveProduct(){
+  const name=document.getElementById("p-name").value.trim(); if(!name) return alert("Entrez un nom.");
+  const data={name,unit:document.getElementById("p-unit").value,orderQty:Number(document.getElementById("p-orderqty").value),minimum:Number(document.getElementById("p-minimum").value),section:document.getElementById("p-section").value,supplierId:document.getElementById("p-supplier").value,dailyEntries:{}};
+  if(editingProductId){ const p=products.find(x=>x.id===editingProductId); data.dailyEntries=p.dailyEntries||{}; await db.collection("products").doc(editingProductId).set({...data,id:editingProductId}); }
+  else { const id=genId(); await db.collection("products").doc(id).set({...data,id}); }
+  closeProductModal();
+}
+
+function openSupplierModal(){ editingSupplierID=null; document.getElementById("modal-supplier-title").textContent="Ajouter un fournisseur"; document.getElementById("s-name").value=""; document.getElementById("s-contact").value=""; document.getElementById("s-email").value=""; document.getElementById("s-notes").value=""; document.getElementById("modal-supplier").style.display="flex"; }
+function closeSupplierModal(){ document.getElementById("modal-supplier").style.display="none"; }
+
+function editSupplier(id){
+  const s=suppliers.find(x=>x.id===id); if(!s) return;
+  editingSupplierID=id;
+  document.getElementById("modal-supplier-title").textContent="Modifier le fournisseur";
+  document.getElementById("s-name").value=s.name||"";
+  document.getElementById("s-contact").value=s.contact||"";
+  document.getElementById("s-email").value=s.email||"";
+  document.getElementById("s-notes").value=s.notes||"";
+  document.getElementById("modal-supplier").style.display="flex";
+}
+
+async function saveSupplier(){
+  const name=document.getElementById("s-name").value.trim(); if(!name) return alert("Entrez un nom.");
+  const data={name,contact:document.getElementById("s-contact").value,email:document.getElementById("s-email").value,notes:document.getElementById("s-notes").value};
+  if(editingSupplierID){ await db.collection("suppliers").doc(editingSupplierID).set({...data,id:editingSupplierID}); }
+  else { const id=genId(); await db.collection("suppliers").doc(id).set({...data,id}); }
+  closeSupplierModal();
+}
+
+function updateSupplierSelect(){
+  const sel=document.getElementById("p-supplier"); if(!sel) return;
+  const cur=sel.value;
+  sel.innerHTML=`<option value="">— Aucun —</option>${suppliers.map(s=>`<option value="${s.id}">${s.name}</option>`).join("")}`;
+  sel.value=cur;
+  const sec=document.getElementById("p-section"); if(!sec) return;
+  sec.innerHTML=SECTIONS.map(s=>`<option value="${s}">${s}</option>`).join("");
+  sec.value=activeSection;
+}
+
+function printReport(){
+  const toOrder=products.filter(p=>["red","yellow"].includes(getStatus(p)));
+  const rows=toOrder.map(p=>{
+    const sup=suppliers.find(s=>s.id===p.supplierId), st=getStatus(p), stock=getCurrentStock(p);
+    return `<tr style="background:${st==="red"?"#fff5f5":"#fffbeb"}"><td>${p.name}</td><td>${p.section}</td><td>${stock}</td><td>${p.minimum||0}</td><td>${p.orderQty||0}</td><td>${sup?sup.name:"—"}</td><td>${sup?sup.contact||"—":"—"}</td><td>${statusLabel(st)}</td></tr>`;
+  }).join("");
+  const win=window.open("","_blank");
+  win.document.write(`<!DOCTYPE html><html><head><title>Rapport Bochica</title><style>body{font-family:system-ui,sans-serif;padding:32px}table{width:100%;border-collapse:collapse;font-size:13px}th{padding:10px;background:#f1f5f9;text-align:left;font-size:11px;text-transform:uppercase;color:#64748b}td{padding:10px;border-bottom:1px solid #e2e8f0}@media print{button{display:none}}</style></head><body>
+  <div style="font-size:28px;font-weight:900;letter-spacing:4px">BOCHICA</div>
+  <div style="font-size:14px;color:#475569;margin-bottom:4px">Restaurant Colombien</div>
+  <div style="display:flex;height:3px;width:220px;margin-bottom:16px"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
+  <h2>Rapport de commande</h2>
+  <p style="color:#64748b;font-size:13px;margin-bottom:16px">Généré le ${new Date().toLocaleDateString("fr-CA",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</p>
+  <table><thead><tr><th>Produit</th><th>Section</th><th>Stock actuel</th><th>Minimum</th><th>Qté à commander</th><th>Fournisseur</th><th>Contact</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table>
+  <br/><button onclick="window.print()" style="background:#3b82f6;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Imprimer</button>
+  </body></html>`);
+  win.document.close();
+}
+</script>
+</body>
+</html>
