@@ -1,0 +1,1 @@
+# bochica-inventaire
