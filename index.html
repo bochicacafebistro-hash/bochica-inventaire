@@ -10,17 +10,16 @@
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:system-ui,sans-serif;background:#f8fafc;min-height:100vh}
 
-    /* HEADER */
-    .header{background:linear-gradient(135deg,#1e293b,#334155);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:50}
+    /* STICKY HEADER + TABS */
+    .sticky-top{position:sticky;top:0;z-index:50}
+    .header{background:linear-gradient(135deg,#1e293b,#334155);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px}
     .logo-name{font-weight:900;font-size:20px;letter-spacing:4px;line-height:1}
     .logo-sub{font-size:10px;opacity:.7;letter-spacing:1px}
     .logo-bar{display:flex;height:2px;margin-top:3px;width:100px}
     .header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-    .alert-pill{background:#ef4444;border-radius:4px;padding:4px 10px;font-size:13px;font-weight:700;color:#fff;white-space:nowrap;display:flex;align-items:center;gap:4px}
-    .btn-logout{background:transparent;border:1px solid rgba(255,255,255,0.35);color:rgba(255,255,255,0.85);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:5px;white-space:nowrap}
+    .alert-pill{background:#ef4444;border-radius:4px;padding:4px 10px;font-size:13px;font-weight:700;color:#fff;white-space:nowrap}
+    .btn-logout{background:transparent;border:1px solid rgba(255,255,255,0.35);color:rgba(255,255,255,0.85);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:5px}
     .btn-logout:hover{background:rgba(255,255,255,0.1)}
-
-    /* TABS */
     .tabs{display:flex;background:#fff;border-bottom:1px solid #e2e8f0;padding:0 20px;overflow-x:auto}
     .tab{padding:11px 18px;font-weight:600;font-size:14px;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#64748b;white-space:nowrap}
     .tab.active{border-bottom:3px solid #3b82f6;color:#3b82f6}
@@ -29,10 +28,9 @@
     .content{padding:20px;max-width:1200px;margin:0 auto}
 
     /* SECTION TABS */
-    .section-tabs-wrap{position:relative;margin-bottom:14px}
-    .section-tabs{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;align-items:center}
+    .section-tabs{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;align-items:center;margin-bottom:14px}
     .section-tabs.expanded{flex-wrap:wrap}
-    .sec-btn{padding:6px 14px;border-radius:6px;border:1px solid #e2e8f0;cursor:pointer;font-weight:600;font-size:13px;background:#fff;color:#475569;transition:.15s;white-space:nowrap;flex-shrink:0}
+    .sec-btn{padding:6px 14px;border-radius:6px;border:1px solid #e2e8f0;cursor:pointer;font-weight:600;font-size:13px;background:#fff;color:#475569;white-space:nowrap;flex-shrink:0}
     .sec-btn:hover{background:#f1f5f9}
     .sec-btn.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
     .sec-toggle{background:none;border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:14px;color:#64748b;flex-shrink:0}
@@ -45,8 +43,6 @@
 
     /* BUTTONS */
     .btn-primary{background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer;font-size:14px;white-space:nowrap}
-    .btn-danger{background:#ef4444;color:#fff;border:none;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:13px;width:100%;text-align:left}
-    .btn-danger:hover{background:#dc2626}
     .btn-cancel{padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#f8fafc;font-size:14px}
 
     /* TABLE */
@@ -55,13 +51,18 @@
     td{padding:9px 12px;vertical-align:middle;border-bottom:1px solid #e2e8f0}
     th:first-child,td:first-child{position:sticky;left:0;z-index:2;box-shadow:2px 0 4px rgba(0,0,0,.06)}
     th:first-child{background:#f1f5f9}
+    /* Row border color by status — no background */
+    tr.row-red td{border-bottom:1px solid #fecaca}
+    tr.row-red{outline:none}
+    tr.row-yellow td{border-bottom:1px solid #fde68a}
 
-    /* STOCK INPUT */
-    .stock-input{width:70px;border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;text-align:center;font-size:14px;font-weight:600}
+    /* STOCK */
+    .stock-val{font-weight:700;font-size:14px}
+    .stock-val.red{color:#991b1b}
+    .stock-val.yellow{color:#854d0e}
+    .stock-val.green{color:#166534}
+    .stock-input{width:80px;border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;text-align:center;font-size:14px;font-weight:600}
     .stock-input:focus{border-color:#3b82f6;outline:none;box-shadow:0 0 0 2px #bfdbfe}
-
-    /* CURRENT STOCK BADGE */
-    .cur-stock{display:inline-block;padding:2px 10px;border-radius:20px;font-weight:700;font-size:13px}
 
     /* STATUS */
     .status-badge{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap}
@@ -75,11 +76,11 @@
     tr.dragging{opacity:.4}
     tr.drag-over td{border-top:2px solid #3b82f6}
 
-    /* THREE DOTS MENU */
+    /* THREE DOTS */
     .menu-wrap{position:relative;display:inline-block}
     .dots-btn{background:none;border:none;cursor:pointer;font-size:18px;color:#94a3b8;padding:2px 6px;border-radius:4px;line-height:1}
     .dots-btn:hover{background:#f1f5f9;color:#475569}
-    .dropdown{position:absolute;right:0;top:100%;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:100;min-width:160px;overflow:hidden;display:none}
+    .dropdown{position:absolute;right:0;top:100%;background:#fff;border:1px solid #e2e8f0;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.12);z-index:200;min-width:160px;overflow:hidden;display:none}
     .dropdown.open{display:block}
     .dropdown button{display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;border:none;background:none;cursor:pointer;font-size:13px;color:#1e293b;text-align:left}
     .dropdown button:hover{background:#f8fafc}
@@ -110,6 +111,12 @@
     .cat-item input{flex:1;border:1px solid #cbd5e1;border-radius:6px;padding:5px 10px;font-size:13px}
     .confirm-msg{color:#475569;font-size:14px;margin-bottom:20px;line-height:1.6}
 
+    /* MOBILE CARDS */
+    .mobile-card{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #e2e8f0}
+    .mobile-card.red{border-color:#ef4444}
+    .mobile-card.yellow{border-color:#eab308}
+    .mobile-card.green{border-color:#22c55e}
+
     /* PIN */
     .pin-pad{display:flex;flex-direction:column;align-items:center;gap:14px}
     .pin-display{display:flex;gap:10px}
@@ -120,15 +127,10 @@
     .pin-btn:active{background:#eff6ff;border-color:#3b82f6}
     .pin-error{color:#ef4444;font-size:13px;font-weight:600;min-height:18px;text-align:center}
 
-    /* MOBILE */
     @media(max-width:640px){
       .content{padding:12px}
       .logo-name{font-size:17px;letter-spacing:3px}
       .search-box{max-width:100%}
-      .mobile-cards{display:flex;flex-direction:column;gap:10px}
-      .mobile-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px}
-      .mobile-card.red{background:#fff5f5;border-color:#ef4444}
-      .mobile-card.yellow{background:#fffbeb;border-color:#eab308}
       .btn-logout span.logout-text{display:none}
     }
     @media(min-width:641px){.mobile-only{display:none}}
@@ -169,13 +171,20 @@
     <label>Nom du produit<input id="p-name" placeholder="ex: Tomates"/></label>
     <label>Section<select id="p-section"></select></label>
     <div class="form-row">
-      <label>Qté en inventaire<input id="p-unit" placeholder="ex: unité, litre, kg"/><span class="field-hint">Comment vous comptez</span></label>
-      <label>Unité de commande<input id="p-orderunit" placeholder="ex: boîte, caisse"/><span class="field-hint">Comment vous commandez</span></label>
+      <label>Qté en inventaire
+        <input id="p-stock" type="number" value="0"/>
+        <span class="field-hint">Stock actuel au départ</span>
+      </label>
+      <label>Minimum requis
+        <input id="p-minimum" type="number" value="0"/>
+        <span class="field-hint">Seuil d'alerte</span>
+      </label>
     </div>
     <div class="form-row">
-      <label>Qté à commander<input id="p-orderqty" type="number" value="0"/><span class="field-hint">En unités de commande</span></label>
-      <label>Minimum requis<input id="p-minimum" type="number" value="0"/><span class="field-hint">En unités d'inventaire</span></label>
+      <label>Unité d'inventaire<input id="p-unit" placeholder="ex: unité, litre, kg"/></label>
+      <label>Unité de commande<input id="p-orderunit" placeholder="ex: boîte, caisse"/></label>
     </div>
+    <label>Qté à commander<input id="p-orderqty" type="number" value="0"/><span class="field-hint">En unités de commande</span></label>
     <label>Fournisseur<select id="p-supplier"><option value="">— Aucun —</option></select></label>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeProductModal()">Annuler</button>
@@ -191,7 +200,7 @@
       <h3>📁 Changer de catégorie</h3>
       <button class="close-btn" onclick="closeMoveModal()">✕</button>
     </div>
-    <p style="color:#64748b;font-size:13px;margin-bottom:12px">Choisissez la nouvelle catégorie pour <strong id="move-product-name"></strong></p>
+    <p style="color:#64748b;font-size:13px;margin-bottom:12px">Catégorie pour <strong id="move-product-name"></strong></p>
     <label>Catégorie<select id="move-section"></select></label>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeMoveModal()">Annuler</button>
@@ -209,7 +218,7 @@
     </div>
     <div id="cat-list"></div>
     <div style="display:flex;gap:8px;margin-top:4px">
-      <input id="cat-new" placeholder="Nouvelle catégorie..." style="flex:1"/>
+      <input id="cat-new" placeholder="Nouvelle catégorie..."/>
       <button class="btn-primary" onclick="addCategory()">Ajouter</button>
     </div>
   </div>
@@ -225,7 +234,7 @@
     <label>Nom<input id="s-name" placeholder="ex: Distribution ABC"/></label>
     <label>Téléphone<input id="s-contact" placeholder="ex: 514-555-0000"/></label>
     <label>Courriel<input id="s-email" placeholder="ex: commandes@abc.com"/></label>
-    <label>Notes<textarea id="s-notes" style="height:70px;resize:vertical" placeholder="Jours de livraison, conditions..."></textarea></label>
+    <label>Notes<textarea id="s-notes" style="height:70px;resize:vertical"></textarea></label>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeSupplierModal()">Annuler</button>
       <button class="btn-primary" onclick="saveSupplier()">Enregistrer</button>
@@ -240,7 +249,7 @@
     <p class="confirm-msg" id="confirm-msg"></p>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeConfirm()">Annuler</button>
-      <button class="btn-danger" style="width:auto;border-radius:8px" id="confirm-ok" onclick="confirmAction()">Supprimer</button>
+      <button style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px" onclick="confirmAction()">Supprimer</button>
     </div>
   </div>
 </div>
@@ -269,16 +278,14 @@ let products=[], suppliers=[], customSections=[];
 let activeTab="inventaire", activeSection="Toutes";
 let editingProductId=null, editingSupplierID=null, movingProductId=null;
 let searchQuery="", isAdmin=false, isLoggedIn=false, pinBuffer="";
-let pendingConfirm=null, sectionsExpanded=false;
-let dragSrcId=null;
+let pendingConfirm=null, sectionsExpanded=false, dragSrcId=null;
 
 function genId(){ return Math.random().toString(36).slice(2,10); }
 function getAllSections(){ return ["Toutes",...DEFAULT_SECTIONS,...customSections]; }
-// Stock actuel = qté en inventaire de base + ajouts manuels du jour
-function getCurrentStock(p){
-  const base = Number(p.currentStock||0);
-  return base;
-}
+
+// Stock actuel = currentStock (source unique de vérité)
+function getCurrentStock(p){ return Number(p.currentStock ?? 0); }
+
 function getStatus(p){
   const s=getCurrentStock(p), m=Number(p.minimum||0);
   if(s<=m) return "red";
@@ -296,7 +303,7 @@ db.collection("products").onSnapshot(snap=>{
 db.collection("suppliers").onSnapshot(snap=>{ suppliers=snap.docs.map(d=>({id:d.id,...d.data()})); if(isLoggedIn) render(); });
 db.collection("settings").doc("sections").onSnapshot(snap=>{ customSections=snap.exists?snap.data().custom||[]:[];  if(isLoggedIn) render(); });
 
-// ── Midnight reset ────────────────────────────────────────
+// Reset à minuit
 function scheduleMidnight(){
   const now=new Date(), midnight=new Date(now);
   midnight.setDate(now.getDate()+1); midnight.setHours(0,0,10,0);
@@ -304,7 +311,7 @@ function scheduleMidnight(){
 }
 scheduleMidnight();
 
-// ── Login screen ──────────────────────────────────────────
+// ── Login ─────────────────────────────────────────────────
 function showLogin(){
   document.getElementById("app").innerHTML=`
   <div style="min-height:100vh;background:linear-gradient(135deg,#1e293b,#334155);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
@@ -347,24 +354,16 @@ function checkPin(){
   else{ const e=document.getElementById("pin-error"); if(e)e.textContent="❌ Code PIN incorrect"; pinBuffer=""; updatePinDots(); }
 }
 
-// ── Confirm modal ─────────────────────────────────────────
+// ── Confirm ───────────────────────────────────────────────
 function openConfirm(title,msg,action){ pendingConfirm=action; document.getElementById("confirm-title").textContent=title; document.getElementById("confirm-msg").textContent=msg; document.getElementById("modal-confirm").style.display="flex"; }
 function closeConfirm(){ document.getElementById("modal-confirm").style.display="none"; pendingConfirm=null; }
 function confirmAction(){ if(pendingConfirm) pendingConfirm(); closeConfirm(); }
 
-// ── Dropdown menu ─────────────────────────────────────────
+// ── Dropdown ──────────────────────────────────────────────
 let openDropId=null;
-function toggleDrop(id){
-  closeAllDrops();
-  if(openDropId===id){ openDropId=null; return; }
-  const el=document.getElementById("drop-"+id);
-  if(el){ el.classList.add("open"); openDropId=id; }
-}
-function closeAllDrops(){
-  document.querySelectorAll(".dropdown.open").forEach(el=>el.classList.remove("open"));
-  openDropId=null;
-}
-document.addEventListener("click", e=>{ if(!e.target.closest(".menu-wrap")) closeAllDrops(); });
+function toggleDrop(id){ closeAllDrops(); if(openDropId===id){openDropId=null;return;} const el=document.getElementById("drop-"+id); if(el){el.classList.add("open");openDropId=id;} }
+function closeAllDrops(){ document.querySelectorAll(".dropdown.open").forEach(el=>el.classList.remove("open")); openDropId=null; }
+document.addEventListener("click",e=>{ if(!e.target.closest(".menu-wrap")) closeAllDrops(); });
 
 // ── RENDER ────────────────────────────────────────────────
 function render(){
@@ -372,65 +371,63 @@ function render(){
   const toOrder=products.filter(p=>["red","yellow"].includes(getStatus(p)));
   const isMobile=window.innerWidth<=640;
   const allSec=getAllSections();
+  const visibleSecs=(!isMobile||sectionsExpanded)?allSec:allSec.slice(0,4);
+  const hasMore=isMobile&&allSec.length>4;
 
   const filtered=products
     .filter(p=>(activeSection==="Toutes"||p.section===activeSection)&&(searchQuery===""||p.name.toLowerCase().includes(searchQuery.toLowerCase())))
     .sort((a,b)=>STATUS_ORDER[getStatus(a)]-STATUS_ORDER[getStatus(b)]);
 
-  // Section tabs — on mobile collapse after first 4
-  const visibleSecs = (!isMobile||sectionsExpanded) ? allSec : allSec.slice(0,4);
-  const hasMore = isMobile && allSec.length > 4;
-
   let html=`
-  <div class="header">
-    <div>
-      <div class="logo-name">BOCHICA</div>
-      <div class="logo-sub">Restaurant Colombien</div>
-      <div class="logo-bar"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
+  <div class="sticky-top">
+    <div class="header">
+      <div>
+        <div class="logo-name">BOCHICA</div>
+        <div class="logo-sub">Restaurant Colombien</div>
+        <div class="logo-bar"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
+      </div>
+      <div class="header-right">
+        ${lowCount>0?`<div class="alert-pill">⚠️ ${lowCount}</div>`:""}
+        <button class="btn-logout" onclick="logout()">
+          ${isAdmin?`<span>👑</span>`:`<span>👤</span>`}
+          <span class="logout-text">${isAdmin?"Admin ":""}</span>
+          <span>↩</span>
+        </button>
+      </div>
     </div>
-    <div class="header-right">
-      ${lowCount>0?`<div class="alert-pill">⚠️ ${lowCount}</div>`:""}
-      <button class="btn-logout" onclick="logout()">
-        ${isAdmin?`<span>👑</span>`:`<span>👤</span>`}
-        <span class="logout-text">${isAdmin?"Admin":""} Déconnexion</span>
-        <span>↩</span>
-      </button>
+    <div class="tabs">
+      <button class="tab ${activeTab==="inventaire"?"active":""}" onclick="setTab('inventaire')">📦 Inventaire</button>
+      <button class="tab ${activeTab==="rapport"?"active":""}" onclick="setTab('rapport')">📋 Rapport${lowCount>0?` (${lowCount})`:""}</button>
+      <button class="tab ${activeTab==="fournisseurs"?"active":""}" onclick="setTab('fournisseurs')">🏪 Fournisseurs</button>
     </div>
-  </div>
-  <div class="tabs">
-    <button class="tab ${activeTab==="inventaire"?"active":""}" onclick="setTab('inventaire')">📦 Inventaire</button>
-    <button class="tab ${activeTab==="rapport"?"active":""}" onclick="setTab('rapport')">📋 Rapport${lowCount>0?` (${lowCount})`:""}</button>
-    <button class="tab ${activeTab==="fournisseurs"?"active":""}" onclick="setTab('fournisseurs')">🏪 Fournisseurs</button>
   </div>
   <div class="content">`;
 
   // ── INVENTAIRE ──
   if(activeTab==="inventaire"){
-    html+=`<div class="section-tabs-wrap"><div class="section-tabs ${sectionsExpanded?"expanded":""}">`;
+    html+=`<div class="section-tabs ${sectionsExpanded?"expanded":""}">`;
     visibleSecs.forEach(s=>{
-      const cnt=s==="Toutes"
-        ? products.filter(p=>["red","yellow"].includes(getStatus(p))).length
-        : products.filter(p=>p.section===s&&["red","yellow"].includes(getStatus(p))).length;
+      const cnt=s==="Toutes"?products.filter(p=>["red","yellow"].includes(getStatus(p))).length:products.filter(p=>p.section===s&&["red","yellow"].includes(getStatus(p))).length;
       html+=`<button class="sec-btn ${s===activeSection?"active":""}" onclick="setSection('${s}')">${s}${cnt>0?`<span class="badge">${cnt}</span>`:""}</button>`;
     });
     if(hasMore) html+=`<button class="sec-toggle" onclick="toggleSections()">${sectionsExpanded?"▲":"▼"}</button>`;
     if(isAdmin) html+=`<button class="sec-btn" onclick="openCategoryModal()" style="border-style:dashed;color:#94a3b8">⚙️</button>`;
-    html+=`</div></div>
+    html+=`</div>
     <div class="toolbar">
       <div class="search-box"><span style="color:#94a3b8">🔍</span><input type="text" placeholder="Rechercher..." value="${searchQuery}" oninput="setSearch(this.value)"/></div>
       ${isAdmin?`<button class="btn-primary" onclick="openProductModal()">+ Produit</button>`:""}
     </div>`;
 
     if(!filtered.length){
-      html+=`<div class="empty"><div style="font-size:36px;margin-bottom:8px">${searchQuery?"🔍":"📭"}</div>${searchQuery?`Aucun résultat pour "${searchQuery}"`:"Aucun produit dans cette section."}</div>`;
+      html+=`<div class="empty"><div style="font-size:36px;margin-bottom:8px">${searchQuery?"🔍":"📭"}</div>${searchQuery?`Aucun résultat`:"Aucun produit dans cette section."}</div>`;
     } else if(isMobile){
-      html+=`<div class="mobile-cards">`;
+      html+=`<div>`;
       filtered.forEach(p=>{
         const st=getStatus(p), stock=getCurrentStock(p);
         const sup=suppliers.find(s=>s.id===p.supplierId);
-      html+=`<div class="mobile-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:10px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${st!=="green"?10:8}px">
-            <strong style="font-size:15px">${p.name}</strong>
+        html+=`<div class="mobile-card ${st}">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${st!=="green"?10:0}px">
+            <strong style="font-size:15px;color:${st==="red"?"#991b1b":st==="yellow"?"#854d0e":"#1e293b"}">${p.name}</strong>
             <div style="display:flex;align-items:center;gap:6px">
               ${st!=="green"?`<span class="status-badge ${st}">${statusLabel(st)}</span>`:""}
               ${isAdmin?`<div class="menu-wrap">
@@ -444,17 +441,17 @@ function render(){
               </div>`:""}
             </div>
           </div>
+          ${st!=="green"?`
           <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
             <div>
               <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:4px;text-transform:uppercase">Stock actuel</div>
-              <span class="cur-stock ${st}" style="font-size:16px">${stock} <span style="font-size:11px;font-weight:400">${p.unit||""}</span></span>
+              <span style="font-weight:700;font-size:16px;color:${st==="red"?"#991b1b":"#854d0e"}">${stock} <span style="font-size:11px;font-weight:400;color:#64748b">${p.unit||""}</span></span>
             </div>
             <div>
               <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:4px;text-transform:uppercase">Ajouter qté</div>
               <input class="stock-input" type="number" placeholder="+ qté" id="si_m${p.id}"
                 onkeydown="if(event.key==='Enter') commitStock('${p.id}','si_m${p.id}')"
-                onblur="commitStock('${p.id}','si_m${p.id}')"
-                style="width:90px;height:34px"/>
+                onblur="commitStock('${p.id}','si_m${p.id}')" style="width:90px;height:34px"/>
             </div>
             <div style="display:flex;gap:10px">
               <div style="text-align:center"><div style="font-size:10px;color:#64748b;font-weight:600">MIN</div><div style="font-size:15px;font-weight:600">${p.minimum||0}</div></div>
@@ -462,6 +459,12 @@ function render(){
             </div>
           </div>
           ${sup?`<div style="margin-top:8px;font-size:12px;color:#64748b">🏪 ${sup.name}</div>`:""}
+          `:`<div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:13px;color:#166534;font-weight:600">${stock} ${p.unit||""}</span>
+            <input class="stock-input" type="number" placeholder="+ qté" id="si_mg${p.id}"
+              onkeydown="if(event.key==='Enter') commitStock('${p.id}','si_mg${p.id}')"
+              onblur="commitStock('${p.id}','si_mg${p.id}')" style="width:80px;height:30px;font-size:12px"/>
+          </div>`}
         </div>`;
       });
       html+=`</div>`;
@@ -470,25 +473,25 @@ function render(){
         ${isAdmin?`<th style="width:30px"></th>`:""}
         <th>Produit</th>
         <th>Stock actuel</th>
-        <th>Mettre à jour</th>
+        <th>Ajouter qté</th>
         <th>Minimum</th><th>Fournisseur</th><th>Statut</th><th>À commander</th>
         ${isAdmin?`<th></th>`:""}
       </tr></thead><tbody id="product-tbody">`;
       filtered.forEach(p=>{
         const st=getStatus(p), stock=getCurrentStock(p);
         const sup=suppliers.find(s=>s.id===p.supplierId);
-        const rowBg=st==="red"?"#fff5f5":st==="yellow"?"#fffbeb":"#fff";
-        html+=`<tr style="background:${rowBg}" data-id="${p.id}" 
+        const borderColor=st==="red"?"#fecaca":st==="yellow"?"#fde68a":"#e2e8f0";
+        html+=`<tr data-id="${p.id}" style="border-left:3px solid ${borderColor}"
           ${isAdmin?`draggable="true" ondragstart="dragStart(event,'${p.id}')" ondragover="dragOver(event,'${p.id}')" ondrop="dropOn(event,'${p.id}')" ondragleave="dragLeave(event)" ondragend="dragEnd(event)"`:""}
         >
-          ${isAdmin?`<td style="background:${rowBg};padding:0 4px"><span class="drag-handle" title="Réordonner">⠿</span></td>`:""}
-          <td style="background:${rowBg}">
-            <strong>${p.name}</strong>
+          ${isAdmin?`<td style="padding:0 4px"><span class="drag-handle">⠿</span></td>`:""}
+          <td>
+            <strong style="color:${st==="red"?"#991b1b":st==="yellow"?"#854d0e":"#1e293b"}">${p.name}</strong>
             <div style="font-size:11px;color:#94a3b8">${p.unit||""}${activeSection==="Toutes"?` · ${p.section}`:""}</div>
           </td>
-          <td><span class="cur-stock ${st}">${stock} <span style="font-size:11px;font-weight:400;color:#64748b">${p.unit||""}</span></span></td>
+          <td><span class="stock-val ${st}">${stock} <span style="font-size:11px;font-weight:400;color:#94a3b8">${p.unit||""}</span></span></td>
           <td>
-            <input class="stock-input" type="number" placeholder="Entrer qté" id="si_${p.id}"
+            <input class="stock-input" type="number" placeholder="+ qté" id="si_${p.id}"
               onkeydown="if(event.key==='Enter') commitStock('${p.id}','si_${p.id}')"
               onblur="commitStock('${p.id}','si_${p.id}')"/>
           </td>
@@ -526,8 +529,8 @@ function render(){
       const redCnt=toOrder.filter(p=>getStatus(p)==="red").length;
       const yelCnt=toOrder.filter(p=>getStatus(p)==="yellow").length;
       html+=`<div class="summary-cards">
-        <div class="summary-card red" style="border-color:#ef4444"><div style="font-weight:700;font-size:22px;color:#991b1b">${redCnt}</div><div style="font-size:13px;color:#991b1b">⚠️ À commander immédiatement</div></div>
-        <div class="summary-card yellow" style="border-color:#eab308"><div style="font-weight:700;font-size:22px;color:#854d0e">${yelCnt}</div><div style="font-size:13px;color:#854d0e">🟡 Bientôt bas</div></div>
+        <div class="summary-card" style="border-color:#ef4444;background:#fff"><div style="font-weight:700;font-size:22px;color:#991b1b">${redCnt}</div><div style="font-size:13px;color:#991b1b">⚠️ À commander immédiatement</div></div>
+        <div class="summary-card" style="border-color:#eab308;background:#fff"><div style="font-weight:700;font-size:22px;color:#854d0e">${yelCnt}</div><div style="font-size:13px;color:#854d0e">🟡 Bientôt bas</div></div>
       </div>`;
       getAllSections().filter(s=>s!=="Toutes").forEach(section=>{
         const items=toOrder.filter(p=>p.section===section).sort((a,b)=>STATUS_ORDER[getStatus(a)]-STATUS_ORDER[getStatus(b)]);
@@ -540,9 +543,10 @@ function render(){
         items.forEach(p=>{
           const st=getStatus(p), stock=getCurrentStock(p);
           const sup=suppliers.find(s=>s.id===p.supplierId);
-          html+=`<tr style="background:${st==="red"?"#fff5f5":"#fffbeb"}">
-            <td><strong>${p.name}</strong><br/><span style="font-size:11px;color:#94a3b8">${p.unit||""}</span></td>
-            <td class="${st}" style="font-weight:700;text-align:center">${stock}</td>
+          const borderColor=st==="red"?"#fecaca":"#fde68a";
+          html+=`<tr style="border-left:3px solid ${borderColor}">
+            <td><strong style="color:${st==="red"?"#991b1b":"#854d0e"}">${p.name}</strong><br/><span style="font-size:11px;color:#94a3b8">${p.unit||""}</span></td>
+            <td style="font-weight:700;color:${st==="red"?"#991b1b":"#854d0e"}">${stock}</td>
             <td style="text-align:center">${p.minimum||0}</td>
             <td style="font-weight:700;color:#3b82f6">${p.orderQty||0} ${p.orderUnit||""}</td>
             <td>${sup?sup.name:"—"}</td><td>${sup?sup.contact||"—":"—"}</td>
@@ -604,49 +608,42 @@ function setSection(s){ activeSection=s; searchQuery=""; render(); }
 function setSearch(v){ searchQuery=v; render(); }
 function toggleSections(){ sectionsExpanded=!sectionsExpanded; render(); }
 
-// ── STOCK UPDATE ──────────────────────────────────────────
+// ── STOCK — ajouter au stock existant ────────────────────
 async function commitStock(id, inputId){
   const input=document.getElementById(inputId);
   if(!input||input.value==="") return;
   const add=Number(input.value);
   const p=products.find(x=>x.id===id); if(!p) return;
-  // Ajouter au stock de base
-  const newBase = Number(p.currentStock||0) + add;
-  // Accumuler dans stockByDay pour l'historique
-  const prev = p.stockByDay?.[TODAY_KEY] !== undefined ? Number(p.stockByDay[TODAY_KEY]) : 0;
-  const stockByDay={...p.stockByDay||{},[TODAY_KEY]: prev + add};
-  await db.collection("products").doc(id).update({currentStock: newBase, stockByDay});
+  const newStock=Number(p.currentStock||0)+add;
+  await db.collection("products").doc(id).update({currentStock:newStock});
   input.value="";
 }
 
-// ── DRAG & DROP (desktop) ─────────────────────────────────
-function dragStart(e,id){ dragSrcId=id; setTimeout(()=>{ const tr=document.querySelector(`tr[data-id="${id}"]`); if(tr) tr.classList.add("dragging"); },0); }
-function dragOver(e,id){ e.preventDefault(); const tr=document.querySelector(`tr[data-id="${id}"]`); if(tr&&id!==dragSrcId) tr.classList.add("drag-over"); }
+// ── DRAG & DROP ───────────────────────────────────────────
+function dragStart(e,id){ dragSrcId=id; setTimeout(()=>{const tr=document.querySelector(`tr[data-id="${id}"]`);if(tr)tr.classList.add("dragging");},0); }
+function dragOver(e,id){ e.preventDefault(); const tr=document.querySelector(`tr[data-id="${id}"]`);if(tr&&id!==dragSrcId)tr.classList.add("drag-over"); }
 function dragLeave(e){ document.querySelectorAll("tr.drag-over").forEach(r=>r.classList.remove("drag-over")); }
 function dragEnd(e){ document.querySelectorAll("tr.dragging,tr.drag-over").forEach(r=>r.classList.remove("dragging","drag-over")); }
 async function dropOn(e,targetId){
   e.preventDefault(); dragEnd();
   if(!dragSrcId||dragSrcId===targetId) return;
   const tbody=document.getElementById("product-tbody"); if(!tbody) return;
-  const rows=[...tbody.querySelectorAll("tr[data-id]")];
-  const ids=rows.map(r=>r.dataset.id);
+  const ids=[...tbody.querySelectorAll("tr[data-id]")].map(r=>r.dataset.id);
   const srcIdx=ids.indexOf(dragSrcId), tgtIdx=ids.indexOf(targetId);
   if(srcIdx<0||tgtIdx<0) return;
   ids.splice(srcIdx,1); ids.splice(tgtIdx,0,dragSrcId);
   const batch=db.batch();
   ids.forEach((id,i)=>batch.update(db.collection("products").doc(id),{sortOrder:i}));
-  await batch.commit();
-  dragSrcId=null;
+  await batch.commit(); dragSrcId=null;
 }
 
 // ── DELETE ────────────────────────────────────────────────
-function askDeleteProduct(id,name){ openConfirm("🗑️ Supprimer le produit",`Voulez-vous vraiment supprimer "${name}" ? Cette action est irréversible.`,()=>db.collection("products").doc(id).delete()); }
-function askDeleteSupplier(id,name){ openConfirm("🗑️ Supprimer le fournisseur",`Voulez-vous vraiment supprimer "${name}" ? Cette action est irréversible.`,()=>db.collection("suppliers").doc(id).delete()); }
+function askDeleteProduct(id,name){ openConfirm("🗑️ Supprimer le produit",`Voulez-vous vraiment supprimer "${name}" ?`,()=>db.collection("products").doc(id).delete()); }
+function askDeleteSupplier(id,name){ openConfirm("🗑️ Supprimer le fournisseur",`Voulez-vous vraiment supprimer "${name}" ?`,()=>db.collection("suppliers").doc(id).delete()); }
 
 // ── MOVE CATEGORY ─────────────────────────────────────────
 function openMoveModal(id){
-  movingProductId=id;
-  const p=products.find(x=>x.id===id); if(!p) return;
+  movingProductId=id; const p=products.find(x=>x.id===id); if(!p) return;
   document.getElementById("move-product-name").textContent=p.name;
   const sel=document.getElementById("move-section");
   const secs=getAllSections().filter(s=>s!=="Toutes");
@@ -656,8 +653,7 @@ function openMoveModal(id){
 function closeMoveModal(){ document.getElementById("modal-move").style.display="none"; movingProductId=null; }
 async function confirmMove(){
   if(!movingProductId) return;
-  const sec=document.getElementById("move-section").value;
-  await db.collection("products").doc(movingProductId).update({section:sec});
+  await db.collection("products").doc(movingProductId).update({section:document.getElementById("move-section").value});
   closeMoveModal();
 }
 
@@ -666,15 +662,16 @@ function openProductModal(){
   if(!isAdmin) return; editingProductId=null;
   document.getElementById("modal-product-title").textContent="Ajouter un produit";
   ["p-name","p-unit","p-orderunit"].forEach(id=>document.getElementById(id).value="");
-  document.getElementById("p-orderqty").value=0; document.getElementById("p-minimum").value=0;
+  document.getElementById("p-stock").value=0;
+  document.getElementById("p-orderqty").value=0;
+  document.getElementById("p-minimum").value=0;
   document.getElementById("p-supplier").value="";
   document.getElementById("modal-product").style.display="flex";
 }
 function closeProductModal(){ document.getElementById("modal-product").style.display="none"; }
 
 function editProduct(id){
-  if(!isAdmin) return;
-  const p=products.find(x=>x.id===id); if(!p) return;
+  if(!isAdmin) return; const p=products.find(x=>x.id===id); if(!p) return;
   editingProductId=id;
   document.getElementById("modal-product-title").textContent="Modifier le produit";
   document.getElementById("p-name").value=p.name||"";
@@ -682,6 +679,7 @@ function editProduct(id){
   document.getElementById("p-orderunit").value=p.orderUnit||"";
   document.getElementById("p-orderqty").value=p.orderQty||0;
   document.getElementById("p-minimum").value=p.minimum||0;
+  document.getElementById("p-stock").value=p.currentStock||0;
   document.getElementById("p-section").value=p.section||DEFAULT_SECTIONS[0];
   document.getElementById("p-supplier").value=p.supplierId||"";
   document.getElementById("modal-product").style.display="flex";
@@ -689,15 +687,21 @@ function editProduct(id){
 
 async function saveProduct(){
   const name=document.getElementById("p-name").value.trim(); if(!name) return alert("Entrez un nom.");
-  const data={name,unit:document.getElementById("p-unit").value,orderUnit:document.getElementById("p-orderunit").value,
-    orderQty:Number(document.getElementById("p-orderqty").value),minimum:Number(document.getElementById("p-minimum").value),
-    section:document.getElementById("p-section").value,supplierId:document.getElementById("p-supplier").value};
+  const data={
+    name, unit:document.getElementById("p-unit").value,
+    orderUnit:document.getElementById("p-orderunit").value,
+    orderQty:Number(document.getElementById("p-orderqty").value),
+    minimum:Number(document.getElementById("p-minimum").value),
+    currentStock:Number(document.getElementById("p-stock").value),
+    section:document.getElementById("p-section").value,
+    supplierId:document.getElementById("p-supplier").value
+  };
   if(editingProductId){
     const p=products.find(x=>x.id===editingProductId);
     await db.collection("products").doc(editingProductId).set({...p,...data,id:editingProductId});
   } else {
     const id=genId();
-    await db.collection("products").doc(id).set({...data,id,stockByDay:{},currentStock:0,sortOrder:products.length});
+    await db.collection("products").doc(id).set({...data,id,sortOrder:products.length});
   }
   closeProductModal();
 }
@@ -708,15 +712,15 @@ function closeCategoryModal(){ document.getElementById("modal-category").style.d
 function renderCatList(){
   const list=document.getElementById("cat-list"); if(!list) return;
   list.innerHTML=!customSections.length
-    ? `<p style="color:#94a3b8;font-size:13px;text-align:center;margin-bottom:12px">Aucune catégorie personnalisée</p>`
-    : customSections.map((s,i)=>`<div class="cat-item">
+    ?`<p style="color:#94a3b8;font-size:13px;text-align:center;margin-bottom:12px">Aucune catégorie personnalisée</p>`
+    :customSections.map((s,i)=>`<div class="cat-item">
         <input value="${s}" onblur="renameCategory(${i},this.value)"/>
-        <button style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer" onclick="askDeleteCategory(${i},'${s.replace(/'/g,"\\'")}')">🗑️</button>
+        <button style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;flex-shrink:0" onclick="askDeleteCategory(${i},'${s.replace(/'/g,"\\'")}')">🗑️</button>
       </div>`).join("");
 }
 async function addCategory(){
   const name=document.getElementById("cat-new").value.trim(); if(!name) return;
-  if(DEFAULT_SECTIONS.includes(name)||customSections.includes(name)) return alert("Cette catégorie existe déjà.");
+  if(DEFAULT_SECTIONS.includes(name)||customSections.includes(name)) return alert("Catégorie déjà existante.");
   await db.collection("settings").doc("sections").set({custom:[...customSections,name]});
   document.getElementById("cat-new").value=""; renderCatList();
 }
@@ -726,7 +730,7 @@ async function renameCategory(i,newName){
   await db.collection("settings").doc("sections").set({custom:updated});
 }
 function askDeleteCategory(i,name){
-  openConfirm("🗑️ Supprimer la catégorie",`Voulez-vous vraiment supprimer "${name}" ? Les produits ne seront pas supprimés.`,async()=>{
+  openConfirm("🗑️ Supprimer la catégorie",`Supprimer "${name}" ? Les produits ne seront pas supprimés.`,async()=>{
     await db.collection("settings").doc("sections").set({custom:customSections.filter((_,j)=>j!==i)});
     renderCatList();
   });
@@ -764,7 +768,7 @@ function printReport(){
   const toOrder=products.filter(p=>["red","yellow"].includes(getStatus(p))).sort((a,b)=>STATUS_ORDER[getStatus(a)]-STATUS_ORDER[getStatus(b)]);
   const rows=toOrder.map(p=>{
     const sup=suppliers.find(s=>s.id===p.supplierId),st=getStatus(p),stock=getCurrentStock(p);
-    return `<tr style="background:${st==="red"?"#fff5f5":"#fffbeb"}">
+    return `<tr style="border-left:4px solid ${st==="red"?"#ef4444":"#eab308"}">
       <td>${p.name}<br/><small style="color:#94a3b8">${p.unit||""}</small></td><td>${p.section}</td>
       <td>${stock}</td><td>${p.minimum||0}</td><td>${p.orderQty||0} ${p.orderUnit||""}</td>
       <td>${sup?sup.name:"—"}</td><td>${sup?sup.contact||"—":"—"}</td><td>${statusLabel(st)}</td></tr>`;
