@@ -191,7 +191,7 @@
 
 <script>
 // ── 🔐 CHANGEZ VOS CODES ICI ─────────────────────────────
-const ADMIN_PIN    = "8902"; // Code administrateur
+const ADMIN_PIN    = "2024"; // Code administrateur
 const EMPLOYEE_PIN = "1234"; // Code employé
 // ─────────────────────────────────────────────────────────
 
@@ -204,10 +204,10 @@ const FIREBASE_CONFIG = {
   appId: "1:261321722710:web:5a7aa0039fa0fd1a20a4f7"
 };
 
-const DAYS = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+const DAYS = ["Ven","Dim"];
 const SECTIONS = ["Cuisine","Emballage","Bar","Autre"];
-const TODAY_IDX = (new Date().getDay() + 6) % 7;
-const TODAY = DAYS[TODAY_IDX];
+const TODAY_DAY = new Date().getDay(); // 0=Dim, 5=Ven
+const TODAY = TODAY_DAY === 5 ? "Ven" : TODAY_DAY === 0 ? "Dim" : null;
 
 firebase.initializeApp(FIREBASE_CONFIG);
 const db = firebase.firestore();
@@ -370,7 +370,7 @@ function render(){
     }
     html+=`
     <div class="week-banner">
-      <span>📅 Semaine en cours — Aujourd'hui : <strong>${TODAY}</strong></span>
+      <span>📅 Jours d'inventaire : <strong>Vendredi &amp; Dimanche</strong>${TODAY ? ` — Aujourd'hui : <strong>${TODAY}</strong>` : ""}</span>
       ${isAdmin?`<button class="btn-week" onclick="openWeekModal()">🗓️ Nouvelle semaine</button>`:""}
     </div>
     <div class="section-tabs">`;
