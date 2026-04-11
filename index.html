@@ -9,25 +9,19 @@
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:system-ui,sans-serif;background:#f8fafc;min-height:100vh}
-
-    /* STICKY HEADER + TABS */
     .sticky-top{position:sticky;top:0;z-index:50}
     .header{background:linear-gradient(135deg,#1e293b,#334155);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px}
     .logo-name{font-weight:900;font-size:20px;letter-spacing:4px;line-height:1}
     .logo-sub{font-size:10px;opacity:.7;letter-spacing:1px}
     .logo-bar{display:flex;height:2px;margin-top:3px;width:100px}
     .header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-    .alert-pill{background:#ef4444;border-radius:4px;padding:4px 10px;font-size:13px;font-weight:700;color:#fff;white-space:nowrap}
+    .alert-pill{background:#ef4444;border-radius:4px;padding:4px 10px;font-size:13px;font-weight:700;color:#fff}
     .btn-logout{background:transparent;border:1px solid rgba(255,255,255,0.35);color:rgba(255,255,255,0.85);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:5px}
     .btn-logout:hover{background:rgba(255,255,255,0.1)}
     .tabs{display:flex;background:#fff;border-bottom:1px solid #e2e8f0;padding:0 20px;overflow-x:auto}
     .tab{padding:11px 18px;font-weight:600;font-size:14px;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#64748b;white-space:nowrap}
     .tab.active{border-bottom:3px solid #3b82f6;color:#3b82f6}
-
-    /* CONTENT */
     .content{padding:20px;max-width:1200px;margin:0 auto}
-
-    /* SECTION TABS */
     .section-tabs{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;align-items:center;margin-bottom:14px}
     .section-tabs.expanded{flex-wrap:wrap}
     .sec-btn{padding:6px 14px;border-radius:6px;border:1px solid #e2e8f0;cursor:pointer;font-weight:600;font-size:13px;background:#fff;color:#475569;white-space:nowrap;flex-shrink:0}
@@ -35,48 +29,30 @@
     .sec-btn.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
     .sec-toggle{background:none;border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;cursor:pointer;font-size:14px;color:#64748b;flex-shrink:0}
     .badge{background:#ef4444;color:#fff;border-radius:4px;padding:1px 5px;font-size:10px;margin-left:3px}
-
-    /* TOOLBAR */
     .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap}
     .search-box{display:flex;align-items:center;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:6px 12px;gap:8px;flex:1;max-width:280px}
     .search-box input{border:none;outline:none;font-size:14px;color:#1e293b;width:100%;background:transparent}
-
-    /* BUTTONS */
     .btn-primary{background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer;font-size:14px;white-space:nowrap}
     .btn-cancel{padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#f8fafc;font-size:14px}
-
-    /* TABLE */
     table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
     th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;background:#f1f5f9}
     td{padding:9px 12px;vertical-align:middle;border-bottom:1px solid #e2e8f0}
     th:first-child,td:first-child{position:sticky;left:0;z-index:2;box-shadow:2px 0 4px rgba(0,0,0,.06)}
     th:first-child{background:#f1f5f9}
-    /* Row border color by status — no background */
-    tr.row-red td{border-bottom:1px solid #fecaca}
-    tr.row-red{outline:none}
-    tr.row-yellow td{border-bottom:1px solid #fde68a}
-
-    /* STOCK */
     .stock-val{font-weight:700;font-size:14px}
     .stock-val.red{color:#991b1b}
     .stock-val.yellow{color:#854d0e}
     .stock-val.green{color:#166534}
-    .stock-input{width:80px;border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;text-align:center;font-size:14px;font-weight:600}
+    .stock-input{border:1px solid #cbd5e1;border-radius:6px;padding:4px 8px;text-align:center;font-size:14px;font-weight:600}
     .stock-input:focus{border-color:#3b82f6;outline:none;box-shadow:0 0 0 2px #bfdbfe}
-
-    /* STATUS */
     .status-badge{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap}
     .red{background:#fee2e2;border:2px solid #ef4444;color:#991b1b}
     .yellow{background:#fef9c3;border:2px solid #eab308;color:#854d0e}
     .green{background:#dcfce7;border:2px solid #22c55e;color:#166534}
-
-    /* DRAG */
     .drag-handle{cursor:grab;color:#cbd5e1;padding:0 6px;font-size:18px;user-select:none}
     .drag-handle:active{cursor:grabbing}
     tr.dragging{opacity:.4}
     tr.drag-over td{border-top:2px solid #3b82f6}
-
-    /* THREE DOTS */
     .menu-wrap{position:relative;display:inline-block}
     .dots-btn{background:none;border:none;cursor:pointer;font-size:18px;color:#94a3b8;padding:2px 6px;border-radius:4px;line-height:1}
     .dots-btn:hover{background:#f1f5f9;color:#475569}
@@ -85,8 +61,6 @@
     .dropdown button{display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;border:none;background:none;cursor:pointer;font-size:13px;color:#1e293b;text-align:left}
     .dropdown button:hover{background:#f8fafc}
     .dropdown .sep{height:1px;background:#f1f5f9;margin:2px 0}
-
-    /* MODALS */
     .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
     .modal{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto}
     .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
@@ -98,8 +72,6 @@
     .form-row label{flex:1}
     .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
     .field-hint{font-size:11px;color:#94a3b8;font-weight:400;margin-top:2px}
-
-    /* MISC */
     .empty{text-align:center;color:#94a3b8;margin-top:60px;font-size:15px}
     .supplier-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
     .supplier-card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px}
@@ -110,13 +82,13 @@
     .cat-item{display:flex;align-items:center;gap:8px;padding:8px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;margin-bottom:6px}
     .cat-item input{flex:1;border:1px solid #cbd5e1;border-radius:6px;padding:5px 10px;font-size:13px}
     .confirm-msg{color:#475569;font-size:14px;margin-bottom:20px;line-height:1.6}
-
-    /* MOBILE CARDS */
-    .mobile-card{background:#fff;border-radius:12px;padding:14px;margin-bottom:10px;border:1px solid #e2e8f0}
-    .mobile-card.red{border-color:#ef4444}
-    .mobile-card.yellow{border-color:#eab308}
-    .mobile-card.green{border-color:#22c55e}
-
+    /* CARD — used in both Inventaire mobile and Rapport */
+    .inv-card{background:#fff;border-radius:12px;padding:16px;margin-bottom:10px}
+    .inv-card-body{display:flex;gap:10px;margin-top:10px}
+    .inv-card-block{background:#f8fafc;border-radius:8px;padding:10px 14px;flex:1}
+    .inv-card-label{font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-bottom:4px}
+    .inv-card-value{font-weight:700;font-size:22px}
+    .inv-card-sub{font-size:10px;color:#94a3b8;margin-top:4px}
     /* PIN */
     .pin-pad{display:flex;flex-direction:column;align-items:center;gap:14px}
     .pin-display{display:flex;gap:10px}
@@ -126,7 +98,6 @@
     .pin-btn{width:62px;height:62px;border-radius:50%;border:2px solid #e2e8f0;background:#fff;font-size:20px;font-weight:700;cursor:pointer;color:#1e293b}
     .pin-btn:active{background:#eff6ff;border-color:#3b82f6}
     .pin-error{color:#ef4444;font-size:13px;font-weight:600;min-height:18px;text-align:center}
-
     @media(max-width:640px){
       .content{padding:12px}
       .logo-name{font-size:17px;letter-spacing:3px}
@@ -171,14 +142,8 @@
     <label>Nom du produit<input id="p-name" placeholder="ex: Tomates"/></label>
     <label>Section<select id="p-section"></select></label>
     <div class="form-row">
-      <label>Qté en inventaire
-        <input id="p-stock" type="number" value="0"/>
-        <span class="field-hint">Stock actuel (en unités)</span>
-      </label>
-      <label>Minimum requis
-        <input id="p-minimum" type="number" value="0"/>
-        <span class="field-hint">Seuil d'alerte (en unités)</span>
-      </label>
+      <label>Qté en inventaire<input id="p-stock" type="number" value="0"/><span class="field-hint">Stock actuel (en unités)</span></label>
+      <label>Minimum requis<input id="p-minimum" type="number" value="0"/><span class="field-hint">Seuil d'alerte</span></label>
     </div>
     <label>Unité de commande
       <select id="p-orderunit" onchange="toggleBoxFields()">
@@ -188,7 +153,7 @@
     </label>
     <div id="box-fields" style="display:none">
       <div class="form-row">
-        <label>Unités par boîte<input id="p-unitsperbox" type="number" value="1"/><span class="field-hint">Ex: 24 canettes par boîte</span></label>
+        <label>Unités par boîte<input id="p-unitsperbox" type="number" value="1"/><span class="field-hint">Ex: 24 canettes/boîte</span></label>
         <label>Qté à commander<input id="p-orderqty" type="number" value="0"/><span class="field-hint">Nombre de boîtes</span></label>
       </div>
     </div>
@@ -241,9 +206,9 @@
       <h3 id="modal-supplier-title">Ajouter un fournisseur</h3>
       <button class="close-btn" onclick="closeSupplierModal()">✕</button>
     </div>
-    <label>Nom<input id="s-name" placeholder="ex: Distribution ABC"/></label>
-    <label>Téléphone<input id="s-contact" placeholder="ex: 514-555-0000"/></label>
-    <label>Courriel<input id="s-email" placeholder="ex: commandes@abc.com"/></label>
+    <label>Nom<input id="s-name"/></label>
+    <label>Téléphone<input id="s-contact"/></label>
+    <label>Courriel<input id="s-email"/></label>
     <label>Notes<textarea id="s-notes" style="height:70px;resize:vertical"></textarea></label>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeSupplierModal()">Annuler</button>
@@ -259,16 +224,14 @@
     <p class="confirm-msg" id="confirm-msg"></p>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeConfirm()">Annuler</button>
-      <button id="confirm-ok" style="background:#22c55e;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px" onclick="confirmAction()">Confirmer</button>
+      <button id="confirm-ok" onclick="confirmAction()" style="border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px;color:#fff">OK</button>
     </div>
   </div>
 </div>
 
 <script>
-// ── 🔐 CHANGEZ VOS CODES ICI ─────────────────────────────
 const ADMIN_PIN    = "0000";
 const EMPLOYEE_PIN = "1111";
-// ─────────────────────────────────────────────────────────
 
 const DEFAULT_SECTIONS = ["Cuisine","Emballage","Bar","Autre"];
 const TODAY_KEY = new Date().toISOString().slice(0,10);
@@ -292,10 +255,7 @@ let pendingConfirm=null, sectionsExpanded=false, dragSrcId=null;
 
 function genId(){ return Math.random().toString(36).slice(2,10); }
 function getAllSections(){ return ["Toutes",...DEFAULT_SECTIONS,...customSections]; }
-
-// Stock actuel = currentStock (source unique de vérité)
-function getCurrentStock(p){ return Number(p.currentStock ?? 0); }
-
+function getCurrentStock(p){ return Number(p.currentStock??0); }
 function getStatus(p){
   const s=getCurrentStock(p), m=Number(p.minimum||0);
   if(s<=m) return "red";
@@ -303,22 +263,20 @@ function getStatus(p){
   return "green";
 }
 function statusLabel(st){ return st==="red"?"⚠️ Commander":st==="yellow"?"🟡 Bientôt bas":"✅ OK"; }
+function orderLabel(p){
+  const q=p.orderQty||0;
+  return p.orderUnit==="boîte" ? `${q} boîte${q>1?"s":""}` : `${q} unité${q>1?"s":""}`;
+}
 
 // ── Firebase ──────────────────────────────────────────────
 db.collection("products").onSnapshot(snap=>{
-  products=snap.docs.map(d=>({id:d.id,...d.data()}))
-    .sort((a,b)=>(a.sortOrder??999)-(b.sortOrder??999));
+  products=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.sortOrder??999)-(b.sortOrder??999));
   if(isLoggedIn) render(); else showLogin();
 });
 db.collection("suppliers").onSnapshot(snap=>{ suppliers=snap.docs.map(d=>({id:d.id,...d.data()})); if(isLoggedIn) render(); });
 db.collection("settings").doc("sections").onSnapshot(snap=>{ customSections=snap.exists?snap.data().custom||[]:[];  if(isLoggedIn) render(); });
 
-// Reset à minuit
-function scheduleMidnight(){
-  const now=new Date(), midnight=new Date(now);
-  midnight.setDate(now.getDate()+1); midnight.setHours(0,0,10,0);
-  setTimeout(()=>{ scheduleMidnight(); if(isLoggedIn) render(); }, midnight-now);
-}
+function scheduleMidnight(){ const now=new Date(),m=new Date(now); m.setDate(now.getDate()+1); m.setHours(0,0,10,0); setTimeout(()=>{ scheduleMidnight(); if(isLoggedIn) render(); },m-now); }
 scheduleMidnight();
 
 // ── Login ─────────────────────────────────────────────────
@@ -352,8 +310,6 @@ function showLogin(){
   </div>`;
 }
 function logout(){ isAdmin=false; isLoggedIn=false; pinBuffer=""; showLogin(); }
-
-// ── PIN ───────────────────────────────────────────────────
 function pinPress(d){ if(pinBuffer.length>=4) return; pinBuffer+=d; updatePinDots(); if(pinBuffer.length===4) checkPin(); }
 function pinClear(){ pinBuffer=""; updatePinDots(); }
 function pinBackspace(){ pinBuffer=pinBuffer.slice(0,-1); updatePinDots(); }
@@ -365,14 +321,14 @@ function checkPin(){
 }
 
 // ── Confirm ───────────────────────────────────────────────
-function openConfirm(title,msg,action,isDanger=false){ 
-  pendingConfirm=action; 
-  document.getElementById("confirm-title").textContent=title; 
-  document.getElementById("confirm-msg").textContent=msg; 
+function openConfirm(title,msg,action,isDanger=false){
+  pendingConfirm=action;
+  document.getElementById("confirm-title").textContent=title;
+  document.getElementById("confirm-msg").textContent=msg;
   const btn=document.getElementById("confirm-ok");
   btn.textContent=isDanger?"Supprimer":"Confirmer";
   btn.style.background=isDanger?"#ef4444":"#22c55e";
-  document.getElementById("modal-confirm").style.display="flex"; 
+  document.getElementById("modal-confirm").style.display="flex";
 }
 function closeConfirm(){ document.getElementById("modal-confirm").style.display="none"; pendingConfirm=null; }
 function confirmAction(){ if(pendingConfirm) pendingConfirm(); closeConfirm(); }
@@ -383,6 +339,62 @@ function toggleDrop(id){ closeAllDrops(); if(openDropId===id){openDropId=null;re
 function closeAllDrops(){ document.querySelectorAll(".dropdown.open").forEach(el=>el.classList.remove("open")); openDropId=null; }
 document.addEventListener("click",e=>{ if(!e.target.closest(".menu-wrap")) closeAllDrops(); });
 
+// ── Card builder (shared between mobile inventaire + rapport) ──
+function buildCard({ id, name, section, showSection, st, stock, minimum, orderQty, orderUnit, unitsPerBox, supplierId,
+                     inputId, showInput, showOrderBtn, showSupplier }){
+  const borderColor=st==="red"?"#ef4444":st==="yellow"?"#eab308":"#22c55e";
+  const nameColor=st==="red"?"#991b1b":st==="yellow"?"#854d0e":"#1e293b";
+  const stockColor=st==="red"?"#991b1b":st==="yellow"?"#854d0e":"#166534";
+  const sup=supplierId ? suppliers.find(s=>s.id===supplierId) : null;
+  const oLabel=orderUnit==="boîte" ? `${orderQty} boîte${orderQty>1?"s":""}` : `${orderQty} unité${orderQty>1?"s":""}`;
+  const unitsToAdd=(orderQty||0)*(orderUnit==="boîte"?(unitsPerBox||1):1);
+
+  return `<div class="inv-card" style="border:1px solid ${borderColor}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+      <div>
+        <div style="font-weight:700;font-size:15px;color:${nameColor}">${name}</div>
+        ${showSection&&section?`<div style="font-size:11px;color:#94a3b8;margin-top:2px">${section}</div>`:""}
+        ${showSupplier&&sup?`<div style="font-size:12px;color:#64748b;margin-top:2px">🏪 ${sup.name}${sup.contact?` · ${sup.contact}`:""}</div>`:""}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px">
+        <span class="status-badge ${st}">${statusLabel(st)}</span>
+        ${isAdmin&&inputId?`<div class="menu-wrap">
+          <button class="dots-btn" onclick="toggleDrop('m${id}')">⋯</button>
+          <div class="dropdown" id="drop-m${id}">
+            <button onclick="editProduct('${id}');closeAllDrops()">✏️ Modifier</button>
+            <button onclick="openMoveModal('${id}');closeAllDrops()">📁 Changer catégorie</button>
+            <div class="sep"></div>
+            <button style="color:#ef4444" onclick="askDeleteProduct('${id}','${name.replace(/'/g,"\\'")}');closeAllDrops()">🗑️ Supprimer</button>
+          </div>
+        </div>`:""}
+      </div>
+    </div>
+    <div class="inv-card-body">
+      <div class="inv-card-block">
+        <div class="inv-card-label">Stock actuel</div>
+        <div class="inv-card-value" style="color:${stockColor}">${stock}</div>
+        <div class="inv-card-sub">Min : ${minimum||0} · Cmd : ${oLabel}</div>
+      </div>
+      ${showInput?`<div class="inv-card-block" style="display:flex;flex-direction:column;justify-content:space-between">
+        <div class="inv-card-label">Mettre à jour</div>
+        <input class="stock-input" type="number" placeholder="Qté restante" id="${inputId}"
+          onkeydown="if(event.key==='Enter') commitStock('${id}','${inputId}')"
+          onblur="commitStock('${id}','${inputId}')"
+          style="width:100%;height:38px;font-size:15px;margin-top:6px"/>
+      </div>`:""}
+      ${showOrderBtn?`<div class="inv-card-block" style="display:flex;flex-direction:column;justify-content:center">
+        <div class="inv-card-label">À commander</div>
+        <div style="font-weight:700;font-size:15px;color:#1d4ed8;margin:4px 0">${oLabel}${orderUnit==="boîte"?`<span style="font-size:11px;color:#94a3b8;font-weight:400;display:block">${unitsToAdd} unités</span>`:""}
+        </div>
+      </div>`:""}
+    </div>
+    ${showOrderBtn?`<button onclick="markOrdered('${id}')"
+      style="width:100%;margin-top:12px;background:#22c55e;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer">
+      ✅ Commandé — Ajouter au stock
+    </button>`:""}
+  </div>`;
+}
+
 // ── RENDER ────────────────────────────────────────────────
 function render(){
   const lowCount=products.filter(p=>["red","yellow"].includes(getStatus(p))).length;
@@ -391,7 +403,6 @@ function render(){
   const allSec=getAllSections();
   const visibleSecs=(!isMobile||sectionsExpanded)?allSec:allSec.slice(0,4);
   const hasMore=isMobile&&allSec.length>4;
-
   const filtered=products
     .filter(p=>(activeSection==="Toutes"||p.section===activeSection)&&(searchQuery===""||p.name.toLowerCase().includes(searchQuery.toLowerCase())))
     .sort((a,b)=>STATUS_ORDER[getStatus(a)]-STATUS_ORDER[getStatus(b)]);
@@ -407,9 +418,7 @@ function render(){
       <div class="header-right">
         ${lowCount>0?`<div class="alert-pill">⚠️ ${lowCount}</div>`:""}
         <button class="btn-logout" onclick="logout()">
-          ${isAdmin?`<span>👑</span>`:`<span>👤</span>`}
-          <span class="logout-text">${isAdmin?"Admin ":""}</span>
-          <span>↩</span>
+          ${isAdmin?"👑":"👤"}<span class="logout-text">${isAdmin?" Admin":""}</span> ↩
         </button>
       </div>
     </div>
@@ -421,11 +430,11 @@ function render(){
   </div>
   <div class="content">`;
 
-  // ── INVENTAIRE ──
+  // ── INVENTAIRE ─────────────────────────────────────────
   if(activeTab==="inventaire"){
     html+=`<div class="section-tabs ${sectionsExpanded?"expanded":""}">`;
     visibleSecs.forEach(s=>{
-      const cnt=s==="Toutes"?products.filter(p=>["red","yellow"].includes(getStatus(p))).length:products.filter(p=>p.section===s&&["red","yellow"].includes(getStatus(p))).length;
+      const cnt=s==="Toutes"?lowCount:products.filter(p=>p.section===s&&["red","yellow"].includes(getStatus(p))).length;
       html+=`<button class="sec-btn ${s===activeSection?"active":""}" onclick="setSection('${s}')">${s}${cnt>0?`<span class="badge">${cnt}</span>`:""}</button>`;
     });
     if(hasMore) html+=`<button class="sec-toggle" onclick="toggleSections()">${sectionsExpanded?"▲":"▼"}</button>`;
@@ -437,109 +446,65 @@ function render(){
     </div>`;
 
     if(!filtered.length){
-      html+=`<div class="empty"><div style="font-size:36px;margin-bottom:8px">${searchQuery?"🔍":"📭"}</div>${searchQuery?`Aucun résultat`:"Aucun produit dans cette section."}</div>`;
+      html+=`<div class="empty"><div style="font-size:36px;margin-bottom:8px">${searchQuery?"🔍":"📭"}</div>${searchQuery?"Aucun résultat":"Aucun produit dans cette section."}</div>`;
     } else if(isMobile){
-      html+=`<div>`;
+      // ── Mobile cards ──
       filtered.forEach(p=>{
-        const st=getStatus(p), stock=getCurrentStock(p);
-        const sup=suppliers.find(s=>s.id===p.supplierId);
-        html+=`<div class="mobile-card ${st}">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${st!=="green"?10:0}px">
-            <strong style="font-size:15px;color:${st==="red"?"#991b1b":st==="yellow"?"#854d0e":"#1e293b"}">${p.name}</strong>
-            <div style="display:flex;align-items:center;gap:6px">
-              ${st!=="green"?`<span class="status-badge ${st}">${statusLabel(st)}</span>`:""}
-              ${isAdmin?`<div class="menu-wrap">
-                <button class="dots-btn" onclick="toggleDrop('m${p.id}')">⋯</button>
-                <div class="dropdown" id="drop-m${p.id}">
-                  <button onclick="editProduct('${p.id}');closeAllDrops()">✏️ Modifier</button>
-                  <button onclick="openMoveModal('${p.id}');closeAllDrops()">📁 Changer catégorie</button>
-                  <div class="sep"></div>
-                  <button style="color:#ef4444" onclick="askDeleteProduct('${p.id}','${p.name.replace(/'/g,"\\'")}');closeAllDrops()">🗑️ Supprimer</button>
-                </div>
-              </div>`:""}
-            </div>
-          </div>
-          ${st!=="green"?`
-            <div>
-              <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:4px;text-transform:uppercase">Stock actuel</div>
-              <span style="font-weight:700;font-size:16px;color:${st==="red"?"#991b1b":"#854d0e"}">${stock} <span style="font-size:11px;font-weight:400;color:#64748b">${p.unit||""}</span></span>
-            </div>
-            <div>
-              <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:4px;text-transform:uppercase">Mettre à jour</div>
-              <input class="stock-input" type="number" placeholder="Qté restante" id="si_m${p.id}"
-                onkeydown="if(event.key==='Enter') commitStock('${p.id}','si_m${p.id}')"
-                onblur="commitStock('${p.id}','si_m${p.id}')" style="width:90px;height:34px"/>
-            </div>
-            <div style="display:flex;gap:10px">
-              <div style="text-align:center"><div style="font-size:10px;color:#64748b;font-weight:600">MIN</div><div style="font-size:15px;font-weight:600">${p.minimum||0}</div></div>
-              <div style="text-align:center"><div style="font-size:10px;color:#64748b;font-weight:600">COMMANDE</div><div style="font-size:13px;font-weight:600;color:#3b82f6">${p.orderQty||0} ${p.orderUnit||""}</div></div>
-            </div>
-          </div>
-          ${sup?`<div style="margin-top:8px;font-size:12px;color:#64748b">🏪 ${sup.name}</div>`:""}
-          `:`<div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:13px;color:#166534;font-weight:600">${stock} ${p.unit||""}</span>
-            <input class="stock-input" type="number" placeholder="+ qté" id="si_mg${p.id}"
-              onkeydown="if(event.key==='Enter') commitStock('${p.id}','si_mg${p.id}')"
-              onblur="commitStock('${p.id}','si_mg${p.id}')" style="width:80px;height:30px;font-size:12px"/>
-          </div>`}
-        </div>`;
+        html+=buildCard({
+          id:p.id, name:p.name, section:p.section, showSection:activeSection==="Toutes",
+          st:getStatus(p), stock:getCurrentStock(p),
+          minimum:p.minimum, orderQty:p.orderQty, orderUnit:p.orderUnit, unitsPerBox:p.unitsPerBox,
+          supplierId:p.supplierId,
+          inputId:`si_m${p.id}`, showInput:true, showOrderBtn:false, showSupplier:false
+        });
       });
-      html+=`</div>`;
     } else {
+      // ── Desktop table ──
       html+=`<div class="overflow"><table><thead><tr>
         ${isAdmin?`<th style="width:30px"></th>`:""}
-        <th>Produit</th>
-        <th>Stock actuel</th>
-        <th>Mettre à jour</th>
+        <th>Produit</th><th>Stock actuel</th><th>Mettre à jour</th>
         <th>Minimum</th><th>Fournisseur</th><th>Statut</th><th>À commander</th>
         ${isAdmin?`<th></th>`:""}
       </tr></thead><tbody id="product-tbody">`;
       filtered.forEach(p=>{
         const st=getStatus(p), stock=getCurrentStock(p);
         const sup=suppliers.find(s=>s.id===p.supplierId);
-        const borderColor=st==="red"?"#fecaca":st==="yellow"?"#fde68a":"#e2e8f0";
+        const borderColor=st==="red"?"#ef4444":st==="yellow"?"#eab308":"#22c55e";
+        const nameColor=st==="red"?"#991b1b":st==="yellow"?"#854d0e":"#1e293b";
+        const stockColor=st==="red"?"#991b1b":st==="yellow"?"#854d0e":"#166534";
         html+=`<tr data-id="${p.id}" style="border-left:3px solid ${borderColor}"
           ${isAdmin?`draggable="true" ondragstart="dragStart(event,'${p.id}')" ondragover="dragOver(event,'${p.id}')" ondrop="dropOn(event,'${p.id}')" ondragleave="dragLeave(event)" ondragend="dragEnd(event)"`:""}
         >
           ${isAdmin?`<td style="padding:0 4px"><span class="drag-handle">⠿</span></td>`:""}
-          <td>
-            <strong style="color:${st==="red"?"#991b1b":st==="yellow"?"#854d0e":"#1e293b"}">${p.name}</strong>
-            <div style="font-size:11px;color:#94a3b8">${p.unit||""}${activeSection==="Toutes"?` · ${p.section}`:""}</div>
-          </td>
-          <td><span class="stock-val ${st}">${stock} <span style="font-size:11px;font-weight:400;color:#94a3b8">${p.unit||""}</span></span></td>
-          <td>
-            <input class="stock-input" type="number" placeholder="Qté restante" id="si_${p.id}"
-              onkeydown="if(event.key==='Enter') commitStock('${p.id}','si_${p.id}')"
-              onblur="commitStock('${p.id}','si_${p.id}')"/>
-          </td>
+          <td><strong style="color:${nameColor}">${p.name}</strong>${activeSection==="Toutes"?`<div style="font-size:11px;color:#94a3b8">${p.section}</div>`:""}</td>
+          <td><span class="stock-val ${st}">${stock}</span></td>
+          <td><input class="stock-input" type="number" placeholder="Qté restante" id="si_${p.id}" style="width:100px"
+            onkeydown="if(event.key==='Enter') commitStock('${p.id}','si_${p.id}')"
+            onblur="commitStock('${p.id}','si_${p.id}')"/></td>
           <td style="text-align:center">${p.minimum||0}</td>
-          <td>${sup?sup.name:"—"}</td>
+          <td style="color:#64748b;font-size:13px">${sup?sup.name:"—"}</td>
           <td><span class="status-badge ${st}">${statusLabel(st)}</span></td>
-          <td style="font-weight:600;color:#3b82f6">${p.orderQty||0} ${p.orderUnit==="boîte"?`boîte${p.orderQty>1?"s":""} <span style="font-size:11px;color:#94a3b8;font-weight:400">(${(p.orderQty||0)*(p.unitsPerBox||1)} unités)</span>`:`unité${p.orderQty>1?"s":""}`}</td>
-          ${isAdmin?`<td>
-            <div class="menu-wrap">
-              <button class="dots-btn" onclick="toggleDrop('${p.id}')">⋯</button>
-              <div class="dropdown" id="drop-${p.id}">
-                <button onclick="editProduct('${p.id}');closeAllDrops()">✏️ Modifier</button>
-                <button onclick="openMoveModal('${p.id}');closeAllDrops()">📁 Changer catégorie</button>
-                <div class="sep"></div>
-                <button style="color:#ef4444" onclick="askDeleteProduct('${p.id}','${p.name.replace(/'/g,"\\'")}');closeAllDrops()">🗑️ Supprimer</button>
-              </div>
+          <td style="font-weight:600;color:#3b82f6">${orderLabel(p)}${p.orderUnit==="boîte"?`<div style="font-size:11px;color:#94a3b8">${(p.orderQty||0)*(p.unitsPerBox||1)} unités</div>`:""}</td>
+          ${isAdmin?`<td><div class="menu-wrap">
+            <button class="dots-btn" onclick="toggleDrop('${p.id}')">⋯</button>
+            <div class="dropdown" id="drop-${p.id}">
+              <button onclick="editProduct('${p.id}');closeAllDrops()">✏️ Modifier</button>
+              <button onclick="openMoveModal('${p.id}');closeAllDrops()">📁 Changer catégorie</button>
+              <div class="sep"></div>
+              <button style="color:#ef4444" onclick="askDeleteProduct('${p.id}','${p.name.replace(/'/g,"\\'")}');closeAllDrops()">🗑️ Supprimer</button>
             </div>
-          </td>`:""}
+          </div></td>`:""}
         </tr>`;
       });
       html+=`</tbody></table></div>`;
     }
   }
 
-  // ── RAPPORT ──
+  // ── RAPPORT ────────────────────────────────────────────
   if(activeTab==="rapport"){
     html+=`<div class="toolbar">
-      <div>
-        <h2 style="font-size:18px;color:#1e293b">Rapport de commande</h2>
-        <p style="color:#64748b;font-size:13px;margin-top:4px">Produits sous le minimum ou à moins de 20% du seuil</p>
-      </div>
+      <div><h2 style="font-size:18px;color:#1e293b">Rapport de commande</h2>
+      <p style="color:#64748b;font-size:13px;margin-top:4px">Produits sous le minimum ou à moins de 20% du seuil</p></div>
       <button class="btn-primary" ${!toOrder.length?"disabled":""} onclick="printReport()">🖨️ Exporter</button>
     </div>`;
     if(!toOrder.length){
@@ -551,54 +516,26 @@ function render(){
         <div class="summary-card" style="border-color:#ef4444;background:#fff"><div style="font-weight:700;font-size:22px;color:#991b1b">${redCnt}</div><div style="font-size:13px;color:#991b1b">⚠️ À commander immédiatement</div></div>
         <div class="summary-card" style="border-color:#eab308;background:#fff"><div style="font-weight:700;font-size:22px;color:#854d0e">${yelCnt}</div><div style="font-size:13px;color:#854d0e">🟡 Bientôt bas</div></div>
       </div>`;
-
       getAllSections().filter(s=>s!=="Toutes").forEach(section=>{
         const items=toOrder.filter(p=>p.section===section).sort((a,b)=>STATUS_ORDER[getStatus(a)]-STATUS_ORDER[getStatus(b)]);
         if(!items.length) return;
-        html+=`<h3 style="font-size:14px;color:#475569;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">📁 ${section}</h3>
+        html+=`<h3 style="font-size:13px;color:#475569;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">📁 ${section}</h3>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:24px">`;
-
         items.forEach(p=>{
-          const st=getStatus(p), stock=getCurrentStock(p);
-          const sup=suppliers.find(s=>s.id===p.supplierId);
-          const borderColor=st==="red"?"#ef4444":"#eab308";
-          const titleColor=st==="red"?"#991b1b":"#854d0e";
-          const isBox=p.orderUnit==="boîte";
-          const unitsToAdd=(p.orderQty||0)*(p.unitsPerBox||1);
-          const orderLabel=isBox
-            ? `${p.orderQty} boîte${p.orderQty>1?"s":""} <span style="color:#94a3b8;font-size:11px">(${unitsToAdd} unités)</span>`
-            : `${p.orderQty} unité${p.orderQty>1?"s":""}`;
-
-          html+=`<div style="background:#fff;border:1px solid ${borderColor};border-radius:12px;padding:16px">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
-              <div>
-                <div style="font-weight:700;font-size:15px;color:${titleColor}">${p.name}</div>
-                ${sup?`<div style="font-size:12px;color:#64748b;margin-top:2px">🏪 ${sup.name}${sup.contact?` · ${sup.contact}`:""}</div>`:""}
-              </div>
-              <span class="status-badge ${st}">${statusLabel(st)}</span>
-            </div>
-            <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">
-              <div style="background:#f8fafc;border-radius:8px;padding:8px 12px;flex:1;min-width:80px">
-                <div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-bottom:2px">Stock actuel</div>
-                <div style="font-weight:700;font-size:18px;color:${titleColor}">${stock}</div>
-              </div>
-              <div style="background:#eff6ff;border-radius:8px;padding:8px 12px;flex:1;min-width:80px">
-                <div style="font-size:10px;color:#3b82f6;font-weight:600;text-transform:uppercase;margin-bottom:2px">À commander</div>
-                <div style="font-weight:700;font-size:15px;color:#1d4ed8">${orderLabel}</div>
-              </div>
-            </div>
-            <button onclick="markOrdered('${p.id}')"
-              style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
-              ✅ Commandé — Ajouter au stock
-            </button>
-          </div>`;
+          html+=buildCard({
+            id:p.id, name:p.name, section:p.section, showSection:false,
+            st:getStatus(p), stock:getCurrentStock(p),
+            minimum:p.minimum, orderQty:p.orderQty, orderUnit:p.orderUnit, unitsPerBox:p.unitsPerBox,
+            supplierId:p.supplierId,
+            inputId:null, showInput:false, showOrderBtn:true, showSupplier:true
+          });
         });
         html+=`</div>`;
       });
     }
   }
 
-  // ── FOURNISSEURS ──
+  // ── FOURNISSEURS ───────────────────────────────────────
   if(activeTab==="fournisseurs"){
     html+=`<div class="toolbar">
       <h2 style="font-size:18px;color:#1e293b">Fournisseurs</h2>
@@ -648,57 +585,47 @@ function setSection(s){ activeSection=s; searchQuery=""; render(); }
 function setSearch(v){ searchQuery=v; render(); }
 function toggleSections(){ sectionsExpanded=!sectionsExpanded; render(); }
 
-// Stock = remplacement direct (qté restante)
-async function commitStock(id, inputId){
+async function commitStock(id,inputId){
   const input=document.getElementById(inputId);
   if(!input||input.value==="") return;
-  const newStock=Number(input.value);
-  await db.collection("products").doc(id).update({currentStock:newStock});
+  await db.collection("products").doc(id).update({currentStock:Number(input.value)});
   input.value="";
 }
 
-// ── DRAG & DROP ───────────────────────────────────────────
+async function markOrdered(id){
+  const p=products.find(x=>x.id===id); if(!p) return;
+  const units=(p.orderQty||0)*(p.orderUnit==="boîte"?(p.unitsPerBox||1):1);
+  const newStock=Number(p.currentStock||0)+units;
+  openConfirm("✅ Confirmer la réception",
+    `Ajouter ${units} unité${units>1?"s":""} au stock de "${p.name}" ? (${Number(p.currentStock||0)} → ${newStock})`,
+    async()=>await db.collection("products").doc(id).update({currentStock:newStock}));
+}
+
 function dragStart(e,id){ dragSrcId=id; setTimeout(()=>{const tr=document.querySelector(`tr[data-id="${id}"]`);if(tr)tr.classList.add("dragging");},0); }
 function dragOver(e,id){ e.preventDefault(); const tr=document.querySelector(`tr[data-id="${id}"]`);if(tr&&id!==dragSrcId)tr.classList.add("drag-over"); }
-function dragLeave(e){ document.querySelectorAll("tr.drag-over").forEach(r=>r.classList.remove("drag-over")); }
-function dragEnd(e){ document.querySelectorAll("tr.dragging,tr.drag-over").forEach(r=>r.classList.remove("dragging","drag-over")); }
+function dragLeave(){ document.querySelectorAll("tr.drag-over").forEach(r=>r.classList.remove("drag-over")); }
+function dragEnd(){ document.querySelectorAll("tr.dragging,tr.drag-over").forEach(r=>r.classList.remove("dragging","drag-over")); }
 async function dropOn(e,targetId){
   e.preventDefault(); dragEnd();
   if(!dragSrcId||dragSrcId===targetId) return;
   const tbody=document.getElementById("product-tbody"); if(!tbody) return;
   const ids=[...tbody.querySelectorAll("tr[data-id]")].map(r=>r.dataset.id);
-  const srcIdx=ids.indexOf(dragSrcId), tgtIdx=ids.indexOf(targetId);
-  if(srcIdx<0||tgtIdx<0) return;
-  ids.splice(srcIdx,1); ids.splice(tgtIdx,0,dragSrcId);
+  const si=ids.indexOf(dragSrcId), ti=ids.indexOf(targetId);
+  if(si<0||ti<0) return;
+  ids.splice(si,1); ids.splice(ti,0,dragSrcId);
   const batch=db.batch();
   ids.forEach((id,i)=>batch.update(db.collection("products").doc(id),{sortOrder:i}));
   await batch.commit(); dragSrcId=null;
 }
 
-// ── MARK AS ORDERED ───────────────────────────────────────
-async function markOrdered(id){
-  const p=products.find(x=>x.id===id); if(!p) return;
-  const isBox=p.orderUnit==="boîte";
-  const unitsToAdd=(p.orderQty||0)*(isBox ? (p.unitsPerBox||1) : 1);
-  const newStock=Number(p.currentStock||0)+unitsToAdd;
-  openConfirm(
-    "✅ Confirmer la réception",
-    `Ajouter ${unitsToAdd} unité${unitsToAdd>1?"s":""} au stock de "${p.name}" ? (${Number(p.currentStock||0)} → ${newStock})`,
-    async()=>{ await db.collection("products").doc(id).update({currentStock:newStock}); }
-  );
-}
+function askDeleteProduct(id,name){ openConfirm("🗑️ Supprimer",`Supprimer "${name}" ?`,()=>db.collection("products").doc(id).delete(),true); }
+function askDeleteSupplier(id,name){ openConfirm("🗑️ Supprimer",`Supprimer "${name}" ?`,()=>db.collection("suppliers").doc(id).delete(),true); }
 
-// ── DELETE ────────────────────────────────────────────────
-function askDeleteProduct(id,name){ openConfirm("🗑️ Supprimer le produit",`Voulez-vous vraiment supprimer "${name}" ?`,()=>db.collection("products").doc(id).delete(), true); }
-function askDeleteSupplier(id,name){ openConfirm("🗑️ Supprimer le fournisseur",`Voulez-vous vraiment supprimer "${name}" ?`,()=>db.collection("suppliers").doc(id).delete(), true); }
-
-// ── MOVE CATEGORY ─────────────────────────────────────────
 function openMoveModal(id){
   movingProductId=id; const p=products.find(x=>x.id===id); if(!p) return;
   document.getElementById("move-product-name").textContent=p.name;
   const sel=document.getElementById("move-section");
-  const secs=getAllSections().filter(s=>s!=="Toutes");
-  sel.innerHTML=secs.map(s=>`<option value="${s}" ${s===p.section?"selected":""}>${s}</option>`).join("");
+  sel.innerHTML=getAllSections().filter(s=>s!=="Toutes").map(s=>`<option value="${s}" ${s===p.section?"selected":""}>${s}</option>`).join("");
   document.getElementById("modal-move").style.display="flex";
 }
 function closeMoveModal(){ document.getElementById("modal-move").style.display="none"; movingProductId=null; }
@@ -708,38 +635,33 @@ async function confirmMove(){
   closeMoveModal();
 }
 
-// ── PRODUCT MODAL ─────────────────────────────────────────
 function toggleBoxFields(){
   const isBox=document.getElementById("p-orderunit")?.value==="boîte";
-  const bf=document.getElementById("box-fields");
-  const uf=document.getElementById("unit-fields");
-  if(bf) bf.style.display=isBox?"block":"none";
-  if(uf) uf.style.display=isBox?"none":"block";
+  document.getElementById("box-fields").style.display=isBox?"block":"none";
+  document.getElementById("unit-fields").style.display=isBox?"none":"block";
 }
-
 function openProductModal(){
   if(!isAdmin) return; editingProductId=null;
   document.getElementById("modal-product-title").textContent="Ajouter un produit";
   document.getElementById("p-name").value="";
   document.getElementById("p-stock").value=0;
+  document.getElementById("p-minimum").value=0;
   document.getElementById("p-orderqty").value=0;
   document.getElementById("p-orderqty-unit").value=0;
   document.getElementById("p-unitsperbox").value=1;
-  document.getElementById("p-minimum").value=0;
   document.getElementById("p-orderunit").value="unité";
   document.getElementById("p-supplier").value="";
   toggleBoxFields();
   document.getElementById("modal-product").style.display="flex";
 }
 function closeProductModal(){ document.getElementById("modal-product").style.display="none"; }
-
 function editProduct(id){
   if(!isAdmin) return; const p=products.find(x=>x.id===id); if(!p) return;
   editingProductId=id;
   document.getElementById("modal-product-title").textContent="Modifier le produit";
   document.getElementById("p-name").value=p.name||"";
-  document.getElementById("p-minimum").value=p.minimum||0;
   document.getElementById("p-stock").value=p.currentStock||0;
+  document.getElementById("p-minimum").value=p.minimum||0;
   document.getElementById("p-orderunit").value=p.orderUnit||"unité";
   document.getElementById("p-unitsperbox").value=p.unitsPerBox||1;
   document.getElementById("p-orderqty").value=p.orderQty||0;
@@ -749,21 +671,17 @@ function editProduct(id){
   toggleBoxFields();
   document.getElementById("modal-product").style.display="flex";
 }
-
 async function saveProduct(){
   const name=document.getElementById("p-name").value.trim(); if(!name) return alert("Entrez un nom.");
   const orderUnit=document.getElementById("p-orderunit").value;
   const isBox=orderUnit==="boîte";
-  const orderQty=isBox ? Number(document.getElementById("p-orderqty").value) : Number(document.getElementById("p-orderqty-unit").value);
-  const unitsPerBox=isBox ? Number(document.getElementById("p-unitsperbox").value) : 1;
-  const data={
-    name, unit:"unité",
-    orderUnit, orderQty, unitsPerBox,
+  const orderQty=isBox?Number(document.getElementById("p-orderqty").value):Number(document.getElementById("p-orderqty-unit").value);
+  const unitsPerBox=isBox?Number(document.getElementById("p-unitsperbox").value):1;
+  const data={name,unit:"unité",orderUnit,orderQty,unitsPerBox,
     minimum:Number(document.getElementById("p-minimum").value),
     currentStock:Number(document.getElementById("p-stock").value),
     section:document.getElementById("p-section").value,
-    supplierId:document.getElementById("p-supplier").value
-  };
+    supplierId:document.getElementById("p-supplier").value};
   if(editingProductId){
     const p=products.find(x=>x.id===editingProductId);
     await db.collection("products").doc(editingProductId).set({...p,...data,id:editingProductId});
@@ -774,7 +692,6 @@ async function saveProduct(){
   closeProductModal();
 }
 
-// ── CATEGORY MODAL ────────────────────────────────────────
 function openCategoryModal(){ renderCatList(); document.getElementById("cat-new").value=""; document.getElementById("modal-category").style.display="flex"; }
 function closeCategoryModal(){ document.getElementById("modal-category").style.display="none"; }
 function renderCatList(){
@@ -794,17 +711,16 @@ async function addCategory(){
 }
 async function renameCategory(i,newName){
   const t=newName.trim(); if(!t||t===customSections[i]) return;
-  const updated=[...customSections]; updated[i]=t;
-  await db.collection("settings").doc("sections").set({custom:updated});
+  const u=[...customSections]; u[i]=t;
+  await db.collection("settings").doc("sections").set({custom:u});
 }
 function askDeleteCategory(i,name){
-  openConfirm("🗑️ Supprimer la catégorie",`Supprimer "${name}" ? Les produits ne seront pas supprimés.`,async()=>{
+  openConfirm("🗑️ Supprimer",`Supprimer la catégorie "${name}" ?`,async()=>{
     await db.collection("settings").doc("sections").set({custom:customSections.filter((_,j)=>j!==i)});
     renderCatList();
-  }, true);
+  },true);
 }
 
-// ── SUPPLIER MODAL ────────────────────────────────────────
 function openSupplierModal(){ if(!isAdmin) return; editingSupplierID=null; document.getElementById("modal-supplier-title").textContent="Ajouter un fournisseur"; ["s-name","s-contact","s-email","s-notes"].forEach(id=>document.getElementById(id).value=""); document.getElementById("modal-supplier").style.display="flex"; }
 function closeSupplierModal(){ document.getElementById("modal-supplier").style.display="none"; }
 function editSupplier(id){
@@ -837,16 +753,15 @@ function printReport(){
   const rows=toOrder.map(p=>{
     const sup=suppliers.find(s=>s.id===p.supplierId),st=getStatus(p),stock=getCurrentStock(p);
     return `<tr style="border-left:4px solid ${st==="red"?"#ef4444":"#eab308"}">
-      <td>${p.name}<br/><small style="color:#94a3b8">${p.unit||""}</small></td><td>${p.section}</td>
-      <td>${stock}</td><td>${p.minimum||0}</td><td>${p.orderQty||0} ${p.orderUnit||""}</td>
+      <td>${p.name}</td><td>${p.section}</td><td>${stock}</td><td>${p.minimum||0}</td>
+      <td>${orderLabel(p)}${p.orderUnit==="boîte"?` (${(p.orderQty||0)*(p.unitsPerBox||1)} unités)`:""}</td>
       <td>${sup?sup.name:"—"}</td><td>${sup?sup.contact||"—":"—"}</td><td>${statusLabel(st)}</td></tr>`;
   }).join("");
   const win=window.open("","_blank");
   win.document.write(`<!DOCTYPE html><html><head><title>Rapport Bochica</title>
   <style>body{font-family:system-ui,sans-serif;padding:32px}table{width:100%;border-collapse:collapse;font-size:13px}th{padding:10px;background:#f1f5f9;text-align:left;font-size:11px;text-transform:uppercase;color:#64748b}td{padding:10px;border-bottom:1px solid #e2e8f0}@media print{button{display:none}}</style></head>
   <body><div style="font-size:26px;font-weight:900;letter-spacing:4px">BOCHICA</div>
-  <div style="font-size:13px;color:#475569;margin-bottom:4px">Restaurant Colombien</div>
-  <div style="display:flex;height:3px;width:200px;margin-bottom:14px"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
+  <div style="display:flex;height:3px;width:200px;margin:6px 0 14px"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
   <h2 style="margin-bottom:4px">Rapport de commande</h2>
   <p style="color:#64748b;font-size:13px;margin-bottom:16px">${new Date().toLocaleDateString("fr-CA",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</p>
   <table><thead><tr><th>Produit</th><th>Section</th><th>Stock</th><th>Min</th><th>À commander</th><th>Fournisseur</th><th>Contact</th><th>Statut</th></tr></thead>
