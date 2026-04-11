@@ -289,14 +289,10 @@ function getStatus(p){
 function statusLabel(st){ return st==="red"?"⚠️ Commander":st==="yellow"?"🟡 Bientôt bas":"✅ OK"; }
 
 // ── Firebase ──────────────────────────────────────────────
-db.collection("products").orderBy("sortOrder","asc").onSnapshot(snap=>{
-  products=snap.docs.map(d=>({id:d.id,...d.data()}));
+db.collection("products").onSnapshot(snap=>{
+  products=snap.docs.map(d=>({id:d.id,...d.data()}))
+    .sort((a,b)=>(a.sortOrder??999)-(b.sortOrder??999));
   if(isLoggedIn) render(); else showLogin();
-}).catch(()=>{
-  db.collection("products").onSnapshot(snap=>{
-    products=snap.docs.map(d=>({id:d.id,...d.data()}));
-    if(isLoggedIn) render(); else showLogin();
-  });
 });
 db.collection("suppliers").onSnapshot(snap=>{ suppliers=snap.docs.map(d=>({id:d.id,...d.data()})); if(isLoggedIn) render(); });
 db.collection("settings").doc("sections").onSnapshot(snap=>{ customSections=snap.exists?snap.data().custom||[]:[];  if(isLoggedIn) render(); });
