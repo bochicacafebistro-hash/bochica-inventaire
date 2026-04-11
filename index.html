@@ -281,7 +281,7 @@ initDark();
 // ── Firebase listeners ───────────────────────────────────
 db.collection("products").onSnapshot(snap=>{products=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.sortOrder??999)-(b.sortOrder??999));if(isLoggedIn)renderPage();});
 db.collection("suppliers").onSnapshot(snap=>{suppliers=snap.docs.map(d=>({id:d.id,...d.data()}));if(isLoggedIn)renderPage();});
-db.collection("settings").doc("sections").onSnapshot(snap=>{customSections=snap.exists?snap.data().custom||[]:[];if(isLoggedIn)renderPage();});
+db.collection("settings").doc("sections").onSnapshot(snap=>{customSections=snap.exists?snap.data().custom||:[];if(isLoggedIn)renderPage();});
 db.collection("logs").orderBy("ts","desc").limit(300).onSnapshot(snap=>{logs=snap.docs.map(d=>({id:d.id,...d.data()}));if(isLoggedIn&&activePage==="historique")renderPage();});
 db.collection("employees").onSnapshot(snap=>{employees=snap.docs.map(d=>({id:d.id,...d.data()}));if(isLoggedIn&&activePage==="employes")renderPage();});
 db.collection("tasks").onSnapshot(snap=>{tasks=snap.docs.map(d=>({id:d.id,...d.data()}));if(isLoggedIn&&["taches","inventaire"].includes(activePage))renderPage();});
@@ -334,7 +334,7 @@ function buildSidebar(){
   const nav=document.getElementById("sidebar-nav"); if(!nav)return;
   const employeeNav=[{icon:"📦",label:"Inventaire",page:"inventaire"},{icon:"📋",label:"Mes tâches",page:"taches"}];
   const adminNav=[
-    {section:"INVENTAIRE"},{icon:"📦",label:"Inventaire",page:"inventaire"},{icon:"📋",label:"Historique",page:"historique"},
+    {section:"INVENTAIRE"},{icon:"📦",label:"Inventaire",page:"inventaire"},{icon:"📋",label:"Rapport",page:"rapport"},{icon:"🕐",label:"Historique",page:"historique"},
     {section:"DASHBOARD"},{icon:"📋",label:"Tâches",page:"taches"},{icon:"👥",label:"Employés & Horaires",page:"employes"},
     {icon:"💰",label:"Dépenses",page:"depenses"},{icon:"🍽️",label:"Menu",page:"menu"},
     {section:"GESTION"},{icon:"🏪",label:"Fournisseurs",page:"fournisseurs"},
@@ -379,6 +379,7 @@ function renderPage(){
   if(al)al.innerHTML=lowCount>0?`<div class="alert-pill">⚠️ ${lowCount}</div>`:"";
   const pc=document.getElementById("page-content"); if(!pc)return;
   if(activePage==="inventaire")pc.innerHTML=renderInventaire();
+  else if(activePage==="rapport")pc.innerHTML=renderRapport();
   else if(activePage==="historique"&&isAdmin)pc.innerHTML=renderHistorique();
   else if(activePage==="taches")pc.innerHTML=renderTaches();
   else if(activePage==="employes"&&isAdmin)pc.innerHTML=renderEmployes();
@@ -500,6 +501,38 @@ function buildInvCard(p,showInput,showOrderBtn){
 // RAPPORT — in Inventaire as sub-tab? No — added as section in INVENTAIRE sidebar
 // Actually render rapport items inside inventaire when needed — kept as a separate page nav below
 // ══════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════
+// RAPPORT
+// ══════════════════════════════════════════════════════════
+function renderRapport(){
+  const activeProducts=products.filter(p=>!p.archived);
+  const toOrder=activeProducts.filter(p=>["red","yellow"].includes(getStatus(p))).sort((a,b)=>STATUS_ORDER[getStatus(a)]-STATUS_ORDER[getStatus(b)]);
+  const redCnt=toOrder.filter(p=>getStatus(p)==="red").length;
+  const yelCnt=toOrder.filter(p=>getStatus(p)==="yellow").length;
+  let h=`<div class="page">
+    <div class="toolbar">
+      <div><h2 style="font-size:18px">Rapport de commande</h2>
+      <p style="font-size:13px;color:var(--text3);margin-top:2px">Produits sous le minimum ou à moins de 20% du seuil</p></div>
+      <button class="btn btn-secondary" onclick="printReport()">🖨️ Exporter</button>
+    </div>`;
+  if(!toOrder.length){
+    return h+`<div class="empty"><div style="font-size:48px;margin-bottom:8px">✅</div>Tous les produits sont en quantité suffisante !</div></div>`;
+  }
+  h+=`<div class="summary-cards">
+    <div class="summary-card" style="border-color:#ef4444"><div style="font-weight:700;font-size:22px;color:#ef4444">${redCnt}</div><div style="font-size:13px;color:#ef4444">⚠️ À commander immédiatement</div></div>
+    <div class="summary-card" style="border-color:#eab308"><div style="font-weight:700;font-size:22px;color:#eab308">${yelCnt}</div><div style="font-size:13px;color:#eab308">🟡 Bientôt bas</div></div>
+  </div>`;
+  getAllSections().filter(s=>s!=="Toutes").forEach(section=>{
+    const items=toOrder.filter(p=>p.section===section);
+    if(!items.length) return;
+    h+=`<h3 style="font-size:13px;color:var(--text2);border-bottom:2px solid var(--border);padding-bottom:6px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">📁 ${section}</h3>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:24px">`;
+    items.forEach(p=>{ h+=buildInvCard(p,false,true); });
+    h+=`</div>`;
+  });
+  return h+`</div>`;
+}
 
 // ══════════════════════════════════════════════════════════
 // HISTORIQUE
