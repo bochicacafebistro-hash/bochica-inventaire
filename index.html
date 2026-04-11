@@ -259,7 +259,7 @@
     <p class="confirm-msg" id="confirm-msg"></p>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeConfirm()">Annuler</button>
-      <button style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px" onclick="confirmAction()">Supprimer</button>
+      <button id="confirm-ok" style="background:#22c55e;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px" onclick="confirmAction()">Confirmer</button>
     </div>
   </div>
 </div>
@@ -365,7 +365,15 @@ function checkPin(){
 }
 
 // ── Confirm ───────────────────────────────────────────────
-function openConfirm(title,msg,action){ pendingConfirm=action; document.getElementById("confirm-title").textContent=title; document.getElementById("confirm-msg").textContent=msg; document.getElementById("modal-confirm").style.display="flex"; }
+function openConfirm(title,msg,action,isDanger=false){ 
+  pendingConfirm=action; 
+  document.getElementById("confirm-title").textContent=title; 
+  document.getElementById("confirm-msg").textContent=msg; 
+  const btn=document.getElementById("confirm-ok");
+  btn.textContent=isDanger?"Supprimer":"Confirmer";
+  btn.style.background=isDanger?"#ef4444":"#22c55e";
+  document.getElementById("modal-confirm").style.display="flex"; 
+}
 function closeConfirm(){ document.getElementById("modal-confirm").style.display="none"; pendingConfirm=null; }
 function confirmAction(){ if(pendingConfirm) pendingConfirm(); closeConfirm(); }
 
@@ -682,8 +690,8 @@ async function markOrdered(id){
 }
 
 // ── DELETE ────────────────────────────────────────────────
-function askDeleteProduct(id,name){ openConfirm("🗑️ Supprimer le produit",`Voulez-vous vraiment supprimer "${name}" ?`,()=>db.collection("products").doc(id).delete()); }
-function askDeleteSupplier(id,name){ openConfirm("🗑️ Supprimer le fournisseur",`Voulez-vous vraiment supprimer "${name}" ?`,()=>db.collection("suppliers").doc(id).delete()); }
+function askDeleteProduct(id,name){ openConfirm("🗑️ Supprimer le produit",`Voulez-vous vraiment supprimer "${name}" ?`,()=>db.collection("products").doc(id).delete(), true); }
+function askDeleteSupplier(id,name){ openConfirm("🗑️ Supprimer le fournisseur",`Voulez-vous vraiment supprimer "${name}" ?`,()=>db.collection("suppliers").doc(id).delete(), true); }
 
 // ── MOVE CATEGORY ─────────────────────────────────────────
 function openMoveModal(id){
@@ -794,7 +802,7 @@ function askDeleteCategory(i,name){
   openConfirm("🗑️ Supprimer la catégorie",`Supprimer "${name}" ? Les produits ne seront pas supprimés.`,async()=>{
     await db.collection("settings").doc("sections").set({custom:customSections.filter((_,j)=>j!==i)});
     renderCatList();
-  });
+  }, true);
 }
 
 // ── SUPPLIER MODAL ────────────────────────────────────────
