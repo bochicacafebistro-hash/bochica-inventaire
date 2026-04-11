@@ -9,44 +9,33 @@
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:system-ui,sans-serif;background:#f8fafc;min-height:100vh}
-
-    /* HEADER */
     .header{background:linear-gradient(135deg,#1e293b,#334155);color:#fff;padding:14px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
     .logo-name{font-weight:900;font-size:22px;letter-spacing:4px;line-height:1}
     .logo-sub{font-size:10px;opacity:.7;letter-spacing:1px}
     .logo-bar{display:flex;height:2px;margin-top:3px;width:120px}
-
-    /* TABS */
     .tabs{display:flex;background:#fff;border-bottom:1px solid #e2e8f0;padding:0 24px;overflow-x:auto}
     .tab{padding:12px 20px;font-weight:600;font-size:14px;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:#64748b;white-space:nowrap}
     .tab.active{border-bottom:3px solid #3b82f6;color:#3b82f6}
-
-    /* CONTENT */
     .content{padding:24px;max-width:1300px;margin:0 auto}
-
-    /* SECTION TABS */
-    .section-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
-    .sec-btn{padding:7px 16px;border-radius:6px;border:1px solid #e2e8f0;cursor:pointer;font-weight:600;font-size:13px;background:#fff;color:#475569;transition:.15s}
+    .section-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+    .sec-btn{padding:7px 16px;border-radius:6px;border:1px solid #e2e8f0;cursor:pointer;font-weight:600;font-size:13px;background:#fff;color:#475569;transition:.15s;display:flex;align-items:center;gap:4px}
     .sec-btn:hover{background:#f1f5f9}
     .sec-btn.active{background:#3b82f6;color:#fff;border-color:#3b82f6}
-    .badge{background:#ef4444;color:#fff;border-radius:4px;padding:1px 5px;font-size:11px;margin-left:4px}
-
-    /* TOOLBAR */
+    .sec-delete{background:none;border:none;cursor:pointer;color:rgba(255,255,255,0.7);font-size:12px;padding:0 0 0 4px;line-height:1}
+    .sec-delete:hover{color:#fff}
+    .badge{background:#ef4444;color:#fff;border-radius:4px;padding:1px 5px;font-size:11px;margin-left:2px}
     .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap}
     .search-box{display:flex;align-items:center;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:6px 12px;gap:8px;flex:1;max-width:300px}
     .search-box input{border:none;outline:none;font-size:14px;color:#1e293b;width:100%;background:transparent}
-
-    /* BUTTONS */
     .btn-primary{background:#3b82f6;color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px;white-space:nowrap}
+    .btn-success{background:#22c55e;color:#fff;border:none;border-radius:6px;padding:5px 12px;font-weight:600;cursor:pointer;font-size:12px;white-space:nowrap}
+    .btn-success.done{background:#e2e8f0;color:#64748b;cursor:default}
     .btn-danger{background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:13px;margin-right:4px}
     .btn-edit{background:#3b82f6;color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:13px;margin-right:4px}
     .btn-cancel{padding:8px 18px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#f8fafc}
-    .btn-admin{background:transparent;border:1px solid rgba(255,255,255,0.35);color:rgba(255,255,255,0.85);border-radius:6px;padding:5px 13px;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:.3px;backdrop-filter:blur(4px)}
+    .btn-admin{background:transparent;border:1px solid rgba(255,255,255,0.35);color:rgba(255,255,255,0.85);border-radius:6px;padding:5px 13px;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:.3px}
     .btn-admin:hover{background:rgba(255,255,255,0.1)}
-    .btn-admin.active{border-color:rgba(255,255,255,0.5);color:#fff}
     .alert-pill{background:#ef4444;border-radius:4px;padding:5px 12px;font-size:13px;font-weight:600;color:#fff;white-space:nowrap}
-
-    /* TABLE */
     table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
     th{padding:10px 12px;text-align:left;font-weight:600;font-size:12px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;background:#f1f5f9}
     td{padding:10px 12px;vertical-align:middle;border-bottom:1px solid #e2e8f0}
@@ -56,14 +45,14 @@
     .today-td{background:#f0f9ff !important}
     .day-input{width:56px;border:1px solid #cbd5e1;border-radius:4px;padding:3px 4px;text-align:center;font-size:13px}
     .day-input:focus{border-color:#3b82f6;outline:none}
-
-    /* STATUS */
     .status-badge{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap}
     .red{background:#fee2e2;border:2px solid #ef4444;color:#991b1b}
     .yellow{background:#fef9c3;border:2px solid #eab308;color:#854d0e}
     .green{background:#dcfce7;border:2px solid #22c55e;color:#166534}
-
-    /* MODALS */
+    .row-red{background:#fff5f5}
+    .row-yellow{background:#fffbeb}
+    .row-green{background:#fff}
+    .row-ordered{background:#f0fdf4 !important;opacity:.75}
     .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
     .modal{background:#fff;border-radius:14px;padding:24px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.2);max-height:90vh;overflow-y:auto}
     .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
@@ -75,8 +64,9 @@
     .form-row label{flex:1}
     .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:8px}
     .field-hint{font-size:11px;color:#94a3b8;font-weight:400;margin-top:2px}
-
-    /* MISC */
+    .confirm-modal{max-width:360px;text-align:center}
+    .confirm-modal p{color:#475569;font-size:14px;margin-bottom:20px;line-height:1.6}
+    .confirm-actions{display:flex;gap:8px;justify-content:center}
     .empty{text-align:center;color:#94a3b8;margin-top:60px;font-size:15px}
     .empty .icon{font-size:40px;margin-bottom:8px}
     .supplier-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
@@ -85,8 +75,7 @@
     .summary-cards{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
     .summary-card{flex:1;min-width:150px;border-radius:10px;padding:12px 16px;border:1px solid}
     .overflow{overflow-x:auto}
-
-    /* PIN */
+    .ordered-check{color:#22c55e;font-size:16px;font-weight:700}
     .pin-pad{display:flex;flex-direction:column;align-items:center;gap:16px}
     .pin-display{display:flex;gap:10px;margin:8px 0}
     .pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid #cbd5e1;background:#fff;transition:.2s}
@@ -95,8 +84,6 @@
     .pin-btn{width:64px;height:64px;border-radius:50%;border:2px solid #e2e8f0;background:#fff;font-size:22px;font-weight:700;cursor:pointer;color:#1e293b;transition:.1s}
     .pin-btn:active{background:#eff6ff;border-color:#3b82f6}
     .pin-error{color:#ef4444;font-size:13px;font-weight:600;min-height:20px;text-align:center}
-
-    /* MOBILE */
     @media(max-width:640px){
       .content{padding:12px}
       .tab{padding:10px 14px;font-size:13px}
@@ -116,7 +103,7 @@
 <body>
 <div id="app"></div>
 
-<!-- MODAL PIN LOGIN -->
+<!-- MODAL PIN -->
 <div id="modal-pin" class="modal-overlay" style="display:none">
   <div class="modal" style="max-width:340px">
     <div class="modal-header" style="justify-content:center;border:none">
@@ -125,26 +112,29 @@
     <p style="text-align:center;color:#94a3b8;font-size:13px;margin-bottom:16px">Entrez votre code PIN</p>
     <div class="pin-pad">
       <div class="pin-display">
-        <div class="pin-dot" id="dot0"></div>
-        <div class="pin-dot" id="dot1"></div>
-        <div class="pin-dot" id="dot2"></div>
-        <div class="pin-dot" id="dot3"></div>
+        <div class="pin-dot" id="dot0"></div><div class="pin-dot" id="dot1"></div>
+        <div class="pin-dot" id="dot2"></div><div class="pin-dot" id="dot3"></div>
       </div>
       <div class="pin-error" id="pin-error"></div>
       <div class="pin-grid">
-        <button class="pin-btn" onclick="pinPress('1')">1</button>
-        <button class="pin-btn" onclick="pinPress('2')">2</button>
-        <button class="pin-btn" onclick="pinPress('3')">3</button>
-        <button class="pin-btn" onclick="pinPress('4')">4</button>
-        <button class="pin-btn" onclick="pinPress('5')">5</button>
-        <button class="pin-btn" onclick="pinPress('6')">6</button>
-        <button class="pin-btn" onclick="pinPress('7')">7</button>
-        <button class="pin-btn" onclick="pinPress('8')">8</button>
-        <button class="pin-btn" onclick="pinPress('9')">9</button>
+        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="pin-btn" onclick="pinPress('${n}')">${n}</button>`).join("")}
         <button class="pin-btn" onclick="pinClear()" style="font-size:12px;color:#94a3b8">Effacer</button>
         <button class="pin-btn" onclick="pinPress('0')">0</button>
         <button class="pin-btn" onclick="pinBackspace()" style="font-size:18px">⌫</button>
       </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMATION -->
+<div id="modal-confirm" class="modal-overlay" style="display:none">
+  <div class="modal confirm-modal">
+    <div style="font-size:40px;margin-bottom:12px" id="confirm-icon">⚠️</div>
+    <h3 id="confirm-title" style="margin-bottom:12px">Confirmer</h3>
+    <p id="confirm-msg"></p>
+    <div class="confirm-actions">
+      <button class="btn-cancel" onclick="closeConfirm()">Annuler</button>
+      <button class="btn-danger" id="confirm-ok" onclick="executeConfirm()">Supprimer</button>
     </div>
   </div>
 </div>
@@ -226,18 +216,17 @@ const EMPLOYEE_PIN = "1234";
 // ─────────────────────────────────────────────────────────
 
 const DAYS = ["Ven","Dim"];
-const TODAY_JS = new Date().getDay(); // 0=Sun,5=Fri
-const TODAY = TODAY_JS === 0 ? "Dim" : TODAY_JS === 5 ? "Ven" : null;
-
+const TODAY_JS = new Date().getDay();
+const TODAY = TODAY_JS===0?"Dim":TODAY_JS===5?"Ven":null;
 const DEFAULT_SECTIONS = ["Cuisine","Emballage","Bar","Autre"];
 
 firebase.initializeApp({
-  apiKey: "AIzaSyC27HzALz_DoIN5huqGwVBsKTLHg37rUuc",
-  authDomain: "bochica-inventaire.firebaseapp.com",
-  projectId: "bochica-inventaire",
-  storageBucket: "bochica-inventaire.firebasestorage.app",
-  messagingSenderId: "261321722710",
-  appId: "1:261321722710:web:5a7aa0039fa0fd1a20a4f7"
+  apiKey:"AIzaSyC27HzALz_DoIN5huqGwVBsKTLHg37rUuc",
+  authDomain:"bochica-inventaire.firebaseapp.com",
+  projectId:"bochica-inventaire",
+  storageBucket:"bochica-inventaire.firebasestorage.app",
+  messagingSenderId:"261321722710",
+  appId:"1:261321722710:web:5a7aa0039fa0fd1a20a4f7"
 });
 const db = firebase.firestore();
 
@@ -246,6 +235,8 @@ let activeTab="inventaire", activeSection="Toutes";
 let editingProductId=null, editingSupplierID=null;
 let searchQuery="", mobileDay=TODAY||"Ven";
 let isAdmin=false, isLoggedIn=false, pinBuffer="";
+let orderedItems={}; // tracks which report items have been marked as ordered
+let confirmCallback=null;
 
 function genId(){ return Math.random().toString(36).slice(2,10); }
 function getAllSections(){ return ["Toutes",...DEFAULT_SECTIONS,...customSections]; }
@@ -261,9 +252,9 @@ function getStatus(p){
   if(s<=m*1.2) return "yellow";
   return "green";
 }
-function statusLabel(st){ return st==="red"?"⚠️ Commander":st==="yellow"?"🟡 Bientôt bas":"✅ OK"; }
+function statusLabel(st){ return st==="red"?"⚠️ À commander":st==="yellow"?"🟡 Bientôt bas":"✅ OK"; }
 
-// ── Firebase listeners ────────────────────────────────────
+// ── Firebase ──────────────────────────────────────────────
 db.collection("products").onSnapshot(snap=>{
   products=snap.docs.map(d=>({id:d.id,...d.data()}));
   if(isLoggedIn) render(); else showLogin();
@@ -277,17 +268,12 @@ db.collection("settings").doc("sections").onSnapshot(snap=>{
   if(isLoggedIn) render();
 });
 
-// ── Auto reset every Sunday at 23:00 ─────────────────────
+// ── Auto reset Sunday 23h ─────────────────────────────────
 function scheduleWeeklyReset(){
-  const now=new Date();
-  const next=new Date();
+  const now=new Date(), next=new Date();
   next.setDate(now.getDate()+((7-now.getDay())%7||7));
   next.setHours(23,0,0,0);
-  const ms=next-now;
-  setTimeout(async()=>{
-    await doWeekReset();
-    scheduleWeeklyReset();
-  }, ms);
+  setTimeout(async()=>{ await doWeekReset(); scheduleWeeklyReset(); }, next-now);
 }
 scheduleWeeklyReset();
 
@@ -295,12 +281,27 @@ async function doWeekReset(){
   const batch=db.batch();
   const weekKey=`semaine_${new Date().toISOString().slice(0,10)}`;
   products.forEach(p=>{
-    const archRef=db.collection("archives").doc(`${p.id}_${weekKey}`);
-    batch.set(archRef,{productId:p.id,name:p.name,section:p.section,weekOf:weekKey,dailyEntries:p.dailyEntries||{}});
+    batch.set(db.collection("archives").doc(`${p.id}_${weekKey}`),
+      {productId:p.id,name:p.name,section:p.section,weekOf:weekKey,dailyEntries:p.dailyEntries||{}});
     batch.update(db.collection("products").doc(p.id),{dailyEntries:{}});
   });
   await batch.commit();
+  orderedItems={};
 }
+
+// ── Confirm modal ─────────────────────────────────────────
+function showConfirm(icon, title, msg, btnLabel, btnClass, cb){
+  confirmCallback=cb;
+  document.getElementById("confirm-icon").textContent=icon;
+  document.getElementById("confirm-title").textContent=title;
+  document.getElementById("confirm-msg").textContent=msg;
+  const btn=document.getElementById("confirm-ok");
+  btn.textContent=btnLabel;
+  btn.className=btnClass;
+  document.getElementById("modal-confirm").style.display="flex";
+}
+function closeConfirm(){ document.getElementById("modal-confirm").style.display="none"; confirmCallback=null; }
+function executeConfirm(){ closeConfirm(); if(confirmCallback) confirmCallback(); }
 
 // ── Login ─────────────────────────────────────────────────
 function showLogin(){
@@ -310,9 +311,7 @@ function showLogin(){
       <div style="font-weight:900;font-size:34px;letter-spacing:6px;color:#fff">BOCHICA</div>
       <div style="font-size:12px;color:rgba(255,255,255,0.55);letter-spacing:2px;margin-top:4px">Restaurant Colombien</div>
       <div style="display:flex;height:3px;width:180px;margin:10px auto 0">
-        <div style="flex:1;background:#f5a623"></div>
-        <div style="flex:1;background:#4a90e2"></div>
-        <div style="flex:1;background:#e74c3c"></div>
+        <div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div>
       </div>
     </div>
     <div style="background:#fff;border-radius:20px;padding:32px 28px;width:100%;max-width:320px;box-shadow:0 25px 60px rgba(0,0,0,0.3)">
@@ -334,8 +333,7 @@ function showLogin(){
     </div>
   </div>`;
 }
-
-function logout(){ isAdmin=false; isLoggedIn=false; pinBuffer=""; showLogin(); }
+function logout(){ isAdmin=false; isLoggedIn=false; pinBuffer=""; orderedItems={}; showLogin(); }
 
 // ── PIN ───────────────────────────────────────────────────
 function openPinModal(){ pinBuffer=""; updatePinDots(); document.getElementById("pin-error").textContent=""; document.getElementById("modal-pin").style.display="flex"; }
@@ -344,34 +342,24 @@ function pinPress(d){ if(pinBuffer.length>=4) return; pinBuffer+=d; updatePinDot
 function pinClear(){ pinBuffer=""; updatePinDots(); }
 function pinBackspace(){ pinBuffer=pinBuffer.slice(0,-1); updatePinDots(); }
 function updatePinDots(){
-  for(let i=0;i<4;i++){
-    const dot=document.getElementById("dot"+i);
-    if(dot) dot.classList.toggle("filled",i<pinBuffer.length);
-  }
+  for(let i=0;i<4;i++){ const dot=document.getElementById("dot"+i); if(dot) dot.classList.toggle("filled",i<pinBuffer.length); }
 }
 function checkPin(){
   if(pinBuffer===ADMIN_PIN){ isAdmin=true; isLoggedIn=true; closePinModal(); render(); }
   else if(pinBuffer===EMPLOYEE_PIN){ isAdmin=false; isLoggedIn=true; closePinModal(); render(); }
-  else {
-    const err=document.getElementById("pin-error");
-    if(err) err.textContent="❌ Code PIN incorrect";
-    pinBuffer=""; updatePinDots();
-  }
+  else { const err=document.getElementById("pin-error"); if(err) err.textContent="❌ Code PIN incorrect"; pinBuffer=""; updatePinDots(); }
 }
 
 // ── RENDER ────────────────────────────────────────────────
 function render(){
+  const statusOrder={"red":0,"yellow":1,"green":2};
   const lowCount=products.filter(p=>["red","yellow"].includes(getStatus(p))).length;
-  const toOrder=products.filter(p=>["red","yellow"].includes(getStatus(p)));
+  const toOrder=products.filter(p=>["red","yellow"].includes(getStatus(p))).sort((a,b)=>statusOrder[getStatus(a)]-statusOrder[getStatus(b)]);
   const isMobile=window.innerWidth<=640;
   const allSec=getAllSections();
 
-  const statusOrder={"red":0,"yellow":1,"green":2};
   const filtered=products
-    .filter(p=>
-      (activeSection==="Toutes"||p.section===activeSection)&&
-      (searchQuery===""||p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    )
+    .filter(p=>(activeSection==="Toutes"||p.section===activeSection)&&(searchQuery===""||p.name.toLowerCase().includes(searchQuery.toLowerCase())))
     .sort((a,b)=>statusOrder[getStatus(a)]-statusOrder[getStatus(b)]);
 
   let html=`
@@ -380,21 +368,17 @@ function render(){
       <div class="logo-name">BOCHICA</div>
       <div class="logo-sub">Restaurant Colombien</div>
       <div class="logo-bar">
-        <div style="flex:1;background:#f5a623"></div>
-        <div style="flex:1;background:#4a90e2"></div>
-        <div style="flex:1;background:#e74c3c"></div>
+        <div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div>
       </div>
     </div>
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       ${lowCount>0?`<div class="alert-pill">⚠️ ${lowCount} à commander</div>`:""}
-      <button class="btn-admin ${isAdmin?"active":""}" onclick="logout()">
-        ${isAdmin?"👑 Admin":"👤 Employé"} — Déconnexion
-      </button>
+      <button class="btn-admin" onclick="logout()">${isAdmin?"👑 Admin":"👤 Employé"} — Déconnexion</button>
     </div>
   </div>
   <div class="tabs">
     <button class="tab ${activeTab==="inventaire"?"active":""}" onclick="setTab('inventaire')">📦 Inventaire</button>
-    <button class="tab ${activeTab==="rapport"?"active":""}" onclick="setTab('rapport')">📋 Rapport${lowCount>0?` (${lowCount})`:""}</button>
+    <button class="tab ${activeTab==="rapport"?"active":""}" onclick="setTab('rapport')">📋 À commander${lowCount>0?` (${lowCount})`:""}</button>
     <button class="tab ${activeTab==="fournisseurs"?"active":""}" onclick="setTab('fournisseurs')">🏪 Fournisseurs</button>
   </div>
   <div class="content">`;
@@ -404,9 +388,13 @@ function render(){
     html+=`<div class="section-tabs">`;
     allSec.forEach(s=>{
       const cnt=s==="Toutes"
-        ? products.filter(p=>["red","yellow"].includes(getStatus(p))).length
-        : products.filter(p=>p.section===s&&["red","yellow"].includes(getStatus(p))).length;
-      html+=`<button class="sec-btn ${s===activeSection?"active":""}" onclick="setSection('${s}')">${s}${cnt>0?`<span class="badge">${cnt}</span>`:""}</button>`;
+        ?products.filter(p=>["red","yellow"].includes(getStatus(p))).length
+        :products.filter(p=>p.section===s&&["red","yellow"].includes(getStatus(p))).length;
+      const isCustom=customSections.includes(s);
+      html+=`<button class="sec-btn ${s===activeSection?"active":""}" onclick="setSection('${s}')">
+        ${s}${cnt>0?`<span class="badge">${cnt}</span>`:""}
+        ${isAdmin&&isCustom?`<span class="sec-delete" onclick="event.stopPropagation();confirmDeleteCategory('${s}')">✕</span>`:""}
+      </button>`;
     });
     if(isAdmin) html+=`<button class="sec-btn" onclick="openCategoryModal()" style="border-style:dashed;color:#94a3b8">+ Catégorie</button>`;
     html+=`</div>
@@ -422,29 +410,21 @@ function render(){
       html+=`<div class="empty"><div class="icon">${searchQuery?"🔍":"📭"}</div>${searchQuery?`Aucun résultat pour "${searchQuery}"`:"Aucun produit dans cette section."}</div>`;
     } else if(isMobile){
       html+=`<div class="mobile-only mobile-day-selector">`;
-      DAYS.forEach(d=>{
-        const isToday=d===TODAY;
-        html+=`<button class="day-pill ${d===mobileDay?"active":""}" onclick="setMobileDay('${d}')">${d}${isToday?" 📍":""}</button>`;
-      });
+      DAYS.forEach(d=>{ html+=`<button class="day-pill ${d===mobileDay?"active":""}" onclick="setMobileDay('${d}')">${d}${d===TODAY?" 📍":""}</button>`; });
       html+=`</div><div class="mobile-cards">`;
       filtered.forEach(p=>{
         const st=getStatus(p), stock=getCurrentStock(p);
         const sup=suppliers.find(s=>s.id===p.supplierId);
-        const dayVal=p.dailyEntries?.[mobileDay]??"";
         html+=`<div class="mobile-card ${st}">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-            <div>
-              <strong style="font-size:15px">${p.name}</strong>
-              <div style="font-size:11px;color:#94a3b8">${p.unit||""} · Section: ${p.section}</div>
-            </div>
+            <div><strong style="font-size:15px">${p.name}</strong><div style="font-size:11px;color:#94a3b8">${p.unit||""} · ${p.section}</div></div>
             <span class="status-badge ${st}">${statusLabel(st)}</span>
           </div>
           <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
             <div style="display:flex;flex-direction:column;align-items:center">
               <span style="font-size:10px;color:#64748b;text-transform:uppercase;font-weight:600">${mobileDay}${mobileDay===TODAY?" 📍":""}</span>
-              <input class="day-input" type="number" value="${dayVal}" placeholder="—"
-                onchange="updateDaily('${p.id}','${mobileDay}',this.value)"
-                style="width:64px;height:36px;font-size:16px;margin-top:4px"/>
+              <input class="day-input" type="number" value="${p.dailyEntries?.[mobileDay]??""}" placeholder="—"
+                onchange="updateDaily('${p.id}','${mobileDay}',this.value)" style="width:64px;height:36px;font-size:16px;margin-top:4px"/>
             </div>
             <div style="display:flex;gap:12px">
               <div style="text-align:center"><div style="font-size:10px;color:#64748b;font-weight:600">STOCK</div><div class="${st}" style="font-weight:700;font-size:18px;padding:2px 8px;border-radius:6px">${stock}</div></div>
@@ -455,7 +435,7 @@ function render(){
           ${sup?`<div style="margin-top:8px;font-size:12px;color:#64748b">🏪 ${sup.name}</div>`:""}
           ${isAdmin?`<div style="display:flex;gap:6px;margin-top:10px">
             <button class="btn-edit" onclick="editProduct('${p.id}')">✏️ Modifier</button>
-            <button class="btn-danger" onclick="deleteProduct('${p.id}')">🗑️</button>
+            <button class="btn-danger" onclick="confirmDeleteProduct('${p.id}','${p.name.replace(/'/g,"\\'")}')">🗑️</button>
           </div>`:""}
         </div>`;
       });
@@ -470,12 +450,8 @@ function render(){
       filtered.forEach(p=>{
         const st=getStatus(p), stock=getCurrentStock(p);
         const sup=suppliers.find(s=>s.id===p.supplierId);
-        const rowBg=st==="red"?"#fff5f5":st==="yellow"?"#fffbeb":"#fff";
-        html+=`<tr style="background:${rowBg}">
-          <td>
-            <strong>${p.name}</strong>
-            <div style="font-size:11px;color:#94a3b8">${p.unit||""}${activeSection==="Toutes"?` · ${p.section}`:""}</div>
-          </td>
+        html+=`<tr class="row-${st}">
+          <td><strong>${p.name}</strong><div style="font-size:11px;color:#94a3b8">${p.unit||""}${activeSection==="Toutes"?` · ${p.section}`:""}</div></td>
           ${DAYS.map(d=>`<td class="${d===TODAY?"today-td":""}"><input class="day-input" type="number" value="${p.dailyEntries?.[d]??""}" placeholder="—" onchange="updateDaily('${p.id}','${d}',this.value)"/></td>`).join("")}
           <td class="${st}" style="font-weight:700;font-size:15px;text-align:center">${stock}</td>
           <td style="text-align:center">${p.minimum||0}</td>
@@ -484,7 +460,7 @@ function render(){
           <td style="font-weight:600;color:#3b82f6;text-align:center">${p.orderQty||0} <span style="font-size:11px;color:#94a3b8">${p.orderUnit||""}</span></td>
           ${isAdmin?`<td>
             <button class="btn-edit" onclick="editProduct('${p.id}')">✏️</button>
-            <button class="btn-danger" onclick="deleteProduct('${p.id}')">🗑️</button>
+            <button class="btn-danger" onclick="confirmDeleteProduct('${p.id}','${p.name.replace(/'/g,"\\'")}')">🗑️</button>
           </td>`:""}
         </tr>`;
       });
@@ -492,40 +468,53 @@ function render(){
     }
   }
 
-  // ── RAPPORT ──
+  // ── RAPPORT / À COMMANDER ──
   if(activeTab==="rapport"){
+    const pendingCount=toOrder.filter(p=>!orderedItems[p.id]).length;
     html+=`<div class="toolbar">
-      <div><h2 style="font-size:18px;color:#1e293b">Rapport de commande</h2>
-      <p style="color:#64748b;font-size:13px;margin-top:4px">Produits sous le minimum ou à moins de 20% du seuil</p></div>
+      <div>
+        <h2 style="font-size:18px;color:#1e293b">À commander</h2>
+        <p style="color:#64748b;font-size:13px;margin-top:4px">Produits sous le minimum ou à moins de 20% du seuil</p>
+      </div>
       <button class="btn-primary" ${!toOrder.length?"disabled":""} onclick="printReport()">🖨️ Exporter / Imprimer</button>
     </div>`;
+
     if(!toOrder.length){
       html+=`<div class="empty"><div class="icon">✅</div>Tous les produits sont en quantité suffisante !</div>`;
     } else {
-      const redCnt=toOrder.filter(p=>getStatus(p)==="red").length;
-      const yelCnt=toOrder.filter(p=>getStatus(p)==="yellow").length;
+      const redCnt=toOrder.filter(p=>getStatus(p)==="red"&&!orderedItems[p.id]).length;
+      const yelCnt=toOrder.filter(p=>getStatus(p)==="yellow"&&!orderedItems[p.id]).length;
+      const doneCnt=toOrder.filter(p=>orderedItems[p.id]).length;
       html+=`<div class="summary-cards">
         <div class="summary-card red" style="border-color:#ef4444"><div style="font-weight:700;font-size:22px;color:#991b1b">${redCnt}</div><div style="font-size:13px;color:#991b1b">⚠️ À commander immédiatement</div></div>
         <div class="summary-card yellow" style="border-color:#eab308"><div style="font-weight:700;font-size:22px;color:#854d0e">${yelCnt}</div><div style="font-size:13px;color:#854d0e">🟡 Bientôt bas</div></div>
+        <div class="summary-card green" style="border-color:#22c55e"><div style="font-weight:700;font-size:22px;color:#166534">${doneCnt}</div><div style="font-size:13px;color:#166534">✅ Déjà acheté</div></div>
       </div>`;
+
       getAllSections().filter(s=>s!=="Toutes").forEach(section=>{
         const items=toOrder.filter(p=>p.section===section);
         if(!items.length) return;
         html+=`<div style="margin-bottom:24px">
           <h3 style="font-size:15px;color:#475569;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px">📁 ${section}</h3>
           <div class="overflow"><table><thead><tr>
-            <th>Produit</th><th>Stock actuel</th><th>Minimum</th><th>À commander</th><th>Fournisseur</th><th>Contact</th><th>Statut</th>
+            <th>Produit</th><th>Stock actuel</th><th>Minimum</th><th>À commander</th><th>Fournisseur</th><th>Contact</th><th>Statut</th><th>Action</th>
           </tr></thead><tbody>`;
         items.forEach(p=>{
           const st=getStatus(p), stock=getCurrentStock(p);
           const sup=suppliers.find(s=>s.id===p.supplierId);
-          html+=`<tr style="background:${st==="red"?"#fff5f5":"#fffbeb"}">
+          const isOrdered=orderedItems[p.id];
+          html+=`<tr class="${isOrdered?"row-ordered":"row-"+st}">
             <td><strong>${p.name}</strong><br/><span style="font-size:11px;color:#94a3b8">${p.unit||""}</span></td>
-            <td class="${st}" style="font-weight:700;text-align:center">${stock}</td>
+            <td class="${isOrdered?"":st}" style="font-weight:700;text-align:center">${stock}</td>
             <td style="text-align:center">${p.minimum||0}</td>
-            <td style="font-weight:700;color:#3b82f6">${p.orderQty||0} ${p.orderUnit||""}</td>
-            <td>${sup?sup.name:"—"}</td><td>${sup?sup.contact||"—":"—"}</td>
-            <td><span class="status-badge ${st}">${statusLabel(st)}</span></td>
+            <td style="font-weight:700;color:#3b82f6">${p.orderQty||0} <span style="font-size:11px;color:#94a3b8">${p.orderUnit||""}</span></td>
+            <td>${sup?sup.name:"—"}</td>
+            <td>${sup?sup.contact||"—":"—"}</td>
+            <td>${isOrdered?`<span class="ordered-check">✅ Acheté</span>`:`<span class="status-badge ${st}">${statusLabel(st)}</span>`}</td>
+            <td>${isOrdered
+              ?`<button class="btn-success done" disabled>✅ Acheté</button>`
+              :`<button class="btn-success" onclick="markOrdered('${p.id}')">🛒 Acheté</button>`
+            }</td>
           </tr>`;
         });
         html+=`</tbody></table></div></div>`;
@@ -555,7 +544,7 @@ function render(){
             </div>
             ${isAdmin?`<div>
               <button class="btn-edit" onclick="editSupplier('${s.id}')">✏️</button>
-              <button class="btn-danger" onclick="deleteSupplier('${s.id}')">🗑️</button>
+              <button class="btn-danger" onclick="confirmDeleteSupplier('${s.id}','${s.name.replace(/'/g,"\\'")}')">🗑️</button>
             </div>`:""}
           </div>
           ${linked.length?`<div style="margin-top:12px;border-top:1px solid #f1f5f9;padding-top:10px">
@@ -573,11 +562,44 @@ function render(){
   updateSupplierSelect();
 }
 
-window.addEventListener("resize", ()=>{ if(isLoggedIn) render(); });
+window.addEventListener("resize",()=>{ if(isLoggedIn) render(); });
 function setTab(t){ activeTab=t; render(); }
 function setSection(s){ activeSection=s; searchQuery=""; render(); }
 function setSearch(v){ searchQuery=v; render(); }
 function setMobileDay(d){ mobileDay=d; render(); }
+
+// ── MARK AS ORDERED ───────────────────────────────────────
+async function markOrdered(id){
+  const p=products.find(x=>x.id===id); if(!p) return;
+  const stock=getCurrentStock(p);
+  const newStock=stock+Number(p.orderQty||0);
+  // Update the most recent day entry or today's day
+  const dayToUpdate=TODAY||DAYS[DAYS.length-1];
+  const dailyEntries={...p.dailyEntries,[dayToUpdate]:newStock};
+  await db.collection("products").doc(id).update({dailyEntries});
+  orderedItems[id]=true;
+  render();
+}
+
+// ── CONFIRM HELPERS ───────────────────────────────────────
+function confirmDeleteProduct(id, name){
+  showConfirm("🗑️","Supprimer le produit ?",`Voulez-vous vraiment supprimer "${name}" ? Cette action est irréversible.`,"Supprimer","btn-danger",()=>deleteProduct(id));
+}
+function confirmDeleteSupplier(id, name){
+  showConfirm("🗑️","Supprimer le fournisseur ?",`Voulez-vous vraiment supprimer "${name}" ? Cette action est irréversible.`,"Supprimer","btn-danger",()=>deleteSupplier(id));
+}
+function confirmDeleteCategory(name){
+  showConfirm("🗑️","Supprimer la catégorie ?",`Voulez-vous vraiment supprimer la catégorie "${name}" ? Les produits de cette catégorie ne seront pas supprimés.`,"Supprimer","btn-danger",()=>deleteCategory(name));
+}
+
+async function deleteProduct(id){ await db.collection("products").doc(id).delete(); }
+async function deleteSupplier(id){ await db.collection("suppliers").doc(id).delete(); }
+async function deleteCategory(name){
+  const updated=customSections.filter(s=>s!==name);
+  await db.collection("settings").doc("sections").set({custom:updated});
+  if(activeSection===name) activeSection="Toutes";
+  render();
+}
 
 async function updateDaily(id, day, val){
   const p=products.find(x=>x.id===id); if(!p) return;
@@ -585,17 +607,12 @@ async function updateDaily(id, day, val){
   await db.collection("products").doc(id).update({dailyEntries});
 }
 
-async function deleteProduct(id){ if(!isAdmin) return; if(confirm("Supprimer ce produit ?")) await db.collection("products").doc(id).delete(); }
-async function deleteSupplier(id){ if(!isAdmin) return; if(confirm("Supprimer ce fournisseur ?")) await db.collection("suppliers").doc(id).delete(); }
-
 // ── PRODUCT MODAL ─────────────────────────────────────────
 function openProductModal(){
   if(!isAdmin) return;
   editingProductId=null;
   document.getElementById("modal-product-title").textContent="Ajouter un produit";
-  document.getElementById("p-name").value="";
-  document.getElementById("p-unit").value="";
-  document.getElementById("p-orderunit").value="";
+  ["p-name","p-unit","p-orderunit"].forEach(id=>document.getElementById(id).value="");
   document.getElementById("p-orderqty").value=0;
   document.getElementById("p-minimum").value=0;
   document.getElementById("p-section").value=activeSection==="Toutes"?"Cuisine":activeSection;
@@ -621,22 +638,15 @@ function editProduct(id){
 
 async function saveProduct(){
   const name=document.getElementById("p-name").value.trim(); if(!name) return alert("Entrez un nom.");
-  const data={
-    name, unit:document.getElementById("p-unit").value,
-    orderUnit:document.getElementById("p-orderunit").value,
-    orderQty:Number(document.getElementById("p-orderqty").value),
-    minimum:Number(document.getElementById("p-minimum").value),
-    section:document.getElementById("p-section").value,
-    supplierId:document.getElementById("p-supplier").value,
-    dailyEntries:{}
-  };
+  const data={name,unit:document.getElementById("p-unit").value,orderUnit:document.getElementById("p-orderunit").value,
+    orderQty:Number(document.getElementById("p-orderqty").value),minimum:Number(document.getElementById("p-minimum").value),
+    section:document.getElementById("p-section").value,supplierId:document.getElementById("p-supplier").value,dailyEntries:{}};
   if(editingProductId){
     const p=products.find(x=>x.id===editingProductId);
     data.dailyEntries=p.dailyEntries||{};
     await db.collection("products").doc(editingProductId).set({...data,id:editingProductId});
   } else {
-    const id=genId();
-    await db.collection("products").doc(id).set({...data,id});
+    const id=genId(); await db.collection("products").doc(id).set({...data,id});
   }
   closeProductModal();
 }
@@ -647,8 +657,7 @@ function closeCategoryModal(){ document.getElementById("modal-category").style.d
 async function saveCategory(){
   const name=document.getElementById("cat-name").value.trim(); if(!name) return alert("Entrez un nom.");
   if(!customSections.includes(name)){
-    const updated=[...customSections,name];
-    await db.collection("settings").doc("sections").set({custom:updated});
+    await db.collection("settings").doc("sections").set({custom:[...customSections,name]});
   }
   closeCategoryModal();
 }
@@ -685,31 +694,33 @@ function updateSupplierSelect(){
   sel.value=cur;
   const sec=document.getElementById("p-section"); if(!sec) return;
   const allSec=getAllSections().filter(s=>s!=="Toutes");
+  const curSec=sec.value;
   sec.innerHTML=allSec.map(s=>`<option value="${s}">${s}</option>`).join("");
-  sec.value=sec.value||allSec[0];
+  sec.value=curSec||allSec[0];
 }
 
-// ── PRINT REPORT ──────────────────────────────────────────
+// ── PRINT ─────────────────────────────────────────────────
 function printReport(){
   const toOrder=products.filter(p=>["red","yellow"].includes(getStatus(p)));
   const rows=toOrder.map(p=>{
     const sup=suppliers.find(s=>s.id===p.supplierId), st=getStatus(p), stock=getCurrentStock(p);
-    return `<tr style="background:${st==="red"?"#fff5f5":"#fffbeb"}">
+    const isOrdered=orderedItems[p.id];
+    return `<tr style="background:${isOrdered?"#f0fdf4":st==="red"?"#fff5f5":"#fffbeb"}">
       <td>${p.name}<br/><small style="color:#94a3b8">${p.unit||""}</small></td>
       <td>${p.section}</td><td>${stock}</td><td>${p.minimum||0}</td>
       <td>${p.orderQty||0} ${p.orderUnit||""}</td>
       <td>${sup?sup.name:"—"}</td><td>${sup?sup.contact||"—":"—"}</td>
-      <td>${statusLabel(st)}</td></tr>`;
+      <td>${isOrdered?"✅ Acheté":statusLabel(st)}</td></tr>`;
   }).join("");
   const win=window.open("","_blank");
-  win.document.write(`<!DOCTYPE html><html><head><title>Rapport Bochica</title>
+  win.document.write(`<!DOCTYPE html><html><head><title>Commande Bochica</title>
   <style>body{font-family:system-ui,sans-serif;padding:32px}table{width:100%;border-collapse:collapse;font-size:13px}th{padding:10px;background:#f1f5f9;text-align:left;font-size:11px;text-transform:uppercase;color:#64748b}td{padding:10px;border-bottom:1px solid #e2e8f0}@media print{button{display:none}}</style></head>
   <body>
   <div style="font-size:28px;font-weight:900;letter-spacing:4px">BOCHICA</div>
   <div style="font-size:14px;color:#475569;margin-bottom:4px">Restaurant Colombien</div>
   <div style="display:flex;height:3px;width:220px;margin-bottom:16px"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
-  <h2>Rapport de commande</h2>
-  <p style="color:#64748b;font-size:13px;margin-bottom:16px">Généré le ${new Date().toLocaleDateString("fr-CA",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</p>
+  <h2>Liste de commande</h2>
+  <p style="color:#64748b;font-size:13px;margin-bottom:16px">Générée le ${new Date().toLocaleDateString("fr-CA",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</p>
   <table><thead><tr><th>Produit</th><th>Section</th><th>Stock actuel</th><th>Minimum</th><th>À commander</th><th>Fournisseur</th><th>Contact</th><th>Statut</th></tr></thead>
   <tbody>${rows}</tbody></table>
   <br/><button onclick="window.print()" style="background:#3b82f6;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Imprimer</button>
