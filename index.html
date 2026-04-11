@@ -3,64 +3,153 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Bochica — Inventaire</title>
+  <title>Bochica — Dashboard</title>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     :root{
-      --bg:#f8fafc;--surface:#fff;--surface2:#f1f5f9;--surface3:#f8fafc;
+      --bg:#f8fafc;--surface:#fff;--surface2:#f1f5f9;--surface3:#e2e8f0;
       --border:#e2e8f0;--text:#1e293b;--text2:#475569;--text3:#94a3b8;
+      --accent:#3b82f6;--accent2:#60a5fa;
       --header-from:#1e293b;--header-to:#334155;
-      --tab-active:#3b82f6;--input-border:#cbd5e1;
     }
     .dark{
-      --bg:#0f172a;--surface:#1e293b;--surface2:#0f172a;--surface3:#1e293b;
+      --bg:#0f172a;--surface:#1e293b;--surface2:#0f172a;--surface3:#334155;
       --border:#334155;--text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;
+      --accent:#60a5fa;--accent2:#3b82f6;
       --header-from:#020617;--header-to:#0f172a;
-      --tab-active:#60a5fa;--input-border:#334155;
     }
     body{font-family:system-ui,sans-serif;background:var(--bg);min-height:100vh;color:var(--text);transition:background .2s,color .2s}
-    .sticky-top{position:sticky;top:0;z-index:50}
-    .header{background:linear-gradient(135deg,var(--header-from),var(--header-to));color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .logo-name{font-weight:900;font-size:20px;letter-spacing:4px;line-height:1}
-    .logo-sub{font-size:10px;opacity:.7;letter-spacing:1px}
-    .logo-bar{display:flex;height:2px;margin-top:3px;width:100px}
-    .header-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
-    .alert-pill{background:#ef4444;border-radius:4px;padding:4px 10px;font-size:13px;font-weight:700;color:#fff}
-    .btn-icon{background:transparent;border:1px solid rgba(255,255,255,0.35);color:rgba(255,255,255,0.85);border-radius:6px;padding:5px 8px;cursor:pointer;font-size:14px}
-    .btn-icon:hover{background:rgba(255,255,255,0.1)}
-    .tabs{display:flex;background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;overflow-x:auto}
-    .tab{padding:11px 16px;font-weight:600;font-size:13px;border:none;background:none;cursor:pointer;border-bottom:3px solid transparent;color:var(--text2);white-space:nowrap}
-    .tab.active{border-bottom:3px solid var(--tab-active);color:var(--tab-active)}
-    .content{padding:20px;max-width:1200px;margin:0 auto}
-    .section-tabs{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;align-items:center;margin-bottom:14px}
-    .section-tabs.expanded{flex-wrap:wrap}
-    .sec-btn{padding:6px 14px;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-weight:600;font-size:13px;background:var(--surface);color:var(--text2);white-space:nowrap;flex-shrink:0}
-    .sec-btn:hover{background:var(--surface2)}
-    .sec-btn.active{background:var(--tab-active);color:#fff;border-color:var(--tab-active)}
-    .sec-toggle{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 8px;cursor:pointer;font-size:14px;color:var(--text2);flex-shrink:0}
-    .badge{background:#ef4444;color:#fff;border-radius:4px;padding:1px 5px;font-size:10px;margin-left:3px}
-    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;gap:10px;flex-wrap:wrap}
+
+    /* LAYOUT */
+    .app-wrap{display:flex;min-height:100vh}
+    .sidebar{width:220px;background:linear-gradient(180deg,var(--header-from),var(--header-to));display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform .25s}
+    .sidebar.hidden{transform:translateX(-220px)}
+    .sidebar-logo{padding:20px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08)}
+    .sidebar-logo .logo-name{font-weight:900;font-size:18px;letter-spacing:3px;color:#fff;line-height:1}
+    .sidebar-logo .logo-sub{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:1px;margin-top:2px}
+    .sidebar-logo .logo-bar{display:flex;height:2px;width:80px;margin-top:6px}
+    .sidebar-nav{flex:1;padding:10px 0;overflow-y:auto}
+    .nav-section{font-size:10px;font-weight:700;color:rgba(255,255,255,.35);letter-spacing:1.5px;padding:14px 18px 4px;text-transform:uppercase}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;color:rgba(255,255,255,.65);font-size:13px;font-weight:500;border-left:3px solid transparent;transition:.15s}
+    .nav-item:hover{background:rgba(255,255,255,.07);color:#fff}
+    .nav-item.active{background:rgba(255,255,255,.1);color:#fff;border-left-color:var(--accent2)}
+    .nav-item .icon{font-size:16px;width:20px;text-align:center}
+    .sidebar-bottom{padding:14px 18px;border-top:1px solid rgba(255,255,255,.08);display:flex;gap:8px}
+    .btn-icon-sm{background:transparent;border:1px solid rgba(255,255,255,.25);color:rgba(255,255,255,.75);border-radius:6px;padding:5px 8px;cursor:pointer;font-size:13px}
+    .btn-icon-sm:hover{background:rgba(255,255,255,.1);color:#fff}
+
+    .main{margin-left:220px;flex:1;display:flex;flex-direction:column;transition:margin .25s}
+    .main.full{margin-left:0}
+    .topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:50}
+    .topbar-title{font-weight:700;font-size:17px;color:var(--text)}
+    .topbar-right{display:flex;align-items:center;gap:8px}
+    .page{padding:24px;max-width:1100px;margin:0 auto;width:100%}
+
+    /* BUTTONS */
+    .btn{border:none;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer;font-size:14px;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+    .btn-primary{background:var(--accent);color:#fff}
+    .btn-primary:hover{opacity:.9}
+    .btn-secondary{background:var(--surface2);color:var(--text2);border:1px solid var(--border)}
+    .btn-danger-sm{background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:12px}
+    .btn-cancel{padding:8px 18px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--surface);color:var(--text);font-size:14px}
+
+    /* CARDS */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+    .card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:20px}
+    .stat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+    .stat-num{font-size:28px;font-weight:800;margin-bottom:2px}
+    .stat-label{font-size:12px;color:var(--text3);font-weight:500}
+
+    /* TABLE */
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;background:var(--surface2);border-bottom:1px solid var(--border)}
+    td{padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text)}
+    tr:last-child td{border-bottom:none}
+    .table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .overflow{overflow-x:auto}
+
+    /* TOOLBAR */
+    .toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;gap:12px;flex-wrap:wrap}
     .search-box{display:flex;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px 12px;gap:8px;flex:1;max-width:280px}
     .search-box input{border:none;outline:none;font-size:14px;color:var(--text);width:100%;background:transparent}
-    .btn-primary{background:var(--tab-active);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:600;cursor:pointer;font-size:14px;white-space:nowrap}
-    .btn-cancel{padding:8px 18px;border:1px solid var(--border);border-radius:8px;cursor:pointer;background:var(--surface);color:var(--text);font-size:14px}
-    table{width:100%;border-collapse:separate;border-spacing:0;font-size:13px}
-    th{padding:9px 12px;text-align:left;font-weight:600;font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;background:var(--surface2)}
-    td{padding:9px 12px;vertical-align:middle;border-bottom:1px solid var(--border);background:var(--surface)}
-    th:first-child,td:first-child{position:sticky;left:0;z-index:2;box-shadow:2px 0 4px rgba(0,0,0,.06)}
-    th:first-child{background:var(--surface2)}
-    .stock-input{border:1px solid var(--input-border);border-radius:6px;padding:4px 8px;text-align:center;font-size:14px;font-weight:600;background:var(--surface);color:var(--text)}
-    .stock-input:focus{border-color:#3b82f6;outline:none;box-shadow:0 0 0 2px #bfdbfe}
-    .status-badge{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap}
-    .dark .status-badge.red{background:#450a0a;border-color:#ef4444;color:#fca5a5}
-    .dark .status-badge.yellow{background:#451a03;border-color:#f59e0b;color:#fcd34d}
-    .dark .status-badge.green{background:#052e16;border-color:#22c55e;color:#86efac}
+
+    /* BADGE */
+    .badge-pill{border-radius:20px;padding:3px 10px;font-size:11px;font-weight:700;white-space:nowrap;display:inline-block}
     .red{background:#fee2e2;border:2px solid #ef4444;color:#991b1b}
     .yellow{background:#fef9c3;border:2px solid #eab308;color:#854d0e}
     .green{background:#dcfce7;border:2px solid #22c55e;color:#166534}
+    .blue{background:#eff6ff;border:2px solid #3b82f6;color:#1d4ed8}
+    .dark .red{background:#450a0a;border-color:#ef4444;color:#fca5a5}
+    .dark .yellow{background:#451a03;border-color:#f59e0b;color:#fcd34d}
+    .dark .green{background:#052e16;border-color:#22c55e;color:#86efac}
+    .dark .blue{background:#0c1a3a;border-color:#3b82f6;color:#93c5fd}
+
+    /* SECTION TABS */
+    .sec-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+    .sec-btn{padding:6px 14px;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-weight:600;font-size:13px;background:var(--surface);color:var(--text2);white-space:nowrap}
+    .sec-btn:hover{background:var(--surface2)}
+    .sec-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+    .badge-count{background:#ef4444;color:#fff;border-radius:4px;padding:1px 5px;font-size:10px;margin-left:3px}
+
+    /* SCHEDULE */
+    .schedule-grid{display:grid;grid-template-columns:140px repeat(7,1fr);gap:4px;font-size:12px}
+    .sch-header{background:var(--surface2);border-radius:6px;padding:6px;text-align:center;font-weight:600;color:var(--text2)}
+    .sch-name{background:var(--surface2);border-radius:6px;padding:6px 10px;font-weight:600;color:var(--text);display:flex;align-items:center}
+    .sch-cell{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px;min-height:42px;cursor:pointer;transition:.15s}
+    .sch-cell:hover{border-color:var(--accent);background:var(--surface2)}
+    .sch-cell.has-shift{background:#eff6ff;border-color:#3b82f6}
+    .dark .sch-cell.has-shift{background:#0c1a3a;border-color:#3b82f6}
+    .shift-tag{background:var(--accent);color:#fff;border-radius:4px;padding:2px 6px;font-size:10px;font-weight:600;margin-bottom:2px;display:flex;justify-content:space-between;align-items:center}
+
+    /* TASKS */
+    .task-col{background:var(--surface2);border-radius:12px;padding:14px;min-height:200px}
+    .task-cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:4px}
+    .task-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:8px;cursor:pointer}
+    .task-card:hover{border-color:var(--accent)}
+    .task-prio{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+
+    /* MENU */
+    .menu-item-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+    .menu-item-card.unavailable{opacity:.55}
+    .price-tag{font-weight:700;font-size:16px;color:var(--accent)}
+
+    /* MODALS */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
+    .modal{background:var(--surface);border-radius:14px;padding:24px;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto;color:var(--text)}
+    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+    .modal h3{font-size:17px;color:var(--text)}
+    .close-btn{border:none;background:none;font-size:20px;cursor:pointer;color:var(--text3)}
+    label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px}
+    input,select,textarea{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;outline:none;width:100%;background:var(--surface);color:var(--text)}
+    input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+    .form-row{display:flex;gap:12px}
+    .form-row label{flex:1}
+    .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
+    .field-hint{font-size:11px;color:var(--text3);font-weight:400;margin-top:2px}
+
+    /* INVENTORY CARDS */
+    .inv-card{background:var(--surface);border-radius:12px;padding:16px;margin-bottom:10px}
+    .inv-card-body{display:flex;gap:10px;margin-top:10px}
+    .inv-card-block{background:var(--surface2);border-radius:8px;padding:10px 14px;flex:1}
+    .inv-card-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:4px}
+    .inv-card-value{font-weight:700;font-size:22px}
+    .inv-card-sub{font-size:10px;color:var(--text3);margin-top:4px}
+    .note-badge{font-size:11px;color:var(--text3);font-style:italic;margin-top:4px}
+
+    /* SECTION TABS inventory */
+    .section-tabs{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden;align-items:center;margin-bottom:14px}
+    .section-tabs.expanded{flex-wrap:wrap}
+    .sec-toggle{background:none;border:1px solid var(--border);border-radius:6px;padding:5px 8px;cursor:pointer;font-size:14px;color:var(--text2);flex-shrink:0}
+
+    /* DRAG */
     .drag-handle{cursor:grab;color:var(--text3);padding:0 6px;font-size:18px;user-select:none}
+    tr.dragging{opacity:.4}
+    tr.drag-over td{border-top:2px solid var(--accent)}
+
+    /* DROPDOWN */
     .menu-wrap{position:relative;display:inline-block}
     .dots-btn{background:none;border:none;cursor:pointer;font-size:18px;color:var(--text3);padding:2px 6px;border-radius:4px;line-height:1}
     .dots-btn:hover{background:var(--surface2)}
@@ -69,297 +158,152 @@
     .dropdown button{display:flex;align-items:center;gap:8px;width:100%;padding:9px 14px;border:none;background:none;cursor:pointer;font-size:13px;color:var(--text);text-align:left}
     .dropdown button:hover{background:var(--surface2)}
     .dropdown .sep{height:1px;background:var(--border);margin:2px 0}
-    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px}
-    .modal{background:var(--surface);border-radius:14px;padding:24px;width:100%;max-width:480px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto;color:var(--text)}
-    .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-    .modal h3{font-size:17px;color:var(--text)}
-    .close-btn{border:none;background:none;font-size:20px;cursor:pointer;color:var(--text3)}
-    label{display:flex;flex-direction:column;gap:4px;font-size:13px;font-weight:600;color:var(--text2);margin-bottom:10px}
-    input,select,textarea{padding:8px 12px;border:1px solid var(--input-border);border-radius:8px;font-size:14px;outline:none;width:100%;background:var(--surface);color:var(--text)}
-    .form-row{display:flex;gap:12px}
-    .form-row label{flex:1}
-    .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:12px}
-    .field-hint{font-size:11px;color:var(--text3);font-weight:400;margin-top:2px}
+
+    /* PIN */
+    .pin-pad{display:flex;flex-direction:column;align-items:center;gap:14px}
+    .pin-display{display:flex;gap:10px}
+    .pin-dot{width:15px;height:15px;border-radius:50%;border:2px solid var(--border);background:var(--surface);transition:.2s}
+    .pin-dot.filled{background:var(--accent);border-color:var(--accent)}
+    .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+    .pin-btn{width:62px;height:62px;border-radius:50%;border:2px solid var(--border);background:var(--surface);font-size:20px;font-weight:700;cursor:pointer;color:var(--text)}
+    .pin-btn:active{background:var(--surface2);border-color:var(--accent)}
+    .pin-error{color:#ef4444;font-size:13px;font-weight:600;min-height:18px;text-align:center}
+
+    /* MISC */
     .empty{text-align:center;color:var(--text3);margin-top:60px;font-size:15px}
-    .supplier-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
-    .supplier-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
-    .tag{background:var(--surface2);color:var(--tab-active);border-radius:12px;padding:2px 10px;font-size:12px;display:inline-block;margin:2px}
-    .summary-cards{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
-    .summary-card{flex:1;min-width:140px;border-radius:10px;padding:12px 16px;border:1px solid;background:var(--surface)}
-    .overflow{overflow-x:auto}
-    .cat-item{display:flex;align-items:center;gap:8px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
-    .cat-item input{flex:1;border:1px solid var(--input-border);border-radius:6px;padding:5px 10px;font-size:13px}
-    .inv-card{background:var(--surface);border-radius:12px;padding:16px;margin-bottom:10px}
-    .inv-card-body{display:flex;gap:10px;margin-top:10px}
-    .inv-card-block{background:var(--surface2);border-radius:8px;padding:10px 14px;flex:1}
-    .inv-card-label{font-size:10px;color:var(--text3);font-weight:600;text-transform:uppercase;margin-bottom:4px}
-    .inv-card-value{font-weight:700;font-size:22px}
-    .inv-card-sub{font-size:10px;color:var(--text3);margin-top:4px}
-    .note-badge{font-size:11px;color:var(--text3);font-style:italic;margin-top:4px;display:flex;align-items:center;gap:4px}
-    .archived-banner{background:#fef9c3;border:1px solid #eab308;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:13px;color:#854d0e;font-weight:600}
+    .col-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text3);margin-bottom:10px}
+    .alert-pill{background:#ef4444;border-radius:4px;padding:4px 10px;font-size:13px;font-weight:700;color:#fff}
+    .stock-input{border:1px solid var(--border);border-radius:6px;padding:4px 8px;text-align:center;font-size:14px;font-weight:600;background:var(--surface);color:var(--text)}
+    .stock-input:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 2px #bfdbfe}
+    .archived-banner{background:#fef9c3;border:1px solid #eab308;border-radius:8px;padding:8px 14px;margin-bottom:14px;font-size:13px;color:#854d0e;font-weight:600;display:flex;justify-content:space-between;align-items:center}
     .dark .archived-banner{background:#451a03;border-color:#f59e0b;color:#fcd34d}
     .log-item{border-bottom:1px solid var(--border);padding:10px 0;font-size:13px}
     .log-item:last-child{border-bottom:none}
-    .pin-pad{display:flex;flex-direction:column;align-items:center;gap:14px}
-    .pin-display{display:flex;gap:10px}
-    .pin-dot{width:15px;height:15px;border-radius:50%;border:2px solid var(--input-border);background:var(--surface);transition:.2s}
-    .pin-dot.filled{background:#3b82f6;border-color:#3b82f6}
-    .pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-    .pin-btn{width:62px;height:62px;border-radius:50%;border:2px solid var(--input-border);background:var(--surface);font-size:20px;font-weight:700;cursor:pointer;color:var(--text)}
-    .pin-btn:active{background:var(--surface2);border-color:#3b82f6}
-    .pin-error{color:#ef4444;font-size:13px;font-weight:600;min-height:18px;text-align:center}
-    @media(max-width:640px){
-      .content{padding:12px}
-      .logo-name{font-size:17px;letter-spacing:3px}
-      .search-box{max-width:100%}
-      .btn-logout-text{display:none}
+    .cat-item{display:flex;align-items:center;gap:8px;padding:8px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:6px}
+    .cat-item input{flex:1}
+    .supplier-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+    .supplier-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+    .tag{background:var(--surface2);color:var(--accent);border-radius:12px;padding:2px 10px;font-size:12px;display:inline-block;margin:2px}
+    .summary-cards{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+    .summary-card{flex:1;min-width:140px;border-radius:10px;padding:12px 16px;border:1px solid;background:var(--surface)}
+
+    /* MOBILE */
+    @media(max-width:768px){
+      .sidebar{transform:translateX(-220px)}
+      .sidebar.mobile-open{transform:translateX(0)}
+      .main{margin-left:0}
+      .task-cols{grid-template-columns:1fr}
+      .schedule-grid{grid-template-columns:100px repeat(7,1fr);font-size:10px}
+      .page{padding:16px}
+      .topbar{padding:10px 16px}
     }
-    @media(min-width:641px){.mobile-only{display:none}}
-    @media(max-width:640px){.desktop-only{display:none}}
   </style>
 </head>
 <body>
-<div id="app"></div>
-
-<!-- MODAL PIN -->
-<div id="modal-pin" class="modal-overlay" style="display:none">
-  <div class="modal" style="max-width:320px">
-    <div class="modal-header" style="justify-content:center"><h3>🔐 Connexion</h3></div>
-    <p style="text-align:center;color:var(--text3);font-size:13px;margin-bottom:16px">Entrez votre code PIN</p>
-    <div class="pin-pad">
-      <div class="pin-display">
-        <div class="pin-dot" id="dot0"></div><div class="pin-dot" id="dot1"></div>
-        <div class="pin-dot" id="dot2"></div><div class="pin-dot" id="dot3"></div>
+<div id="login-screen"></div>
+<div id="app-shell" style="display:none">
+  <div class="app-wrap">
+    <div class="sidebar" id="sidebar">
+      <div class="sidebar-logo">
+        <div class="logo-name">BOCHICA</div>
+        <div class="logo-sub">Restaurant Colombien</div>
+        <div class="logo-bar"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
       </div>
-      <div class="pin-error" id="pin-error"></div>
-      <div class="pin-grid">
-        ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="pin-btn" onclick="pinPress('${n}')">${n}</button>`).join("")}
-        <button class="pin-btn" onclick="pinClear()" style="font-size:11px">Effacer</button>
-        <button class="pin-btn" onclick="pinPress('0')">0</button>
-        <button class="pin-btn" onclick="pinBackspace()" style="font-size:16px">⌫</button>
+      <div class="sidebar-nav" id="sidebar-nav"></div>
+      <div class="sidebar-bottom">
+        <button class="btn-icon-sm" onclick="toggleDark()" title="Mode sombre" id="dark-btn">🌙</button>
+        <button class="btn-icon-sm" onclick="logout()" title="Déconnexion">↩ Déconnexion</button>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- MODAL PRODUIT -->
-<div id="modal-product" class="modal-overlay" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-product-title">Ajouter un produit</h3>
-      <button class="close-btn" onclick="closeProductModal()">✕</button>
-    </div>
-    <label>Nom du produit<input id="p-name" placeholder="ex: Tomates"/></label>
-    <label>Section<select id="p-section"></select></label>
-    <div class="form-row">
-      <label>Qté en inventaire<input id="p-stock" type="number" value="0"/><span class="field-hint">Stock actuel (en unités)</span></label>
-      <label>Minimum requis<input id="p-minimum" type="number" value="0"/><span class="field-hint">Seuil d'alerte</span></label>
-    </div>
-    <label>Unité de commande
-      <select id="p-orderunit" onchange="toggleBoxFields()">
-        <option value="unité">Unité</option>
-        <option value="boîte">Boîte</option>
-      </select>
-    </label>
-    <div id="box-fields" style="display:none">
-      <div class="form-row">
-        <label>Unités par boîte<input id="p-unitsperbox" type="number" value="1"/><span class="field-hint">Ex: 24 canettes/boîte</span></label>
-        <label>Qté à commander<input id="p-orderqty" type="number" value="0"/><span class="field-hint">Nombre de boîtes</span></label>
+    <div class="main" id="main-area">
+      <div class="topbar">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button class="btn-icon-sm" onclick="toggleSidebar()" style="border:1px solid var(--border);color:var(--text2)">☰</button>
+          <span class="topbar-title" id="topbar-title">Inventaire</span>
+        </div>
+        <div class="topbar-right">
+          <span id="topbar-alert"></span>
+          <span style="font-size:13px;color:var(--text3)" id="topbar-role"></span>
+        </div>
       </div>
-    </div>
-    <div id="unit-fields">
-      <label>Qté à commander<input id="p-orderqty-unit" type="number" value="0"/><span class="field-hint">Nombre d'unités</span></label>
-    </div>
-    <label>Fournisseur<select id="p-supplier"><option value="">— Aucun —</option></select></label>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeProductModal()">Annuler</button>
-      <button class="btn-primary" onclick="saveProduct()">Enregistrer</button>
+      <div id="page-content"></div>
     </div>
   </div>
 </div>
 
-<!-- MODAL RÉCEPTION PARTIELLE -->
-<div id="modal-receive" class="modal-overlay" style="display:none">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-header">
-      <h3>📦 Réception de commande</h3>
-      <button class="close-btn" onclick="closeReceiveModal()">✕</button>
-    </div>
-    <p style="color:var(--text2);font-size:14px;margin-bottom:16px">Produit : <strong id="receive-product-name"></strong></p>
-    <div id="receive-info" style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2)"></div>
-    <label>Quantité reçue
-      <input id="receive-qty" type="number" min="0"/>
-      <span class="field-hint" id="receive-hint"></span>
-    </label>
-    <div id="receive-preview" style="margin-top:8px;font-size:13px;color:var(--text2);min-height:20px"></div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeReceiveModal()">Annuler</button>
-      <button class="btn-primary" onclick="confirmReceive()">✅ Confirmer la réception</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL NOTE -->
-<div id="modal-note" class="modal-overlay" style="display:none">
-  <div class="modal" style="max-width:400px">
-    <div class="modal-header">
-      <h3>📝 Note — <span id="note-product-name" style="font-weight:400;font-size:15px"></span></h3>
-      <button class="close-btn" onclick="closeNoteModal()">✕</button>
-    </div>
-    <label>Note rapide
-      <textarea id="note-text" style="height:100px;resize:vertical" placeholder="ex: Rupture fournisseur, en attente lundi..."></textarea>
-    </label>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeNoteModal()">Annuler</button>
-      <button style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:8px 14px;font-weight:600;cursor:pointer;font-size:14px;margin-right:auto" onclick="clearNote()">Effacer</button>
-      <button class="btn-primary" onclick="saveNote()">Enregistrer</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL CHANGER CATÉGORIE -->
-<div id="modal-move" class="modal-overlay" style="display:none">
-  <div class="modal" style="max-width:360px">
-    <div class="modal-header">
-      <h3>📁 Changer de catégorie</h3>
-      <button class="close-btn" onclick="closeMoveModal()">✕</button>
-    </div>
-    <p style="color:var(--text2);font-size:13px;margin-bottom:12px">Catégorie pour <strong id="move-product-name"></strong></p>
-    <label>Catégorie<select id="move-section"></select></label>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeMoveModal()">Annuler</button>
-      <button class="btn-primary" onclick="confirmMove()">Déplacer</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL CATÉGORIES -->
-<div id="modal-category" class="modal-overlay" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <h3>⚙️ Gérer les catégories</h3>
-      <button class="close-btn" onclick="closeCategoryModal()">✕</button>
-    </div>
-    <div id="cat-list"></div>
-    <div style="display:flex;gap:8px;margin-top:4px">
-      <input id="cat-new" placeholder="Nouvelle catégorie..."/>
-      <button class="btn-primary" onclick="addCategory()">Ajouter</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL FOURNISSEUR -->
-<div id="modal-supplier" class="modal-overlay" style="display:none">
-  <div class="modal">
-    <div class="modal-header">
-      <h3 id="modal-supplier-title">Ajouter un fournisseur</h3>
-      <button class="close-btn" onclick="closeSupplierModal()">✕</button>
-    </div>
-    <label>Nom<input id="s-name"/></label>
-    <label>Téléphone<input id="s-contact"/></label>
-    <label>Courriel<input id="s-email"/></label>
-    <label>Notes<textarea id="s-notes" style="height:70px;resize:vertical"></textarea></label>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeSupplierModal()">Annuler</button>
-      <button class="btn-primary" onclick="saveSupplier()">Enregistrer</button>
-    </div>
-  </div>
-</div>
-
-<!-- MODAL CONFIRMATION -->
-<div id="modal-confirm" class="modal-overlay" style="display:none">
-  <div class="modal" style="max-width:380px">
-    <div class="modal-header"><h3 id="confirm-title">Confirmer</h3></div>
-    <p style="color:var(--text2);font-size:14px;margin-bottom:20px;line-height:1.6" id="confirm-msg"></p>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeConfirm()">Annuler</button>
-      <button id="confirm-ok" onclick="confirmAction()" style="border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px;color:#fff">OK</button>
-    </div>
-  </div>
-</div>
+<!-- All modals -->
+<div id="modals"></div>
 
 <script>
-const ADMIN_PIN    = "0000";
-const EMPLOYEE_PIN = "1111";
-const DEFAULT_SECTIONS = ["Cuisine","Emballage","Bar","Autre"];
-const TODAY_KEY = new Date().toISOString().slice(0,10);
-const STATUS_ORDER = {"red":0,"yellow":1,"green":2};
+const ADMIN_PIN="0000", EMPLOYEE_PIN="1111";
+const DEFAULT_SECTIONS=["Cuisine","Emballage","Bar","Autre"];
+const TODAY_KEY=new Date().toISOString().slice(0,10);
+const DAYS_FR=["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+const STATUS_ORDER={"red":0,"yellow":1,"green":2};
+const TASK_COLS=["À faire","En cours","Complété"];
+const MENU_CATS=["Entrées","Plats principaux","Desserts","Boissons","Autres"];
+const EXPENSE_CATS=["Nourriture","Boissons","Équipement","Salaires","Autre"];
+const SHIFT_TYPES=[{label:"Matin",color:"#3b82f6"},{label:"Soir",color:"#8b5cf6"},{label:"Journée",color:"#22c55e"},{label:"Congé",color:"#94a3b8"}];
 
-firebase.initializeApp({
-  apiKey:"AIzaSyC27HzALz_DoIN5huqGwVBsKTLHg37rUuc",
-  authDomain:"bochica-inventaire.firebaseapp.com",
-  projectId:"bochica-inventaire",
-  storageBucket:"bochica-inventaire.firebasestorage.app",
-  messagingSenderId:"261321722710",
-  appId:"1:261321722710:web:5a7aa0039fa0fd1a20a4f7"
-});
-const db = firebase.firestore();
+firebase.initializeApp({apiKey:"AIzaSyC27HzALz_DoIN5huqGwVBsKTLHg37rUuc",authDomain:"bochica-inventaire.firebaseapp.com",projectId:"bochica-inventaire",storageBucket:"bochica-inventaire.firebasestorage.app",messagingSenderId:"261321722710",appId:"1:261321722710:web:5a7aa0039fa0fd1a20a4f7"});
+const db=firebase.firestore();
 
-let products=[], suppliers=[], customSections=[], logs=[];
-let activeTab="inventaire", activeSection="Toutes";
-let editingProductId=null, editingSupplierID=null, movingProductId=null, noteProductId=null, receivingProductId=null;
-let searchQuery="", isAdmin=false, isLoggedIn=false, pinBuffer="";
-let pendingConfirm=null, sectionsExpanded=false, dragSrcId=null;
-let showArchived=false, logFilter="", darkMode=false;
+let products=[],suppliers=[],customSections=[],logs=[],employees=[],tasks=[],menuItems=[],expenses=[];
+let isAdmin=false,isLoggedIn=false,pinBuffer="",darkMode=false;
+let activeSection="Toutes",searchQuery="",sectionsExpanded=false,showArchived=false,logFilter="";
+let activePage="inventaire";
+let activeMenuCat="Toutes",activeExpensePeriod="mois",activeTaskCol="";
+let sidebarOpen=true;
+let pendingConfirm=null,openDropId=null;
+let dragSrcId=null;
 
-function genId(){ return Math.random().toString(36).slice(2,10); }
-function getAllSections(){ return ["Toutes",...DEFAULT_SECTIONS,...customSections]; }
-function getCurrentStock(p){ return Number(p.currentStock??0); }
-function getStatus(p){
-  const s=getCurrentStock(p), m=Number(p.minimum||0);
-  if(s<=m) return "red";
-  if(s<=m*1.2) return "yellow";
-  return "green";
-}
-function statusLabel(st){ return st==="red"?"⚠️ Commander":st==="yellow"?"🟡 Bientôt bas":"✅ OK"; }
-function orderLabel(p){ const q=p.orderQty||0; return p.orderUnit==="boîte"?`${q} boîte${q>1?"s":""}`:`${q} unité${q>1?"s":""}`; }
-function fmtDate(ts){ if(!ts) return ""; const d=ts.toDate?ts.toDate():new Date(ts); return d.toLocaleDateString("fr-CA",{weekday:"short",month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"}); }
+// State for edit modals
+let editingProduct=null,editingSupplier=null,editingEmployee=null,editingTask=null,editingMenuItem=null,editingExpense=null;
+let noteProductId=null,movingProductId=null,receivingProduct=null;
+let shiftModal={emp:null,day:null};
 
-// ── Dark mode ─────────────────────────────────────────────
-function initDarkMode(){
-  darkMode=localStorage.getItem("bochica-dark")==="1"||window.matchMedia("(prefers-color-scheme: dark)").matches;
-  applyDark();
-}
-function toggleDark(){ darkMode=!darkMode; localStorage.setItem("bochica-dark",darkMode?"1":"0"); applyDark(); render(); }
-function applyDark(){ document.body.classList.toggle("dark",darkMode); }
-initDarkMode();
+function genId(){return Math.random().toString(36).slice(2,10);}
+function getAllSections(){return["Toutes",...DEFAULT_SECTIONS,...customSections];}
+function getCurrentStock(p){return Number(p.currentStock??0);}
+function getStatus(p){const s=getCurrentStock(p),m=Number(p.minimum||0);if(s<=m)return"red";if(s<=m*1.2)return"yellow";return"green";}
+function statusLabel(st){return st==="red"?"⚠️ Commander":st==="yellow"?"🟡 Bientôt bas":"✅ OK";}
+function orderLabel(p){const q=p.orderQty||0;return p.orderUnit==="boîte"?`${q} boîte${q>1?"s":""}`:`${q} unité${q>1?"s":""}`;}
+function fmtDate(ts){if(!ts)return"";const d=ts.toDate?ts.toDate():new Date(ts);return d.toLocaleDateString("fr-CA",{month:"short",day:"numeric",hour:"2-digit",minute:"2-digit"});}
+function fmtMoney(n){return`${Number(n||0).toFixed(2)} $`;}
+function esc(s){return(s||"").replace(/'/g,"\\'").replace(/"/g,"&quot;");}
 
-// ── Firebase ──────────────────────────────────────────────
-db.collection("products").onSnapshot(snap=>{
-  products=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.sortOrder??999)-(b.sortOrder??999));
-  if(isLoggedIn) render(); else showLogin();
-});
-db.collection("suppliers").onSnapshot(snap=>{ suppliers=snap.docs.map(d=>({id:d.id,...d.data()})); if(isLoggedIn) render(); });
-db.collection("settings").doc("sections").onSnapshot(snap=>{ customSections=snap.exists?snap.data().custom||[]:[];  if(isLoggedIn) render(); });
-db.collection("logs").orderBy("ts","desc").limit(200).onSnapshot(snap=>{ logs=snap.docs.map(d=>({id:d.id,...d.data()})); if(isLoggedIn&&activeTab==="historique") render(); });
+// ── Dark mode ────────────────────────────────────────────
+function initDark(){darkMode=localStorage.getItem("bochica-dark")==="1";applyDark();}
+function toggleDark(){darkMode=!darkMode;localStorage.setItem("bochica-dark",darkMode?"1":"0");applyDark();renderPage();}
+function applyDark(){document.body.classList.toggle("dark",darkMode);const b=document.getElementById("dark-btn");if(b)b.textContent=darkMode?"☀️":"🌙";}
+initDark();
 
-function scheduleMidnight(){ const now=new Date(),m=new Date(now); m.setDate(now.getDate()+1); m.setHours(0,0,10,0); setTimeout(()=>{ scheduleMidnight(); if(isLoggedIn) render(); },m-now); }
-scheduleMidnight();
+// ── Firebase listeners ───────────────────────────────────
+db.collection("products").onSnapshot(snap=>{products=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.sortOrder??999)-(b.sortOrder??999));if(isLoggedIn)renderPage();});
+db.collection("suppliers").onSnapshot(snap=>{suppliers=snap.docs.map(d=>({id:d.id,...d.data()}));if(isLoggedIn)renderPage();});
+db.collection("settings").doc("sections").onSnapshot(snap=>{customSections=snap.exists?snap.data().custom||:[];if(isLoggedIn)renderPage();});
+db.collection("logs").orderBy("ts","desc").limit(300).onSnapshot(snap=>{logs=snap.docs.map(d=>({id:d.id,...d.data()}));if(isLoggedIn&&activePage==="historique")renderPage();});
+db.collection("employees").onSnapshot(snap=>{employees=snap.docs.map(d=>({id:d.id,...d.data()}));if(isLoggedIn&&activePage==="employes")renderPage();});
+db.collection("tasks").onSnapshot(snap=>{tasks=snap.docs.map(d=>({id:d.id,...d.data()}));if(isLoggedIn&&["taches","inventaire"].includes(activePage))renderPage();});
+db.collection("menu").onSnapshot(snap=>{menuItems=snap.docs.map(d=>({id:d.id,...d.data()}));if(isLoggedIn&&activePage==="menu")renderPage();});
+db.collection("expenses").orderBy("date","desc").limit(500).onSnapshot(snap=>{expenses=snap.docs.map(d=>({id:d.id,...d.data()}));if(isLoggedIn&&activePage==="depenses")renderPage();});
 
-// ── Log helper ────────────────────────────────────────────
-async function addLog(productName, action, detail){
-  await db.collection("logs").add({productName, action, detail, ts:firebase.firestore.FieldValue.serverTimestamp(), role:isAdmin?"admin":"employé"});
-}
+async function addLog(productName,action,detail){await db.collection("logs").add({productName,action,detail,ts:firebase.firestore.FieldValue.serverTimestamp(),role:isAdmin?"admin":"employé"});}
 
-// ── Login ─────────────────────────────────────────────────
+// ── Login ────────────────────────────────────────────────
 function showLogin(){
-  document.getElementById("app").innerHTML=`
+  document.getElementById("login-screen").innerHTML=`
   <div style="min-height:100vh;background:linear-gradient(135deg,#1e293b,#334155);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
     <div style="margin-bottom:28px;text-align:center">
       <div style="font-weight:900;font-size:32px;letter-spacing:6px;color:#fff">BOCHICA</div>
       <div style="font-size:12px;color:rgba(255,255,255,0.55);letter-spacing:2px;margin-top:4px">Restaurant Colombien</div>
-      <div style="display:flex;height:3px;width:170px;margin:10px auto 0">
-        <div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div>
-      </div>
+      <div style="display:flex;height:3px;width:170px;margin:10px auto 0"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
     </div>
     <div style="background:var(--surface);border-radius:20px;padding:28px;width:100%;max-width:310px;box-shadow:0 25px 60px rgba(0,0,0,0.3)">
       <h2 style="text-align:center;color:var(--text);font-size:17px;margin-bottom:4px">Connexion</h2>
       <p style="text-align:center;color:var(--text3);font-size:12px;margin-bottom:18px">Entrez votre code PIN</p>
       <div class="pin-pad">
-        <div class="pin-display">
-          <div class="pin-dot" id="dot0"></div><div class="pin-dot" id="dot1"></div>
-          <div class="pin-dot" id="dot2"></div><div class="pin-dot" id="dot3"></div>
-        </div>
+        <div class="pin-display"><div class="pin-dot" id="dot0"></div><div class="pin-dot" id="dot1"></div><div class="pin-dot" id="dot2"></div><div class="pin-dot" id="dot3"></div></div>
         <div class="pin-error" id="pin-error"></div>
         <div class="pin-grid">
           ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="pin-btn" onclick="pinPress('${n}')">${n}</button>`).join("")}
@@ -370,593 +314,735 @@ function showLogin(){
       </div>
     </div>
   </div>`;
+  document.getElementById("login-screen").style.display="block";
+  document.getElementById("app-shell").style.display="none";
 }
-function logout(){ isAdmin=false; isLoggedIn=false; pinBuffer=""; showLogin(); }
-function pinPress(d){ if(pinBuffer.length>=4) return; pinBuffer+=d; updatePinDots(); if(pinBuffer.length===4) checkPin(); }
-function pinClear(){ pinBuffer=""; updatePinDots(); }
-function pinBackspace(){ pinBuffer=pinBuffer.slice(0,-1); updatePinDots(); }
-function updatePinDots(){ for(let i=0;i<4;i++){const d=document.getElementById("dot"+i);if(d)d.classList.toggle("filled",i<pinBuffer.length);} }
+function logout(){isAdmin=false;isLoggedIn=false;pinBuffer="";document.getElementById("app-shell").style.display="none";document.getElementById("login-screen").style.display="block";showLogin();}
+function pinPress(d){if(pinBuffer.length>=4)return;pinBuffer+=d;updatePinDots();if(pinBuffer.length===4)checkPin();}
+function pinClear(){pinBuffer="";updatePinDots();}
+function pinBackspace(){pinBuffer=pinBuffer.slice(0,-1);updatePinDots();}
+function updatePinDots(){for(let i=0;i<4;i++){const d=document.getElementById("dot"+i);if(d)d.classList.toggle("filled",i<pinBuffer.length);}}
 function checkPin(){
-  if(pinBuffer===ADMIN_PIN){ isAdmin=true; isLoggedIn=true; render(); }
-  else if(pinBuffer===EMPLOYEE_PIN){ isAdmin=false; isLoggedIn=true; render(); }
-  else{ const e=document.getElementById("pin-error"); if(e)e.textContent="❌ Code PIN incorrect"; pinBuffer=""; updatePinDots(); }
+  if(pinBuffer===ADMIN_PIN){isAdmin=true;isLoggedIn=true;document.getElementById("login-screen").style.display="none";document.getElementById("app-shell").style.display="block";buildSidebar();renderPage();}
+  else if(pinBuffer===EMPLOYEE_PIN){isAdmin=false;isLoggedIn=true;document.getElementById("login-screen").style.display="none";document.getElementById("app-shell").style.display="block";buildSidebar();renderPage();}
+  else{const e=document.getElementById("pin-error");if(e)e.textContent="❌ Code PIN incorrect";pinBuffer="";updatePinDots();}
 }
+showLogin();
 
-// ── Confirm ───────────────────────────────────────────────
+// ── Sidebar ──────────────────────────────────────────────
+function buildSidebar(){
+  const nav=document.getElementById("sidebar-nav"); if(!nav)return;
+  const employeeNav=[{icon:"📦",label:"Inventaire",page:"inventaire"},{icon:"📋",label:"Mes tâches",page:"taches"}];
+  const adminNav=[
+    {section:"INVENTAIRE"},{icon:"📦",label:"Inventaire",page:"inventaire"},{icon:"📋",label:"Historique",page:"historique"},
+    {section:"DASHBOARD"},{icon:"📋",label:"Tâches",page:"taches"},{icon:"👥",label:"Employés & Horaires",page:"employes"},
+    {icon:"💰",label:"Dépenses",page:"depenses"},{icon:"🍽️",label:"Menu",page:"menu"},
+    {section:"GESTION"},{icon:"🏪",label:"Fournisseurs",page:"fournisseurs"},
+  ];
+  const items=isAdmin?adminNav:employeeNav;
+  nav.innerHTML=items.map(item=>{
+    if(item.section) return`<div class="nav-section">${item.section}</div>`;
+    return`<div class="nav-item ${activePage===item.page?"active":""}" onclick="navTo('${item.page}')">${item.icon?`<span class="icon">${item.icon}</span>`:""}<span>${item.label}</span></div>`;
+  }).join("");
+  document.getElementById("topbar-role").textContent=isAdmin?"👑 Admin":"👤 Employé";
+}
+function navTo(page){activePage=page;searchQuery="";buildSidebar();renderPage();if(window.innerWidth<=768){document.getElementById("sidebar").classList.remove("mobile-open");}}
+function toggleSidebar(){if(window.innerWidth<=768){document.getElementById("sidebar").classList.toggle("mobile-open");}else{sidebarOpen=!sidebarOpen;document.getElementById("sidebar").classList.toggle("hidden",!sidebarOpen);document.getElementById("main-area").classList.toggle("full",!sidebarOpen);}}
+
+// ── Dropdown ─────────────────────────────────────────────
+function toggleDrop(id){closeAllDrops();if(openDropId===id){openDropId=null;return;}const el=document.getElementById("drop-"+id);if(el){el.classList.add("open");openDropId=id;}}
+function closeAllDrops(){document.querySelectorAll(".dropdown.open").forEach(el=>el.classList.remove("open"));openDropId=null;}
+document.addEventListener("click",e=>{if(!e.target.closest(".menu-wrap"))closeAllDrops();});
+
+// ── Confirm modal ────────────────────────────────────────
 function openConfirm(title,msg,action,isDanger=false){
   pendingConfirm=action;
-  document.getElementById("confirm-title").textContent=title;
-  document.getElementById("confirm-msg").textContent=msg;
-  const btn=document.getElementById("confirm-ok");
-  btn.textContent=isDanger?"Supprimer":"Confirmer";
-  btn.style.background=isDanger?"#ef4444":"#22c55e";
-  document.getElementById("modal-confirm").style.display="flex";
+  showModal(`<div class="modal" style="max-width:380px">
+    <div class="modal-header"><h3>${title}</h3></div>
+    <p style="color:var(--text2);font-size:14px;margin-bottom:20px;line-height:1.6">${msg}</p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button style="background:${isDanger?"#ef4444":"#22c55e"};color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px" onclick="confirmAction()">${isDanger?"Supprimer":"Confirmer"}</button>
+    </div>
+  </div>`);
 }
-function closeConfirm(){ document.getElementById("modal-confirm").style.display="none"; pendingConfirm=null; }
-function confirmAction(){ if(pendingConfirm) pendingConfirm(); closeConfirm(); }
+function confirmAction(){if(pendingConfirm)pendingConfirm();closeModal();}
+function showModal(html){document.getElementById("modals").innerHTML=`<div class="modal-overlay" onclick="if(event.target===this)closeModal()">${html}</div>`;}
+function closeModal(){document.getElementById("modals").innerHTML="";}
 
-// ── Dropdown ──────────────────────────────────────────────
-let openDropId=null;
-function toggleDrop(id){ closeAllDrops(); if(openDropId===id){openDropId=null;return;} const el=document.getElementById("drop-"+id); if(el){el.classList.add("open");openDropId=id;} }
-function closeAllDrops(){ document.querySelectorAll(".dropdown.open").forEach(el=>el.classList.remove("open")); openDropId=null; }
-document.addEventListener("click",e=>{ if(!e.target.closest(".menu-wrap")) closeAllDrops(); });
-
-// ── Card builder ──────────────────────────────────────────
-function buildCard({ id, name, section, showSection, st, stock, minimum, orderQty, orderUnit, unitsPerBox, supplierId, note,
-                     inputId, showInput, showOrderBtn, showSupplier, archived }){
-  const borderColor=st==="red"?"#ef4444":st==="yellow"?"#eab308":"#22c55e";
-  const nameColor=st==="red"?"#991b1b":st==="yellow"?"#854d0e":darkMode?"#f1f5f9":"#1e293b";
-  const stockColor=st==="red"?"#ef4444":st==="yellow"?"#f59e0b":"#22c55e";
-  const sup=supplierId?suppliers.find(s=>s.id===supplierId):null;
-  const oLabel=orderUnit==="boîte"?`${orderQty} boîte${orderQty>1?"s":""}`:`${orderQty} unité${orderQty>1?"s":""}`;
-  const unitsToAdd=(orderQty||0)*(orderUnit==="boîte"?(unitsPerBox||1):1);
-
-  return `<div class="inv-card" style="border:1px solid ${borderColor}">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:${note?4:12}px">
-      <div style="flex:1">
-        <div style="font-weight:700;font-size:15px;color:${nameColor}">${name}${archived?` <span style="font-size:11px;background:#eab308;color:#fff;border-radius:4px;padding:1px 6px;margin-left:4px">Archivé</span>`:""}
-        </div>
-        ${showSection&&section?`<div style="font-size:11px;color:var(--text3);margin-top:2px">${section}</div>`:""}
-        ${showSupplier&&sup?`<div style="font-size:12px;color:var(--text2);margin-top:2px">🏪 ${sup.name}${sup.contact?` · ${sup.contact}`:""}</div>`:""}
-      </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px">
-        <span class="status-badge ${st}">${statusLabel(st)}</span>
-        ${isAdmin&&inputId?`<div class="menu-wrap">
-          <button class="dots-btn" onclick="toggleDrop('m${id}')">⋯</button>
-          <div class="dropdown" id="drop-m${id}">
-            <button onclick="editProduct('${id}');closeAllDrops()">✏️ Modifier</button>
-            <button onclick="openNoteModal('${id}');closeAllDrops()">📝 Note</button>
-            <button onclick="openMoveModal('${id}');closeAllDrops()">📁 Changer catégorie</button>
-            <button onclick="toggleArchive('${id}','${name.replace(/'/g,"\\'")}',${!!archived});closeAllDrops()">${archived?"📤 Restaurer":"📦 Archiver"}</button>
-            <div class="sep"></div>
-            <button style="color:#ef4444" onclick="askDeleteProduct('${id}','${name.replace(/'/g,"\\'")}');closeAllDrops()">🗑️ Supprimer</button>
-          </div>
-        </div>`:""}
-      </div>
-    </div>
-    ${note?`<div class="note-badge" style="margin-bottom:10px">📝 ${note}</div>`:""}
-    <div class="inv-card-body">
-      <div class="inv-card-block">
-        <div class="inv-card-label">Stock actuel</div>
-        <div class="inv-card-value" style="color:${stockColor}">${stock}</div>
-        <div class="inv-card-sub">Min : ${minimum||0} · Cmd : ${oLabel}</div>
-      </div>
-      ${showInput?`<div class="inv-card-block" style="display:flex;flex-direction:column">
-        <div class="inv-card-label">Mettre à jour</div>
-        <input class="stock-input" type="number" placeholder="Qté restante" id="${inputId}"
-          onkeydown="if(event.key==='Enter') commitStock('${id}','${inputId}')"
-          onblur="commitStock('${id}','${inputId}')"
-          style="width:100%;height:38px;font-size:15px;margin-top:6px"/>
-      </div>`:""}
-      ${showOrderBtn?`<div class="inv-card-block">
-        <div class="inv-card-label">À commander</div>
-        <div style="font-weight:700;font-size:15px;color:#3b82f6;margin-top:4px">${oLabel}</div>
-        ${orderUnit==="boîte"?`<div style="font-size:11px;color:var(--text3)">${unitsToAdd} unités</div>`:""}
-      </div>`:""}
-    </div>
-    ${showOrderBtn?`<button onclick="openReceiveModal('${id}')"
-      style="width:100%;margin-top:12px;background:#22c55e;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer">
-      📦 Réceptionner la commande
-    </button>`:""}
-  </div>`;
+// ── Page renderer ────────────────────────────────────────
+function renderPage(){
+  const pageLabels={inventaire:"📦 Inventaire",historique:"📋 Historique",taches:"📋 Tâches",employes:"👥 Employés & Horaires",depenses:"💰 Dépenses",menu:"🍽️ Menu",fournisseurs:"🏪 Fournisseurs"};
+  document.getElementById("topbar-title").textContent=pageLabels[activePage]||activePage;
+  const lowCount=products.filter(p=>!p.archived&&["red","yellow"].includes(getStatus(p))).length;
+  const al=document.getElementById("topbar-alert");
+  if(al)al.innerHTML=lowCount>0?`<div class="alert-pill">⚠️ ${lowCount}</div>`:"";
+  const pc=document.getElementById("page-content"); if(!pc)return;
+  if(activePage==="inventaire")pc.innerHTML=renderInventaire();
+  else if(activePage==="historique"&&isAdmin)pc.innerHTML=renderHistorique();
+  else if(activePage==="taches")pc.innerHTML=renderTaches();
+  else if(activePage==="employes"&&isAdmin)pc.innerHTML=renderEmployes();
+  else if(activePage==="depenses"&&isAdmin)pc.innerHTML=renderDepenses();
+  else if(activePage==="menu"&&isAdmin)pc.innerHTML=renderMenu();
+  else if(activePage==="fournisseurs")pc.innerHTML=renderFournisseurs();
+  else pc.innerHTML=`<div class="page"><div class="empty">Accès non autorisé.</div></div>`;
 }
 
-// ── RENDER ────────────────────────────────────────────────
-function render(){
+// ══════════════════════════════════════════════════════════
+// INVENTAIRE
+// ══════════════════════════════════════════════════════════
+function renderInventaire(){
   const activeProducts=products.filter(p=>!p.archived);
   const archivedProducts=products.filter(p=>p.archived);
   const lowCount=activeProducts.filter(p=>["red","yellow"].includes(getStatus(p))).length;
-  const toOrder=activeProducts.filter(p=>["red","yellow"].includes(getStatus(p)));
   const isMobile=window.innerWidth<=640;
   const allSec=getAllSections();
+  const displayProducts=showArchived?archivedProducts:activeProducts;
+  const filtered=displayProducts.filter(p=>(activeSection==="Toutes"||p.section===activeSection)&&(searchQuery===""||p.name.toLowerCase().includes(searchQuery.toLowerCase()))).sort((a,b)=>STATUS_ORDER[getStatus(a)]-STATUS_ORDER[getStatus(b)]);
   const visibleSecs=(!isMobile||sectionsExpanded)?allSec:allSec.slice(0,4);
   const hasMore=isMobile&&allSec.length>4;
 
-  const displayProducts=showArchived?archivedProducts:activeProducts;
-  const filtered=displayProducts
-    .filter(p=>(activeSection==="Toutes"||p.section===activeSection)&&(searchQuery===""||p.name.toLowerCase().includes(searchQuery.toLowerCase())))
-    .sort((a,b)=>STATUS_ORDER[getStatus(a)]-STATUS_ORDER[getStatus(b)]);
-
-  let html=`
-  <div class="sticky-top">
-    <div class="header">
-      <div>
-        <div class="logo-name">BOCHICA</div>
-        <div class="logo-sub">Restaurant Colombien</div>
-        <div class="logo-bar"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
-      </div>
-      <div class="header-right">
-        ${lowCount>0?`<div class="alert-pill">⚠️ ${lowCount}</div>`:""}
-        <button class="btn-icon" onclick="toggleDark()" title="Mode sombre">${darkMode?"☀️":"🌙"}</button>
-        <button class="btn-icon" onclick="logout()" title="Déconnexion">${isAdmin?"👑":"👤"} ↩</button>
-      </div>
-    </div>
-    <div class="tabs">
-      <button class="tab ${activeTab==="inventaire"?"active":""}" onclick="setTab('inventaire')">📦 Inventaire</button>
-      <button class="tab ${activeTab==="rapport"?"active":""}" onclick="setTab('rapport')">📋 Rapport${lowCount>0?` (${lowCount})`:""}</button>
-      <button class="tab ${activeTab==="fournisseurs"?"active":""}" onclick="setTab('fournisseurs')">🏪 Fournisseurs</button>
-      ${isAdmin?`<button class="tab ${activeTab==="historique"?"active":""}" onclick="setTab('historique')">📋 Historique</button>`:""}
-    </div>
-  </div>
-  <div class="content">`;
-
-  // ── INVENTAIRE ─────────────────────────────────────────
-  if(activeTab==="inventaire"){
-    if(isAdmin&&archivedProducts.length>0){
-      html+=`<div class="archived-banner" style="display:flex;justify-content:space-between;align-items:center">
-        <span>📦 ${archivedProducts.length} produit${archivedProducts.length>1?"s":""} archivé${archivedProducts.length>1?"s":""}</span>
-        <button onclick="toggleShowArchived()" style="border:1px solid #eab308;background:none;color:#854d0e;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600">${showArchived?"Voir actifs":"Voir archivés"}</button>
-      </div>`;
-    }
-    if(!showArchived){
-      html+=`<div class="section-tabs ${sectionsExpanded?"expanded":""}">`;
-      visibleSecs.forEach(s=>{
-        const cnt=s==="Toutes"?lowCount:activeProducts.filter(p=>p.section===s&&["red","yellow"].includes(getStatus(p))).length;
-        html+=`<button class="sec-btn ${s===activeSection?"active":""}" onclick="setSection('${s}')">${s}${cnt>0?`<span class="badge">${cnt}</span>`:""}</button>`;
-      });
-      if(hasMore) html+=`<button class="sec-toggle" onclick="toggleSections()">${sectionsExpanded?"▲":"▼"}</button>`;
-      if(isAdmin) html+=`<button class="sec-btn" onclick="openCategoryModal()" style="border-style:dashed;color:var(--text3)">⚙️</button>`;
-      html+=`</div>`;
-    }
-    html+=`<div class="toolbar">
-      <div class="search-box"><span style="color:var(--text3)">🔍</span><input type="text" placeholder="Rechercher..." value="${searchQuery}" oninput="setSearch(this.value)"/></div>
-      ${isAdmin&&!showArchived?`<button class="btn-primary" onclick="openProductModal()">+ Produit</button>`:""}
-    </div>`;
-
-    if(!filtered.length){
-      html+=`<div class="empty"><div style="font-size:36px;margin-bottom:8px">${searchQuery?"🔍":"📭"}</div>${searchQuery?"Aucun résultat":showArchived?"Aucun produit archivé":"Aucun produit dans cette section."}</div>`;
-    } else if(isMobile){
-      filtered.forEach(p=>{
-        html+=buildCard({ id:p.id, name:p.name, section:p.section, showSection:activeSection==="Toutes",
-          st:getStatus(p), stock:getCurrentStock(p), minimum:p.minimum, orderQty:p.orderQty,
-          orderUnit:p.orderUnit, unitsPerBox:p.unitsPerBox, supplierId:p.supplierId, note:p.note, archived:p.archived,
-          inputId:`si_m${p.id}`, showInput:!showArchived, showOrderBtn:false, showSupplier:false });
-      });
-    } else {
-      html+=`<div class="overflow"><table><thead><tr>
-        ${isAdmin?`<th style="width:30px"></th>`:""}
-        <th>Produit</th><th>Stock actuel</th><th>Mettre à jour</th>
-        <th>Minimum</th><th>Fournisseur</th><th>Statut</th><th>À commander</th>
-        ${isAdmin?`<th></th>`:""}
-      </tr></thead><tbody id="product-tbody">`;
-      filtered.forEach(p=>{
-        const st=getStatus(p), stock=getCurrentStock(p);
-        const sup=suppliers.find(s=>s.id===p.supplierId);
-        const borderColor=st==="red"?"#ef4444":st==="yellow"?"#eab308":"#22c55e";
-        const nameColor=st==="red"?"#991b1b":st==="yellow"?"#854d0e":darkMode?"#f1f5f9":"#1e293b";
-        html+=`<tr data-id="${p.id}" style="border-left:3px solid ${borderColor}"
-          ${isAdmin&&!showArchived?`draggable="true" ondragstart="dragStart(event,'${p.id}')" ondragover="dragOver(event,'${p.id}')" ondrop="dropOn(event,'${p.id}')" ondragleave="dragLeave(event)" ondragend="dragEnd(event)"`:""}
-        >
-          ${isAdmin?`<td style="padding:0 4px">${!showArchived?`<span class="drag-handle">⠿</span>`:""}</td>`:""}
-          <td><strong style="color:${nameColor}">${p.name}</strong>
-            ${activeSection==="Toutes"?`<div style="font-size:11px;color:var(--text3)">${p.section}</div>`:""}
-            ${p.note?`<div class="note-badge">📝 ${p.note}</div>`:""}
-          </td>
-          <td><span style="font-weight:700;color:${borderColor}">${stock}</span></td>
-          <td>${!showArchived?`<input class="stock-input" type="number" placeholder="Qté restante" id="si_${p.id}" style="width:100px"
-            onkeydown="if(event.key==='Enter') commitStock('${p.id}','si_${p.id}')"
-            onblur="commitStock('${p.id}','si_${p.id}')"/>`:"—"}</td>
-          <td style="text-align:center">${p.minimum||0}</td>
-          <td style="font-size:13px;color:var(--text2)">${sup?sup.name:"—"}</td>
-          <td><span class="status-badge ${st}">${statusLabel(st)}</span></td>
-          <td style="font-weight:600;color:#3b82f6">${orderLabel(p)}${p.orderUnit==="boîte"?`<div style="font-size:11px;color:var(--text3)">${(p.orderQty||0)*(p.unitsPerBox||1)} unités</div>`:""}</td>
-          ${isAdmin?`<td><div class="menu-wrap">
-            <button class="dots-btn" onclick="toggleDrop('${p.id}')">⋯</button>
-            <div class="dropdown" id="drop-${p.id}">
-              <button onclick="editProduct('${p.id}');closeAllDrops()">✏️ Modifier</button>
-              <button onclick="openNoteModal('${p.id}');closeAllDrops()">📝 Note</button>
-              <button onclick="openMoveModal('${p.id}');closeAllDrops()">📁 Changer catégorie</button>
-              <button onclick="toggleArchive('${p.id}','${p.name.replace(/'/g,"\\'")}',${!!p.archived});closeAllDrops()">${p.archived?"📤 Restaurer":"📦 Archiver"}</button>
-              <div class="sep"></div>
-              <button style="color:#ef4444" onclick="askDeleteProduct('${p.id}','${p.name.replace(/'/g,"\\'")}');closeAllDrops()">🗑️ Supprimer</button>
-            </div>
-          </div></td>`:""}
-        </tr>`;
-      });
-      html+=`</tbody></table></div>`;
-    }
+  let h=`<div class="page">`;
+  if(isAdmin&&archivedProducts.length>0){
+    h+=`<div class="archived-banner"><span>📦 ${archivedProducts.length} produit${archivedProducts.length>1?"s":""} archivé${archivedProducts.length>1?"s":""}</span><button onclick="toggleShowArchived()" style="border:1px solid #eab308;background:none;color:#854d0e;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600">${showArchived?"Voir actifs":"Voir archivés"}</button></div>`;
   }
-
-  // ── RAPPORT ────────────────────────────────────────────
-  if(activeTab==="rapport"){
-    html+=`<div class="toolbar">
-      <div><h2 style="font-size:18px">Rapport de commande</h2>
-      <p style="color:var(--text3);font-size:13px;margin-top:4px">Produits sous le minimum ou à moins de 20% du seuil</p></div>
-      <button class="btn-primary" ${!toOrder.length?"disabled":""} onclick="printReport()">🖨️ Exporter</button>
-    </div>`;
-    if(!toOrder.length){
-      html+=`<div class="empty"><div style="font-size:48px;margin-bottom:8px">✅</div>Tous les produits sont en quantité suffisante !</div>`;
-    } else {
-      const redCnt=toOrder.filter(p=>getStatus(p)==="red").length;
-      const yelCnt=toOrder.filter(p=>getStatus(p)==="yellow").length;
-      html+=`<div class="summary-cards">
-        <div class="summary-card" style="border-color:#ef4444"><div style="font-weight:700;font-size:22px;color:#ef4444">${redCnt}</div><div style="font-size:13px;color:#ef4444">⚠️ À commander immédiatement</div></div>
-        <div class="summary-card" style="border-color:#eab308"><div style="font-weight:700;font-size:22px;color:#eab308">${yelCnt}</div><div style="font-size:13px;color:#eab308">🟡 Bientôt bas</div></div>
-      </div>`;
-      getAllSections().filter(s=>s!=="Toutes").forEach(section=>{
-        const items=toOrder.filter(p=>p.section===section).sort((a,b)=>STATUS_ORDER[getStatus(a)]-STATUS_ORDER[getStatus(b)]);
-        if(!items.length) return;
-        html+=`<h3 style="font-size:13px;color:var(--text2);border-bottom:2px solid var(--border);padding-bottom:6px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">📁 ${section}</h3>
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:24px">`;
-        items.forEach(p=>{
-          html+=buildCard({ id:p.id, name:p.name, section:p.section, showSection:false,
-            st:getStatus(p), stock:getCurrentStock(p), minimum:p.minimum, orderQty:p.orderQty,
-            orderUnit:p.orderUnit, unitsPerBox:p.unitsPerBox, supplierId:p.supplierId, note:p.note,
-            inputId:null, showInput:false, showOrderBtn:true, showSupplier:true });
-        });
-        html+=`</div>`;
-      });
-    }
+  if(!showArchived){
+    h+=`<div class="section-tabs ${sectionsExpanded?"expanded":""}">`;
+    visibleSecs.forEach(s=>{
+      const cnt=s==="Toutes"?lowCount:activeProducts.filter(p=>p.section===s&&["red","yellow"].includes(getStatus(p))).length;
+      h+=`<button class="sec-btn ${s===activeSection?"active":""}" onclick="setSection('${s}')">${s}${cnt>0?`<span class="badge-count">${cnt}</span>`:""}</button>`;
+    });
+    if(hasMore)h+=`<button class="sec-toggle" onclick="toggleSections()">${sectionsExpanded?"▲":"▼"}</button>`;
+    if(isAdmin)h+=`<button class="sec-btn" onclick="openCategoryModal()" style="border-style:dashed;color:var(--text3)">⚙️</button>`;
+    h+=`</div>`;
   }
+  h+=`<div class="toolbar">
+    <div class="search-box"><span style="color:var(--text3)">🔍</span><input type="text" placeholder="Rechercher..." value="${searchQuery}" oninput="setSearch(this.value)"/></div>
+    ${isAdmin&&!showArchived?`<button class="btn btn-primary" onclick="openProductModal()">+ Produit</button>`:""}
+  </div>`;
 
-  // ── FOURNISSEURS ───────────────────────────────────────
-  if(activeTab==="fournisseurs"){
-    html+=`<div class="toolbar">
-      <h2 style="font-size:18px">Fournisseurs</h2>
-      ${isAdmin?`<button class="btn-primary" onclick="openSupplierModal()">+ Fournisseur</button>`:""}
-    </div>`;
-    if(!suppliers.length){
-      html+=`<div class="empty"><div style="font-size:40px;margin-bottom:8px">🏪</div>Aucun fournisseur enregistré.</div>`;
-    } else {
-      html+=`<div class="supplier-grid">`;
-      suppliers.forEach(s=>{
-        const linked=activeProducts.filter(p=>p.supplierId===s.id);
-        html+=`<div class="supplier-card">
-          <div style="display:flex;justify-content:space-between">
-            <div>
-              <div style="font-weight:700;font-size:16px">🏪 ${s.name}</div>
-              ${s.contact?`<div style="color:var(--text2);font-size:13px;margin-top:4px">📞 ${s.contact}</div>`:""}
-              ${s.email?`<div style="color:var(--text2);font-size:13px">✉️ ${s.email}</div>`:""}
-              ${s.notes?`<div style="color:var(--text3);font-size:12px;margin-top:6px;font-style:italic">${s.notes}</div>`:""}
-            </div>
-            ${isAdmin?`<div class="menu-wrap">
-              <button class="dots-btn" onclick="toggleDrop('sup${s.id}')">⋯</button>
-              <div class="dropdown" id="drop-sup${s.id}">
-                <button onclick="editSupplier('${s.id}');closeAllDrops()">✏️ Modifier</button>
-                <div class="sep"></div>
-                <button style="color:#ef4444" onclick="askDeleteSupplier('${s.id}','${s.name.replace(/'/g,"\\'")}');closeAllDrops()">🗑️ Supprimer</button>
-              </div>
-            </div>`:""}
-          </div>
-          ${linked.length?`<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
-            <div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:600">PRODUITS LIÉS</div>
-            ${linked.map(p=>`<span class="tag">${p.name}</span>`).join("")}
-          </div>`:""}
-        </div>`;
-      });
-      html+=`</div>`;
-    }
+  if(!filtered.length){h+=`<div class="empty"><div style="font-size:36px;margin-bottom:8px">${searchQuery?"🔍":"📭"}</div>${searchQuery?"Aucun résultat":showArchived?"Aucun produit archivé":"Aucun produit dans cette section."}</div>`;}
+  else if(isMobile){filtered.forEach(p=>{h+=buildInvCard(p,true,false);});} 
+  else{
+    h+=`<div class="table-wrap overflow"><table><thead><tr>
+      ${isAdmin?`<th style="width:30px"></th>`:""}
+      <th>Produit</th><th>Stock actuel</th><th>Mettre à jour</th><th>Minimum</th><th>Fournisseur</th><th>Statut</th><th>À commander</th>
+      ${isAdmin?`<th></th>`:""}
+    </tr></thead><tbody id="product-tbody">`;
+    filtered.forEach(p=>{
+      const st=getStatus(p),stock=getCurrentStock(p);
+      const sup=suppliers.find(s=>s.id===p.supplierId);
+      const borderColor=st==="red"?"#ef4444":st==="yellow"?"#eab308":"#22c55e";
+      const nameColor=st==="red"?"#991b1b":st==="yellow"?"#854d0e":darkMode?"#f1f5f9":"#1e293b";
+      h+=`<tr data-id="${p.id}" style="border-left:3px solid ${borderColor}" ${isAdmin&&!showArchived?`draggable="true" ondragstart="dragStart(event,'${p.id}')" ondragover="dragOver(event,'${p.id}')" ondrop="dropOn(event,'${p.id}')" ondragleave="dragLeave(event)" ondragend="dragEnd(event)"`:""}> 
+        ${isAdmin?`<td style="padding:0 4px">${!showArchived?`<span class="drag-handle">⠿</span>`:""}</td>`:""}
+        <td><strong style="color:${nameColor}">${p.name}</strong>${activeSection==="Toutes"?`<div style="font-size:11px;color:var(--text3)">${p.section}</div>`:""}${p.note?`<div style="font-size:11px;color:var(--text3);font-style:italic;margin-top:2px">📝 ${p.note}</div>`:""}</td>
+        <td><span style="font-weight:700;color:${borderColor}">${stock}</span></td>
+        <td>${!showArchived?`<input class="stock-input" type="number" placeholder="Qté restante" id="si_${p.id}" style="width:100px" onkeydown="if(event.key==='Enter')commitStock('${p.id}','si_${p.id}')" onblur="commitStock('${p.id}','si_${p.id}')"/>`:"—"}</td>
+        <td style="text-align:center">${p.minimum||0}</td>
+        <td style="font-size:13px;color:var(--text2)">${sup?sup.name:"—"}</td>
+        <td><span class="badge-pill ${st}">${statusLabel(st)}</span></td>
+        <td style="font-weight:600;color:var(--accent)">${orderLabel(p)}${p.orderUnit==="boîte"?`<div style="font-size:11px;color:var(--text3)">${(p.orderQty||0)*(p.unitsPerBox||1)} unités</div>`:""}</td>
+        ${isAdmin?`<td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('${p.id}')">⋯</button><div class="dropdown" id="drop-${p.id}">
+          <button onclick="openProductModal('${p.id}');closeAllDrops()">✏️ Modifier</button>
+          <button onclick="openNoteModal('${p.id}');closeAllDrops()">📝 Note</button>
+          <button onclick="openMoveModal('${p.id}');closeAllDrops()">📁 Changer catégorie</button>
+          <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${p.archived?"📤 Restaurer":"📦 Archiver"}</button>
+          <div class="sep"></div>
+          <button style="color:#ef4444" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">🗑️ Supprimer</button>
+        </div></div></td>`:""}
+      </tr>`;
+    });
+    h+=`</tbody></table></div>`;
   }
-
-  // ── HISTORIQUE ─────────────────────────────────────────
-  if(activeTab==="historique"){
-    html+=`<div class="toolbar">
-      <h2 style="font-size:18px">Historique des modifications</h2>
-    </div>
-    <div style="margin-bottom:14px">
-      <div class="search-box" style="max-width:320px">
-        <span style="color:var(--text3)">🔍</span>
-        <input type="text" placeholder="Filtrer par produit..." value="${logFilter}" oninput="setLogFilter(this.value)"/>
-      </div>
-    </div>`;
-    const filteredLogs=logs.filter(l=>logFilter===""||l.productName?.toLowerCase().includes(logFilter.toLowerCase()));
-    if(!filteredLogs.length){
-      html+=`<div class="empty"><div style="font-size:36px;margin-bottom:8px">📋</div>Aucune modification enregistrée.</div>`;
-    } else {
-      html+=`<div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px">`;
-      filteredLogs.forEach(l=>{
-        html+=`<div class="log-item">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-            <div>
-              <span style="font-weight:700">${l.productName||"?"}</span>
-              <span style="color:var(--text3);font-size:12px;margin-left:6px">${l.role||""}</span>
-              <div style="color:var(--text2);font-size:13px;margin-top:2px">${l.action||""} ${l.detail?`— ${l.detail}`:""}</div>
-            </div>
-            <div style="font-size:11px;color:var(--text3);white-space:nowrap">${fmtDate(l.ts)}</div>
-          </div>
-        </div>`;
-      });
-      html+=`</div>`;
-    }
-  }
-
-  html+=`</div>`;
-  document.getElementById("app").innerHTML=html;
-  updateSelects();
+  return h+`</div>`;
 }
 
-window.addEventListener("resize",()=>{ if(isLoggedIn) render(); });
-function setTab(t){ activeTab=t; render(); }
-function setSection(s){ activeSection=s; searchQuery=""; render(); }
-function setSearch(v){ searchQuery=v; render(); }
-function toggleSections(){ sectionsExpanded=!sectionsExpanded; render(); }
-function toggleShowArchived(){ showArchived=!showArchived; render(); }
-function setLogFilter(v){ logFilter=v; render(); }
+function buildInvCard(p,showInput,showOrderBtn){
+  const st=getStatus(p),stock=getCurrentStock(p);
+  const borderColor=st==="red"?"#ef4444":st==="yellow"?"#eab308":"#22c55e";
+  const nameColor=st==="red"?"#991b1b":st==="yellow"?"#854d0e":darkMode?"#f1f5f9":"#1e293b";
+  const stockColor=st==="red"?"#ef4444":st==="yellow"?"#f59e0b":"#22c55e";
+  const sup=p.supplierId?suppliers.find(s=>s.id===p.supplierId):null;
+  const oq=p.orderQty||0, upb=p.unitsPerBox||1;
+  const oLabel=p.orderUnit==="boîte"?`${oq} boîte${oq>1?"s":""}`:`${oq} unité${oq>1?"s":""}`;
+  const units=oq*(p.orderUnit==="boîte"?upb:1);
+  const inputId=`si_m${p.id}`;
+  return`<div class="inv-card" style="border:1px solid ${borderColor}">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:${p.note?4:12}px">
+      <div style="flex:1"><div style="font-weight:700;font-size:15px;color:${nameColor}">${p.name}</div>
+        ${showOrderBtn&&sup?`<div style="font-size:12px;color:var(--text2);margin-top:2px">🏪 ${sup.name}${sup.contact?` · ${sup.contact}`:""}</div>`:""}
+        ${activeSection==="Toutes"&&!showOrderBtn?`<div style="font-size:11px;color:var(--text3)">${p.section}</div>`:""}
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px">
+        <span class="badge-pill ${st}">${statusLabel(st)}</span>
+        ${isAdmin&&showInput?`<div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('m${p.id}')">⋯</button><div class="dropdown" id="drop-m${p.id}">
+          <button onclick="openProductModal('${p.id}');closeAllDrops()">✏️ Modifier</button>
+          <button onclick="openNoteModal('${p.id}');closeAllDrops()">📝 Note</button>
+          <button onclick="openMoveModal('${p.id}');closeAllDrops()">📁 Changer catégorie</button>
+          <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${p.archived?"📤 Restaurer":"📦 Archiver"}</button>
+          <div class="sep"></div>
+          <button style="color:#ef4444" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">🗑️ Supprimer</button>
+        </div></div>`:""}
+      </div>
+    </div>
+    ${p.note?`<div class="note-badge" style="margin-bottom:10px">📝 ${p.note}</div>`:""}
+    <div class="inv-card-body">
+      <div class="inv-card-block"><div class="inv-card-label">Stock actuel</div><div class="inv-card-value" style="color:${stockColor}">${stock}</div><div class="inv-card-sub">Min : ${p.minimum||0} · Cmd : ${oLabel}</div></div>
+      ${showInput?`<div class="inv-card-block" style="display:flex;flex-direction:column"><div class="inv-card-label">Mettre à jour</div><input class="stock-input" type="number" placeholder="Qté restante" id="${inputId}" onkeydown="if(event.key==='Enter')commitStock('${p.id}','${inputId}')" onblur="commitStock('${p.id}','${inputId}')" style="width:100%;height:38px;font-size:15px;margin-top:6px"/></div>`:""}
+      ${showOrderBtn?`<div class="inv-card-block"><div class="inv-card-label">À commander</div><div style="font-weight:700;font-size:15px;color:var(--accent);margin-top:4px">${oLabel}</div>${p.orderUnit==="boîte"?`<div style="font-size:11px;color:var(--text3)">${units} unités</div>`:""}</div>`:""}
+    </div>
+    ${showOrderBtn?`<button onclick="openReceiveModal('${p.id}')" style="width:100%;margin-top:12px;background:#22c55e;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer">📦 Réceptionner la commande</button>`:""}
+  </div>`;
+}
 
-// ── Stock update ──────────────────────────────────────────
+// ══════════════════════════════════════════════════════════
+// RAPPORT — in Inventaire as sub-tab? No — added as section in INVENTAIRE sidebar
+// Actually render rapport items inside inventaire when needed — kept as a separate page nav below
+// ══════════════════════════════════════════════════════════
+
+// ══════════════════════════════════════════════════════════
+// HISTORIQUE
+// ══════════════════════════════════════════════════════════
+function renderHistorique(){
+  const filtered=logs.filter(l=>logFilter===""||l.productName?.toLowerCase().includes(logFilter.toLowerCase()));
+  return`<div class="page">
+    <div class="toolbar"><h2 style="font-size:18px">Historique</h2></div>
+    <div style="margin-bottom:14px"><div class="search-box" style="max-width:320px"><span style="color:var(--text3)">🔍</span><input type="text" placeholder="Filtrer par produit..." value="${logFilter}" oninput="setLogFilter(this.value)"/></div></div>
+    ${filtered.length===0?`<div class="empty"><div style="font-size:36px;margin-bottom:8px">📋</div>Aucune entrée.</div>`:
+    `<div class="table-wrap"><div style="padding:4px 0">${filtered.map(l=>`<div class="log-item" style="padding:10px 16px">
+      <div style="display:flex;justify-content:space-between;gap:8px">
+        <div><span style="font-weight:700">${l.productName||"?"}</span> <span style="color:var(--text3);font-size:12px">(${l.role||""})</span>
+        <div style="color:var(--text2);font-size:13px;margin-top:2px">${l.action||""} ${l.detail?`— ${l.detail}`:""}</div></div>
+        <div style="font-size:11px;color:var(--text3);white-space:nowrap">${fmtDate(l.ts)}</div>
+      </div>
+    </div>`).join("")}</div></div>`}
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// TÂCHES
+// ══════════════════════════════════════════════════════════
+function renderTaches(){
+  const cols=TASK_COLS;
+  const prioColor={haute:"#ef4444",moyenne:"#f59e0b",basse:"#22c55e"};
+  const pendingTasks=tasks.filter(t=>t.status!=="Complété").length;
+  return`<div class="page">
+    <div class="toolbar">
+      <div><h2 style="font-size:18px">Tâches</h2><p style="font-size:13px;color:var(--text3);margin-top:2px">${pendingTasks} tâche${pendingTasks>1?"s":""} en attente</p></div>
+      ${isAdmin?`<button class="btn btn-primary" onclick="openTaskModal()">+ Tâche</button>`:""}
+    </div>
+    <div class="task-cols">
+    ${cols.map(col=>{
+      const items=tasks.filter(t=>t.status===col);
+      return`<div class="task-col">
+        <div class="col-title">${col==="À faire"?"📋":col==="En cours"?"🔄":"✅"} ${col} <span style="background:var(--surface3);border-radius:10px;padding:1px 7px;font-size:11px">${items.length}</span></div>
+        ${items.map(t=>`<div class="task-card" onclick="${isAdmin?`openTaskModal('${t.id}')`:`cycleTaskStatus('${t.id}','${t.status}')`}">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start">
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:14px;display:flex;align-items:center">
+                <span class="task-prio" style="background:${prioColor[t.priority]||"#94a3b8"}"></span>${t.title||""}
+              </div>
+              ${t.description?`<div style="font-size:12px;color:var(--text2);margin-top:4px">${t.description}</div>`:""}
+              <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
+                ${t.assignedTo?`<span style="font-size:11px;color:var(--text3)">👤 ${t.assignedTo}</span>`:""}
+                ${t.dueDate?`<span style="font-size:11px;color:var(--text3)">📅 ${t.dueDate}</span>`:""}
+              </div>
+            </div>
+            ${isAdmin?`<div class="menu-wrap" onclick="event.stopPropagation()"><button class="dots-btn" onclick="toggleDrop('tk${t.id}')">⋯</button><div class="dropdown" id="drop-tk${t.id}">
+              <button onclick="openTaskModal('${t.id}');closeAllDrops()">✏️ Modifier</button>
+              <div class="sep"></div>
+              <button style="color:#ef4444" onclick="askDelete('tasks','${t.id}','${esc(t.title||"")}');closeAllDrops()">🗑️ Supprimer</button>
+            </div></div>`:""}
+          </div>
+        </div>`).join("")}
+        ${isAdmin?`<button onclick="openTaskModal(null,'${col}')" style="width:100%;border:1px dashed var(--border);background:none;color:var(--text3);border-radius:8px;padding:8px;cursor:pointer;font-size:13px;margin-top:4px">+ Ajouter</button>`:""}
+      </div>`;
+    }).join("")}
+    </div>
+  </div>`;
+}
+async function cycleTaskStatus(id,current){
+  const idx=TASK_COLS.indexOf(current);
+  const next=TASK_COLS[(idx+1)%TASK_COLS.length];
+  await db.collection("tasks").doc(id).update({status:next});
+}
+
+// ══════════════════════════════════════════════════════════
+// EMPLOYÉS & HORAIRES
+// ══════════════════════════════════════════════════════════
+function renderEmployes(){
+  const weekStart=getWeekStart();
+  const weekDays=Array.from({length:7},(_,i)=>{const d=new Date(weekStart);d.setDate(d.getDate()+i);return d;});
+  return`<div class="page">
+    <div class="toolbar">
+      <h2 style="font-size:18px">Employés & Horaires</h2>
+      <button class="btn btn-primary" onclick="openEmployeeModal()">+ Employé</button>
+    </div>
+    ${employees.length===0?`<div class="empty"><div style="font-size:36px;margin-bottom:8px">👥</div>Aucun employé enregistré.</div>`:`
+    <!-- Schedule -->
+    <div class="card" style="margin-bottom:20px;overflow-x:auto">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+        <h3 style="font-size:15px">Horaire — Semaine du ${weekDays[0].toLocaleDateString("fr-CA",{month:"short",day:"numeric"})}</h3>
+        <div style="display:flex;gap:6px">${SHIFT_TYPES.map(s=>`<span style="background:${s.color};color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">${s.label}</span>`).join("")}</div>
+      </div>
+      <div class="schedule-grid">
+        <div></div>${DAYS_FR.map((d,i)=>`<div class="sch-header">${d}<div style="font-size:10px;font-weight:400;color:var(--text3)">${weekDays[i].getDate()}</div></div>`).join("")}
+        ${employees.map(emp=>{
+          const shifts=emp.shifts||{};
+          return`<div class="sch-name">${emp.name||""}</div>
+          ${weekDays.map(day=>{
+            const dk=day.toISOString().slice(0,10);
+            const s=shifts[dk];
+            return`<div class="sch-cell ${s?"has-shift":""}" onclick="openShiftModal('${emp.id}','${dk}')">
+              ${s?`<div class="shift-tag" style="background:${s.color||"#3b82f6"}">${s.label||""}<span onclick="event.stopPropagation();removeShift('${emp.id}','${dk}')" style="cursor:pointer;opacity:.7;margin-left:4px">✕</span></div>`:
+              `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px">+</div>`}
+            </div>`;
+          }).join("")}`;
+        }).join("")}
+      </div>
+    </div>
+    <!-- Employee list -->
+    <h3 style="font-size:15px;margin-bottom:12px">Équipe</h3>
+    <div class="card-grid">
+      ${employees.map(emp=>`<div class="card">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div style="font-weight:700;font-size:15px">👤 ${emp.name||""}</div>
+            ${emp.role?`<div style="font-size:13px;color:var(--text3);margin-top:2px">${emp.role}</div>`:""}
+            ${emp.phone?`<div style="font-size:13px;color:var(--text2);margin-top:4px">📞 ${emp.phone}</div>`:""}
+            ${emp.email?`<div style="font-size:13px;color:var(--text2)">✉️ ${emp.email}</div>`:""}
+            ${emp.pin?`<div style="font-size:12px;color:var(--text3);margin-top:4px">🔑 PIN : ${emp.pin}</div>`:""}
+          </div>
+          <div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('emp${emp.id}')">⋯</button><div class="dropdown" id="drop-emp${emp.id}">
+            <button onclick="openEmployeeModal('${emp.id}');closeAllDrops()">✏️ Modifier</button>
+            <div class="sep"></div>
+            <button style="color:#ef4444" onclick="askDelete('employees','${emp.id}','${esc(emp.name||"")}');closeAllDrops()">🗑️ Supprimer</button>
+          </div></div>
+        </div>
+      </div>`).join("")}
+    </div>`}
+  </div>`;
+}
+function getWeekStart(){const d=new Date();const day=d.getDay();const diff=d.getDate()-day+(day===0?-6:1);d.setDate(diff);d.setHours(0,0,0,0);return d;}
+
+async function removeShift(empId,dayKey){
+  const emp=employees.find(e=>e.id===empId);if(!emp)return;
+  const shifts={...emp.shifts||{}};delete shifts[dayKey];
+  await db.collection("employees").doc(empId).update({shifts});
+}
+
+// ══════════════════════════════════════════════════════════
+// DÉPENSES
+// ══════════════════════════════════════════════════════════
+function renderDepenses(){
+  const now=new Date();
+  const filtered=expenses.filter(e=>{
+    const d=new Date(e.date);
+    if(activeExpensePeriod==="semaine"){const diff=(now-d)/(1000*60*60*24);return diff<=7;}
+    if(activeExpensePeriod==="mois"){return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear();}
+    return d.getFullYear()===now.getFullYear();
+  });
+  const total=filtered.reduce((s,e)=>s+Number(e.amount||0),0);
+  const bycat=EXPENSE_CATS.map(c=>({cat:c,total:filtered.filter(e=>e.category===c).reduce((s,e)=>s+Number(e.amount||0),0)}));
+  return`<div class="page">
+    <div class="toolbar">
+      <h2 style="font-size:18px">Dépenses</h2>
+      <button class="btn btn-primary" onclick="openExpenseModal()">+ Dépense</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:16px">
+      ${["semaine","mois","année"].map(p=>`<button class="sec-btn ${activeExpensePeriod===p?"active":""}" onclick="setExpensePeriod('${p}')">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join("")}
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${fmtMoney(total)}</div><div class="stat-label">Total dépenses</div></div>
+      ${bycat.filter(c=>c.total>0).map(c=>`<div class="stat-card"><div class="stat-num" style="font-size:20px">${fmtMoney(c.total)}</div><div class="stat-label">${c.cat}</div></div>`).join("")}
+    </div>
+    <div class="table-wrap overflow">
+      <table><thead><tr><th>Date</th><th>Description</th><th>Catégorie</th><th>Fournisseur</th><th>Montant</th><th></th></tr></thead><tbody>
+      ${filtered.length===0?`<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">Aucune dépense pour cette période.</td></tr>`:
+      filtered.map(e=>`<tr>
+        <td>${e.date||""}</td>
+        <td><strong>${e.description||""}</strong></td>
+        <td><span class="badge-pill blue">${e.category||""}</span></td>
+        <td>${e.supplier||"—"}</td>
+        <td style="font-weight:700;color:var(--accent)">${fmtMoney(e.amount)}</td>
+        <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('exp${e.id}')">⋯</button><div class="dropdown" id="drop-exp${e.id}">
+          <button onclick="openExpenseModal('${e.id}');closeAllDrops()">✏️ Modifier</button>
+          <div class="sep"></div>
+          <button style="color:#ef4444" onclick="askDelete('expenses','${e.id}','${esc(e.description||"")}');closeAllDrops()">🗑️ Supprimer</button>
+        </div></div></td>
+      </tr>`).join("")}
+      </tbody></table>
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// MENU
+// ══════════════════════════════════════════════════════════
+function renderMenu(){
+  const cats=["Toutes",...MENU_CATS];
+  const filtered=menuItems.filter(m=>activeMenuCat==="Toutes"||m.category===activeMenuCat);
+  const available=menuItems.filter(m=>m.available!==false).length;
+  return`<div class="page">
+    <div class="toolbar">
+      <div><h2 style="font-size:18px">Menu</h2><p style="font-size:13px;color:var(--text3);margin-top:2px">${available} item${available>1?"s":""} disponible${available>1?"s":""}</p></div>
+      <button class="btn btn-primary" onclick="openMenuModal()">+ Item</button>
+    </div>
+    <div class="sec-tabs">${cats.map(c=>`<button class="sec-btn ${activeMenuCat===c?"active":""}" onclick="setMenuCat('${c}')">${c}</button>`).join("")}</div>
+    ${filtered.length===0?`<div class="empty"><div style="font-size:36px;margin-bottom:8px">🍽️</div>Aucun item dans cette catégorie.</div>`:
+    `<div class="card-grid">${filtered.map(m=>`<div class="menu-item-card ${m.available===false?"unavailable":""}">
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+          <span style="font-weight:700;font-size:15px">${m.name||""}</span>
+          ${m.available===false?`<span class="badge-pill" style="background:#f1f5f9;border:1px solid var(--border);color:var(--text3);font-size:10px">Indisponible</span>`:``}
+        </div>
+        ${m.description?`<div style="font-size:12px;color:var(--text2);margin-bottom:6px">${m.description}</div>`:""}
+        <span class="badge-pill blue" style="font-size:11px">${m.category||""}</span>
+      </div>
+      <div style="text-align:right;flex-shrink:0;margin-left:12px">
+        <div class="price-tag">${fmtMoney(m.price)}</div>
+        <div class="menu-wrap" style="margin-top:6px"><button class="dots-btn" onclick="toggleDrop('mn${m.id}')">⋯</button><div class="dropdown" id="drop-mn${m.id}">
+          <button onclick="openMenuModal('${m.id}');closeAllDrops()">✏️ Modifier</button>
+          <button onclick="toggleMenuAvailable('${m.id}',${m.available!==false});closeAllDrops()">${m.available===false?"✅ Marquer disponible":"⛔ Marquer indisponible"}</button>
+          <div class="sep"></div>
+          <button style="color:#ef4444" onclick="askDelete('menu','${m.id}','${esc(m.name||"")}');closeAllDrops()">🗑️ Supprimer</button>
+        </div></div>
+      </div>
+    </div>`).join("")}</div>`}
+  </div>`;
+}
+async function toggleMenuAvailable(id,current){await db.collection("menu").doc(id).update({available:!current});}
+
+// ══════════════════════════════════════════════════════════
+// FOURNISSEURS
+// ══════════════════════════════════════════════════════════
+function renderFournisseurs(){
+  const activeProducts=products.filter(p=>!p.archived);
+  return`<div class="page">
+    <div class="toolbar"><h2 style="font-size:18px">Fournisseurs</h2>${isAdmin?`<button class="btn btn-primary" onclick="openSupplierModal()">+ Fournisseur</button>`:""}</div>
+    ${suppliers.length===0?`<div class="empty"><div style="font-size:40px;margin-bottom:8px">🏪</div>Aucun fournisseur.</div>`:
+    `<div class="supplier-grid">${suppliers.map(s=>{const linked=activeProducts.filter(p=>p.supplierId===s.id);return`<div class="supplier-card">
+      <div style="display:flex;justify-content:space-between">
+        <div><div style="font-weight:700;font-size:16px">🏪 ${s.name||""}</div>
+          ${s.contact?`<div style="color:var(--text2);font-size:13px;margin-top:4px">📞 ${s.contact}</div>`:""}
+          ${s.email?`<div style="color:var(--text2);font-size:13px">✉️ ${s.email}</div>`:""}
+          ${s.notes?`<div style="color:var(--text3);font-size:12px;margin-top:6px;font-style:italic">${s.notes}</div>`:""}
+        </div>
+        ${isAdmin?`<div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('sup${s.id}')">⋯</button><div class="dropdown" id="drop-sup${s.id}">
+          <button onclick="openSupplierModal('${s.id}');closeAllDrops()">✏️ Modifier</button>
+          <div class="sep"></div>
+          <button style="color:#ef4444" onclick="askDelete('suppliers','${s.id}','${esc(s.name||"")}');closeAllDrops()">🗑️ Supprimer</button>
+        </div></div>`:""}
+      </div>
+      ${linked.length?`<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px"><div style="font-size:11px;color:var(--text3);margin-bottom:4px;font-weight:600">PRODUITS LIÉS</div>${linked.map(p=>`<span class="tag">${p.name}</span>`).join("")}</div>`:""}
+    </div>`;}).join("")}</div>`}
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════════════
+// MODALS — Product, Task, Employee, Expense, Menu, Supplier
+// ══════════════════════════════════════════════════════════
+
+// Product
+function openProductModal(id){
+  const p=id?products.find(x=>x.id===id):null;
+  const secs=getAllSections().filter(s=>s!=="Toutes");
+  showModal(`<div class="modal">
+    <div class="modal-header"><h3>${p?"Modifier":"Ajouter"} un produit</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <label>Nom<input id="p-name" value="${esc(p?.name||"")}"/></label>
+    <label>Section<select id="p-section">${secs.map(s=>`<option value="${s}" ${(p?.section||"Cuisine")===s?"selected":""}>${s}</option>`).join("")}</select></label>
+    <div class="form-row">
+      <label>Qté en inventaire<input id="p-stock" type="number" value="${p?.currentStock||0}"/></label>
+      <label>Minimum requis<input id="p-minimum" type="number" value="${p?.minimum||0}"/></label>
+    </div>
+    <label>Unité de commande<select id="p-orderunit" onchange="toggleBoxFields()"><option value="unité" ${(p?.orderUnit||"unité")==="unité"?"selected":""}>Unité</option><option value="boîte" ${p?.orderUnit==="boîte"?"selected":""}>Boîte</option></select></label>
+    <div id="box-fields" style="display:${p?.orderUnit==="boîte"?"block":"none"}">
+      <div class="form-row">
+        <label>Unités/boîte<input id="p-upb" type="number" value="${p?.unitsPerBox||1}"/></label>
+        <label>Qté à commander<input id="p-oqty" type="number" value="${p?.orderQty||0}"/></label>
+      </div>
+    </div>
+    <div id="unit-fields" style="display:${p?.orderUnit==="boîte"?"none":"block"}">
+      <label>Qté à commander<input id="p-oqty-u" type="number" value="${p?.orderQty||0}"/></label>
+    </div>
+    <label>Fournisseur<select id="p-sup"><option value="">— Aucun —</option>${suppliers.map(s=>`<option value="${s.id}" ${p?.supplierId===s.id?"selected":""}>${s.name}</option>`).join("")}</select></label>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="saveProduct('${id||""}')">Enregistrer</button></div>
+  </div>`);
+}
+function toggleBoxFields(){const isBox=document.getElementById("p-orderunit")?.value==="boîte";document.getElementById("box-fields").style.display=isBox?"block":"none";document.getElementById("unit-fields").style.display=isBox?"none":"block";}
+async function saveProduct(id){
+  const name=document.getElementById("p-name").value.trim();if(!name)return alert("Entrez un nom.");
+  const orderUnit=document.getElementById("p-orderunit").value;
+  const isBox=orderUnit==="boîte";
+  const orderQty=isBox?Number(document.getElementById("p-oqty").value):Number(document.getElementById("p-oqty-u").value);
+  const data={name,unit:"unité",orderUnit,orderQty,unitsPerBox:isBox?Number(document.getElementById("p-upb").value):1,minimum:Number(document.getElementById("p-minimum").value),currentStock:Number(document.getElementById("p-stock").value),section:document.getElementById("p-section").value,supplierId:document.getElementById("p-sup").value};
+  if(id){const p=products.find(x=>x.id===id);await db.collection("products").doc(id).set({...p,...data,id});await addLog(name,"Modifié","");}
+  else{const nid=genId();await db.collection("products").doc(nid).set({...data,id:nid,sortOrder:products.length,archived:false});await addLog(name,"Ajouté","");}
+  closeModal();
+}
+
+// Note
+function openNoteModal(id){
+  const p=products.find(x=>x.id===id);if(!p)return;
+  showModal(`<div class="modal" style="max-width:400px">
+    <div class="modal-header"><h3>📝 Note — ${p.name}</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <label>Note rapide<textarea id="note-text" style="height:100px;resize:vertical">${p.note||""}</textarea></label>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="clearNote('${id}')">Effacer</button>
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveNote('${id}')">Enregistrer</button>
+    </div>
+  </div>`);
+}
+async function saveNote(id){const note=document.getElementById("note-text").value.trim();await db.collection("products").doc(id).update({note});closeModal();}
+async function clearNote(id){await db.collection("products").doc(id).update({note:""});closeModal();}
+
+// Move
+function openMoveModal(id){
+  const p=products.find(x=>x.id===id);if(!p)return;
+  const secs=getAllSections().filter(s=>s!=="Toutes");
+  showModal(`<div class="modal" style="max-width:360px">
+    <div class="modal-header"><h3>📁 Changer catégorie — ${p.name}</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <label>Catégorie<select id="move-sec">${secs.map(s=>`<option value="${s}" ${s===p.section?"selected":""}>${s}</option>`).join("")}</select></label>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmMove('${id}')">Déplacer</button></div>
+  </div>`);
+}
+async function confirmMove(id){await db.collection("products").doc(id).update({section:document.getElementById("move-sec").value});closeModal();}
+
+// Receive
+function openReceiveModal(id){
+  const p=products.find(x=>x.id===id);if(!p)return;receivingProduct=p;
+  const isBox=p.orderUnit==="boîte";const upb=p.unitsPerBox||1;const dq=p.orderQty||0;const stock=getCurrentStock(p);
+  showModal(`<div class="modal" style="max-width:400px">
+    <div class="modal-header"><h3>📦 Réception — ${p.name}</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2)">
+      Stock actuel : <strong>${stock} unités</strong><br>Commande prévue : <strong>${orderLabel(p)}</strong>${isBox?` (${dq*upb} unités)`:""}
+    </div>
+    <label>Quantité reçue<input id="recv-qty" type="number" value="${dq}" oninput="updateRecvPreview()" min="0"/><span class="field-hint">${isBox?`Nombre de boîtes (${upb} unités/boîte)`:"Nombre d'unités"}</span></label>
+    <div id="recv-preview" style="font-size:13px;color:var(--text2);min-height:20px;margin-bottom:8px"></div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="confirmReceive()">✅ Confirmer</button></div>
+  </div>`);
+  setTimeout(updateRecvPreview,50);
+}
+function updateRecvPreview(){
+  const p=receivingProduct;if(!p)return;
+  const qty=Number(document.getElementById("recv-qty")?.value)||0;
+  const isBox=p.orderUnit==="boîte";const units=qty*(isBox?(p.unitsPerBox||1):1);
+  const newStock=getCurrentStock(p)+units;
+  const expected=(p.orderQty||0)*(isBox?(p.unitsPerBox||1):1);
+  const diff=units-expected;
+  const el=document.getElementById("recv-preview");
+  if(el)el.innerHTML=`Ajouter <strong>${units} unité${units!==1?"s":""}</strong> → Nouveau stock : <strong>${newStock}</strong>${diff<0?`<br><span style="color:#ef4444">▼ ${Math.abs(diff)} unités de moins que prévu</span>`:diff>0?`<br><span style="color:#22c55e">▲ ${diff} unités de plus que prévu</span>`:""}`;
+}
+async function confirmReceive(){
+  const p=receivingProduct;if(!p)return;
+  const qty=Number(document.getElementById("recv-qty").value)||0;
+  const isBox=p.orderUnit==="boîte";const units=qty*(isBox?(p.unitsPerBox||1):1);
+  const old=getCurrentStock(p);const newStock=old+units;
+  await db.collection("products").doc(p.id).update({currentStock:newStock});
+  await addLog(p.name,"Réception",`+${units} unités (${qty} ${p.orderUnit}${qty>1?"s":""}) · ${old} → ${newStock}`);
+  receivingProduct=null;closeModal();
+}
+
+// Task
+function openTaskModal(id,defaultCol){
+  const t=id?tasks.find(x=>x.id===id):null;
+  const empNames=employees.map(e=>e.name||"").filter(Boolean);
+  showModal(`<div class="modal">
+    <div class="modal-header"><h3>${t?"Modifier":"Ajouter"} une tâche</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <label>Titre<input id="t-title" value="${esc(t?.title||"")}"/></label>
+    <label>Description<textarea id="t-desc" style="height:80px">${t?.description||""}</textarea></label>
+    <div class="form-row">
+      <label>Statut<select id="t-status">${TASK_COLS.map(c=>`<option value="${c}" ${(t?.status||defaultCol||"À faire")===c?"selected":""}>${c}</option>`).join("")}</select></label>
+      <label>Priorité<select id="t-prio"><option value="basse" ${t?.priority==="basse"?"selected":""}>🟢 Basse</option><option value="moyenne" ${(t?.priority||"moyenne")==="moyenne"?"selected":""}>🟡 Moyenne</option><option value="haute" ${t?.priority==="haute"?"selected":""}>🔴 Haute</option></select></label>
+    </div>
+    <div class="form-row">
+      <label>Assignée à<select id="t-assign"><option value="">— Personne —</option>${empNames.map(n=>`<option value="${n}" ${t?.assignedTo===n?"selected":""}>${n}</option>`).join("")}</select></label>
+      <label>Date limite<input id="t-due" type="date" value="${t?.dueDate||""}"/></label>
+    </div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="saveTask('${id||""}')">Enregistrer</button></div>
+  </div>`);
+}
+async function saveTask(id){
+  const title=document.getElementById("t-title").value.trim();if(!title)return alert("Entrez un titre.");
+  const data={title,description:document.getElementById("t-desc").value,status:document.getElementById("t-status").value,priority:document.getElementById("t-prio").value,assignedTo:document.getElementById("t-assign").value,dueDate:document.getElementById("t-due").value};
+  if(id)await db.collection("tasks").doc(id).update(data);
+  else{const nid=genId();await db.collection("tasks").doc(nid).set({...data,id:nid});}
+  closeModal();
+}
+
+// Employee
+function openEmployeeModal(id){
+  const emp=id?employees.find(x=>x.id===id):null;
+  showModal(`<div class="modal">
+    <div class="modal-header"><h3>${emp?"Modifier":"Ajouter"} un employé</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <label>Nom<input id="e-name" value="${esc(emp?.name||"")}"/></label>
+    <label>Poste / Rôle<input id="e-role" value="${esc(emp?.role||"")}" placeholder="ex: Serveur, Cuisinier..."/></label>
+    <div class="form-row">
+      <label>Téléphone<input id="e-phone" value="${esc(emp?.phone||"")}"/></label>
+      <label>Courriel<input id="e-email" value="${esc(emp?.email||"")}"/></label>
+    </div>
+    <label>Code PIN employé<input id="e-pin" type="text" maxlength="4" value="${esc(emp?.pin||"")}" placeholder="4 chiffres (optionnel)"/><span class="field-hint">Pour la connexion à l'application</span></label>
+    <label>Notes<textarea id="e-notes" style="height:60px">${emp?.notes||""}</textarea></label>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="saveEmployee('${id||""}')">Enregistrer</button></div>
+  </div>`);
+}
+async function saveEmployee(id){
+  const name=document.getElementById("e-name").value.trim();if(!name)return alert("Entrez un nom.");
+  const data={name,role:document.getElementById("e-role").value,phone:document.getElementById("e-phone").value,email:document.getElementById("e-email").value,pin:document.getElementById("e-pin").value,notes:document.getElementById("e-notes").value};
+  if(id)await db.collection("employees").doc(id).update(data);
+  else{const nid=genId();await db.collection("employees").doc(nid).set({...data,id:nid,shifts:{}});}
+  closeModal();
+}
+
+// Shift modal
+function openShiftModal(empId,dayKey){
+  showModal(`<div class="modal" style="max-width:320px">
+    <div class="modal-header"><h3>🕐 Quart de travail</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Sélectionnez le type de quart :</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      ${SHIFT_TYPES.map(s=>`<button onclick="assignShift('${empId}','${dayKey}','${s.label}','${s.color}')" style="background:${s.color};color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer">${s.label}</button>`).join("")}
+    </div>
+    <div class="modal-actions" style="margin-top:12px"><button class="btn-cancel" onclick="closeModal()">Annuler</button></div>
+  </div>`);
+}
+async function assignShift(empId,dayKey,label,color){
+  const emp=employees.find(e=>e.id===empId);if(!emp)return;
+  const shifts={...emp.shifts||{},[dayKey]:{label,color}};
+  await db.collection("employees").doc(empId).update({shifts});
+  closeModal();
+}
+
+// Expense
+function openExpenseModal(id){
+  const e=id?expenses.find(x=>x.id===id):null;
+  const today=new Date().toISOString().slice(0,10);
+  showModal(`<div class="modal">
+    <div class="modal-header"><h3>${e?"Modifier":"Ajouter"} une dépense</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <label>Description<input id="ex-desc" value="${esc(e?.description||"")}"/></label>
+    <div class="form-row">
+      <label>Montant ($)<input id="ex-amt" type="number" step="0.01" value="${e?.amount||""}"/></label>
+      <label>Date<input id="ex-date" type="date" value="${e?.date||today}"/></label>
+    </div>
+    <div class="form-row">
+      <label>Catégorie<select id="ex-cat">${EXPENSE_CATS.map(c=>`<option value="${c}" ${e?.category===c?"selected":""}>${c}</option>`).join("")}</select></label>
+      <label>Fournisseur<input id="ex-sup" value="${esc(e?.supplier||"")}" placeholder="Optionnel"/></label>
+    </div>
+    <label>Notes<textarea id="ex-notes" style="height:60px">${e?.notes||""}</textarea></label>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="saveExpense('${id||""}')">Enregistrer</button></div>
+  </div>`);
+}
+async function saveExpense(id){
+  const desc=document.getElementById("ex-desc").value.trim();if(!desc)return alert("Entrez une description.");
+  const data={description:desc,amount:Number(document.getElementById("ex-amt").value)||0,date:document.getElementById("ex-date").value,category:document.getElementById("ex-cat").value,supplier:document.getElementById("ex-sup").value,notes:document.getElementById("ex-notes").value};
+  if(id)await db.collection("expenses").doc(id).update(data);
+  else{const nid=genId();await db.collection("expenses").doc(nid).set({...data,id:nid});}
+  closeModal();
+}
+
+// Menu item
+function openMenuModal(id){
+  const m=id?menuItems.find(x=>x.id===id):null;
+  showModal(`<div class="modal">
+    <div class="modal-header"><h3>${m?"Modifier":"Ajouter"} un item au menu</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <label>Nom<input id="mn-name" value="${esc(m?.name||"")}"/></label>
+    <label>Description<textarea id="mn-desc" style="height:70px">${m?.description||""}</textarea></label>
+    <div class="form-row">
+      <label>Prix ($)<input id="mn-price" type="number" step="0.01" value="${m?.price||""}"/></label>
+      <label>Catégorie<select id="mn-cat">${MENU_CATS.map(c=>`<option value="${c}" ${(m?.category||"Plats principaux")===c?"selected":""}>${c}</option>`).join("")}</select></label>
+    </div>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="saveMenuItem('${id||""}')">Enregistrer</button></div>
+  </div>`);
+}
+async function saveMenuItem(id){
+  const name=document.getElementById("mn-name").value.trim();if(!name)return alert("Entrez un nom.");
+  const data={name,description:document.getElementById("mn-desc").value,price:Number(document.getElementById("mn-price").value)||0,category:document.getElementById("mn-cat").value,available:true};
+  if(id)await db.collection("menu").doc(id).update(data);
+  else{const nid=genId();await db.collection("menu").doc(nid).set({...data,id:nid});}
+  closeModal();
+}
+
+// Supplier
+function openSupplierModal(id){
+  const s=id?suppliers.find(x=>x.id===id):null;
+  showModal(`<div class="modal">
+    <div class="modal-header"><h3>${s?"Modifier":"Ajouter"} un fournisseur</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <label>Nom<input id="s-name" value="${esc(s?.name||"")}"/></label>
+    <label>Téléphone<input id="s-contact" value="${esc(s?.contact||"")}"/></label>
+    <label>Courriel<input id="s-email" value="${esc(s?.email||"")}"/></label>
+    <label>Notes<textarea id="s-notes" style="height:70px">${s?.notes||""}</textarea></label>
+    <div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Annuler</button><button class="btn btn-primary" onclick="saveSupplier('${id||""}')">Enregistrer</button></div>
+  </div>`);
+}
+async function saveSupplier(id){
+  const name=document.getElementById("s-name").value.trim();if(!name)return alert("Entrez un nom.");
+  const data={name,contact:document.getElementById("s-contact").value,email:document.getElementById("s-email").value,notes:document.getElementById("s-notes").value};
+  if(id)await db.collection("suppliers").doc(id).update({...data});
+  else{const nid=genId();await db.collection("suppliers").doc(nid).set({...data,id:nid});}
+  closeModal();
+}
+
+// Category
+function openCategoryModal(){
+  const renderCats=()=>!customSections.length?`<p style="color:var(--text3);font-size:13px;text-align:center;margin-bottom:12px">Aucune catégorie personnalisée</p>`:customSections.map((s,i)=>`<div class="cat-item"><input value="${s}" onblur="renameCategory(${i},this.value)"/><button class="btn-danger-sm" onclick="askDeleteCategory(${i},'${esc(s)}')">🗑️</button></div>`).join("");
+  showModal(`<div class="modal">
+    <div class="modal-header"><h3>⚙️ Catégories</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div id="cat-list">${renderCats()}</div>
+    <div style="display:flex;gap:8px;margin-top:8px"><input id="cat-new" placeholder="Nouvelle catégorie..."/><button class="btn btn-primary" onclick="addCategory()">Ajouter</button></div>
+  </div>`);
+}
+async function addCategory(){const name=document.getElementById("cat-new").value.trim();if(!name)return;if(DEFAULT_SECTIONS.includes(name)||customSections.includes(name))return alert("Déjà existante.");await db.collection("settings").doc("sections").set({custom:[...customSections,name]});closeModal();}
+async function renameCategory(i,v){const t=v.trim();if(!t||t===customSections[i])return;const u=[...customSections];u[i]=t;await db.collection("settings").doc("sections").set({custom:u});}
+function askDeleteCategory(i,name){openConfirm("🗑️ Supprimer catégorie",`Supprimer "${name}" ?`,async()=>{await db.collection("settings").doc("sections").set({custom:customSections.filter((_,j)=>j!==i)});},true);}
+
+// Generic delete
+function askDelete(col,id,name){openConfirm("🗑️ Supprimer",`Supprimer "${name}" définitivement ?`,()=>db.collection(col).doc(id).delete(),true);}
+
+// Archive
+function doToggleArchive(id,name,isArchived){
+  openConfirm(isArchived?"📤 Restaurer":"📦 Archiver",isArchived?`Restaurer "${name}" ?`:`Archiver "${name}" ?`,async()=>{await db.collection("products").doc(id).update({archived:!isArchived});await addLog(name,isArchived?"Restauré":"Archivé","");if(showArchived&&isArchived)showArchived=false;});
+}
+
+// Stock
 async function commitStock(id,inputId){
-  const input=document.getElementById(inputId);
-  if(!input||input.value==="") return;
-  const newStock=Number(input.value);
-  const p=products.find(x=>x.id===id); if(!p) return;
+  const input=document.getElementById(inputId);if(!input||input.value==="")return;
+  const newStock=Number(input.value);const p=products.find(x=>x.id===id);if(!p)return;
   const old=getCurrentStock(p);
   await db.collection("products").doc(id).update({currentStock:newStock});
   await addLog(p.name,"Mise à jour stock",`${old} → ${newStock} unités`);
   input.value="";
 }
 
-// ── Receive order (partial/full/extra) ───────────────────
-let receivingProduct=null;
-function openReceiveModal(id){
-  receivingProduct=products.find(x=>x.id===id); if(!receivingProduct) return;
-  const p=receivingProduct;
-  const isBox=p.orderUnit==="boîte";
-  const defaultQty=p.orderQty||0;
-  const unitsPerOrder=isBox?(p.unitsPerBox||1):1;
-  document.getElementById("receive-product-name").textContent=p.name;
-  document.getElementById("receive-info").innerHTML=
-    `Stock actuel : <strong>${getCurrentStock(p)} unités</strong><br>
-     Commande prévue : <strong>${orderLabel(p)}</strong>${isBox?` (${defaultQty*unitsPerOrder} unités)`:""}`;
-  document.getElementById("receive-hint").textContent=
-    isBox?`Entrez le nombre de boîtes reçues (${unitsPerOrder} unités/boîte)`:"Entrez le nombre d'unités reçues";
-  const input=document.getElementById("receive-qty");
-  input.value=defaultQty;
-  updateReceivePreview();
-  document.getElementById("modal-receive").style.display="flex";
-  input.oninput=updateReceivePreview;
-}
-function updateReceivePreview(){
-  const p=receivingProduct; if(!p) return;
-  const qty=Number(document.getElementById("receive-qty").value)||0;
-  const isBox=p.orderUnit==="boîte";
-  const units=qty*(isBox?(p.unitsPerBox||1):1);
-  const newStock=getCurrentStock(p)+units;
-  const expected=(p.orderQty||0)*(isBox?(p.unitsPerBox||1):1);
-  const diff=units-expected;
-  let note="";
-  if(diff<0) note=`<span style="color:#ef4444">▼ ${Math.abs(diff)} unités de moins que prévu</span>`;
-  else if(diff>0) note=`<span style="color:#22c55e">▲ ${diff} unités de plus que prévu</span>`;
-  document.getElementById("receive-preview").innerHTML=
-    `Ajouter <strong>${units} unité${units>1?"s":""}</strong> → Nouveau stock : <strong>${newStock}</strong>${note?`<br>${note}`:""}`;
-}
-function closeReceiveModal(){ document.getElementById("modal-receive").style.display="none"; receivingProduct=null; }
-async function confirmReceive(){
-  const p=receivingProduct; if(!p) return;
-  const qty=Number(document.getElementById("receive-qty").value)||0;
-  const isBox=p.orderUnit==="boîte";
-  const units=qty*(isBox?(p.unitsPerBox||1):1);
-  const old=getCurrentStock(p);
-  const newStock=old+units;
-  await db.collection("products").doc(p.id).update({currentStock:newStock});
-  await addLog(p.name,"Réception commande",`+${units} unités (${qty} ${p.orderUnit}${qty>1?"s":""}) · ${old} → ${newStock}`);
-  closeReceiveModal();
-}
+// Drag & drop
+function dragStart(e,id){dragSrcId=id;setTimeout(()=>{const tr=document.querySelector(`tr[data-id="${id}"]`);if(tr)tr.classList.add("dragging");},0);}
+function dragOver(e,id){e.preventDefault();const tr=document.querySelector(`tr[data-id="${id}"]`);if(tr&&id!==dragSrcId)tr.classList.add("drag-over");}
+function dragLeave(){document.querySelectorAll("tr.drag-over").forEach(r=>r.classList.remove("drag-over"));}
+function dragEnd(){document.querySelectorAll("tr.dragging,tr.drag-over").forEach(r=>r.classList.remove("dragging","drag-over"));}
+async function dropOn(e,targetId){e.preventDefault();dragEnd();if(!dragSrcId||dragSrcId===targetId)return;const tbody=document.getElementById("product-tbody");if(!tbody)return;const ids=[...tbody.querySelectorAll("tr[data-id]")].map(r=>r.dataset.id);const si=ids.indexOf(dragSrcId),ti=ids.indexOf(targetId);if(si<0||ti<0)return;ids.splice(si,1);ids.splice(ti,0,dragSrcId);const batch=db.batch();ids.forEach((id,i)=>batch.update(db.collection("products").doc(id),{sortOrder:i}));await batch.commit();dragSrcId=null;}
 
-// ── Note ──────────────────────────────────────────────────
-function openNoteModal(id){
-  noteProductId=id; const p=products.find(x=>x.id===id); if(!p) return;
-  document.getElementById("note-product-name").textContent=p.name;
-  document.getElementById("note-text").value=p.note||"";
-  document.getElementById("modal-note").style.display="flex";
-}
-function closeNoteModal(){ document.getElementById("modal-note").style.display="none"; noteProductId=null; }
-async function saveNote(){
-  if(!noteProductId) return;
-  const note=document.getElementById("note-text").value.trim();
-  await db.collection("products").doc(noteProductId).update({note});
-  closeNoteModal();
-}
-async function clearNote(){
-  if(!noteProductId) return;
-  await db.collection("products").doc(noteProductId).update({note:""});
-  closeNoteModal();
-}
+// Helpers
+function setSection(s){activeSection=s;searchQuery="";renderPage();}
+function setSearch(v){searchQuery=v;renderPage();}
+function toggleSections(){sectionsExpanded=!sectionsExpanded;renderPage();}
+function toggleShowArchived(){showArchived=!showArchived;renderPage();}
+function setLogFilter(v){logFilter=v;renderPage();}
+function setExpensePeriod(p){activeExpensePeriod=p;renderPage();}
+function setMenuCat(c){activeMenuCat=c;renderPage();}
 
-// ── Archive ───────────────────────────────────────────────
-async function toggleArchive(id,name,isArchived){
-  const msg=isArchived?`Restaurer "${name}" dans l'inventaire actif ?`:`Archiver "${name}" ? Il sera masqué de l'inventaire normal.`;
-  openConfirm(isArchived?"📤 Restaurer":"📦 Archiver",msg,async()=>{
-    await db.collection("products").doc(id).update({archived:!isArchived});
-    await addLog(name,isArchived?"Restauré":"Archivé","");
-    if(showArchived&&isArchived) showArchived=false;
-  });
-}
+window.addEventListener("resize",()=>{if(isLoggedIn)renderPage();});
 
-// ── Drag & drop ───────────────────────────────────────────
-function dragStart(e,id){ dragSrcId=id; setTimeout(()=>{const tr=document.querySelector(`tr[data-id="${id}"]`);if(tr)tr.classList.add("dragging");},0); }
-function dragOver(e,id){ e.preventDefault(); const tr=document.querySelector(`tr[data-id="${id}"]`);if(tr&&id!==dragSrcId)tr.classList.add("drag-over"); }
-function dragLeave(){ document.querySelectorAll("tr.drag-over").forEach(r=>r.classList.remove("drag-over")); }
-function dragEnd(){ document.querySelectorAll("tr.dragging,tr.drag-over").forEach(r=>r.classList.remove("dragging","drag-over")); }
-async function dropOn(e,targetId){
-  e.preventDefault(); dragEnd();
-  if(!dragSrcId||dragSrcId===targetId) return;
-  const tbody=document.getElementById("product-tbody"); if(!tbody) return;
-  const ids=[...tbody.querySelectorAll("tr[data-id]")].map(r=>r.dataset.id);
-  const si=ids.indexOf(dragSrcId),ti=ids.indexOf(targetId);
-  if(si<0||ti<0) return;
-  ids.splice(si,1); ids.splice(ti,0,dragSrcId);
-  const batch=db.batch();
-  ids.forEach((id,i)=>batch.update(db.collection("products").doc(id),{sortOrder:i}));
-  await batch.commit(); dragSrcId=null;
-}
+// Midnight reset
+function scheduleMidnight(){const now=new Date(),m=new Date(now);m.setDate(now.getDate()+1);m.setHours(0,0,10,0);setTimeout(()=>{scheduleMidnight();if(isLoggedIn)renderPage();},m-now);}
+scheduleMidnight();
 
-// ── Delete ────────────────────────────────────────────────
-function askDeleteProduct(id,name){ openConfirm("🗑️ Supprimer",`Supprimer "${name}" définitivement ?`,()=>db.collection("products").doc(id).delete(),true); }
-function askDeleteSupplier(id,name){ openConfirm("🗑️ Supprimer",`Supprimer "${name}" ?`,()=>db.collection("suppliers").doc(id).delete(),true); }
-
-// ── Move category ─────────────────────────────────────────
-function openMoveModal(id){
-  movingProductId=id; const p=products.find(x=>x.id===id); if(!p) return;
-  document.getElementById("move-product-name").textContent=p.name;
-  const sel=document.getElementById("move-section");
-  sel.innerHTML=getAllSections().filter(s=>s!=="Toutes").map(s=>`<option value="${s}" ${s===p.section?"selected":""}>${s}</option>`).join("");
-  document.getElementById("modal-move").style.display="flex";
-}
-function closeMoveModal(){ document.getElementById("modal-move").style.display="none"; movingProductId=null; }
-async function confirmMove(){
-  if(!movingProductId) return;
-  await db.collection("products").doc(movingProductId).update({section:document.getElementById("move-section").value});
-  closeMoveModal();
-}
-
-// ── Product modal ─────────────────────────────────────────
-function toggleBoxFields(){
-  const isBox=document.getElementById("p-orderunit")?.value==="boîte";
-  document.getElementById("box-fields").style.display=isBox?"block":"none";
-  document.getElementById("unit-fields").style.display=isBox?"none":"block";
-}
-function openProductModal(){
-  if(!isAdmin) return; editingProductId=null;
-  document.getElementById("modal-product-title").textContent="Ajouter un produit";
-  document.getElementById("p-name").value="";
-  document.getElementById("p-stock").value=0;
-  document.getElementById("p-minimum").value=0;
-  document.getElementById("p-orderqty").value=0;
-  document.getElementById("p-orderqty-unit").value=0;
-  document.getElementById("p-unitsperbox").value=1;
-  document.getElementById("p-orderunit").value="unité";
-  document.getElementById("p-supplier").value="";
-  toggleBoxFields();
-  document.getElementById("modal-product").style.display="flex";
-}
-function closeProductModal(){ document.getElementById("modal-product").style.display="none"; }
-function editProduct(id){
-  if(!isAdmin) return; const p=products.find(x=>x.id===id); if(!p) return;
-  editingProductId=id;
-  document.getElementById("modal-product-title").textContent="Modifier le produit";
-  document.getElementById("p-name").value=p.name||"";
-  document.getElementById("p-stock").value=p.currentStock||0;
-  document.getElementById("p-minimum").value=p.minimum||0;
-  document.getElementById("p-orderunit").value=p.orderUnit||"unité";
-  document.getElementById("p-unitsperbox").value=p.unitsPerBox||1;
-  document.getElementById("p-orderqty").value=p.orderQty||0;
-  document.getElementById("p-orderqty-unit").value=p.orderQty||0;
-  document.getElementById("p-section").value=p.section||DEFAULT_SECTIONS[0];
-  document.getElementById("p-supplier").value=p.supplierId||"";
-  toggleBoxFields();
-  document.getElementById("modal-product").style.display="flex";
-}
-async function saveProduct(){
-  const name=document.getElementById("p-name").value.trim(); if(!name) return alert("Entrez un nom.");
-  const orderUnit=document.getElementById("p-orderunit").value;
-  const isBox=orderUnit==="boîte";
-  const orderQty=isBox?Number(document.getElementById("p-orderqty").value):Number(document.getElementById("p-orderqty-unit").value);
-  const data={name,unit:"unité",orderUnit,orderQty,
-    unitsPerBox:isBox?Number(document.getElementById("p-unitsperbox").value):1,
-    minimum:Number(document.getElementById("p-minimum").value),
-    currentStock:Number(document.getElementById("p-stock").value),
-    section:document.getElementById("p-section").value,
-    supplierId:document.getElementById("p-supplier").value};
-  if(editingProductId){
-    const p=products.find(x=>x.id===editingProductId);
-    await db.collection("products").doc(editingProductId).set({...p,...data,id:editingProductId});
-    await addLog(name,"Modifié","");
-  } else {
-    const id=genId();
-    await db.collection("products").doc(id).set({...data,id,sortOrder:products.length,archived:false});
-    await addLog(name,"Ajouté","");
-  }
-  closeProductModal();
-}
-
-// ── Category modal ────────────────────────────────────────
-function openCategoryModal(){ renderCatList(); document.getElementById("cat-new").value=""; document.getElementById("modal-category").style.display="flex"; }
-function closeCategoryModal(){ document.getElementById("modal-category").style.display="none"; }
-function renderCatList(){
-  const list=document.getElementById("cat-list"); if(!list) return;
-  list.innerHTML=!customSections.length
-    ?`<p style="color:var(--text3);font-size:13px;text-align:center;margin-bottom:12px">Aucune catégorie personnalisée</p>`
-    :customSections.map((s,i)=>`<div class="cat-item">
-        <input value="${s}" onblur="renameCategory(${i},this.value)"/>
-        <button style="background:#ef4444;color:#fff;border:none;border-radius:6px;padding:4px 8px;cursor:pointer;flex-shrink:0" onclick="askDeleteCategory(${i},'${s.replace(/'/g,"\\'")}')">🗑️</button>
-      </div>`).join("");
-}
-async function addCategory(){
-  const name=document.getElementById("cat-new").value.trim(); if(!name) return;
-  if(DEFAULT_SECTIONS.includes(name)||customSections.includes(name)) return alert("Catégorie déjà existante.");
-  await db.collection("settings").doc("sections").set({custom:[...customSections,name]});
-  document.getElementById("cat-new").value=""; renderCatList();
-}
-async function renameCategory(i,newName){
-  const t=newName.trim(); if(!t||t===customSections[i]) return;
-  const u=[...customSections]; u[i]=t;
-  await db.collection("settings").doc("sections").set({custom:u});
-}
-function askDeleteCategory(i,name){
-  openConfirm("🗑️ Supprimer",`Supprimer la catégorie "${name}" ?`,async()=>{
-    await db.collection("settings").doc("sections").set({custom:customSections.filter((_,j)=>j!==i)});
-    renderCatList();
-  },true);
-}
-
-// ── Supplier modal ────────────────────────────────────────
-function openSupplierModal(){ if(!isAdmin) return; editingSupplierID=null; document.getElementById("modal-supplier-title").textContent="Ajouter un fournisseur"; ["s-name","s-contact","s-email","s-notes"].forEach(id=>document.getElementById(id).value=""); document.getElementById("modal-supplier").style.display="flex"; }
-function closeSupplierModal(){ document.getElementById("modal-supplier").style.display="none"; }
-function editSupplier(id){
-  if(!isAdmin) return; const s=suppliers.find(x=>x.id===id); if(!s) return;
-  editingSupplierID=id;
-  document.getElementById("modal-supplier-title").textContent="Modifier le fournisseur";
-  document.getElementById("s-name").value=s.name||""; document.getElementById("s-contact").value=s.contact||"";
-  document.getElementById("s-email").value=s.email||""; document.getElementById("s-notes").value=s.notes||"";
-  document.getElementById("modal-supplier").style.display="flex";
-}
-async function saveSupplier(){
-  const name=document.getElementById("s-name").value.trim(); if(!name) return alert("Entrez un nom.");
-  const data={name,contact:document.getElementById("s-contact").value,email:document.getElementById("s-email").value,notes:document.getElementById("s-notes").value};
-  if(editingSupplierID){ await db.collection("suppliers").doc(editingSupplierID).set({...data,id:editingSupplierID}); }
-  else { const id=genId(); await db.collection("suppliers").doc(id).set({...data,id}); }
-  closeSupplierModal();
-}
-
-function updateSelects(){
-  const sel=document.getElementById("p-supplier"); if(!sel) return;
-  sel.innerHTML=`<option value="">— Aucun —</option>${suppliers.map(s=>`<option value="${s.id}">${s.name}</option>`).join("")}`;
-  const sec=document.getElementById("p-section"); if(!sec) return;
-  const secs=getAllSections().filter(s=>s!=="Toutes");
-  const cur=sec.value||DEFAULT_SECTIONS[0];
-  sec.innerHTML=secs.map(s=>`<option value="${s}" ${s===cur?"selected":""}>${s}</option>`).join("");
-}
-
+// Print report
 function printReport(){
   const activeP=products.filter(p=>!p.archived);
   const toOrder=activeP.filter(p=>["red","yellow"].includes(getStatus(p))).sort((a,b)=>STATUS_ORDER[getStatus(a)]-STATUS_ORDER[getStatus(b)]);
-  const rows=toOrder.map(p=>{
-    const sup=suppliers.find(s=>s.id===p.supplierId),st=getStatus(p),stock=getCurrentStock(p);
-    return `<tr style="border-left:4px solid ${st==="red"?"#ef4444":"#eab308"}">
-      <td>${p.name}</td><td>${p.section}</td><td>${stock}</td><td>${p.minimum||0}</td>
-      <td>${orderLabel(p)}${p.orderUnit==="boîte"?` (${(p.orderQty||0)*(p.unitsPerBox||1)} unités)`:""}</td>
-      <td>${sup?sup.name:"—"}</td><td>${sup?sup.contact||"—":"—"}</td><td>${statusLabel(st)}</td></tr>`;
-  }).join("");
+  const rows=toOrder.map(p=>{const sup=suppliers.find(s=>s.id===p.supplierId),st=getStatus(p),stock=getCurrentStock(p);return`<tr style="border-left:4px solid ${st==="red"?"#ef4444":"#eab308"}"><td>${p.name}</td><td>${p.section}</td><td>${stock}</td><td>${p.minimum||0}</td><td>${orderLabel(p)}${p.orderUnit==="boîte"?` (${(p.orderQty||0)*(p.unitsPerBox||1)} unités)`:""}</td><td>${sup?sup.name:"—"}</td><td>${sup?sup.contact||"—":"—"}</td><td>${statusLabel(st)}</td></tr>`;}).join("");
   const win=window.open("","_blank");
-  win.document.write(`<!DOCTYPE html><html><head><title>Rapport Bochica</title>
-  <style>body{font-family:system-ui,sans-serif;padding:32px}table{width:100%;border-collapse:collapse;font-size:13px}th{padding:10px;background:#f1f5f9;text-align:left;font-size:11px;text-transform:uppercase;color:#64748b}td{padding:10px;border-bottom:1px solid #e2e8f0}@media print{button{display:none}}</style></head>
-  <body><div style="font-size:26px;font-weight:900;letter-spacing:4px">BOCHICA</div>
-  <div style="display:flex;height:3px;width:200px;margin:6px 0 14px"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
-  <h2 style="margin-bottom:4px">Rapport de commande</h2>
-  <p style="color:#64748b;font-size:13px;margin-bottom:16px">${new Date().toLocaleDateString("fr-CA",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</p>
-  <table><thead><tr><th>Produit</th><th>Section</th><th>Stock</th><th>Min</th><th>À commander</th><th>Fournisseur</th><th>Contact</th><th>Statut</th></tr></thead>
-  <tbody>${rows}</tbody></table>
-  <br/><button onclick="window.print()" style="background:#3b82f6;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Imprimer</button></body></html>`);
+  win.document.write(`<!DOCTYPE html><html><head><title>Rapport</title><style>body{font-family:system-ui,sans-serif;padding:32px}table{width:100%;border-collapse:collapse;font-size:13px}th{padding:10px;background:#f1f5f9;text-align:left;font-size:11px;text-transform:uppercase}td{padding:10px;border-bottom:1px solid #e2e8f0}@media print{button{display:none}}</style></head><body><div style="font-size:26px;font-weight:900;letter-spacing:4px">BOCHICA</div><div style="display:flex;height:3px;width:200px;margin:6px 0 14px"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div><h2>Rapport de commande</h2><p style="color:#64748b;font-size:13px;margin-bottom:16px">${new Date().toLocaleDateString("fr-CA",{weekday:"long",year:"numeric",month:"long",day:"numeric"})}</p><table><thead><tr><th>Produit</th><th>Section</th><th>Stock</th><th>Min</th><th>À commander</th><th>Fournisseur</th><th>Contact</th><th>Statut</th></tr></thead><tbody>${rows}</tbody></table><br/><button onclick="window.print()" style="background:#3b82f6;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Imprimer</button></body></html>`);
   win.document.close();
 }
 </script>
