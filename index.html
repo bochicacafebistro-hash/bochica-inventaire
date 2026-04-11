@@ -458,8 +458,8 @@ function render(){
               <span style="font-weight:700;font-size:16px;color:${st==="red"?"#991b1b":"#854d0e"}">${stock} <span style="font-size:11px;font-weight:400;color:#64748b">${p.unit||""}</span></span>
             </div>
             <div>
-              <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:4px;text-transform:uppercase">Ajouter qté</div>
-              <input class="stock-input" type="number" placeholder="+ qté" id="si_m${p.id}"
+              <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:4px;text-transform:uppercase">Mettre à jour</div>
+              <input class="stock-input" type="number" placeholder="Qté restante" id="si_m${p.id}"
                 onkeydown="if(event.key==='Enter') commitStock('${p.id}','si_m${p.id}')"
                 onblur="commitStock('${p.id}','si_m${p.id}')" style="width:90px;height:34px"/>
             </div>
@@ -483,7 +483,7 @@ function render(){
         ${isAdmin?`<th style="width:30px"></th>`:""}
         <th>Produit</th>
         <th>Stock actuel</th>
-        <th>Ajouter qté</th>
+        <th>Mettre à jour</th>
         <th>Minimum</th><th>Fournisseur</th><th>Statut</th><th>À commander</th>
         ${isAdmin?`<th></th>`:""}
       </tr></thead><tbody id="product-tbody">`;
@@ -501,7 +501,7 @@ function render(){
           </td>
           <td><span class="stock-val ${st}">${stock} <span style="font-size:11px;font-weight:400;color:#94a3b8">${p.unit||""}</span></span></td>
           <td>
-            <input class="stock-input" type="number" placeholder="+ qté" id="si_${p.id}"
+            <input class="stock-input" type="number" placeholder="Qté restante" id="si_${p.id}"
               onkeydown="if(event.key==='Enter') commitStock('${p.id}','si_${p.id}')"
               onblur="commitStock('${p.id}','si_${p.id}')"/>
           </td>
@@ -618,13 +618,11 @@ function setSection(s){ activeSection=s; searchQuery=""; render(); }
 function setSearch(v){ searchQuery=v; render(); }
 function toggleSections(){ sectionsExpanded=!sectionsExpanded; render(); }
 
-// ── STOCK — ajouter au stock existant ────────────────────
+// Stock = remplacement direct (qté restante)
 async function commitStock(id, inputId){
   const input=document.getElementById(inputId);
   if(!input||input.value==="") return;
-  const add=Number(input.value);
-  const p=products.find(x=>x.id===id); if(!p) return;
-  const newStock=Number(p.currentStock||0)+add;
+  const newStock=Number(input.value);
   await db.collection("products").doc(id).update({currentStock:newStock});
   input.value="";
 }
