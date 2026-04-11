@@ -529,8 +529,10 @@ function render(){
   // ── RAPPORT ──
   if(activeTab==="rapport"){
     html+=`<div class="toolbar">
-      <div><h2 style="font-size:18px;color:#1e293b">Rapport de commande</h2>
-      <p style="color:#64748b;font-size:13px;margin-top:4px">Produits sous le minimum ou à moins de 20% du seuil</p></div>
+      <div>
+        <h2 style="font-size:18px;color:#1e293b">Rapport de commande</h2>
+        <p style="color:#64748b;font-size:13px;margin-top:4px">Produits sous le minimum ou à moins de 20% du seuil</p>
+      </div>
       <button class="btn-primary" ${!toOrder.length?"disabled":""} onclick="printReport()">🖨️ Exporter</button>
     </div>`;
     if(!toOrder.length){
@@ -542,28 +544,49 @@ function render(){
         <div class="summary-card" style="border-color:#ef4444;background:#fff"><div style="font-weight:700;font-size:22px;color:#991b1b">${redCnt}</div><div style="font-size:13px;color:#991b1b">⚠️ À commander immédiatement</div></div>
         <div class="summary-card" style="border-color:#eab308;background:#fff"><div style="font-weight:700;font-size:22px;color:#854d0e">${yelCnt}</div><div style="font-size:13px;color:#854d0e">🟡 Bientôt bas</div></div>
       </div>`;
+
       getAllSections().filter(s=>s!=="Toutes").forEach(section=>{
         const items=toOrder.filter(p=>p.section===section).sort((a,b)=>STATUS_ORDER[getStatus(a)]-STATUS_ORDER[getStatus(b)]);
         if(!items.length) return;
-        html+=`<div style="margin-bottom:24px">
-          <h3 style="font-size:15px;color:#475569;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px">📁 ${section}</h3>
-          <div class="overflow"><table><thead><tr>
-            <th>Produit</th><th>Stock actuel</th><th>Minimum</th><th>À commander</th><th>Fournisseur</th><th>Contact</th><th>Statut</th>
-          </tr></thead><tbody>`;
+        html+=`<h3 style="font-size:14px;color:#475569;border-bottom:2px solid #e2e8f0;padding-bottom:6px;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">📁 ${section}</h3>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:24px">`;
+
         items.forEach(p=>{
           const st=getStatus(p), stock=getCurrentStock(p);
           const sup=suppliers.find(s=>s.id===p.supplierId);
-          const borderColor=st==="red"?"#fecaca":"#fde68a";
-          html+=`<tr style="border-left:3px solid ${borderColor}">
-            <td><strong style="color:${st==="red"?"#991b1b":"#854d0e"}">${p.name}</strong><br/><span style="font-size:11px;color:#94a3b8">${p.unit||""}</span></td>
-            <td style="font-weight:700;color:${st==="red"?"#991b1b":"#854d0e"}">${stock}</td>
-            <td style="text-align:center">${p.minimum||0}</td>
-            <td style="font-weight:700;color:#3b82f6">${p.orderQty||0} ${p.orderUnit||""}</td>
-            <td>${sup?sup.name:"—"}</td><td>${sup?sup.contact||"—":"—"}</td>
-            <td><span class="status-badge ${st}">${statusLabel(st)}</span></td>
-          </tr>`;
+          const borderColor=st==="red"?"#ef4444":"#eab308";
+          const titleColor=st==="red"?"#991b1b":"#854d0e";
+          const isBox=p.orderUnit==="boîte";
+          const unitsToAdd=(p.orderQty||0)*(p.unitsPerBox||1);
+          const orderLabel=isBox
+            ? `${p.orderQty} boîte${p.orderQty>1?"s":""} <span style="color:#94a3b8;font-size:11px">(${unitsToAdd} unités)</span>`
+            : `${p.orderQty} unité${p.orderQty>1?"s":""}`;
+
+          html+=`<div style="background:#fff;border:1px solid ${borderColor};border-radius:12px;padding:16px">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px">
+              <div>
+                <div style="font-weight:700;font-size:15px;color:${titleColor}">${p.name}</div>
+                ${sup?`<div style="font-size:12px;color:#64748b;margin-top:2px">🏪 ${sup.name}${sup.contact?` · ${sup.contact}`:""}</div>`:""}
+              </div>
+              <span class="status-badge ${st}">${statusLabel(st)}</span>
+            </div>
+            <div style="display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap">
+              <div style="background:#f8fafc;border-radius:8px;padding:8px 12px;flex:1;min-width:80px">
+                <div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;margin-bottom:2px">Stock actuel</div>
+                <div style="font-weight:700;font-size:18px;color:${titleColor}">${stock}</div>
+              </div>
+              <div style="background:#eff6ff;border-radius:8px;padding:8px 12px;flex:1;min-width:80px">
+                <div style="font-size:10px;color:#3b82f6;font-weight:600;text-transform:uppercase;margin-bottom:2px">À commander</div>
+                <div style="font-weight:700;font-size:15px;color:#1d4ed8">${orderLabel}</div>
+              </div>
+            </div>
+            <button onclick="markOrdered('${p.id}')"
+              style="width:100%;background:#22c55e;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+              ✅ Commandé — Ajouter au stock
+            </button>
+          </div>`;
         });
-        html+=`</tbody></table></div></div>`;
+        html+=`</div>`;
       });
     }
   }
@@ -643,6 +666,19 @@ async function dropOn(e,targetId){
   const batch=db.batch();
   ids.forEach((id,i)=>batch.update(db.collection("products").doc(id),{sortOrder:i}));
   await batch.commit(); dragSrcId=null;
+}
+
+// ── MARK AS ORDERED ───────────────────────────────────────
+async function markOrdered(id){
+  const p=products.find(x=>x.id===id); if(!p) return;
+  const isBox=p.orderUnit==="boîte";
+  const unitsToAdd=(p.orderQty||0)*(isBox ? (p.unitsPerBox||1) : 1);
+  const newStock=Number(p.currentStock||0)+unitsToAdd;
+  openConfirm(
+    "✅ Confirmer la réception",
+    `Ajouter ${unitsToAdd} unité${unitsToAdd>1?"s":""} au stock de "${p.name}" ? (${Number(p.currentStock||0)} → ${newStock})`,
+    async()=>{ await db.collection("products").doc(id).update({currentStock:newStock}); }
+  );
 }
 
 // ── DELETE ────────────────────────────────────────────────
