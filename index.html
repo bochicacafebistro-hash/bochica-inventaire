@@ -277,8 +277,7 @@ function getAllSections(){ return ["Toutes",...DEFAULT_SECTIONS,...customSection
 // Stock actuel = qté en inventaire de base + ajouts manuels du jour
 function getCurrentStock(p){
   const base = Number(p.currentStock||0);
-  const todayAdd = p.stockByDay?.[TODAY_KEY] !== undefined ? Number(p.stockByDay[TODAY_KEY]) : 0;
-  return base + todayAdd;
+  return base;
 }
 function getStatus(p){
   const s=getCurrentStock(p), m=Number(p.minimum||0);
@@ -429,8 +428,8 @@ function render(){
       filtered.forEach(p=>{
         const st=getStatus(p), stock=getCurrentStock(p);
         const sup=suppliers.find(s=>s.id===p.supplierId);
-      html+=`<div class="mobile-card" style="background:#fff;border:1px solid #e2e8f0">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${st!=="green"?10:0}px">
+      html+=`<div class="mobile-card" style="background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${st!=="green"?10:8}px">
             <strong style="font-size:15px">${p.name}</strong>
             <div style="display:flex;align-items:center;gap:6px">
               ${st!=="green"?`<span class="status-badge ${st}">${statusLabel(st)}</span>`:""}
@@ -445,7 +444,7 @@ function render(){
               </div>`:""}
             </div>
           </div>
-          ${st!=="green"?`<div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
+          <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
             <div>
               <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:4px;text-transform:uppercase">Stock actuel</div>
               <span class="cur-stock ${st}" style="font-size:16px">${stock} <span style="font-size:11px;font-weight:400">${p.unit||""}</span></span>
@@ -463,7 +462,6 @@ function render(){
             </div>
           </div>
           ${sup?`<div style="margin-top:8px;font-size:12px;color:#64748b">🏪 ${sup.name}</div>`:""}
-          `:""}
         </div>`;
       });
       html+=`</div>`;
