@@ -173,18 +173,28 @@
     <div class="form-row">
       <label>Qté en inventaire
         <input id="p-stock" type="number" value="0"/>
-        <span class="field-hint">Stock actuel au départ</span>
+        <span class="field-hint">Stock actuel (en unités)</span>
       </label>
       <label>Minimum requis
         <input id="p-minimum" type="number" value="0"/>
-        <span class="field-hint">Seuil d'alerte</span>
+        <span class="field-hint">Seuil d'alerte (en unités)</span>
       </label>
     </div>
-    <div class="form-row">
-      <label>Unité d'inventaire<input id="p-unit" placeholder="ex: unité, litre, kg"/></label>
-      <label>Unité de commande<input id="p-orderunit" placeholder="ex: boîte, caisse"/></label>
+    <label>Unité de commande
+      <select id="p-orderunit" onchange="toggleBoxFields()">
+        <option value="unité">Unité</option>
+        <option value="boîte">Boîte</option>
+      </select>
+    </label>
+    <div id="box-fields" style="display:none">
+      <div class="form-row">
+        <label>Unités par boîte<input id="p-unitsperbox" type="number" value="1"/><span class="field-hint">Ex: 24 canettes par boîte</span></label>
+        <label>Qté à commander<input id="p-orderqty" type="number" value="0"/><span class="field-hint">Nombre de boîtes</span></label>
+      </div>
     </div>
-    <label>Qté à commander<input id="p-orderqty" type="number" value="0"/><span class="field-hint">En unités de commande</span></label>
+    <div id="unit-fields">
+      <label>Qté à commander<input id="p-orderqty-unit" type="number" value="0"/><span class="field-hint">Nombre d'unités</span></label>
+    </div>
     <label>Fournisseur<select id="p-supplier"><option value="">— Aucun —</option></select></label>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeProductModal()">Annuler</button>
@@ -498,7 +508,7 @@ function render(){
           <td style="text-align:center">${p.minimum||0}</td>
           <td>${sup?sup.name:"—"}</td>
           <td><span class="status-badge ${st}">${statusLabel(st)}</span></td>
-          <td style="font-weight:600;color:#3b82f6">${p.orderQty||0} <span style="font-size:11px;color:#94a3b8">${p.orderUnit||""}</span></td>
+          <td style="font-weight:600;color:#3b82f6">${p.orderQty||0} ${p.orderUnit==="boîte"?`boîte${p.orderQty>1?"s":""} <span style="font-size:11px;color:#94a3b8;font-weight:400">(${(p.orderQty||0)*(p.unitsPerBox||1)} unités)</span>`:`unité${p.orderQty>1?"s":""}`}</td>
           ${isAdmin?`<td>
             <div class="menu-wrap">
               <button class="dots-btn" onclick="toggleDrop('${p.id}')">⋯</button>
@@ -658,14 +668,26 @@ async function confirmMove(){
 }
 
 // ── PRODUCT MODAL ─────────────────────────────────────────
+function toggleBoxFields(){
+  const isBox=document.getElementById("p-orderunit")?.value==="boîte";
+  const bf=document.getElementById("box-fields");
+  const uf=document.getElementById("unit-fields");
+  if(bf) bf.style.display=isBox?"block":"none";
+  if(uf) uf.style.display=isBox?"none":"block";
+}
+
 function openProductModal(){
   if(!isAdmin) return; editingProductId=null;
   document.getElementById("modal-product-title").textContent="Ajouter un produit";
-  ["p-name","p-unit","p-orderunit"].forEach(id=>document.getElementById(id).value="");
+  document.getElementById("p-name").value="";
   document.getElementById("p-stock").value=0;
   document.getElementById("p-orderqty").value=0;
+  document.getElementById("p-orderqty-unit").value=0;
+  document.getElementById("p-unitsperbox").value=1;
   document.getElementById("p-minimum").value=0;
+  document.getElementById("p-orderunit").value="unité";
   document.getElementById("p-supplier").value="";
+  toggleBoxFields();
   document.getElementById("modal-product").style.display="flex";
 }
 function closeProductModal(){ document.getElementById("modal-product").style.display="none"; }
@@ -675,22 +697,27 @@ function editProduct(id){
   editingProductId=id;
   document.getElementById("modal-product-title").textContent="Modifier le produit";
   document.getElementById("p-name").value=p.name||"";
-  document.getElementById("p-unit").value=p.unit||"";
-  document.getElementById("p-orderunit").value=p.orderUnit||"";
-  document.getElementById("p-orderqty").value=p.orderQty||0;
   document.getElementById("p-minimum").value=p.minimum||0;
   document.getElementById("p-stock").value=p.currentStock||0;
+  document.getElementById("p-orderunit").value=p.orderUnit||"unité";
+  document.getElementById("p-unitsperbox").value=p.unitsPerBox||1;
+  document.getElementById("p-orderqty").value=p.orderQty||0;
+  document.getElementById("p-orderqty-unit").value=p.orderQty||0;
   document.getElementById("p-section").value=p.section||DEFAULT_SECTIONS[0];
   document.getElementById("p-supplier").value=p.supplierId||"";
+  toggleBoxFields();
   document.getElementById("modal-product").style.display="flex";
 }
 
 async function saveProduct(){
   const name=document.getElementById("p-name").value.trim(); if(!name) return alert("Entrez un nom.");
+  const orderUnit=document.getElementById("p-orderunit").value;
+  const isBox=orderUnit==="boîte";
+  const orderQty=isBox ? Number(document.getElementById("p-orderqty").value) : Number(document.getElementById("p-orderqty-unit").value);
+  const unitsPerBox=isBox ? Number(document.getElementById("p-unitsperbox").value) : 1;
   const data={
-    name, unit:document.getElementById("p-unit").value,
-    orderUnit:document.getElementById("p-orderunit").value,
-    orderQty:Number(document.getElementById("p-orderqty").value),
+    name, unit:"unité",
+    orderUnit, orderQty, unitsPerBox,
     minimum:Number(document.getElementById("p-minimum").value),
     currentStock:Number(document.getElementById("p-stock").value),
     section:document.getElementById("p-section").value,
