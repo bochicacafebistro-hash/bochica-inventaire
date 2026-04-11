@@ -11,7 +11,7 @@
     body{font-family:system-ui,sans-serif;background:#f8fafc;min-height:100vh}
 
     /* HEADER */
-    .header{background:linear-gradient(135deg,#1e293b,#334155);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .header{background:linear-gradient(135deg,#1e293b,#334155);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:8px;position:sticky;top:0;z-index:50}
     .logo-name{font-weight:900;font-size:20px;letter-spacing:4px;line-height:1}
     .logo-sub{font-size:10px;opacity:.7;letter-spacing:1px}
     .logo-bar{display:flex;height:2px;margin-top:3px;width:100px}
@@ -169,7 +169,7 @@
     <label>Nom du produit<input id="p-name" placeholder="ex: Tomates"/></label>
     <label>Section<select id="p-section"></select></label>
     <div class="form-row">
-      <label>Unité d'inventaire<input id="p-unit" placeholder="ex: unité, litre, kg"/><span class="field-hint">Comment vous comptez</span></label>
+      <label>Qté en inventaire<input id="p-unit" placeholder="ex: unité, litre, kg"/><span class="field-hint">Comment vous comptez</span></label>
       <label>Unité de commande<input id="p-orderunit" placeholder="ex: boîte, caisse"/><span class="field-hint">Comment vous commandez</span></label>
     </div>
     <div class="form-row">
@@ -274,7 +274,12 @@ let dragSrcId=null;
 
 function genId(){ return Math.random().toString(36).slice(2,10); }
 function getAllSections(){ return ["Toutes",...DEFAULT_SECTIONS,...customSections]; }
-function getCurrentStock(p){ return p.stockByDay?.[TODAY_KEY]!==undefined ? Number(p.stockByDay[TODAY_KEY]) : (p.currentStock!==undefined ? Number(p.currentStock) : 0); }
+// Stock actuel = qté en inventaire de base + ajouts manuels du jour
+function getCurrentStock(p){
+  const base = Number(p.currentStock||0);
+  const todayAdd = p.stockByDay?.[TODAY_KEY] !== undefined ? Number(p.stockByDay[TODAY_KEY]) : 0;
+  return base + todayAdd;
+}
 function getStatus(p){
   const s=getCurrentStock(p), m=Number(p.minimum||0);
   if(s<=m) return "red";
@@ -284,14 +289,18 @@ function getStatus(p){
 function statusLabel(st){ return st==="red"?"⚠️ Commander":st==="yellow"?"🟡 Bientôt bas":"✅ OK"; }
 
 // ── Firebase ──────────────────────────────────────────────
-
+db.collection("products").orderBy("sortOrder","asc").onSnapshot(snap=>{
+  products=snap.docs.map(d=>({id:d.id,...d.data()}));
+  if(isLoggedIn) render(); else showLogin();
+}).catch(()=>{
+  db.collection("products").onSnapshot(snap=>{
+    products=snap.docs.map(d=>({id:d.id,...d.data()}));
+    if(isLoggedIn) render(); else showLogin();
+  });
+});
 db.collection("suppliers").onSnapshot(snap=>{ suppliers=snap.docs.map(d=>({id:d.id,...d.data()})); if(isLoggedIn) render(); });
 db.collection("settings").doc("sections").onSnapshot(snap=>{ customSections=snap.exists?snap.data().custom||[]:[];  if(isLoggedIn) render(); });
-db.collection("products").onSnapshot(snap=>{
-  products=snap.docs.map(d=>({id:d.id,...d.data()}))
-    .sort((a,b)=>(a.sortOrder??999)-(b.sortOrder??999));
-  if(isLoggedIn) render(); else showLogin();
-});
+
 // ── Midnight reset ────────────────────────────────────────
 function scheduleMidnight(){
   const now=new Date(), midnight=new Date(now);
@@ -424,36 +433,33 @@ function render(){
       filtered.forEach(p=>{
         const st=getStatus(p), stock=getCurrentStock(p);
         const sup=suppliers.find(s=>s.id===p.supplierId);
-        html+=`<div class="mobile-card ${st}">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-            <div>
-              <strong style="font-size:15px">${p.name}</strong>
-              <div style="font-size:11px;color:#94a3b8">${p.unit||""}${activeSection==="Toutes"?` · ${p.section}`:""}</div>
-            </div>
+      html+=`<div class="mobile-card" style="background:#fff;border:1px solid #e2e8f0">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:${st!=="green"?10:0}px">
+            <strong style="font-size:15px">${p.name}</strong>
             <div style="display:flex;align-items:center;gap:6px">
-              <span class="status-badge ${st}">${statusLabel(st)}</span>
+              ${st!=="green"?`<span class="status-badge ${st}">${statusLabel(st)}</span>`:""}
               ${isAdmin?`<div class="menu-wrap">
                 <button class="dots-btn" onclick="toggleDrop('m${p.id}')">⋯</button>
                 <div class="dropdown" id="drop-m${p.id}">
                   <button onclick="editProduct('${p.id}');closeAllDrops()">✏️ Modifier</button>
                   <button onclick="openMoveModal('${p.id}');closeAllDrops()">📁 Changer catégorie</button>
                   <div class="sep"></div>
-                  <button class="btn-danger" style="border-radius:0;background:none;color:#ef4444" onclick="askDeleteProduct('${p.id}','${p.name.replace(/'/g,"\\'")}');closeAllDrops()">🗑️ Supprimer</button>
+                  <button style="color:#ef4444" onclick="askDeleteProduct('${p.id}','${p.name.replace(/'/g,"\\'")}');closeAllDrops()">🗑️ Supprimer</button>
                 </div>
               </div>`:""}
             </div>
           </div>
-          <div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
+          ${st!=="green"?`<div style="display:flex;gap:14px;align-items:flex-end;flex-wrap:wrap">
             <div>
               <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:4px;text-transform:uppercase">Stock actuel</div>
               <span class="cur-stock ${st}" style="font-size:16px">${stock} <span style="font-size:11px;font-weight:400">${p.unit||""}</span></span>
             </div>
             <div>
-              <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:4px;text-transform:uppercase">Mettre à jour</div>
-              <input class="stock-input" type="number" placeholder="Entrer qté" id="si_m${p.id}"
+              <div style="font-size:10px;color:#64748b;font-weight:600;margin-bottom:4px;text-transform:uppercase">Ajouter qté</div>
+              <input class="stock-input" type="number" placeholder="+ qté" id="si_m${p.id}"
                 onkeydown="if(event.key==='Enter') commitStock('${p.id}','si_m${p.id}')"
                 onblur="commitStock('${p.id}','si_m${p.id}')"
-                style="width:100px;height:34px"/>
+                style="width:90px;height:34px"/>
             </div>
             <div style="display:flex;gap:10px">
               <div style="text-align:center"><div style="font-size:10px;color:#64748b;font-weight:600">MIN</div><div style="font-size:15px;font-weight:600">${p.minimum||0}</div></div>
@@ -461,6 +467,7 @@ function render(){
             </div>
           </div>
           ${sup?`<div style="margin-top:8px;font-size:12px;color:#64748b">🏪 ${sup.name}</div>`:""}
+          `:""}
         </div>`;
       });
       html+=`</div>`;
@@ -607,10 +614,14 @@ function toggleSections(){ sectionsExpanded=!sectionsExpanded; render(); }
 async function commitStock(id, inputId){
   const input=document.getElementById(inputId);
   if(!input||input.value==="") return;
-  const val=Number(input.value);
+  const add=Number(input.value);
   const p=products.find(x=>x.id===id); if(!p) return;
-  const stockByDay={...p.stockByDay||{},[TODAY_KEY]:val};
-  await db.collection("products").doc(id).update({stockByDay, currentStock:val});
+  // Ajouter au stock de base
+  const newBase = Number(p.currentStock||0) + add;
+  // Accumuler dans stockByDay pour l'historique
+  const prev = p.stockByDay?.[TODAY_KEY] !== undefined ? Number(p.stockByDay[TODAY_KEY]) : 0;
+  const stockByDay={...p.stockByDay||{},[TODAY_KEY]: prev + add};
+  await db.collection("products").doc(id).update({currentStock: newBase, stockByDay});
   input.value="";
 }
 
