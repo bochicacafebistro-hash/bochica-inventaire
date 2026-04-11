@@ -366,10 +366,13 @@ function render(){
   const isMobile=window.innerWidth<=640;
   const allSec=getAllSections();
 
-  const filtered=products.filter(p=>
-    (activeSection==="Toutes"||p.section===activeSection)&&
-    (searchQuery===""||p.name.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  const statusOrder={"red":0,"yellow":1,"green":2};
+  const filtered=products
+    .filter(p=>
+      (activeSection==="Toutes"||p.section===activeSection)&&
+      (searchQuery===""||p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    )
+    .sort((a,b)=>statusOrder[getStatus(a)]-statusOrder[getStatus(b)]);
 
   let html=`
   <div class="header">
