@@ -18,7 +18,7 @@ bochica-inventaire/
 ├── index.html                  ← HTML + CSS + imports des scripts
 └── js/
 ├── config.js               ← Config Firebase + constantes globales
-├── state.js                ← Variables globales (products, employees, etc.)
+├── state.js                ← Variables globales (products, employees, revenues, etc.)
 ├── utils.js                ← Fonctions utilitaires (fmtMoney, getStatus, modals, dark mode...)
 ├── auth.js                 ← Connexion PIN, logout
 ├── sidebar.js              ← Navigation, sidebar, renderPage()
@@ -26,7 +26,7 @@ bochica-inventaire/
 ├── inventaire.js           ← Page inventaire, cartes produits, stock, drag & drop
 ├── modals-produits.js      ← Modals : produit, note, catégorie, réception, archivage
 ├── pages-secondaires.js    ← Pages : rapport, historique, tâches + modals tâches
-└── pages-admin.js          ← Pages : employés, horaires, dépenses, menu, fournisseurs + leurs modals
+└── pages-admin.js          ← Pages : employés, horaires, dépenses, revenus, menu, fournisseurs
 
 ## 🔥 Firebase
 - **Projet** : bochica-inventaire
@@ -36,27 +36,70 @@ bochica-inventaire/
   - `employees` — employés (nom, rôle, phone, email, pin, shifts)
   - `tasks` — tâches (titre, description, statut, priorité, assigné, date limite)
   - `menu` — items du menu (nom, description, prix, catégorie, disponible)
-  - `expenses` — dépenses (description, montant, date, catégorie, fournisseur)
+  - `expenses` — dépenses (supplier, description, amount, tps, tvq, date, category, notes)
+  - `revenues` — revenus (description, amount, tps, tvq, date, notes)
+  - `expenseCategories` — catégories personnalisées de dépenses (name, type)
   - `logs` — historique des actions
-  - `settings/sections` — catégories personnalisées
+  - `settings/sections` — catégories personnalisées d'inventaire
 
 ## ✅ Fonctionnalités existantes
-- **Inventaire** : stock, statuts (rouge/jaune/vert), drag & drop, archivage, notes, sections
-- **Rapport** : produits à commander, export imprimable
-- **Historique** : log de toutes les actions
-- **Tâches** : kanban 3 colonnes (À faire / En cours / Complété), priorités, assignation
-- **Employés & Horaires** : fiche employé, grille horaire semaine, quarts (Matin/Soir/Journée/Congé)
-- **Dépenses** : suivi par période (semaine/mois/année), catégories, stats
-- **Menu** : items par catégorie, toggle disponible/indisponible
-- **Fournisseurs** : fiches avec produits liés
-- **Dark mode** : toggle, sauvegardé en localStorage
-- **Mobile responsive** : sidebar cachée, cartes au lieu de tableau
+
+### 📦 Inventaire
+- Stock, statuts (rouge/jaune/vert), drag & drop, archivage, notes, sections
+- Sections par défaut : Cuisine, Emballage, Bar, Autre
+- Sections personnalisées gérables via ⚙️
+
+### 📋 Rapport
+- Produits à commander, export imprimable
+
+### 🕐 Historique
+- Log de toutes les actions
+
+### 📋 Tâches
+- Kanban 3 colonnes (À faire / En cours / Complété)
+- Priorités (haute/moyenne/basse), assignation, date limite
+
+### 👥 Employés & Horaires
+- Fiche employé (nom, rôle, phone, email, PIN)
+- Grille horaire semaine, quarts : Matin/Soir/Journée/Congé
+
+### 💰 Dépenses & Revenus
+- **Dépenses** : fournisseur (liste déroulante), catégorie, type fixe/variable
+- **Taxes** : TPS (5%) et TVQ (9.975%) auto mais modifiables manuellement
+- **Revenus** : description, montant, TPS/TVQ perçues
+- **Catégories par défaut** : Nourriture (variable), Loyer (fixe), Électricité (fixe),
+  Internet (fixe), Logiciels (fixe), Abonnements (fixe), Salaires (fixe), Taxes (fixe), Autres (variable)
+- **Catégories personnalisées** : ajout/suppression via ⚙️
+- **Sélecteur de mois** : navigation ◀ ▶, par défaut mois en cours
+- **Stats** : revenus, dépenses avant taxes, taxes totales, profit/déficit, frais fixes vs variables
+- **Créer fournisseur rapide** depuis le modal de dépense
+
+### 🍽️ Menu
+- Items par catégorie, toggle disponible/indisponible
+- Catégories : Entrées, Plats principaux, Desserts, Boissons, Autres
+
+### 🏪 Fournisseurs
+- Fiches avec produits liés
+
+### 🌙 Général
+- Dark mode (toggle, sauvegardé en localStorage)
+- Mobile responsive (sidebar cachée, cartes au lieu de tableau)
 
 ## 🚧 Contraintes importantes
 - **Aucune installation locale possible** — tout se fait via GitHub.com + Vercel
 - **Vanilla JS uniquement** — pas de React, pas de build step
 - **Modifications** : chaque fichier JS = une section de l'app
 - Vercel redéploie automatiquement à chaque commit GitHub
+
+## 🔧 Constantes importantes (config.js)
+- `ADMIN_PIN` = "0000"
+- `EMPLOYEE_PIN` = "1111"
+- `TPS_RATE` = 0.05
+- `TVQ_RATE` = 0.09975
+- `DEFAULT_SECTIONS` = ["Cuisine", "Emballage", "Bar", "Autre"]
+- `SHIFT_TYPES` = Matin, Soir, Journée, Congé
+- `TASK_COLS` = ["À faire", "En cours", "Complété"]
+- `MENU_CATS` = ["Entrées", "Plats principaux", "Desserts", "Boissons", "Autres"]
 
 ## 📝 Fonctionnalités à ajouter (liste évolutive)
 - [ ] À compléter selon les besoins futurs...
