@@ -193,27 +193,29 @@ function renderDepenses() {
   const MONTHS_FR = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
 
   const filteredExp = expenses.filter(e => {
+    if (!e.date) return false;
+    const d = new Date(e.date + "T12:00:00");
     if (activeExpensePeriod === "semaine") {
-      const diff = (now - new Date(e.date)) / (1000 * 60 * 60 * 24);
+      const diff = (now - d) / (1000 * 60 * 60 * 24);
       return diff <= 7;
     }
     if (activeExpensePeriod === "mois") {
-      const d = new Date(e.date);
       return d.getMonth() === selectedExpenseMonth && d.getFullYear() === selectedExpenseYear;
     }
-    return new Date(e.date).getFullYear() === selectedExpenseYear;
+    return d.getFullYear() === selectedExpenseYear;
   });
 
   const filteredRev = revenues.filter(r => {
+    if (!r.date) return false;
+    const d = new Date(r.date + "T12:00:00");
     if (activeExpensePeriod === "semaine") {
-      const diff = (now - new Date(r.date)) / (1000 * 60 * 60 * 24);
+      const diff = (now - d) / (1000 * 60 * 60 * 24);
       return diff <= 7;
     }
     if (activeExpensePeriod === "mois") {
-      const d = new Date(r.date);
       return d.getMonth() === selectedExpenseMonth && d.getFullYear() === selectedExpenseYear;
     }
-    return new Date(r.date).getFullYear() === selectedExpenseYear;
+    return d.getFullYear() === selectedExpenseYear;
   });
 
   const totalExp = filteredExp.reduce((s, e) => s + Number(e.amount || 0), 0);
@@ -435,17 +437,15 @@ function openExpenseModal(id) {
   showModal(`<div class="modal">
     <div class="modal-header"><h3>${e ? "Modifier" : "Ajouter"} une dépense</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
 
-    <div class="form-row">
-      <label>Fournisseur
-        <select id="ex-sup">
-          <option value="">— Aucun —</option>
-          ${suppliers.map(s => `<option value="${s.name}" ${e?.supplier===s.name?"selected":""}>${s.name}</option>`).join("")}
-        </select>
-      </label>
-      <label style="justify-content:flex-end;padding-top:18px">
-        <button type="button" onclick="openQuickSupplier()" style="border:1px dashed var(--border);background:none;color:var(--accent);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:600">+ Nouveau fournisseur</button>
-      </label>
-    </div>
+    <label>Description
+      <input id="ex-desc" value="${esc(e?.description||"")}"/>
+    </label>
+    <label>Fournisseur (optionnel)
+      <select id="ex-sup">
+        <option value="">— Aucun —</option>
+        ${suppliers.map(s => `<option value="${s.name}" ${e?.supplier===s.name?"selected":""}>${s.name}</option>`).join("")}
+      </select>
+    </label>
 
     <div class="form-row">
       <label>Catégorie
@@ -506,14 +506,15 @@ function calcExpenseTaxes() {
   if (prev && amt > 0) prev.innerHTML = `Total avec taxes : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
 }
 
-async function saveExpense(id) {
   const sup = document.getElementById("ex-sup").value;
+  const desc = document.getElementById("ex-desc").value.trim();
   const amt = Number(document.getElementById("ex-amt").value) || 0;
+  if (!desc) return alert("Entrez une description.");
   if (!amt) return alert("Entrez un montant.");
   const type = document.getElementById("ex-type").value;
   const data = {
     supplier: sup,
-    description: sup,
+    description: desc,
     amount: amt,
     tps: Number(document.getElementById("ex-tps").value) || 0,
     tvq: Number(document.getElementById("ex-tvq").value) || 0,
