@@ -17,7 +17,20 @@ const DAYS_FR = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 const STATUS_ORDER = { "red": 0, "yellow": 1, "green": 2 };
 const TASK_COLS = ["À faire", "En cours", "Complété"];
 const MENU_CATS = ["Entrées", "Plats principaux", "Desserts", "Boissons", "Autres"];
-const EXPENSE_CATS = ["Nourriture", "Boissons", "Équipement", "Salaires", "Autre"];
+const EXPENSE_CATS = [
+  { name: "Nourriture", type: "variable" },
+  { name: "Loyer", type: "fixe" },
+  { name: "Électricité", type: "fixe" },
+  { name: "Internet", type: "fixe" },
+  { name: "Logiciels", type: "fixe" },
+  { name: "Abonnements", type: "fixe" },
+  { name: "Salaires", type: "fixe" },
+  { name: "Taxes", type: "fixe" },
+  { name: "Autres", type: "variable" }
+];
+const TPS_RATE = 0.05;
+const TVQ_RATE = 0.09975;
+
 const SHIFT_TYPES = [
   { label: "Matin",   color: "#3b82f6" },
   { label: "Soir",    color: "#8b5cf6" },
