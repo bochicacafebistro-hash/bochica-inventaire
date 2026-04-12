@@ -70,7 +70,6 @@ async function removeShift(empId, dayKey) {
   await db.collection("employees").doc(empId).update({ shifts });
 }
 
-// ── Modal Employé ─────────────────────────────────────
 function openEmployeeModal(id) {
   const emp = id ? employees.find(x => x.id === id) : null;
   showModal(`<div class="modal">
@@ -108,13 +107,12 @@ async function saveEmployee(id) {
   closeModal();
 }
 
-// ── Modal Quart de travail ────────────────────────────
 function openShiftModal(empId, dayKey) {
   showModal(`<div class="modal" style="max-width:320px">
     <div class="modal-header"><h3>🕐 Quart de travail</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
     <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Sélectionnez le type de quart :</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      ${SHIFT_TYPES.map(s => `<button onclick="assignShift('${empId}','${dayKey}','${s.label}','${s.color}')" 
+      ${SHIFT_TYPES.map(s => `<button onclick="assignShift('${empId}','${dayKey}','${s.label}','${s.color}')"
         style="background:${s.color};color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer">${s.label}</button>`).join("")}
     </div>
     <div class="modal-actions" style="margin-top:12px">
@@ -130,88 +128,410 @@ async function assignShift(empId, dayKey, label, color) {
   closeModal();
 }
 
-// ── Page Dépenses ─────────────────────────────────────
+// ══════════════════════════════════════════════════════
+// DÉPENSES
+// ══════════════════════════════════════════════════════
+
+let selectedExpenseMonth = new Date().getMonth();
+let selectedExpenseYear = new Date().getFullYear();
+
+function getAllExpenseCats() {
+  const defaults = EXPENSE_CATS.map(c => c.name);
+  const customs = expenseCategories.map(c => c.name);
+  return [...new Set([...defaults, ...customs])];
+}
+
+function getExpenseCatType(name) {
+  const def = EXPENSE_CATS.find(c => c.name === name);
+  if (def) return def.type;
+  const custom = expenseCategories.find(c => c.name === name);
+  return custom ? custom.type : "variable";
+}
+
 function renderDepenses() {
   const now = new Date();
-  const filtered = expenses.filter(e => {
-    const d = new Date(e.date);
-    if (activeExpensePeriod === "semaine") { const diff = (now - d) / (1000 * 60 * 60 * 24); return diff <= 7; }
-    if (activeExpensePeriod === "mois") { return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }
-    return d.getFullYear() === now.getFullYear();
+  const MONTHS_FR = ["Janvier","Février","Mars","Avril","Mai","Juin","Juillet","Août","Septembre","Octobre","Novembre","Décembre"];
+
+  const filteredExp = expenses.filter(e => {
+    if (activeExpensePeriod === "semaine") {
+      const diff = (now - new Date(e.date)) / (1000 * 60 * 60 * 24);
+      return diff <= 7;
+    }
+    if (activeExpensePeriod === "mois") {
+      const d = new Date(e.date);
+      return d.getMonth() === selectedExpenseMonth && d.getFullYear() === selectedExpenseYear;
+    }
+    return new Date(e.date).getFullYear() === selectedExpenseYear;
   });
-  const total = filtered.reduce((s, e) => s + Number(e.amount || 0), 0);
-  const bycat = EXPENSE_CATS.map(c => ({ cat: c, total: filtered.filter(e => e.category === c).reduce((s, e) => s + Number(e.amount || 0), 0) }));
+
+  const filteredRev = revenues.filter(r => {
+    if (activeExpensePeriod === "semaine") {
+      const diff = (now - new Date(r.date)) / (1000 * 60 * 60 * 24);
+      return diff <= 7;
+    }
+    if (activeExpensePeriod === "mois") {
+      const d = new Date(r.date);
+      return d.getMonth() === selectedExpenseMonth && d.getFullYear() === selectedExpenseYear;
+    }
+    return new Date(r.date).getFullYear() === selectedExpenseYear;
+  });
+
+  const totalExp = filteredExp.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const totalTPS = filteredExp.reduce((s, e) => s + Number(e.tps || 0), 0);
+  const totalTVQ = filteredExp.reduce((s, e) => s + Number(e.tvq || 0), 0);
+  const totalRev = filteredRev.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const profit = totalRev - totalExp - totalTPS - totalTVQ;
+
+  const fixedExp = filteredExp.filter(e => getExpenseCatType(e.category) === "fixe");
+  const varExp = filteredExp.filter(e => getExpenseCatType(e.category) === "variable");
+  const totalFixed = fixedExp.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const totalVar = varExp.reduce((s, e) => s + Number(e.amount || 0), 0);
+
+  // Month picker
+  let monthPicker = "";
+  if (activeExpensePeriod === "mois") {
+    monthPicker = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      <button onclick="changeExpenseMonth(-1)" style="border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text)">◀</button>
+      <select onchange="setExpenseMonthYear(this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;background:var(--surface);color:var(--text);font-size:14px">
+        ${Array.from({length:12},(_,i)=>`<option value="${i}" ${i===selectedExpenseMonth?"selected":""}>${MONTHS_FR[i]}</option>`).join("")}
+      </select>
+      <select onchange="setExpenseYear(this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;background:var(--surface);color:var(--text);font-size:14px">
+        ${[now.getFullYear()-1, now.getFullYear(), now.getFullYear()+1].map(y=>`<option value="${y}" ${y===selectedExpenseYear?"selected":""}>${y}</option>`).join("")}
+      </select>
+      <button onclick="changeExpenseMonth(1)" style="border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text)">▶</button>
+      <span style="font-size:13px;color:var(--text3)">${MONTHS_FR[selectedExpenseMonth]} ${selectedExpenseYear}</span>
+    </div>`;
+  }
+
   return `<div class="page">
     <div class="toolbar">
-      <h2 style="font-size:18px">Dépenses</h2>
-      <button class="btn btn-primary" onclick="openExpenseModal()">+ Dépense</button>
+      <h2 style="font-size:18px">Dépenses & Revenus</h2>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-primary" onclick="openRevenueModal()">+ Revenu</button>
+        <button class="btn btn-primary" onclick="openExpenseModal()">+ Dépense</button>
+        ${isAdmin ? `<button class="btn btn-secondary" onclick="openExpenseCatModal()">⚙️ Catégories</button>` : ""}
+      </div>
     </div>
-    <div style="display:flex;gap:8px;margin-bottom:16px">
-      ${["semaine", "mois", "année"].map(p => `<button class="sec-btn ${activeExpensePeriod === p ? "active" : ""}" onclick="setExpensePeriod('${p}')">${p.charAt(0).toUpperCase() + p.slice(1)}</button>`).join("")}
+
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
+      ${["semaine","mois","année"].map(p => `<button class="sec-btn ${activeExpensePeriod===p?"active":""}" onclick="setExpensePeriod('${p}')">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join("")}
     </div>
-    <div class="stat-grid">
-      <div class="stat-card"><div class="stat-num" style="color:var(--accent)">${fmtMoney(total)}</div><div class="stat-label">Total dépenses</div></div>
-      ${bycat.filter(c => c.total > 0).map(c => `<div class="stat-card"><div class="stat-num" style="font-size:20px">${fmtMoney(c.total)}</div><div class="stat-label">${c.cat}</div></div>`).join("")}
+
+    ${monthPicker}
+
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+      <div class="stat-card" style="border-left:4px solid #22c55e">
+        <div class="stat-num" style="color:#22c55e">${fmtMoney(totalRev)}</div>
+        <div class="stat-label">💰 Revenus</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid #ef4444">
+        <div class="stat-num" style="color:#ef4444">${fmtMoney(totalExp)}</div>
+        <div class="stat-label">💸 Dépenses (avant taxes)</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid #f59e0b">
+        <div class="stat-num" style="color:#f59e0b;font-size:20px">${fmtMoney(totalTPS+totalTVQ)}</div>
+        <div class="stat-label">🧾 Taxes (TPS+TVQ)</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid ${profit>=0?"#22c55e":"#ef4444"}">
+        <div class="stat-num" style="color:${profit>=0?"#22c55e":"#ef4444"}">${fmtMoney(profit)}</div>
+        <div class="stat-label">${profit>=0?"📈 Profit":"📉 Déficit"}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="font-size:20px">${fmtMoney(totalFixed)}</div>
+        <div class="stat-label">🔒 Frais fixes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="font-size:20px">${fmtMoney(totalVar)}</div>
+        <div class="stat-label">📊 Frais variables</div>
+      </div>
     </div>
-    <div class="table-wrap overflow"><table>
-      <thead><tr><th>Date</th><th>Description</th><th>Catégorie</th><th>Fournisseur</th><th>Montant</th><th></th></tr></thead>
-      <tbody>${filtered.length === 0
-        ? `<tr><td colspan="6" style="text-align:center;color:var(--text3);padding:24px">Aucune dépense pour cette période.</td></tr>`
-        : filtered.map(e => `<tr>
-          <td>${e.date || ""}</td>
-          <td><strong>${e.description || ""}</strong></td>
-          <td><span class="badge-pill blue">${e.category || ""}</span></td>
-          <td>${e.supplier || "—"}</td>
-          <td style="font-weight:700;color:var(--accent)">${fmtMoney(e.amount)}</td>
-          <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('exp${e.id}')">⋯</button>
-            <div class="dropdown" id="drop-exp${e.id}">
-              <button onclick="openExpenseModal('${e.id}');closeAllDrops()">✏️ Modifier</button>
-              <div class="sep"></div>
-              <button style="color:#ef4444" onclick="askDelete('expenses','${e.id}','${esc(e.description || "")}');closeAllDrops()">🗑️ Supprimer</button>
-            </div></div></td>
-        </tr>`).join("")}
-      </tbody>
-    </table></div>
+
+    <!-- Revenus -->
+    ${filteredRev.length > 0 ? `
+    <h3 style="font-size:15px;margin-bottom:10px;margin-top:4px">💰 Revenus</h3>
+    <div class="table-wrap overflow" style="margin-bottom:20px">
+      <table><thead><tr><th>Date</th><th>Description</th><th>Montant</th><th>TPS</th><th>TVQ</th><th></th></tr></thead>
+      <tbody>${filteredRev.map(r => `<tr>
+        <td>${r.date||""}</td>
+        <td><strong>${r.description||""}</strong></td>
+        <td style="font-weight:700;color:#22c55e">${fmtMoney(r.amount)}</td>
+        <td style="color:var(--text3)">${r.tps?fmtMoney(r.tps):"—"}</td>
+        <td style="color:var(--text3)">${r.tvq?fmtMoney(r.tvq):"—"}</td>
+        <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('rev${r.id}')">⋯</button>
+          <div class="dropdown" id="drop-rev${r.id}">
+            <button onclick="openRevenueModal('${r.id}');closeAllDrops()">✏️ Modifier</button>
+            <div class="sep"></div>
+            <button style="color:#ef4444" onclick="askDelete('revenues','${r.id}','${esc(r.description||"")}');closeAllDrops()">🗑️ Supprimer</button>
+          </div></div></td>
+      </tr>`).join("")}</tbody></table>
+    </div>` : ""}
+
+    <!-- Dépenses -->
+    <h3 style="font-size:15px;margin-bottom:10px">💸 Dépenses</h3>
+    <div class="table-wrap overflow">
+      <table><thead><tr><th>Date</th><th>Fournisseur</th><th>Catégorie</th><th>Type</th><th>Avant taxes</th><th>TPS</th><th>TVQ</th><th>Total</th><th></th></tr></thead>
+      <tbody>${filteredExp.length === 0
+        ? `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px">Aucune dépense pour cette période.</td></tr>`
+        : filteredExp.map(e => {
+            const total = Number(e.amount||0) + Number(e.tps||0) + Number(e.tvq||0);
+            const type = getExpenseCatType(e.category);
+            return `<tr>
+              <td>${e.date||""}</td>
+              <td><strong>${e.supplier||e.description||"—"}</strong></td>
+              <td><span class="badge-pill blue">${e.category||""}</span></td>
+              <td><span class="badge-pill ${type==="fixe"?"green":"yellow"}">${type==="fixe"?"🔒 Fixe":"📊 Variable"}</span></td>
+              <td style="font-weight:700;color:var(--accent)">${fmtMoney(e.amount)}</td>
+              <td style="color:var(--text3)">${e.tps?fmtMoney(e.tps):"—"}</td>
+              <td style="color:var(--text3)">${e.tvq?fmtMoney(e.tvq):"—"}</td>
+              <td style="font-weight:700">${fmtMoney(total)}</td>
+              <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('exp${e.id}')">⋯</button>
+                <div class="dropdown" id="drop-exp${e.id}">
+                  <button onclick="openExpenseModal('${e.id}');closeAllDrops()">✏️ Modifier</button>
+                  <div class="sep"></div>
+                  <button style="color:#ef4444" onclick="askDelete('expenses','${e.id}','${esc(e.supplier||e.description||"")}');closeAllDrops()">🗑️ Supprimer</button>
+                </div></div></td>
+            </tr>`;
+          }).join("")}
+      </tbody></table>
+    </div>
   </div>`;
 }
+
+function changeExpenseMonth(dir) {
+  selectedExpenseMonth += dir;
+  if (selectedExpenseMonth < 0) { selectedExpenseMonth = 11; selectedExpenseYear--; }
+  if (selectedExpenseMonth > 11) { selectedExpenseMonth = 0; selectedExpenseYear++; }
+  renderPage();
+}
+function setExpenseMonthYear(val) { selectedExpenseMonth = Number(val); renderPage(); }
+function setExpenseYear(val) { selectedExpenseYear = Number(val); renderPage(); }
 
 // ── Modal Dépense ─────────────────────────────────────
 function openExpenseModal(id) {
   const e = id ? expenses.find(x => x.id === id) : null;
   const today = new Date().toISOString().slice(0, 10);
+  const cats = getAllExpenseCats();
+  const currentCat = e?.category || cats[0];
+  const currentType = getExpenseCatType(currentCat);
+
   showModal(`<div class="modal">
     <div class="modal-header"><h3>${e ? "Modifier" : "Ajouter"} une dépense</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
-    <label>Description<input id="ex-desc" value="${esc(e?.description || "")}"/></label>
+
     <div class="form-row">
-      <label>Montant ($)<input id="ex-amt" type="number" step="0.01" value="${e?.amount || ""}"/></label>
-      <label>Date<input id="ex-date" type="date" value="${e?.date || today}"/></label>
+      <label>Fournisseur
+        <select id="ex-sup">
+          <option value="">— Aucun —</option>
+          ${suppliers.map(s => `<option value="${s.name}" ${e?.supplier===s.name?"selected":""}>${s.name}</option>`).join("")}
+        </select>
+      </label>
+      <label style="justify-content:flex-end;padding-top:18px">
+        <button type="button" onclick="openQuickSupplier()" style="border:1px dashed var(--border);background:none;color:var(--accent);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:600">+ Nouveau fournisseur</button>
+      </label>
     </div>
+
     <div class="form-row">
-      <label>Catégorie<select id="ex-cat">${EXPENSE_CATS.map(c => `<option value="${c}" ${e?.category === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>
-      <label>Fournisseur<input id="ex-sup" value="${esc(e?.supplier || "")}" placeholder="Optionnel"/></label>
+      <label>Catégorie
+        <select id="ex-cat" onchange="updateExpenseType()">
+          ${cats.map(c => `<option value="${c}" ${currentCat===c?"selected":""}>${c}</option>`).join("")}
+        </select>
+      </label>
+      <label>Type
+        <input id="ex-type" value="${currentType==="fixe"?"🔒 Fixe":"📊 Variable"}" readonly style="background:var(--surface2);cursor:default"/>
+      </label>
     </div>
-    <label>Notes<textarea id="ex-notes" style="height:60px">${e?.notes || ""}</textarea></label>
+
+    <div class="form-row">
+      <label>Date<input id="ex-date" type="date" value="${e?.date||today}"/></label>
+    </div>
+
+    <label>Montant avant taxes ($)
+      <input id="ex-amt" type="number" step="0.01" value="${e?.amount||""}" oninput="calcExpenseTaxes()"/>
+    </label>
+
+    <div class="form-row">
+      <label>TPS (5%)
+        <input id="ex-tps" type="number" step="0.01" value="${e?.tps||""}"/>
+      </label>
+      <label>TVQ (9.975%)
+        <input id="ex-tvq" type="number" step="0.01" value="${e?.tvq||""}"/>
+      </label>
+    </div>
+    <div id="ex-total-preview" style="font-size:13px;color:var(--text2);margin-bottom:10px;text-align:right"></div>
+
+    <label>Notes<textarea id="ex-notes" style="height:60px">${e?.notes||""}</textarea></label>
+
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveExpense('${id || ""}')">Enregistrer</button>
+      <button class="btn btn-primary" onclick="saveExpense('${id||""}')">Enregistrer</button>
     </div>
   </div>`);
+  setTimeout(calcExpenseTaxes, 50);
+}
+
+function updateExpenseType() {
+  const cat = document.getElementById("ex-cat")?.value;
+  const type = getExpenseCatType(cat);
+  const el = document.getElementById("ex-type");
+  if (el) el.value = type === "fixe" ? "🔒 Fixe" : "📊 Variable";
+}
+
+function calcExpenseTaxes() {
+  const amt = Number(document.getElementById("ex-amt")?.value) || 0;
+  const tpsEl = document.getElementById("ex-tps");
+  const tvqEl = document.getElementById("ex-tvq");
+  const prev = document.getElementById("ex-total-preview");
+  if (tpsEl && !tpsEl.dataset.manual) tpsEl.value = amt > 0 ? (amt * TPS_RATE).toFixed(2) : "";
+  if (tvqEl && !tvqEl.dataset.manual) tvqEl.value = amt > 0 ? (amt * TVQ_RATE).toFixed(2) : "";
+  const tps = Number(tpsEl?.value) || 0;
+  const tvq = Number(tvqEl?.value) || 0;
+  if (prev && amt > 0) prev.innerHTML = `Total avec taxes : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
 }
 
 async function saveExpense(id) {
-  const desc = document.getElementById("ex-desc").value.trim();
-  if (!desc) return alert("Entrez une description.");
+  const sup = document.getElementById("ex-sup").value;
+  const amt = Number(document.getElementById("ex-amt").value) || 0;
+  if (!amt) return alert("Entrez un montant.");
   const data = {
-    description: desc,
-    amount: Number(document.getElementById("ex-amt").value) || 0,
+    supplier: sup,
+    description: sup,
+    amount: amt,
+    tps: Number(document.getElementById("ex-tps").value) || 0,
+    tvq: Number(document.getElementById("ex-tvq").value) || 0,
     date: document.getElementById("ex-date").value,
     category: document.getElementById("ex-cat").value,
-    supplier: document.getElementById("ex-sup").value,
     notes: document.getElementById("ex-notes").value
   };
   if (id) await db.collection("expenses").doc(id).update(data);
   else { const nid = genId(); await db.collection("expenses").doc(nid).set({ ...data, id: nid }); }
   closeModal();
+}
+
+// ── Modal Revenu ──────────────────────────────────────
+function openRevenueModal(id) {
+  const r = id ? revenues.find(x => x.id === id) : null;
+  const today = new Date().toISOString().slice(0, 10);
+  showModal(`<div class="modal">
+    <div class="modal-header"><h3>${r ? "Modifier" : "Ajouter"} un revenu</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <label>Description<input id="rv-desc" value="${esc(r?.description||"")}"/></label>
+    <div class="form-row">
+      <label>Date<input id="rv-date" type="date" value="${r?.date||today}"/></label>
+    </div>
+    <label>Montant ($)
+      <input id="rv-amt" type="number" step="0.01" value="${r?.amount||""}" oninput="calcRevenueTaxes()"/>
+    </label>
+    <div class="form-row">
+      <label>TPS perçue (5%)
+        <input id="rv-tps" type="number" step="0.01" value="${r?.tps||""}"/>
+      </label>
+      <label>TVQ perçue (9.975%)
+        <input id="rv-tvq" type="number" step="0.01" value="${r?.tvq||""}"/>
+      </label>
+    </div>
+    <div id="rv-total-preview" style="font-size:13px;color:var(--text2);margin-bottom:10px;text-align:right"></div>
+    <label>Notes<textarea id="rv-notes" style="height:60px">${r?.notes||""}</textarea></label>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveRevenue('${id||""}')">Enregistrer</button>
+    </div>
+  </div>`);
+  setTimeout(calcRevenueTaxes, 50);
+}
+
+function calcRevenueTaxes() {
+  const amt = Number(document.getElementById("rv-amt")?.value) || 0;
+  const tpsEl = document.getElementById("rv-tps");
+  const tvqEl = document.getElementById("rv-tvq");
+  const prev = document.getElementById("rv-total-preview");
+  if (tpsEl) tpsEl.value = amt > 0 ? (amt * TPS_RATE).toFixed(2) : "";
+  if (tvqEl) tvqEl.value = amt > 0 ? (amt * TVQ_RATE).toFixed(2) : "";
+  const tps = Number(tpsEl?.value) || 0;
+  const tvq = Number(tvqEl?.value) || 0;
+  if (prev && amt > 0) prev.innerHTML = `Total avec taxes : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
+}
+
+async function saveRevenue(id) {
+  const desc = document.getElementById("rv-desc").value.trim();
+  const amt = Number(document.getElementById("rv-amt").value) || 0;
+  if (!desc) return alert("Entrez une description.");
+  if (!amt) return alert("Entrez un montant.");
+  const data = {
+    description: desc,
+    amount: amt,
+    tps: Number(document.getElementById("rv-tps").value) || 0,
+    tvq: Number(document.getElementById("rv-tvq").value) || 0,
+    date: document.getElementById("rv-date").value,
+    notes: document.getElementById("rv-notes").value
+  };
+  if (id) await db.collection("revenues").doc(id).update(data);
+  else { const nid = genId(); await db.collection("revenues").doc(nid).set({ ...data, id: nid }); }
+  closeModal();
+}
+
+// ── Modal Nouveau fournisseur rapide ──────────────────
+function openQuickSupplier() {
+  showModal(`<div class="modal" style="max-width:380px">
+    <div class="modal-header"><h3>🏪 Nouveau fournisseur</h3><button class="close-btn" onclick="openExpenseModal()">✕</button></div>
+    <label>Nom<input id="qs-name" placeholder="Nom du fournisseur"/></label>
+    <label>Téléphone<input id="qs-phone"/></label>
+    <label>Courriel<input id="qs-email"/></label>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="openExpenseModal()">Annuler</button>
+      <button class="btn btn-primary" onclick="saveQuickSupplier()">Créer</button>
+    </div>
+  </div>`);
+}
+
+async function saveQuickSupplier() {
+  const name = document.getElementById("qs-name").value.trim();
+  if (!name) return alert("Entrez un nom.");
+  const nid = genId();
+  await db.collection("suppliers").doc(nid).set({ id: nid, name, contact: document.getElementById("qs-phone").value, email: document.getElementById("qs-email").value, notes: "" });
+  closeModal();
+  setTimeout(() => openExpenseModal(), 300);
+}
+
+// ── Modal Catégories de dépenses ──────────────────────
+function openExpenseCatModal() {
+  const customs = expenseCategories;
+  showModal(`<div class="modal">
+    <div class="modal-header"><h3>⚙️ Catégories de dépenses</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Catégories par défaut (non modifiables) :</p>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
+      ${EXPENSE_CATS.map(c => `<span class="badge-pill ${c.type==="fixe"?"green":"yellow"}">${c.name} · ${c.type}</span>`).join("")}
+    </div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:8px">Catégories personnalisées :</p>
+    <div id="custom-cats-list">
+      ${customs.length === 0
+        ? `<p style="color:var(--text3);font-size:13px">Aucune catégorie personnalisée.</p>`
+        : customs.map(c => `<div class="cat-item">
+            <span style="flex:1;font-size:13px">${c.name}</span>
+            <span class="badge-pill ${c.type==="fixe"?"green":"yellow"}" style="margin-right:8px">${c.type}</span>
+            <button class="btn-danger-sm" onclick="deleteExpenseCat('${c.id}')">🗑️</button>
+          </div>`).join("")}
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+      <input id="new-cat-name" placeholder="Nom de la catégorie" style="flex:2"/>
+      <select id="new-cat-type" style="flex:1">
+        <option value="variable">Variable</option>
+        <option value="fixe">Fixe</option>
+      </select>
+      <button class="btn btn-primary" onclick="addExpenseCat()">Ajouter</button>
+    </div>
+  </div>`);
+}
+
+async function addExpenseCat() {
+  const name = document.getElementById("new-cat-name").value.trim();
+  const type = document.getElementById("new-cat-type").value;
+  if (!name) return alert("Entrez un nom.");
+  const nid = genId();
+  await db.collection("expenseCategories").doc(nid).set({ id: nid, name, type });
+  openExpenseCatModal();
+}
+
+async function deleteExpenseCat(id) {
+  await db.collection("expenseCategories").doc(id).delete();
+  openExpenseCatModal();
 }
 
 // ── Page Menu ─────────────────────────────────────────
@@ -255,7 +575,6 @@ async function toggleMenuAvailable(id, current) {
   await db.collection("menu").doc(id).update({ available: !current });
 }
 
-// ── Modal Menu ────────────────────────────────────────
 function openMenuModal(id) {
   const m = id ? menuItems.find(x => x.id === id) : null;
   showModal(`<div class="modal">
@@ -324,7 +643,6 @@ function renderFournisseurs() {
   </div>`;
 }
 
-// ── Modal Fournisseur ─────────────────────────────────
 function openSupplierModal(id) {
   const s = id ? suppliers.find(x => x.id === id) : null;
   showModal(`<div class="modal">
