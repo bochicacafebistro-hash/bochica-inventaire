@@ -129,7 +129,47 @@ async function assignShift(empId, dayKey, label, color) {
 }
 
 // ══════════════════════════════════════════════════════
-// DÉPENSES
+// FRAIS FIXES AUTOMATIQUES
+// ══════════════════════════════════════════════════════
+
+async function autoApplyFixedExpenses() {
+  if (!isAdmin) return;
+  const now = new Date();
+  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  const firstOfMonth = `${currentMonthKey}-01`;
+
+  // Vérifier si déjà appliqué ce mois-ci
+  const alreadyApplied = expenses.some(e =>
+    e.isFixedAuto && e.date && e.date.startsWith(currentMonthKey)
+  );
+  if (alreadyApplied) return;
+
+  // Copier tous les templates de frais fixes
+  const templates = fixedExpenseTemplates;
+  if (!templates.length) return;
+
+  const batch = db.batch();
+  templates.forEach(t => {
+    const nid = genId();
+    const ref = db.collection("expenses").doc(nid);
+    batch.set(ref, {
+      id: nid,
+      supplier: t.supplier || "",
+      description: t.supplier || t.description || "",
+      amount: t.amount || 0,
+      tps: t.tps || 0,
+      tvq: t.tvq || 0,
+      category: t.category || "",
+      date: firstOfMonth,
+      notes: t.notes || "",
+      isFixedAuto: true
+    });
+  });
+  await batch.commit();
+}
+
+// ══════════════════════════════════════════════════════
+// DÉPENSES & REVENUS
 // ══════════════════════════════════════════════════════
 
 let selectedExpenseMonth = new Date().getMonth();
@@ -180,12 +220,31 @@ function renderDepenses() {
   const totalTPS = filteredExp.reduce((s, e) => s + Number(e.tps || 0), 0);
   const totalTVQ = filteredExp.reduce((s, e) => s + Number(e.tvq || 0), 0);
   const totalRev = filteredRev.reduce((s, r) => s + Number(r.amount || 0), 0);
-  const profit = totalRev - totalExp - totalTPS - totalTVQ;
+  const totalExpWithTax = totalExp + totalTPS + totalTVQ;
+  const profit = totalRev - totalExpWithTax;
+  const isProfit = profit >= 0;
 
   const fixedExp = filteredExp.filter(e => getExpenseCatType(e.category) === "fixe");
   const varExp = filteredExp.filter(e => getExpenseCatType(e.category) === "variable");
   const totalFixed = fixedExp.reduce((s, e) => s + Number(e.amount || 0), 0);
   const totalVar = varExp.reduce((s, e) => s + Number(e.amount || 0), 0);
+
+  // Données pour graphiques — 6 derniers mois
+  const last6 = Array.from({length: 6}, (_, i) => {
+    const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1);
+    return { month: d.getMonth(), year: d.getFullYear(), label: MONTHS_FR[d.getMonth()].slice(0,3) };
+  });
+  const chartRevs = last6.map(m => revenues.filter(r => { const d = new Date(r.date); return d.getMonth()===m.month && d.getFullYear()===m.year; }).reduce((s,r)=>s+Number(r.amount||0),0));
+  const chartExps = last6.map(m => expenses.filter(e => { const d = new Date(e.date); return d.getMonth()===m.month && d.getFullYear()===m.year; }).reduce((s,e)=>s+Number(e.amount||0)+Number(e.tps||0)+Number(e.tvq||0),0));
+  const chartMax = Math.max(...chartRevs, ...chartExps, 1);
+
+  // Données pour graphique camembert — dépenses par catégorie
+  const catTotals = getAllExpenseCats().map(cat => ({
+    cat,
+    total: filteredExp.filter(e => e.category === cat).reduce((s,e)=>s+Number(e.amount||0),0)
+  })).filter(c => c.total > 0);
+  const pieTotal = catTotals.reduce((s,c)=>s+c.total,0);
+  const pieColors = ["#3b82f6","#ef4444","#22c55e","#f59e0b","#8b5cf6","#ec4899","#14b8a6","#f97316","#64748b"];
 
   // Month picker
   let monthPicker = "";
@@ -206,10 +265,11 @@ function renderDepenses() {
   return `<div class="page">
     <div class="toolbar">
       <h2 style="font-size:18px">Dépenses & Revenus</h2>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="openRevenueModal()">+ Revenu</button>
         <button class="btn btn-primary" onclick="openExpenseModal()">+ Dépense</button>
         ${isAdmin ? `<button class="btn btn-secondary" onclick="openExpenseCatModal()">⚙️ Catégories</button>` : ""}
+        ${isAdmin ? `<button class="btn btn-secondary" onclick="openFixedTemplatesModal()">🔒 Frais fixes</button>` : ""}
       </div>
     </div>
 
@@ -219,7 +279,8 @@ function renderDepenses() {
 
     ${monthPicker}
 
-    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr))">
+    <!-- Stats -->
+    <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:20px">
       <div class="stat-card" style="border-left:4px solid #22c55e">
         <div class="stat-num" style="color:#22c55e">${fmtMoney(totalRev)}</div>
         <div class="stat-label">💰 Revenus</div>
@@ -232,23 +293,80 @@ function renderDepenses() {
         <div class="stat-num" style="color:#f59e0b;font-size:20px">${fmtMoney(totalTPS+totalTVQ)}</div>
         <div class="stat-label">🧾 Taxes (TPS+TVQ)</div>
       </div>
-      <div class="stat-card" style="border-left:4px solid ${profit>=0?"#22c55e":"#ef4444"}">
-        <div class="stat-num" style="color:${profit>=0?"#22c55e":"#ef4444"}">${fmtMoney(profit)}</div>
-        <div class="stat-label">${profit>=0?"📈 Profit":"📉 Déficit"}</div>
+      <div class="stat-card" style="border-left:4px solid ${isProfit?"#22c55e":"#ef4444"}">
+        <div class="stat-num" style="color:${isProfit?"#22c55e":"#ef4444"}">${fmtMoney(Math.abs(profit))}</div>
+        <div class="stat-label">${isProfit?"📈 Profit":"📉 Déficit"}</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-num" style="font-size:20px">${fmtMoney(totalFixed)}</div>
+      <div class="stat-card" style="border-left:4px solid #8b5cf6">
+        <div class="stat-num" style="font-size:20px;color:#8b5cf6">${fmtMoney(totalFixed)}</div>
         <div class="stat-label">🔒 Frais fixes</div>
       </div>
-      <div class="stat-card">
-        <div class="stat-num" style="font-size:20px">${fmtMoney(totalVar)}</div>
+      <div class="stat-card" style="border-left:4px solid #64748b">
+        <div class="stat-num" style="font-size:20px;color:#64748b">${fmtMoney(totalVar)}</div>
         <div class="stat-label">📊 Frais variables</div>
+      </div>
+    </div>
+
+    <!-- Graphiques -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:24px">
+
+      <!-- Barres : Revenus vs Dépenses -->
+      <div class="card">
+        <div style="font-weight:700;font-size:14px;margin-bottom:16px">📊 Revenus vs Dépenses — 6 derniers mois</div>
+        <div style="display:flex;align-items:flex-end;gap:8px;height:140px;padding-bottom:24px;position:relative">
+          ${last6.map((m, i) => {
+            const rev = chartRevs[i], exp = chartExps[i];
+            const revH = Math.round((rev / chartMax) * 120);
+            const expH = Math.round((exp / chartMax) * 120);
+            return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative">
+              <div style="display:flex;align-items:flex-end;gap:2px;height:120px">
+                <div title="${fmtMoney(rev)}" style="width:12px;height:${revH}px;background:#22c55e;border-radius:3px 3px 0 0;min-height:${rev>0?2:0}px"></div>
+                <div title="${fmtMoney(exp)}" style="width:12px;height:${expH}px;background:#ef4444;border-radius:3px 3px 0 0;min-height:${exp>0?2:0}px"></div>
+              </div>
+              <div style="font-size:10px;color:var(--text3);position:absolute;bottom:0">${m.label}</div>
+            </div>`;
+          }).join("")}
+        </div>
+        <div style="display:flex;gap:16px;margin-top:4px">
+          <span style="font-size:11px;color:#22c55e;font-weight:600">■ Revenus</span>
+          <span style="font-size:11px;color:#ef4444;font-weight:600">■ Dépenses</span>
+        </div>
+      </div>
+
+      <!-- Camembert : Dépenses par catégorie -->
+      <div class="card">
+        <div style="font-weight:700;font-size:14px;margin-bottom:16px">🥧 Dépenses par catégorie</div>
+        ${catTotals.length === 0
+          ? `<div style="text-align:center;color:var(--text3);padding:40px 0">Aucune dépense</div>`
+          : `<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
+            <svg viewBox="0 0 100 100" style="width:120px;height:120px;flex-shrink:0">
+              ${(() => {
+                let offset = 0;
+                return catTotals.map((c, i) => {
+                  const pct = c.total / pieTotal;
+                  const dash = pct * 100;
+                  const gap = 100 - dash;
+                  const rotate = offset * 3.6;
+                  offset += pct * 100;
+                  return `<circle cx="50" cy="50" r="15.915" fill="none" stroke="${pieColors[i%pieColors.length]}" stroke-width="30"
+                    stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${25 - offset + pct*100}" transform="rotate(${rotate-90} 50 50)"/>`;
+                }).join("");
+              })()}
+            </svg>
+            <div style="flex:1;min-width:120px">
+              ${catTotals.map((c, i) => `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
+                <div style="width:10px;height:10px;border-radius:2px;background:${pieColors[i%pieColors.length]};flex-shrink:0"></div>
+                <span style="font-size:11px;color:var(--text2);flex:1">${c.cat}</span>
+                <span style="font-size:11px;font-weight:700;color:var(--text)">${fmtMoney(c.total)}</span>
+              </div>`).join("")}
+            </div>
+          </div>`}
       </div>
     </div>
 
     <!-- Revenus -->
     ${filteredRev.length > 0 ? `
-    <h3 style="font-size:15px;margin-bottom:10px;margin-top:4px">💰 Revenus</h3>
+    <h3 style="font-size:15px;margin-bottom:10px">💰 Revenus</h3>
     <div class="table-wrap overflow" style="margin-bottom:20px">
       <table><thead><tr><th>Date</th><th>Description</th><th>Montant</th><th>TPS</th><th>TVQ</th><th></th></tr></thead>
       <tbody>${filteredRev.map(r => `<tr>
@@ -276,7 +394,7 @@ function renderDepenses() {
             const total = Number(e.amount||0) + Number(e.tps||0) + Number(e.tvq||0);
             const type = getExpenseCatType(e.category);
             return `<tr>
-              <td>${e.date||""}</td>
+              <td>${e.date||""}${e.isFixedAuto?` <span style="font-size:10px;color:#8b5cf6">🔒auto</span>`:""}</td>
               <td><strong>${e.supplier||e.description||"—"}</strong></td>
               <td><span class="badge-pill blue">${e.category||""}</span></td>
               <td><span class="badge-pill ${type==="fixe"?"green":"yellow"}">${type==="fixe"?"🔒 Fixe":"📊 Variable"}</span></td>
@@ -312,7 +430,7 @@ function openExpenseModal(id) {
   const today = new Date().toISOString().slice(0, 10);
   const cats = getAllExpenseCats();
   const currentCat = e?.category || cats[0];
-  const currentType = getExpenseCatType(currentCat);
+  const currentType = e?.type || getExpenseCatType(currentCat);
 
   showModal(`<div class="modal">
     <div class="modal-header"><h3>${e ? "Modifier" : "Ajouter"} une dépense</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
@@ -335,14 +453,15 @@ function openExpenseModal(id) {
           ${cats.map(c => `<option value="${c}" ${currentCat===c?"selected":""}>${c}</option>`).join("")}
         </select>
       </label>
-      <label>Type
-        <input id="ex-type" value="${currentType==="fixe"?"🔒 Fixe":"📊 Variable"}" readonly style="background:var(--surface2);cursor:default"/>
+      <label>Type de frais
+        <select id="ex-type">
+          <option value="variable" ${currentType==="variable"?"selected":""}>📊 Variable</option>
+          <option value="fixe" ${currentType==="fixe"?"selected":""}>🔒 Fixe</option>
+        </select>
       </label>
     </div>
 
-    <div class="form-row">
-      <label>Date<input id="ex-date" type="date" value="${e?.date||today}"/></label>
-    </div>
+    <label>Date<input id="ex-date" type="date" value="${e?.date||today}"/></label>
 
     <label>Montant avant taxes ($)
       <input id="ex-amt" type="number" step="0.01" value="${e?.amount||""}" oninput="calcExpenseTaxes()"/>
@@ -372,7 +491,7 @@ function updateExpenseType() {
   const cat = document.getElementById("ex-cat")?.value;
   const type = getExpenseCatType(cat);
   const el = document.getElementById("ex-type");
-  if (el) el.value = type === "fixe" ? "🔒 Fixe" : "📊 Variable";
+  if (el) el.value = type;
 }
 
 function calcExpenseTaxes() {
@@ -391,6 +510,7 @@ async function saveExpense(id) {
   const sup = document.getElementById("ex-sup").value;
   const amt = Number(document.getElementById("ex-amt").value) || 0;
   if (!amt) return alert("Entrez un montant.");
+  const type = document.getElementById("ex-type").value;
   const data = {
     supplier: sup,
     description: sup,
@@ -399,6 +519,7 @@ async function saveExpense(id) {
     tvq: Number(document.getElementById("ex-tvq").value) || 0,
     date: document.getElementById("ex-date").value,
     category: document.getElementById("ex-cat").value,
+    type,
     notes: document.getElementById("ex-notes").value
   };
   if (id) await db.collection("expenses").doc(id).update(data);
@@ -413,9 +534,7 @@ function openRevenueModal(id) {
   showModal(`<div class="modal">
     <div class="modal-header"><h3>${r ? "Modifier" : "Ajouter"} un revenu</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
     <label>Description<input id="rv-desc" value="${esc(r?.description||"")}"/></label>
-    <div class="form-row">
-      <label>Date<input id="rv-date" type="date" value="${r?.date||today}"/></label>
-    </div>
+    <label>Date<input id="rv-date" type="date" value="${r?.date||today}"/></label>
     <label>Montant ($)
       <input id="rv-amt" type="number" step="0.01" value="${r?.amount||""}" oninput="calcRevenueTaxes()"/>
     </label>
@@ -467,7 +586,7 @@ async function saveRevenue(id) {
   closeModal();
 }
 
-// ── Modal Nouveau fournisseur rapide ──────────────────
+// ── Modal Fournisseur rapide ──────────────────────────
 function openQuickSupplier() {
   showModal(`<div class="modal" style="max-width:380px">
     <div class="modal-header"><h3>🏪 Nouveau fournisseur</h3><button class="close-btn" onclick="openExpenseModal()">✕</button></div>
@@ -495,7 +614,7 @@ function openExpenseCatModal() {
   const customs = expenseCategories;
   showModal(`<div class="modal">
     <div class="modal-header"><h3>⚙️ Catégories de dépenses</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
-    <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Catégories par défaut (non modifiables) :</p>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:8px">Catégories par défaut :</p>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
       ${EXPENSE_CATS.map(c => `<span class="badge-pill ${c.type==="fixe"?"green":"yellow"}">${c.name} · ${c.type}</span>`).join("")}
     </div>
@@ -512,8 +631,8 @@ function openExpenseCatModal() {
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
       <input id="new-cat-name" placeholder="Nom de la catégorie" style="flex:2"/>
       <select id="new-cat-type" style="flex:1">
-        <option value="variable">Variable</option>
-        <option value="fixe">Fixe</option>
+        <option value="variable">📊 Variable</option>
+        <option value="fixe">🔒 Fixe</option>
       </select>
       <button class="btn btn-primary" onclick="addExpenseCat()">Ajouter</button>
     </div>
@@ -532,6 +651,76 @@ async function addExpenseCat() {
 async function deleteExpenseCat(id) {
   await db.collection("expenseCategories").doc(id).delete();
   openExpenseCatModal();
+}
+
+// ── Modal Frais fixes (templates) ─────────────────────
+function openFixedTemplatesModal() {
+  const templates = fixedExpenseTemplates;
+  showModal(`<div class="modal">
+    <div class="modal-header"><h3>🔒 Modèles de frais fixes</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Ces frais sont copiés automatiquement le 1er de chaque mois.</p>
+    <div style="margin-bottom:12px">
+      ${templates.length === 0
+        ? `<p style="color:var(--text3);font-size:13px;text-align:center;padding:16px">Aucun modèle de frais fixe.</p>`
+        : templates.map(t => `<div class="cat-item" style="justify-content:space-between">
+            <div style="flex:1">
+              <div style="font-weight:600;font-size:13px">${t.supplier||t.description||"—"}</div>
+              <div style="font-size:11px;color:var(--text3)">${t.category||""} · ${fmtMoney(t.amount)}</div>
+            </div>
+            <button class="btn-danger-sm" onclick="deleteFixedTemplate('${t.id}')">🗑️</button>
+          </div>`).join("")}
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-weight:600;font-size:13px;margin-bottom:8px">+ Ajouter un modèle</div>
+      <div class="form-row">
+        <label>Fournisseur
+          <select id="ft-sup">
+            <option value="">— Aucun —</option>
+            ${suppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join("")}
+          </select>
+        </label>
+        <label>Catégorie
+          <select id="ft-cat">
+            ${getAllExpenseCats().map(c => `<option value="${c}">${c}</option>`).join("")}
+          </select>
+        </label>
+      </div>
+      <div class="form-row">
+        <label>Montant ($)<input id="ft-amt" type="number" step="0.01" placeholder="0.00" oninput="calcFtTaxes()"/></label>
+        <label>TPS<input id="ft-tps" type="number" step="0.01" placeholder="auto"/></label>
+        <label>TVQ<input id="ft-tvq" type="number" step="0.01" placeholder="auto"/></label>
+      </div>
+      <button class="btn btn-primary" style="width:100%;margin-top:4px" onclick="saveFixedTemplate()">Ajouter ce modèle</button>
+    </div>
+  </div>`);
+}
+
+function calcFtTaxes() {
+  const amt = Number(document.getElementById("ft-amt")?.value) || 0;
+  const tpsEl = document.getElementById("ft-tps");
+  const tvqEl = document.getElementById("ft-tvq");
+  if (tpsEl) tpsEl.value = amt > 0 ? (amt * TPS_RATE).toFixed(2) : "";
+  if (tvqEl) tvqEl.value = amt > 0 ? (amt * TVQ_RATE).toFixed(2) : "";
+}
+
+async function saveFixedTemplate() {
+  const amt = Number(document.getElementById("ft-amt").value) || 0;
+  if (!amt) return alert("Entrez un montant.");
+  const nid = genId();
+  await db.collection("fixedExpenseTemplates").doc(nid).set({
+    id: nid,
+    supplier: document.getElementById("ft-sup").value,
+    category: document.getElementById("ft-cat").value,
+    amount: amt,
+    tps: Number(document.getElementById("ft-tps").value) || 0,
+    tvq: Number(document.getElementById("ft-tvq").value) || 0
+  });
+  openFixedTemplatesModal();
+}
+
+async function deleteFixedTemplate(id) {
+  await db.collection("fixedExpenseTemplates").doc(id).delete();
+  openFixedTemplatesModal();
 }
 
 // ── Page Menu ─────────────────────────────────────────
