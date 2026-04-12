@@ -1,3 +1,22 @@
+// ── Session ───────────────────────────────────────────
+function restoreSession() {
+  const saved = localStorage.getItem("bochica-session");
+  if (saved === "admin") {
+    isAdmin = true; isLoggedIn = true;
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app-shell").style.display = "block";
+    buildSidebar(); renderPage(); autoApplyFixedExpenses();
+    return true;
+  } else if (saved === "employe") {
+    isAdmin = false; isLoggedIn = true;
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app-shell").style.display = "block";
+    buildSidebar(); renderPage(); autoApplyFixedExpenses();
+    return true;
+  }
+  return false;
+}
+
 // ── Login ─────────────────────────────────────────────
 function showLogin() {
   document.getElementById("login-screen").innerHTML = `
@@ -37,6 +56,7 @@ function showLogin() {
 
 function logout() {
   isAdmin = false; isLoggedIn = false; pinBuffer = "";
+  localStorage.removeItem("bochica-session");
   document.getElementById("app-shell").style.display = "none";
   document.getElementById("login-screen").style.display = "block";
   showLogin();
@@ -56,14 +76,16 @@ function updatePinDots() {
 function checkPin() {
   if (pinBuffer === ADMIN_PIN) {
     isAdmin = true; isLoggedIn = true;
+    localStorage.setItem("bochica-session", "admin");
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app-shell").style.display = "block";
-  buildSidebar(); renderPage(); autoApplyFixedExpenses();
+    buildSidebar(); renderPage(); autoApplyFixedExpenses();
   } else if (pinBuffer === EMPLOYEE_PIN) {
     isAdmin = false; isLoggedIn = true;
+    localStorage.setItem("bochica-session", "employe");
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app-shell").style.display = "block";
-  buildSidebar(); renderPage(); autoApplyFixedExpenses();
+    buildSidebar(); renderPage(); autoApplyFixedExpenses();
   } else {
     const e = document.getElementById("pin-error");
     if (e) e.textContent = "❌ Code PIN incorrect";
