@@ -15,3 +15,5 @@ let editingProduct = null, editingSupplier = null, editingEmployee = null;
 let editingTask = null, editingMenuItem = null, editingExpense = null;
 let noteProductId = null, movingProductId = null, receivingProduct = null;
 let shiftModal = { emp: null, day: null };
+let revenues = [];
+let expenseCategories = [];
