@@ -39,3 +39,13 @@ db.collection("expenses").orderBy("date", "desc").limit(500).onSnapshot(snap => 
   expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (isLoggedIn && activePage === "depenses") renderPage();
 });
+
+db.collection("revenues").orderBy("date", "desc").limit(500).onSnapshot(snap => {
+  revenues = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (isLoggedIn && activePage === "depenses") renderPage();
+});
+
+db.collection("expenseCategories").onSnapshot(snap => {
+  expenseCategories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (isLoggedIn && activePage === "depenses") renderPage();
+});
