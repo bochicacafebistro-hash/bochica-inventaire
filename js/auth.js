@@ -58,12 +58,12 @@ function checkPin() {
     isAdmin = true; isLoggedIn = true;
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app-shell").style.display = "block";
-    buildSidebar(); renderPage();
+  buildSidebar(); renderPage(); autoApplyFixedExpenses();
   } else if (pinBuffer === EMPLOYEE_PIN) {
     isAdmin = false; isLoggedIn = true;
     document.getElementById("login-screen").style.display = "none";
     document.getElementById("app-shell").style.display = "block";
-    buildSidebar(); renderPage();
+  buildSidebar(); renderPage(); autoApplyFixedExpenses();
   } else {
     const e = document.getElementById("pin-error");
     if (e) e.textContent = "❌ Code PIN incorrect";
