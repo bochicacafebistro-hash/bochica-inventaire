@@ -505,7 +505,7 @@ function calcExpenseTaxes() {
   const tvq = Number(tvqEl?.value) || 0;
   if (prev && amt > 0) prev.innerHTML = `Total avec taxes : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
 }
-
+async function saveExpense(id) {
   const sup = document.getElementById("ex-sup").value;
   const desc = document.getElementById("ex-desc").value.trim();
   const amt = Number(document.getElementById("ex-amt").value) || 0;
