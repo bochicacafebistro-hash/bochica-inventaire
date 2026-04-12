@@ -49,3 +49,8 @@ db.collection("expenseCategories").onSnapshot(snap => {
   expenseCategories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (isLoggedIn && activePage === "depenses") renderPage();
 });
+
+db.collection("fixedExpenseTemplates").onSnapshot(snap => {
+  fixedExpenseTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (isLoggedIn && activePage === "depenses") renderPage();
+});
