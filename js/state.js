@@ -17,3 +17,4 @@ let noteProductId = null, movingProductId = null, receivingProduct = null;
 let shiftModal = { emp: null, day: null };
 let revenues = [];
 let expenseCategories = [];
+let fixedExpenseTemplates = [];
