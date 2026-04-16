@@ -20,26 +20,7 @@ function renderInventaire() {
         ${showArchived ? "Voir actifs" : "Voir archivés"}
       </button></div>`;
   }
-  if (!isMobile) {
-    const okCount = activeProducts.filter(p => getStatus(p) === "green").length;
-    const redCount = activeProducts.filter(p => getStatus(p) === "red").length;
-    h += `<div style="display:flex;gap:10px;margin-bottom:18px">
-      <div style="flex:1;background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:14px 16px">
-        <div style="font-size:22px;font-weight:700;color:var(--accent)">${activeProducts.length}</div>
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Produits</div>
-      </div>
-      <div style="flex:1;background:#fff5f5;border:0.5px solid #ffd0d0;border-radius:10px;padding:14px 16px">
-        <div style="font-size:22px;font-weight:700;color:#c0392b">${redCount}</div>
-        <div style="font-size:10px;color:#c0392b;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">À commander</div>
-      </div>
-      <div style="flex:1;background:#f0faf4;border:0.5px solid #c8ecd4;border-radius:10px;padding:14px 16px">
-        <div style="font-size:22px;font-weight:700;color:#27ae60">${okCount}</div>
-        <div style="font-size:10px;color:#27ae60;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">En stock</div>
-      </div>
-    </div>`;
-  }
-
-  if (isAdmin && archivedProducts.length > 0) {
+  
   if (!showArchived) {
     h += `<div class="section-tabs ${sectionsExpanded ? "expanded" : ""}">`;
     visibleSecs.forEach(s => {
