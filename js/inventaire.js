@@ -79,10 +79,10 @@ function renderInventaire() {
 
 function buildInvCard(p, showInput, showOrderBtn) {
   const st = getStatus(p), stock = getCurrentStock(p);
-  const borderColor = st === "red" ? "#ef4444" : st === "yellow" ? "#eab308" : "#22c55e";
-  const nameColor = st === "red" ? "#991b1b" : st === "yellow" ? "#854d0e" : darkMode ? "#f1f5f9" : "#1e293b";
-  const stockColor = st === "red" ? "#ef4444" : st === "yellow" ? "#f59e0b" : "#22c55e";
+  const borderColor = st === "red" ? "#c0392b" : st === "yellow" ? "#b8860b" : "#27ae60";
+  const nameColor = st === "red" ? "#c0392b" : st === "yellow" ? "#b8860b" : darkMode ? "#e8e8f4" : "#1a1a2e";
   const sup = p.supplierId ? suppliers.find(s => s.id === p.supplierId) : null;
+  const stockColor = st === "red" ? "#c0392b" : st === "yellow" ? "#b8860b" : "#27ae60";
   const oq = p.orderQty || 0, upb = p.unitsPerBox || 1;
   const oLabel = p.orderUnit === "boîte" ? `${oq} boîte${oq > 1 ? "s" : ""}` : `${oq} unité${oq > 1 ? "s" : ""}`;
   const units = oq * (p.orderUnit === "boîte" ? upb : 1);
