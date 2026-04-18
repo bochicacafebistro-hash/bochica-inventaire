@@ -110,17 +110,15 @@ function buildInvCard(p, showInput, showOrderBtn) {
   const oLabel = p.orderUnit === "boîte" ? `${oq} boîte${oq > 1 ? "s" : ""}` : `${oq} unité${oq > 1 ? "s" : ""}`;
   const units = oq * (p.orderUnit === "boîte" ? upb : 1);
   const inputId = `si_m${p.id}`;
-  // Classes status pour border-left coloré + pastille
-  const statusClass = `inv-card--${st}`; // inv-card--red / yellow / green
+  const statusClass = `inv-card-mobile--${st}`; // border-left rouge/jaune/vert
 
   return `<article class="inv-card-mobile ${statusClass}" data-id="${p.id}">
-    <!-- ── EN-TÊTE : nom + statut + menu ── -->
+    <!-- ── EN-TÊTE : nom + menu actions ── -->
     <header class="inv-card-mobile__head">
       <div class="inv-card-mobile__title">
         <h3 class="inv-card-mobile__name">${p.name}</h3>
         <div class="inv-card-mobile__meta">
-          ${activeSection === "Toutes" && !showOrderBtn ? `<span>${p.section}</span>` : ""}
-          ${activeSection === "Toutes" && !showOrderBtn ? `<span class="inv-card-mobile__sep">·</span>` : ""}
+          ${activeSection === "Toutes" && !showOrderBtn ? `<span>${p.section}</span><span class="inv-card-mobile__sep">·</span>` : ""}
           <span>Min : <strong>${p.minimum || 0}</strong></span>
           ${oq > 0 ? `<span class="inv-card-mobile__sep">·</span><span>Cmd : <strong>${oLabel}</strong></span>` : ""}
           ${showOrderBtn && sup ? `<span class="inv-card-mobile__sep">·</span><span class="icon-inline">${icon("store", 11)} ${sup.name}</span>` : ""}
@@ -143,36 +141,40 @@ function buildInvCard(p, showInput, showOrderBtn) {
 
     ${p.note ? `<div class="inv-card-mobile__note icon-inline">${icon("file-text", 12)} ${p.note}</div>` : ""}
 
-    <!-- ── STOCK GÉANT (très lisible) ── -->
-    <div class="inv-card-mobile__stock">
-      <div class="inv-card-mobile__stock-label">Stock actuel</div>
-      <div class="inv-card-mobile__stock-value">${stock}</div>
-      <span class="badge-pill ${st} inv-card-mobile__badge">${statusLabel(st)}</span>
-    </div>
+    ${showInput ? `
+      <!-- ── STOCK + NOUVELLE QTÉ : côte à côte (compact) ── -->
+      <div class="inv-card-mobile__row">
+        <div class="inv-card-mobile__stock">
+          <div class="inv-card-mobile__stock-label">Stock</div>
+          <div class="inv-card-mobile__stock-value">${stock}</div>
+        </div>
+        <div class="inv-card-mobile__update">
+          <label class="inv-card-mobile__update-label" for="${inputId}">Nouvelle qté</label>
+          <div class="inv-card-mobile__update-row">
+            <input class="inv-card-mobile__input" type="number" inputmode="numeric" placeholder="—" id="${inputId}" onkeydown="if(event.key==='Enter')commitStock('${p.id}','${inputId}')" />
+            <button class="inv-card-mobile__cta-icon" onclick="commitStock('${p.id}','${inputId}')" aria-label="Sauvegarder">${icon("check", 18)}</button>
+          </div>
+        </div>
+      </div>
+    ` : `
+      <!-- ── Mode "À commander" : Stock + À commander côte à côte ── -->
+      <div class="inv-card-mobile__row">
+        <div class="inv-card-mobile__stock">
+          <div class="inv-card-mobile__stock-label">Stock</div>
+          <div class="inv-card-mobile__stock-value">${stock}</div>
+        </div>
+        <div class="inv-card-mobile__order">
+          <div class="inv-card-mobile__order-label">À commander</div>
+          <div class="inv-card-mobile__order-value">${oLabel}</div>
+          ${p.orderUnit === "boîte" ? `<div class="inv-card-mobile__order-sub">= ${units} unités</div>` : ""}
+        </div>
+      </div>
+    `}
 
     ${showOrderBtn ? `
-      <!-- ── À COMMANDER ── -->
-      <div class="inv-card-mobile__order">
-        <div class="inv-card-mobile__order-label">À commander</div>
-        <div class="inv-card-mobile__order-value">${oLabel}</div>
-        ${p.orderUnit === "boîte" ? `<div class="inv-card-mobile__order-sub">= ${units} unités</div>` : ""}
-      </div>
       <button class="inv-card-mobile__cta inv-card-mobile__cta--success" onclick="openReceiveModal('${p.id}')">
         ${icon("package", 16)} Réceptionner la commande
       </button>
-    ` : ""}
-
-    ${showInput ? `
-      <!-- ── MISE À JOUR DU STOCK (touch-friendly) ── -->
-      <div class="inv-card-mobile__update">
-        <label class="inv-card-mobile__update-label" for="${inputId}">Nouvelle quantité</label>
-        <div class="inv-card-mobile__update-row">
-          <input class="inv-card-mobile__input" type="number" inputmode="numeric" placeholder="Qté restante" id="${inputId}" onkeydown="if(event.key==='Enter')commitStock('${p.id}','${inputId}')" />
-          <button class="inv-card-mobile__cta inv-card-mobile__cta--primary" onclick="commitStock('${p.id}','${inputId}')" aria-label="Sauvegarder le stock">
-            ${icon("check", 18)}
-          </button>
-        </div>
-      </div>
     ` : ""}
   </article>`;
 }
