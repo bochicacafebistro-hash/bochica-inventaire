@@ -37,10 +37,13 @@ function fmtMoney(n) { return `${Number(n || 0).toFixed(2)} $`; }
 function esc(s) { return (s || "").replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
 
 async function addLog(productName, action, detail) {
+  const userName = loggedInUser?.name || (isAdmin ? "Admin" : "Employé");
   await db.collection("logs").add({
     productName, action, detail,
     ts: firebase.firestore.FieldValue.serverTimestamp(),
-    role: isAdmin ? "admin" : "employé"
+    role: isAdmin ? "admin" : "employé",
+    userName,
+    userId: loggedInUser?.id || null
   });
 }
 
@@ -98,3 +101,174 @@ function scheduleMidnight() {
   setTimeout(() => { scheduleMidnight(); if (isLoggedIn) renderPage(); }, m - now);
 }
 scheduleMidnight();
+
+// ═══════════════════════════════════════════════════════════════
+// RECHERCHE GLOBALE (Command Palette Cmd+K)
+// ═══════════════════════════════════════════════════════════════
+
+let cmdkSelectedIdx = 0;
+let cmdkResults = [];
+
+function openCmdK() {
+  if (document.getElementById("cmdk-modal")) return; // déjà ouvert
+  cmdkSelectedIdx = 0;
+  cmdkResults = [];
+  const modalsEl = document.getElementById("modals");
+  modalsEl.innerHTML = `
+    <div class="cmdk-overlay" id="cmdk-modal" onclick="if(event.target===this)closeCmdK()">
+      <div class="cmdk-box">
+        <div class="cmdk-input-wrap">
+          ${icon("search", 18)}
+          <input type="text" id="cmdk-input" placeholder="${t("search_placeholder")}" autocomplete="off" autofocus/>
+          <kbd class="cmdk-esc">esc</kbd>
+        </div>
+        <div class="cmdk-results" id="cmdk-results"></div>
+        <div class="cmdk-footer">${t("search_keyboard_hint")}</div>
+      </div>
+    </div>`;
+  setTimeout(() => {
+    const input = document.getElementById("cmdk-input");
+    if (input) {
+      input.focus();
+      input.addEventListener("input", e => updateCmdKResults(e.target.value));
+    }
+    updateCmdKResults("");
+  }, 50);
+}
+
+function closeCmdK() {
+  const m = document.getElementById("cmdk-modal");
+  if (m) m.remove();
+  cmdkResults = [];
+}
+
+function updateCmdKResults(query) {
+  const q = (query || "").trim().toLowerCase();
+  cmdkResults = [];
+
+  if (q.length === 0) {
+    document.getElementById("cmdk-results").innerHTML = `
+      <div class="cmdk-empty">${icon("info", 16)} Tapez pour rechercher partout</div>`;
+    return;
+  }
+
+  // Recherche dans toutes les collections
+  const sections = [
+    {
+      title: t("search_section_products"),
+      icon: "package",
+      items: products.filter(p => !p.archived && (p.name || "").toLowerCase().includes(q)).slice(0, 5)
+        .map(p => ({ label: p.name, sub: `Stock: ${getCurrentStock(p)}`, page: "inventaire" }))
+    },
+    {
+      title: t("search_section_ingredients"),
+      icon: "tag",
+      items: ingredients.filter(i => (i.name || "").toLowerCase().includes(q)).slice(0, 5)
+        .map(i => ({ label: i.name, sub: `${fmtMoney(i.costPerUnit || 0)}/${i.unit}`, page: "ingredients" }))
+    },
+    {
+      title: t("search_section_recipes"),
+      icon: "file-text",
+      items: recipes.filter(r =>
+        (r.name || "").toLowerCase().includes(q) ||
+        (r.ingredients || "").toLowerCase().includes(q)
+      ).slice(0, 5)
+        .map(r => ({ label: r.name, sub: r.description || "", page: "recettes", id: r.id, action: "openRecipeViewModal" }))
+    },
+    {
+      title: t("search_section_menu"),
+      icon: "utensils",
+      items: menuItems.filter(m => (m.name || "").toLowerCase().includes(q)).slice(0, 5)
+        .map(m => ({ label: m.name, sub: `${fmtMoney(m.price)} · ${m.category}`, page: "menu" }))
+    },
+    {
+      title: t("search_section_employees"),
+      icon: "users",
+      items: employees.filter(e => (e.name || "").toLowerCase().includes(q)).slice(0, 5)
+        .map(e => ({ label: e.name, sub: e.role || "", page: "employes" }))
+    },
+    {
+      title: t("search_section_suppliers"),
+      icon: "store",
+      items: suppliers.filter(s => (s.name || "").toLowerCase().includes(q)).slice(0, 5)
+        .map(s => ({ label: s.name, sub: s.contact || "", page: "fournisseurs" }))
+    },
+  ];
+
+  // Filtrer les sections vides + accumuler dans cmdkResults
+  let html = "";
+  let idx = 0;
+  sections.forEach(sec => {
+    if (sec.items.length === 0) return;
+    html += `<div class="cmdk-section-title">${icon(sec.icon, 12)} ${sec.title}</div>`;
+    sec.items.forEach(it => {
+      cmdkResults.push(it);
+      html += `<div class="cmdk-result" data-idx="${idx}" onclick="cmdkSelect(${idx})">
+        <span class="cmdk-result__label">${esc(it.label || "?")}</span>
+        ${it.sub ? `<span class="cmdk-result__sub">${esc(it.sub)}</span>` : ""}
+      </div>`;
+      idx++;
+    });
+  });
+
+  if (cmdkResults.length === 0) {
+    html = `<div class="cmdk-empty">${icon("x-circle", 16)} ${t("search_no_results")}</div>`;
+  }
+
+  document.getElementById("cmdk-results").innerHTML = html;
+  cmdkSelectedIdx = 0;
+  updateCmdKSelection();
+}
+
+function updateCmdKSelection() {
+  document.querySelectorAll(".cmdk-result").forEach((el, i) => {
+    el.classList.toggle("cmdk-result--active", i === cmdkSelectedIdx);
+    if (i === cmdkSelectedIdx) el.scrollIntoView({ block: "nearest" });
+  });
+}
+
+function cmdkSelect(idx) {
+  const result = cmdkResults[idx];
+  if (!result) return;
+  closeCmdK();
+  if (result.page) navTo(result.page);
+  // Si action spéciale (ex: ouvrir directement un modal)
+  if (result.action && result.id) {
+    setTimeout(() => {
+      if (typeof window[result.action] === "function") window[result.action](result.id);
+    }, 100);
+  }
+}
+
+// Listener global pour Cmd+K / Ctrl+K + navigation clavier
+document.addEventListener("keydown", e => {
+  // Ouvrir avec Cmd+K ou Ctrl+K
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+    if (!isLoggedIn) return;
+    e.preventDefault();
+    openCmdK();
+    return;
+  }
+  // Si command palette ouverte
+  if (document.getElementById("cmdk-modal")) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeCmdK();
+    } else if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (cmdkResults.length > 0) {
+        cmdkSelectedIdx = (cmdkSelectedIdx + 1) % cmdkResults.length;
+        updateCmdKSelection();
+      }
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      if (cmdkResults.length > 0) {
+        cmdkSelectedIdx = (cmdkSelectedIdx - 1 + cmdkResults.length) % cmdkResults.length;
+        updateCmdKSelection();
+      }
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      cmdkSelect(cmdkSelectedIdx);
+    }
+  }
+});

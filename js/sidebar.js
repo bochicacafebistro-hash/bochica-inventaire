@@ -6,6 +6,7 @@ function buildSidebar() {
     { icon: "clipboard", label: t("nav_my_tasks"), page: "taches" }
   ];
   const adminNav = [
+    { icon: "bar-chart", label: t("nav_dashboard"), page: "dashboard" },
     { section: t("nav_section_inventory") },
     { icon: "package", label: t("nav_inventaire"), page: "inventaire" },
     { icon: "cart", label: t("nav_to_order"), page: "rapport" },
@@ -14,6 +15,7 @@ function buildSidebar() {
     { icon: "clipboard", label: t("nav_tasks"), page: "taches" },
     { icon: "users", label: t("nav_employees"), page: "employes" },
     { icon: "wallet", label: t("nav_expenses"), page: "depenses" },
+    { icon: "shield-check", label: "TPS/TVQ", page: "taxes" },
     { icon: "utensils", label: t("nav_menu"), page: "menu" },
     { icon: "tag", label: t("nav_ingredients"), page: "ingredients" },
     { icon: "file-text", label: t("nav_recipes"), page: "recettes" },
@@ -28,12 +30,15 @@ function buildSidebar() {
       <span>${item.label}</span>
     </div>`;
   }).join("");
-  // Rôle utilisateur avec icône
+  // Rôle utilisateur avec icône + nom si disponible
   const roleEl = document.getElementById("topbar-role");
   if (roleEl) {
-    roleEl.innerHTML = isAdmin
-      ? `<span class="icon-inline">${icon("crown", 14)} ${t("role_admin")}</span>`
-      : `<span class="icon-inline">${icon("user", 14)} ${t("role_employee")}</span>`;
+    const roleIcon = isAdmin ? "crown" : "user";
+    const roleLabel = isAdmin ? t("role_admin") : t("role_employee");
+    const userName = (loggedInUser && loggedInUser.name && loggedInUser.id !== "_super_admin" && loggedInUser.id !== "_shared_employee")
+      ? ` · ${esc(loggedInUser.name)}`
+      : "";
+    roleEl.innerHTML = `<span class="icon-inline">${icon(roleIcon, 14)} ${roleLabel}${userName}</span>`;
   }
   // Mettre à jour les boutons sidebar (dark + logout + lang)
   const darkBtn = document.getElementById("dark-btn");
@@ -82,11 +87,13 @@ function toggleSidebar() {
 // ── Rendu principal ───────────────────────────────────
 function renderPage() {
   const pageMeta = {
+    dashboard:   { label: t("nav_dashboard"),   icon: "bar-chart" },
     inventaire:  { label: t("nav_inventaire"),  icon: "package" },
     historique:  { label: t("nav_history"),     icon: "history" },
     taches:      { label: t("nav_tasks"),       icon: "clipboard" },
     employes:    { label: t("nav_employees"),   icon: "users" },
     depenses:    { label: t("nav_expenses"),    icon: "wallet" },
+    taxes:       { label: "TPS/TVQ",            icon: "shield-check" },
     menu:        { label: t("nav_menu"),        icon: "utensils" },
     ingredients: { label: t("nav_ingredients"), icon: "tag" },
     recettes:    { label: t("nav_recipes"),     icon: "file-text" },
@@ -112,7 +119,8 @@ function renderPage() {
     }
   }
   const pc = document.getElementById("page-content"); if (!pc) return;
-  if (activePage === "inventaire") pc.innerHTML = renderInventaire();
+  if (activePage === "dashboard" && isAdmin) pc.innerHTML = renderDashboard();
+  else if (activePage === "inventaire") pc.innerHTML = renderInventaire();
   else if (activePage === "rapport") pc.innerHTML = renderRapport();
   else if (activePage === "historique" && isAdmin) pc.innerHTML = renderHistorique();
   else if (activePage === "taches") pc.innerHTML = renderTaches();
@@ -122,6 +130,7 @@ function renderPage() {
     // Initialiser les graphiques Chart.js après le rendu
     setTimeout(() => { if (typeof initExpenseCharts === "function") initExpenseCharts(); }, 50);
   }
+  else if (activePage === "taxes" && isAdmin) pc.innerHTML = renderTaxes();
   else if (activePage === "menu" && isAdmin) pc.innerHTML = renderMenu();
   else if (activePage === "ingredients" && isAdmin) pc.innerHTML = renderIngredients();
   else if (activePage === "recettes" && isAdmin) pc.innerHTML = renderRecettes();

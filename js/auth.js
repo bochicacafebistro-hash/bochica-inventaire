@@ -1,18 +1,41 @@
 // ── Session ───────────────────────────────────────────
 function restoreSession() {
   const saved = localStorage.getItem("bochica-session");
-  if (saved === "admin") {
-    isAdmin = true; isLoggedIn = true;
-    document.getElementById("login-screen").style.display = "none";
-    document.getElementById("app-shell").style.display = "block";
-    buildSidebar(); renderPage(); autoApplyFixedExpenses();
-    return true;
-  } else if (saved === "employe") {
-    isAdmin = false; isLoggedIn = true;
-    document.getElementById("login-screen").style.display = "none";
-    document.getElementById("app-shell").style.display = "block";
-    buildSidebar(); renderPage(); autoApplyFixedExpenses();
-    return true;
+  if (!saved) return false;
+  try {
+    const parsed = JSON.parse(saved);
+    if (parsed.role === "admin") {
+      isAdmin = true; isLoggedIn = true;
+      loggedInUser = parsed.user || null; // { id, name, role }
+      activePage = "dashboard"; // Page d'accueil admin par défaut
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("app-shell").style.display = "block";
+      buildSidebar(); renderPage(); autoApplyFixedExpenses();
+      return true;
+    } else if (parsed.role === "employe") {
+      isAdmin = false; isLoggedIn = true;
+      loggedInUser = parsed.user || null;
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("app-shell").style.display = "block";
+      buildSidebar(); renderPage(); autoApplyFixedExpenses();
+      return true;
+    }
+  } catch {
+    // Compat legacy : ancien format string
+    if (saved === "admin") {
+      isAdmin = true; isLoggedIn = true;
+      activePage = "dashboard";
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("app-shell").style.display = "block";
+      buildSidebar(); renderPage(); autoApplyFixedExpenses();
+      return true;
+    } else if (saved === "employe") {
+      isAdmin = false; isLoggedIn = true;
+      document.getElementById("login-screen").style.display = "none";
+      document.getElementById("app-shell").style.display = "block";
+      buildSidebar(); renderPage(); autoApplyFixedExpenses();
+      return true;
+    }
   }
   return false;
 }
@@ -84,6 +107,7 @@ document.addEventListener("keydown", (e) => {
 
 function logout() {
   isAdmin = false; isLoggedIn = false; pinBuffer = "";
+  loggedInUser = null;
   localStorage.removeItem("bochica-session");
   document.getElementById("app-shell").style.display = "none";
   document.getElementById("login-screen").style.display = "block";
@@ -102,6 +126,42 @@ function updatePinDots() {
 }
 
 function checkPin() {
+  // 1. Admin PIN par défaut (super-admin)
+  if (pinBuffer === ADMIN_PIN) {
+    loginAs({ role: "admin", user: { id: "_super_admin", name: "Admin", role: "admin" } });
+    return;
+  }
+  // 2. Vérifier les PINs individuels des employés
+  const emp = (employees || []).find(e => e.pin && String(e.pin).trim() === pinBuffer);
+  if (emp) {
+    const isAdminEmp = (emp.role || "").toLowerCase().includes("admin");
+    loginAs({ role: isAdminEmp ? "admin" : "employe", user: { id: emp.id, name: emp.name, role: emp.role || "Employé" } });
+    return;
+  }
+  // 3. PIN employé partagé legacy (compat)
+  if (pinBuffer === EMPLOYEE_PIN) {
+    loginAs({ role: "employe", user: { id: "_shared_employee", name: t("role_employee"), role: "Employé" } });
+    return;
+  }
+  // 4. PIN incorrect
+  const e = document.getElementById("pin-error");
+  if (e) e.textContent = t("login_wrong_pin");
+  pinBuffer = ""; updatePinDots();
+}
+
+function loginAs(payload) {
+  isAdmin = payload.role === "admin";
+  isLoggedIn = true;
+  loggedInUser = payload.user;
+  if (isAdmin) activePage = "dashboard"; // Admin → dashboard, Employé → garde activePage par défaut
+  localStorage.setItem("bochica-session", JSON.stringify(payload));
+  document.getElementById("login-screen").style.display = "none";
+  document.getElementById("app-shell").style.display = "block";
+  buildSidebar(); renderPage(); autoApplyFixedExpenses();
+}
+
+// ── Ancienne fonction de checkPin (split en deux pour clarté) ────
+function checkPinLegacyREPLACED() {
   if (pinBuffer === ADMIN_PIN) {
     isAdmin = true; isLoggedIn = true;
     localStorage.setItem("bochica-session", "admin");

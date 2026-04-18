@@ -346,6 +346,63 @@ const TRANSLATIONS = {
   notes_field:           { fr: "Notes",               es: "Notas" },
   back_to_actives:       { fr: "Retour aux actifs",   es: "Volver a los activos" },
   language:              { fr: "Langue",              es: "Idioma" },
+  edit:                  { fr: "Modifier",            es: "Editar" },
+
+  // ── Menu : labels nouvelles cartes ─────────────────
+  menu_food_cost:        { fr: "Coût",                es: "Costo" },
+  menu_price:            { fr: "Prix",                es: "Precio" },
+  menu_margin_label:     { fr: "Marge",               es: "Margen" },
+  menu_no_composition:   { fr: "Aucune composition définie", es: "Sin composición definida" },
+  menu_unavailable_short:{ fr: "Indispo.",            es: "No dispo." },
+
+  // ── Dashboard exécutif ────────────────────────────
+  nav_dashboard:         { fr: "Tableau de bord",     es: "Panel" },
+  dash_title:            { fr: "Tableau de bord",     es: "Panel de control" },
+  dash_welcome:          { fr: "Bonjour {name}, voici l'état de Bochica aujourd'hui.", es: "Hola {name}, aquí está el estado de Bochica hoy." },
+  dash_profit_month:     { fr: "Profit du mois",      es: "Ganancia del mes" },
+  dash_revenues_month:   { fr: "Revenus du mois",     es: "Ingresos del mes" },
+  dash_expenses_month:   { fr: "Dépenses du mois",    es: "Gastos del mes" },
+  dash_vs_last_month:    { fr: "vs mois dernier",     es: "vs mes pasado" },
+  dash_vs_last_week:     { fr: "vs semaine dernière", es: "vs semana pasada" },
+  dash_critical_stock:   { fr: "Stock critique",      es: "Stock crítico" },
+  dash_no_critical:      { fr: "Aucun produit critique 🎉", es: "Ningún producto crítico 🎉" },
+  dash_overdue_tasks:    { fr: "Tâches en retard",    es: "Tareas atrasadas" },
+  dash_no_overdue:       { fr: "Aucune tâche en retard 👌", es: "Ninguna tarea atrasada 👌" },
+  dash_top_expenses:     { fr: "Top dépenses du mois", es: "Principales gastos del mes" },
+  dash_no_expenses:      { fr: "Aucune dépense ce mois", es: "Ningún gasto este mes" },
+  dash_avg_margin:       { fr: "Marge menu moyenne",  es: "Margen menú promedio" },
+  dash_view_all:         { fr: "Voir tout",           es: "Ver todo" },
+  dash_view_more:        { fr: "Voir plus",           es: "Ver más" },
+  dash_quick_actions:    { fr: "Actions rapides",     es: "Acciones rápidas" },
+  dash_due_in:           { fr: "dans {n} jours",      es: "en {n} días" },
+  dash_overdue:          { fr: "En retard",           es: "Atrasado" },
+  dash_today:            { fr: "Aujourd'hui",         es: "Hoy" },
+  dash_tomorrow:         { fr: "Demain",              es: "Mañana" },
+
+  // ── TPS/TVQ ───────────────────────────────────────
+  tax_card_title:        { fr: "Échéance TPS/TVQ",    es: "Vencimiento TPS/TVQ" },
+  tax_quarter:           { fr: "Trimestre",           es: "Trimestre" },
+  tax_due_date:          { fr: "À remettre avant le", es: "A pagar antes del" },
+  tax_to_remit:          { fr: "À remettre",          es: "A pagar" },
+  tax_collected:         { fr: "Perçue",              es: "Percibida" },
+  tax_paid:              { fr: "Payée",               es: "Pagada" },
+  tax_difference:        { fr: "Différence",          es: "Diferencia" },
+  tax_mark_paid:         { fr: "Marquer comme remis", es: "Marcar como pagado" },
+  tax_remitted:          { fr: "Remis le {date}",     es: "Pagado el {date}" },
+  tax_no_data:           { fr: "Aucune donnée pour ce trimestre", es: "Sin datos para este trimestre" },
+  tax_remittance_history:{ fr: "Historique des remises", es: "Historial de pagos" },
+  tax_credit_to_recover: { fr: "Crédit à récupérer",  es: "Crédito a recuperar" },
+
+  // ── Recherche globale ─────────────────────────────
+  search_placeholder:    { fr: "Rechercher partout... (Cmd+K)", es: "Buscar en todas partes... (Cmd+K)" },
+  search_no_results:     { fr: "Aucun résultat",      es: "Sin resultados" },
+  search_keyboard_hint:  { fr: "↑↓ naviguer · ↵ ouvrir · Esc fermer", es: "↑↓ navegar · ↵ abrir · Esc cerrar" },
+  search_section_products:    { fr: "Produits inventaire", es: "Productos inventario" },
+  search_section_ingredients: { fr: "Ingrédients",    es: "Ingredientes" },
+  search_section_recipes:     { fr: "Recettes",       es: "Recetas" },
+  search_section_menu:        { fr: "Items du menu",  es: "Items del menú" },
+  search_section_employees:   { fr: "Employés",       es: "Empleados" },
+  search_section_suppliers:   { fr: "Fournisseurs",   es: "Proveedores" },
 };
 
 // ── Variable globale de la langue de l'interface ──
