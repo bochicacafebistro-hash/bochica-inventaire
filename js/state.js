@@ -1,6 +1,7 @@
 // ── État global de l'application ──────────────────────
 let products = [], suppliers = [], customSections = [], logs = [];
 let employees = [], tasks = [], menuItems = [], expenses = [];
+let ingredients = []; // Ingrédients de recettes (séparés des produits d'inventaire)
 
 let isAdmin = false, isLoggedIn = false, pinBuffer = "", darkMode = false;
 let activeSection = "Toutes", searchQuery = "", sectionsExpanded = false;

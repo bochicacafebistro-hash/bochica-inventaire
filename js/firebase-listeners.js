@@ -32,7 +32,14 @@ db.collection("tasks").onSnapshot(snap => {
 
 db.collection("menu").onSnapshot(snap => {
   menuItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (isLoggedIn && activePage === "menu") renderPage();
+  if (isLoggedIn && ["menu", "recettes"].includes(activePage)) renderPage();
+});
+
+// Ingrédients (séparés des produits d'inventaire — pour calcul food cost)
+db.collection("ingredients").onSnapshot(snap => {
+  ingredients = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  if (isLoggedIn && ["ingredients", "menu", "recettes"].includes(activePage)) renderPage();
 });
 
 db.collection("expenses").orderBy("date", "desc").limit(500).onSnapshot(snap => {

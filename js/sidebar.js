@@ -15,6 +15,8 @@ function buildSidebar() {
     { icon: "users", label: t("nav_employees"), page: "employes" },
     { icon: "wallet", label: t("nav_expenses"), page: "depenses" },
     { icon: "utensils", label: t("nav_menu"), page: "menu" },
+    { icon: "tag", label: t("nav_ingredients"), page: "ingredients" },
+    { icon: "file-text", label: t("nav_recipes"), page: "recettes" },
     { section: t("nav_section_management") },
     { icon: "store", label: t("nav_suppliers"), page: "fournisseurs" },
   ];
@@ -86,6 +88,8 @@ function renderPage() {
     employes:    { label: t("nav_employees"),   icon: "users" },
     depenses:    { label: t("nav_expenses"),    icon: "wallet" },
     menu:        { label: t("nav_menu"),        icon: "utensils" },
+    ingredients: { label: t("nav_ingredients"), icon: "tag" },
+    recettes:    { label: t("nav_recipes"),     icon: "file-text" },
     fournisseurs:{ label: t("nav_suppliers"),   icon: "store" },
     rapport:     { label: t("nav_to_order"),    icon: "cart" }
   };
@@ -119,6 +123,8 @@ function renderPage() {
     setTimeout(() => { if (typeof initExpenseCharts === "function") initExpenseCharts(); }, 50);
   }
   else if (activePage === "menu" && isAdmin) pc.innerHTML = renderMenu();
+  else if (activePage === "ingredients" && isAdmin) pc.innerHTML = renderIngredients();
+  else if (activePage === "recettes" && isAdmin) pc.innerHTML = renderRecettes();
   else if (activePage === "fournisseurs") pc.innerHTML = renderFournisseurs();
   else pc.innerHTML = `<div class="page"><div class="empty">Accès non autorisé.</div></div>`;
 }

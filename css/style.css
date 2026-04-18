@@ -1366,3 +1366,279 @@ tr.drag-over td{border-top:2px solid var(--accent)}
   }
   .toolbar{gap:var(--sp-2)}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   INGRÉDIENTS — Cartes
+   ═══════════════════════════════════════════════════════════════ */
+
+.ing-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:var(--sp-3);
+  margin-top:var(--sp-3);
+}
+.ing-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:var(--sp-4);
+  box-shadow:var(--shadow-sm);
+  display:flex;
+  flex-direction:column;
+  gap:var(--sp-2);
+  transition:var(--transition-base);
+}
+.ing-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.ing-card__head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:var(--sp-2);
+  min-width:0;
+}
+.ing-card__name{
+  font-family:var(--font-heading);
+  font-weight:700;
+  font-size:var(--fs-md);
+  color:var(--text);
+  flex:1;
+  min-width:0;
+  word-break:break-word;
+  letter-spacing:-.2px;
+}
+.ing-card__price{
+  font-family:var(--font-heading);
+  font-weight:700;
+  font-size:var(--fs-xl);
+  color:var(--accent);
+  font-style:italic;
+  display:flex;
+  align-items:baseline;
+  gap:4px;
+}
+.ing-card__unit{
+  font-family:var(--font-body);
+  font-size:var(--fs-xs);
+  color:var(--text3);
+  font-weight:500;
+  font-style:normal;
+}
+.ing-card__cat{
+  display:inline-block;
+  align-self:flex-start;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  background:var(--surface2);
+  color:var(--text3);
+  padding:2px 8px;
+  border-radius:var(--radius-pill);
+}
+.ing-card__notes{
+  font-size:var(--fs-xs);
+  color:var(--text3);
+  font-style:italic;
+  font-family:var(--font-heading);
+  border-top:1px solid var(--border);
+  padding-top:var(--sp-2);
+  margin-top:var(--sp-1);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   COMPOSITION DANS MODAL MENU
+   ═══════════════════════════════════════════════════════════════ */
+
+.composition-box{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:var(--sp-3);
+  margin-bottom:var(--sp-3);
+}
+.composition-row{
+  display:flex;
+  gap:var(--sp-2);
+  align-items:center;
+  margin-bottom:var(--sp-2);
+}
+.composition-row select{
+  flex:2;
+  min-width:0;
+}
+.composition-row input{
+  flex:0 0 80px;
+  text-align:center;
+}
+.composition-row .composition-cost{
+  flex:0 0 70px;
+  text-align:right;
+  font-family:var(--font-heading);
+  color:var(--accent);
+  font-weight:700;
+  font-style:italic;
+  font-size:var(--fs-sm);
+}
+.composition-row .composition-remove{
+  flex:0 0 36px;
+  height:36px;
+  border:none;
+  background:transparent;
+  color:var(--status-red);
+  cursor:pointer;
+  border-radius:var(--radius-sm);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.composition-row .composition-remove:hover{background:var(--status-red-bg)}
+.composition-empty{
+  text-align:center;
+  color:var(--text3);
+  padding:var(--sp-3);
+  font-style:italic;
+  font-size:var(--fs-sm);
+}
+.composition-summary{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:var(--sp-3);
+  background:var(--accent);
+  color:var(--accent-text);
+  border-radius:var(--radius-md);
+  margin-top:var(--sp-2);
+  flex-wrap:wrap;
+  gap:var(--sp-2);
+}
+.composition-summary__label{
+  font-size:var(--fs-xs);
+  font-weight:700;
+  letter-spacing:1px;
+  text-transform:uppercase;
+  opacity:.85;
+}
+.composition-summary__value{
+  font-family:var(--font-heading);
+  font-size:var(--fs-lg);
+  font-weight:700;
+  font-style:italic;
+}
+.composition-margin{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:var(--sp-2) var(--sp-3);
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  margin-top:var(--sp-2);
+  flex-wrap:wrap;
+  gap:var(--sp-2);
+}
+.composition-margin--good{border-color:var(--status-green);color:var(--status-green)}
+.composition-margin--ok{border-color:var(--status-yellow-vivid);color:var(--status-yellow)}
+.composition-margin--bad{border-color:var(--status-red);color:var(--status-red)}
+
+/* ═══════════════════════════════════════════════════════════════
+   PAGE RECETTES — Vue technique
+   ═══════════════════════════════════════════════════════════════ */
+
+.recipes-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:var(--sp-3);
+  margin-top:var(--sp-3);
+}
+.recipe-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:4px solid var(--text3);
+  border-radius:var(--radius-lg);
+  padding:var(--sp-4);
+  box-shadow:var(--shadow-sm);
+  display:flex;
+  flex-direction:column;
+  gap:var(--sp-2);
+  transition:var(--transition-base);
+}
+.recipe-card:hover{box-shadow:var(--shadow-md);transform:translateY(-2px)}
+.recipe-card--good{border-left-color:var(--status-green)}
+.recipe-card--ok{border-left-color:var(--status-yellow-vivid)}
+.recipe-card--bad{border-left-color:var(--status-red)}
+.recipe-card--no-recipe{border-left-color:var(--text3);opacity:.7}
+
+.recipe-card__head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:var(--sp-2);
+}
+.recipe-card__name{
+  font-family:var(--font-heading);
+  font-weight:700;
+  font-size:var(--fs-md);
+  color:var(--text);
+  letter-spacing:-.2px;
+  margin:0;
+}
+.recipe-card__cat{
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  color:var(--text3);
+  margin-top:2px;
+}
+.recipe-card__metrics{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:var(--sp-2);
+  background:var(--surface2);
+  border-radius:var(--radius-sm);
+  padding:var(--sp-2);
+  margin-top:var(--sp-1);
+}
+.recipe-card__metric{text-align:center;min-width:0}
+.recipe-card__metric-label{
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.8px;
+  color:var(--text3);
+  margin-bottom:2px;
+}
+.recipe-card__metric-value{
+  font-family:var(--font-heading);
+  font-weight:700;
+  font-size:var(--fs-sm);
+  color:var(--text);
+  line-height:1.1;
+  word-break:break-word;
+}
+.recipe-card__margin-pct{
+  font-family:var(--font-heading);
+  font-weight:700;
+  font-size:var(--fs-lg);
+  font-style:italic;
+}
+.recipe-card--good .recipe-card__margin-pct{color:var(--status-green)}
+.recipe-card--ok .recipe-card__margin-pct{color:var(--status-yellow)}
+.recipe-card--bad .recipe-card__margin-pct{color:var(--status-red)}
+
+.recipe-card__ingredients{
+  font-size:var(--fs-xs);
+  color:var(--text2);
+  background:var(--surface2);
+  border-radius:var(--radius-sm);
+  padding:var(--sp-2);
+  margin-top:var(--sp-1);
+}
+.recipe-card__ingredients strong{color:var(--text)}
+.recipe-card__no-recipe{
+  text-align:center;
+  color:var(--text3);
+  font-style:italic;
+  padding:var(--sp-3);
+  font-size:var(--fs-sm);
+}

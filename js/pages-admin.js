@@ -787,27 +787,42 @@ function renderMenu() {
     </div>
     <div class="sec-tabs">${cats.map(c => `<button class="sec-btn ${activeMenuCat === c ? "active" : ""}" onclick="setMenuCat('${c}')">${c}</button>`).join("")}</div>
     ${filtered.length === 0
-      ? `<div class="empty"><div style="font-size:36px;margin-bottom:8px">🍽️</div>Aucun item dans cette catégorie.</div>`
-      : `<div class="card-grid">${filtered.map(m => `<div class="menu-item-card ${m.available === false ? "unavailable" : ""}">
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      ? `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("utensils", 36)}</div>Aucun item dans cette catégorie.</div>`
+      : `<div class="card-grid">${filtered.map(m => {
+          const fc = computeRecipeFoodCost(m.recipe || []);
+          const hasRec = Array.isArray(m.recipe) && m.recipe.length > 0;
+          const margin = (m.price || 0) - fc;
+          const marginPct = (m.price || 0) > 0 ? (margin / m.price) * 100 : 0;
+          let marginColor = "var(--text3)";
+          if (hasRec && m.price > 0) {
+            if (marginPct >= 70) marginColor = "var(--status-green)";
+            else if (marginPct >= 50) marginColor = "var(--status-yellow)";
+            else marginColor = "var(--status-red)";
+          }
+          return `<div class="menu-item-card ${m.available === false ? "unavailable" : ""}">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
               <span style="font-weight:700;font-size:15px">${m.name || ""}</span>
-              ${m.available === false ? `<span class="badge-pill" style="background:#f1f5f9;border:1px solid var(--border);color:var(--text3);font-size:10px">Indisponible</span>` : ""}
+              ${m.available === false ? `<span class="badge-pill" style="background:var(--surface2);border:1px solid var(--border);color:var(--text3);font-size:10px">${t("menu_unavailable")}</span>` : ""}
             </div>
             ${m.description ? `<div style="font-size:12px;color:var(--text2);margin-bottom:6px">${m.description}</div>` : ""}
-            <span class="badge-pill blue" style="font-size:11px">${m.category || ""}</span>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span class="badge-pill blue" style="font-size:11px">${m.category || ""}</span>
+              ${hasRec ? `<span class="icon-inline" style="font-size:11px;color:var(--text3)">${icon("utensils", 11)} ${fmtMoney(fc)} · <strong style="color:${marginColor}">${marginPct.toFixed(0)}% ${t("rec_margin").toLowerCase()}</strong></span>` : ""}
+            </div>
           </div>
           <div style="text-align:right;flex-shrink:0;margin-left:12px">
             <div class="price-tag">${fmtMoney(m.price)}</div>
-            <div class="menu-wrap" style="margin-top:6px"><button class="dots-btn" onclick="toggleDrop('mn${m.id}')">${icon("more-vertical", 16)}</button>
+            <div class="menu-wrap" style="margin-top:6px"><button class="dots-btn" onclick="toggleDrop('mn${m.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
             <div class="dropdown" id="drop-mn${m.id}">
-              <button onclick="openMenuModal('${m.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
-              <button onclick="toggleMenuAvailable('${m.id}',${m.available !== false});closeAllDrops()">${m.available === false ? "✅ Marquer disponible" : "⛔ Marquer indisponible"}</button>
+              <button onclick="openMenuModal('${m.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+              <button onclick="toggleMenuAvailable('${m.id}',${m.available !== false});closeAllDrops()">${icon(m.available === false ? "check" : "x", 14)} ${m.available === false ? t("menu_available") : t("menu_unavailable")}</button>
               <div class="sep"></div>
-              <button style="color:var(--status-red)" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
+              <button style="color:var(--status-red)" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
             </div></div>
           </div>
-        </div>`).join("")}</div>`}
+        </div>`;
+        }).join("")}</div>`}
   </div>`;
 }
 
@@ -815,35 +830,168 @@ async function toggleMenuAvailable(id, current) {
   await db.collection("menu").doc(id).update({ available: !current });
 }
 
+// ── Modal Item Menu (avec composition / recette) ──
+let menuRecipeRows = []; // état temporaire pour la composition en cours d'édition
+
 function openMenuModal(id) {
   const m = id ? menuItems.find(x => x.id === id) : null;
-  showModal(`<div class="modal">
-    <div class="modal-header"><h3>${m ? "Modifier" : "Ajouter"} un item au menu</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
-    <label>Nom<input id="mn-name" value="${esc(m?.name || "")}"/></label>
-    <label>Description<textarea id="mn-desc" style="height:70px">${m?.description || ""}</textarea></label>
-    <div class="form-row">
-      <label>Prix ($)<input id="mn-price" type="number" step="0.01" value="${m?.price || ""}"/></label>
-      <label>Catégorie<select id="mn-cat">${MENU_CATS.map(c => `<option value="${c}" ${(m?.category || "Plats principaux") === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+  // Initialiser la composition (recipe) depuis l'item ou vide
+  menuRecipeRows = (m?.recipe && Array.isArray(m.recipe)) ? [...m.recipe] : [];
+
+  showModal(`<div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <h3>${m ? t("menu_modal_edit") : t("menu_modal_add")}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
     </div>
+
+    <label>${t("menu_field_name")}<input id="mn-name" value="${esc(m?.name || "")}"/></label>
+    <label>${t("menu_field_desc")}<textarea id="mn-desc" style="height:60px">${m?.description || ""}</textarea></label>
+    <div class="form-row">
+      <label>${t("menu_field_price")}<input id="mn-price" type="number" step="0.01" value="${m?.price || ""}" oninput="updateRecipeSummary()"/></label>
+      <label>${t("menu_field_category")}<select id="mn-cat">${MENU_CATS.map(c => `<option value="${c}" ${(m?.category || "Plats principaux") === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+    </div>
+
+    <!-- ═══ COMPOSITION (recette) ═══ -->
+    <div style="margin-top:14px">
+      <label style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span class="icon-inline">${icon("utensils", 14)} ${t("menu_composition")}</span>
+        <button type="button" class="btn-icon-only" onclick="addRecipeRow()" aria-label="${t("menu_add_ingredient")}" style="width:32px;height:32px">${icon("plus", 14)}</button>
+      </label>
+      <small class="field-hint" style="margin-bottom:8px;display:block">${t("menu_composition_hint")}</small>
+
+      <div class="composition-box" id="composition-box">
+        <div id="composition-rows"></div>
+        <div id="composition-totals"></div>
+      </div>
+    </div>
+
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
       <button class="btn btn-primary" onclick="saveMenuItem('${id || ""}')">${t("save")}</button>
     </div>
   </div>`);
+
+  // Render initial des lignes de composition
+  renderCompositionRows();
+}
+
+// Génère le HTML des lignes de composition
+function renderCompositionRows() {
+  const container = document.getElementById("composition-rows");
+  if (!container) return;
+
+  if (ingredients.length === 0) {
+    container.innerHTML = `<div class="composition-empty">${t("ing_no_ingredients")}</div>`;
+    updateRecipeSummary();
+    return;
+  }
+
+  if (menuRecipeRows.length === 0) {
+    container.innerHTML = `<div class="composition-empty">${t("menu_no_ingredients")}</div>`;
+    updateRecipeSummary();
+    return;
+  }
+
+  container.innerHTML = menuRecipeRows.map((row, idx) => {
+    const ing = ingredients.find(i => i.id === row.ingredientId);
+    const cost = ing ? Number(ing.costPerUnit || 0) * Number(row.qty || 0) : 0;
+    return `<div class="composition-row" data-idx="${idx}">
+      <select onchange="updateRecipeRow(${idx}, 'ingredientId', this.value)" aria-label="${t("menu_select_ingredient")}">
+        <option value="">${t("menu_select_ingredient")}</option>
+        ${ingredients.map(i => `<option value="${i.id}" ${i.id === row.ingredientId ? "selected" : ""}>${esc(i.name)} (${fmtMoney(i.costPerUnit || 0)}/${i.unit || "—"})</option>`).join("")}
+      </select>
+      <input type="number" step="0.01" min="0" placeholder="${t("menu_quantity")}" value="${row.qty || ""}" oninput="updateRecipeRow(${idx}, 'qty', this.value)" aria-label="${t("menu_quantity")}"/>
+      <span class="composition-cost">${fmtMoney(cost)}</span>
+      <button type="button" class="composition-remove" onclick="removeRecipeRow(${idx})" aria-label="${t("delete")}">${icon("trash", 16)}</button>
+    </div>`;
+  }).join("");
+
+  updateRecipeSummary();
+}
+
+function addRecipeRow() {
+  menuRecipeRows.push({ ingredientId: "", qty: 1 });
+  renderCompositionRows();
+}
+
+function updateRecipeRow(idx, field, value) {
+  if (!menuRecipeRows[idx]) return;
+  if (field === "qty") menuRecipeRows[idx][field] = Number(value) || 0;
+  else menuRecipeRows[idx][field] = value;
+  // Update juste la ligne et le sommaire (pas tout le rendu pour préserver focus)
+  const row = document.querySelector(`.composition-row[data-idx="${idx}"]`);
+  if (row && field === "ingredientId") {
+    // Re-render complet pour mettre à jour le coût affiché
+    renderCompositionRows();
+  } else if (row) {
+    const costSpan = row.querySelector(".composition-cost");
+    const ing = ingredients.find(i => i.id === menuRecipeRows[idx].ingredientId);
+    const cost = ing ? Number(ing.costPerUnit || 0) * Number(menuRecipeRows[idx].qty || 0) : 0;
+    if (costSpan) costSpan.textContent = fmtMoney(cost);
+    updateRecipeSummary();
+  }
+}
+
+function removeRecipeRow(idx) {
+  menuRecipeRows.splice(idx, 1);
+  renderCompositionRows();
+}
+
+// Met à jour le résumé : food cost total + marge calculée
+function updateRecipeSummary() {
+  const totals = document.getElementById("composition-totals");
+  if (!totals) return;
+
+  const foodCost = computeRecipeFoodCost(menuRecipeRows);
+  const priceEl = document.getElementById("mn-price");
+  const price = priceEl ? Number(priceEl.value) || 0 : 0;
+  const margin = price - foodCost;
+  const marginPct = price > 0 ? (margin / price) * 100 : 0;
+
+  let marginClass = "composition-margin--bad";
+  if (marginPct >= 70) marginClass = "composition-margin--good";
+  else if (marginPct >= 50) marginClass = "composition-margin--ok";
+
+  totals.innerHTML = `
+    <div class="composition-summary">
+      <span class="composition-summary__label">${t("menu_food_cost_total")}</span>
+      <span class="composition-summary__value">${fmtMoney(foodCost)}</span>
+    </div>
+    ${price > 0 && foodCost > 0 ? `
+      <div class="composition-margin ${marginClass}">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">${t("menu_calculated_margin")}</span>
+        <span style="font-family:var(--font-heading);font-weight:700;font-size:16px;font-style:italic">${fmtMoney(margin)} (${marginPct.toFixed(1)}%)</span>
+      </div>
+    ` : ""}
+  `;
+}
+
+// Calcule le food cost total d'une recette (array d'objets {ingredientId, qty})
+function computeRecipeFoodCost(recipe) {
+  if (!Array.isArray(recipe)) return 0;
+  return recipe.reduce((total, row) => {
+    const ing = ingredients.find(i => i.id === row.ingredientId);
+    if (!ing) return total;
+    return total + (Number(ing.costPerUnit || 0) * Number(row.qty || 0));
+  }, 0);
 }
 
 async function saveMenuItem(id) {
   const name = document.getElementById("mn-name").value.trim();
-  if (!name) return alert("Entrez un nom.");
+  if (!name) return alert(t("err_enter_name"));
+  // Filtrer les lignes vides (pas d'ingrédient sélectionné)
+  const cleanRecipe = menuRecipeRows.filter(r => r.ingredientId && Number(r.qty) > 0);
   const data = {
     name,
     description: document.getElementById("mn-desc").value,
     price: Number(document.getElementById("mn-price").value) || 0,
     category: document.getElementById("mn-cat").value,
-    available: true
+    available: true,
+    recipe: cleanRecipe
   };
   if (id) await db.collection("menu").doc(id).update(data);
   else { const nid = genId(); await db.collection("menu").doc(nid).set({ ...data, id: nid }); }
+  menuRecipeRows = []; // Reset
   closeModal();
 }
 
@@ -1431,4 +1579,344 @@ function initExpenseCharts() {
       }
     });
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INGRÉDIENTS — Items transformés utilisés dans les recettes
+// ═══════════════════════════════════════════════════════════════
+
+let activeIngredientCat = "Toutes";
+
+const INGREDIENT_CATEGORIES = ["base", "protein", "garnish", "sauce", "vegetable", "drink", "dessert", "other"];
+
+function tIngCat(key) {
+  const map = {
+    base: t("ing_cat_base"),
+    protein: t("ing_cat_protein"),
+    garnish: t("ing_cat_garnish"),
+    sauce: t("ing_cat_sauce"),
+    vegetable: t("ing_cat_vegetable"),
+    drink: t("ing_cat_drink"),
+    dessert: t("ing_cat_dessert"),
+    other: t("ing_cat_other"),
+  };
+  return map[key] || key;
+}
+
+function setIngredientCat(cat) {
+  activeIngredientCat = cat;
+  renderPage();
+}
+
+function renderIngredients() {
+  const filtered = activeIngredientCat === "Toutes"
+    ? ingredients
+    : ingredients.filter(i => i.category === activeIngredientCat);
+
+  const totalIngredients = ingredients.length;
+  const avgCost = totalIngredients > 0
+    ? ingredients.reduce((s, i) => s + Number(i.costPerUnit || 0), 0) / totalIngredients
+    : 0;
+
+  let h = `<div class="page">
+    <div class="toolbar">
+      <div>
+        <h2 style="font-size:18px">${t("ing_title")}</h2>
+        <p style="font-size:13px;color:var(--text3);margin-top:2px">${t("ing_subtitle")}</p>
+      </div>
+      ${isAdmin ? `<button class="btn btn-primary" onclick="openIngredientModal()">${icon("plus", 16)} ${t("ing_add")}</button>` : ""}
+    </div>
+
+    ${totalIngredients > 0 ? `
+      <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:16px">
+        <div class="stat-card">
+          <div class="stat-num" style="color:var(--accent)">${totalIngredients}</div>
+          <div class="stat-label">${icon("package", 14)} ${t("ing_title")}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" style="color:var(--text);font-size:20px">${fmtMoney(avgCost)}</div>
+          <div class="stat-label">${t("rec_avg_margin").replace("Marge", "Coût")}</div>
+        </div>
+      </div>
+    ` : ""}
+
+    <!-- Filtres par catégorie -->
+    <div class="section-tabs section-tabs--scroll" role="tablist" aria-label="${t("filter_by_category")}">
+      <button class="sec-btn ${activeIngredientCat === "Toutes" ? "active" : ""}" onclick="setIngredientCat('Toutes')">${t("ing_filter_all")}<span class="badge-count">${totalIngredients}</span></button>
+      ${INGREDIENT_CATEGORIES.map(cat => {
+        const cnt = ingredients.filter(i => i.category === cat).length;
+        if (cnt === 0) return "";
+        return `<button class="sec-btn ${activeIngredientCat === cat ? "active" : ""}" onclick="setIngredientCat('${cat}')">${tIngCat(cat)}<span class="badge-count">${cnt}</span></button>`;
+      }).join("")}
+    </div>`;
+
+  if (!filtered.length) {
+    h += `<div class="empty">
+      <div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("utensils", 48)}</div>
+      ${t("ing_no_ingredients")}
+    </div>`;
+  } else {
+    // Grille de cartes ingrédients
+    h += `<div class="ing-grid">`;
+    filtered.forEach(ing => {
+      h += `<div class="ing-card">
+        <div class="ing-card__head">
+          <div class="ing-card__name">${ing.name || "?"}</div>
+          ${isAdmin ? `<div class="menu-wrap">
+            <button class="dots-btn" onclick="toggleDrop('ing${ing.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
+            <div class="dropdown" id="drop-ing${ing.id}">
+              <button onclick="openIngredientModal('${ing.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+              <div class="sep"></div>
+              <button style="color:var(--status-red)" onclick="askDelete('ingredients','${ing.id}','${esc(ing.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
+            </div>
+          </div>` : ""}
+        </div>
+        <div class="ing-card__price">${fmtMoney(ing.costPerUnit || 0)}<span class="ing-card__unit">/ ${ing.unit || "—"}</span></div>
+        ${ing.category ? `<div class="ing-card__cat">${tIngCat(ing.category)}</div>` : ""}
+        ${ing.notes ? `<div class="ing-card__notes">${ing.notes}</div>` : ""}
+      </div>`;
+    });
+    h += `</div>`;
+  }
+  return h + `</div>`;
+}
+
+// ── Modal Ingrédient (ajout / édition) ─────────────
+function openIngredientModal(id) {
+  const ing = id ? ingredients.find(x => x.id === id) : null;
+  showModal(`<div class="modal">
+    <div class="modal-header">
+      <h3>${ing ? t("ing_modal_edit") : t("ing_modal_add")}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
+    </div>
+
+    <label>${t("ing_field_name")}<input id="ing-name" value="${esc(ing?.name || "")}"/></label>
+
+    <div class="form-row">
+      <label>${t("ing_field_unit")}
+        <input id="ing-unit" value="${esc(ing?.unit || "unité")}"/>
+        <small class="field-hint">${t("ing_field_unit_hint")}</small>
+      </label>
+      <label>${t("ing_field_cost")}
+        <input id="ing-cost" type="number" step="0.01" min="0" value="${ing?.costPerUnit || ""}"/>
+      </label>
+    </div>
+
+    <label>${t("ing_field_category")}
+      <select id="ing-cat">
+        ${INGREDIENT_CATEGORIES.map(c => `<option value="${c}" ${(ing?.category || "other") === c ? "selected" : ""}>${tIngCat(c)}</option>`).join("")}
+      </select>
+    </label>
+
+    <label>${t("ing_field_notes")}<textarea id="ing-notes" style="height:60px">${ing?.notes || ""}</textarea></label>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveIngredient('${id || ""}')">${t("save")}</button>
+    </div>
+  </div>`);
+}
+
+async function saveIngredient(id) {
+  const name = document.getElementById("ing-name").value.trim();
+  if (!name) return alert(t("err_enter_name"));
+  const cost = Number(document.getElementById("ing-cost").value) || 0;
+  const data = {
+    name,
+    unit: document.getElementById("ing-unit").value.trim() || "unité",
+    costPerUnit: cost,
+    category: document.getElementById("ing-cat").value,
+    notes: document.getElementById("ing-notes").value.trim()
+  };
+  if (id) await db.collection("ingredients").doc(id).update(data);
+  else { const nid = genId(); await db.collection("ingredients").doc(nid).set({ ...data, id: nid }); }
+  closeModal();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE RECETTES — Analyse rentabilité des items du menu
+// ═══════════════════════════════════════════════════════════════
+
+let recipesFilter = "with"; // 'all', 'with', 'without'
+let recipesSort = "margin"; // 'margin', 'price', 'name'
+
+function setRecipesFilter(f) { recipesFilter = f; renderPage(); }
+function setRecipesSort(s) { recipesSort = s; renderPage(); }
+
+function renderRecettes() {
+  // Calcul pour chaque item du menu
+  const enriched = menuItems.map(m => {
+    const foodCost = computeRecipeFoodCost(m.recipe || []);
+    const price = Number(m.price || 0);
+    const margin = price - foodCost;
+    const marginPct = price > 0 ? (margin / price) * 100 : 0;
+    const hasRecipe = Array.isArray(m.recipe) && m.recipe.length > 0;
+    return { ...m, foodCost, margin, marginPct, hasRecipe };
+  });
+
+  // Filtrage
+  let filtered = enriched;
+  if (recipesFilter === "with") filtered = enriched.filter(e => e.hasRecipe);
+  else if (recipesFilter === "without") filtered = enriched.filter(e => !e.hasRecipe);
+
+  // Tri
+  if (recipesSort === "margin") {
+    filtered.sort((a, b) => {
+      // Items avec recette en premier, puis par marge décroissante
+      if (a.hasRecipe !== b.hasRecipe) return a.hasRecipe ? -1 : 1;
+      return b.marginPct - a.marginPct;
+    });
+  } else if (recipesSort === "price") {
+    filtered.sort((a, b) => b.price - a.price);
+  } else if (recipesSort === "name") {
+    filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }
+
+  // Stats globales (sur items avec recette uniquement)
+  const itemsWithRecipe = enriched.filter(e => e.hasRecipe);
+  const totalItems = enriched.length;
+  const itemsWithoutRecipe = totalItems - itemsWithRecipe.length;
+  const avgMarginPct = itemsWithRecipe.length > 0
+    ? itemsWithRecipe.reduce((s, e) => s + e.marginPct, 0) / itemsWithRecipe.length
+    : 0;
+  const avgFoodCost = itemsWithRecipe.length > 0
+    ? itemsWithRecipe.reduce((s, e) => s + e.foodCost, 0) / itemsWithRecipe.length
+    : 0;
+
+  // Top 3 plus / moins rentables
+  const topProfitable = [...itemsWithRecipe].sort((a, b) => b.marginPct - a.marginPct).slice(0, 3);
+  const topExpensive = [...itemsWithRecipe].sort((a, b) => b.foodCost - a.foodCost).slice(0, 3);
+
+  let h = `<div class="page">
+    <div class="toolbar">
+      <div>
+        <h2 style="font-size:18px">${t("rec_title")}</h2>
+        <p style="font-size:13px;color:var(--text3);margin-top:2px">${t("rec_subtitle")}</p>
+      </div>
+    </div>`;
+
+  // Stats globales
+  if (totalItems > 0) {
+    h += `<div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr));margin-bottom:16px">
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--accent)">${totalItems}</div>
+        <div class="stat-label">${icon("utensils", 14)} ${t("rec_total_items")}</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--status-green)">
+        <div class="stat-num" style="color:var(--status-green)">${itemsWithRecipe.length}</div>
+        <div class="stat-label">${t("rec_filter_with_recipe")}</div>
+      </div>
+      ${itemsWithoutRecipe > 0 ? `
+        <div class="stat-card" style="border-left:4px solid var(--status-yellow-vivid)">
+          <div class="stat-num" style="color:var(--status-yellow)">${itemsWithoutRecipe}</div>
+          <div class="stat-label">${t("rec_filter_without")}</div>
+        </div>
+      ` : ""}
+      ${itemsWithRecipe.length > 0 ? `
+        <div class="stat-card" style="border-left:4px solid var(--accent)">
+          <div class="stat-num" style="color:var(--accent);font-size:20px">${avgMarginPct.toFixed(1)}%</div>
+          <div class="stat-label">${t("rec_avg_margin")}</div>
+        </div>
+      ` : ""}
+    </div>`;
+  }
+
+  // Top 3 plus rentables / plus chers (côte à côte)
+  if (itemsWithRecipe.length >= 2) {
+    h += `<div class="charts-wrap" style="margin-bottom:20px">
+      <div class="card">
+        <div class="chart-card__header">
+          <div class="chart-card__title">${icon("trending-up", 16)} ${t("rec_top_profitable")}</div>
+        </div>
+        <ol style="padding-left:20px;margin-top:10px">${topProfitable.map(e => `
+          <li style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span style="font-weight:600;flex:1;min-width:0;word-break:break-word">${e.name || ""}</span>
+            <strong style="color:var(--status-green);font-family:var(--font-heading);font-style:italic">${e.marginPct.toFixed(1)}%</strong>
+          </li>
+        `).join("")}</ol>
+      </div>
+      <div class="card">
+        <div class="chart-card__header">
+          <div class="chart-card__title">${icon("trending-down", 16)} ${t("rec_top_expensive")}</div>
+        </div>
+        <ol style="padding-left:20px;margin-top:10px">${topExpensive.map(e => `
+          <li style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span style="font-weight:600;flex:1;min-width:0;word-break:break-word">${e.name || ""}</span>
+            <strong style="color:var(--status-red);font-family:var(--font-heading);font-style:italic">${fmtMoney(e.foodCost)}</strong>
+          </li>
+        `).join("")}</ol>
+      </div>
+    </div>`;
+  }
+
+  // Filtres
+  h += `<div class="section-tabs section-tabs--scroll" style="margin-bottom:16px">
+    <button class="sec-btn ${recipesFilter === "all" ? "active" : ""}" onclick="setRecipesFilter('all')">${t("rec_filter_all")} <span class="badge-count">${totalItems}</span></button>
+    <button class="sec-btn ${recipesFilter === "with" ? "active" : ""}" onclick="setRecipesFilter('with')">${t("rec_filter_with_recipe")} <span class="badge-count">${itemsWithRecipe.length}</span></button>
+    ${itemsWithoutRecipe > 0 ? `<button class="sec-btn ${recipesFilter === "without" ? "active" : ""}" onclick="setRecipesFilter('without')">${t("rec_filter_without")} <span class="badge-count">${itemsWithoutRecipe}</span></button>` : ""}
+  </div>`;
+
+  // Liste des recettes
+  if (filtered.length === 0) {
+    h += `<div class="empty">
+      <div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("utensils", 48)}</div>
+      ${t("rec_no_recipes")}
+    </div>`;
+  } else {
+    h += `<div class="recipes-grid">`;
+    filtered.forEach(e => {
+      let cardClass = "recipe-card--no-recipe";
+      if (e.hasRecipe) {
+        if (e.marginPct >= 70) cardClass = "recipe-card--good";
+        else if (e.marginPct >= 50) cardClass = "recipe-card--ok";
+        else cardClass = "recipe-card--bad";
+      }
+      // Liste compacte des ingrédients (max 5 affichés)
+      const ingList = (e.recipe || []).map(r => {
+        const ing = ingredients.find(i => i.id === r.ingredientId);
+        return ing ? `${r.qty} ${ing.unit} <strong>${ing.name}</strong>` : null;
+      }).filter(Boolean);
+      const visibleIng = ingList.slice(0, 4);
+      const extraCount = ingList.length - visibleIng.length;
+
+      h += `<div class="recipe-card ${cardClass}">
+        <div class="recipe-card__head">
+          <div style="flex:1;min-width:0">
+            <h3 class="recipe-card__name">${e.name || "?"}</h3>
+            <div class="recipe-card__cat">${e.category || ""}</div>
+          </div>
+          <button class="dots-btn" onclick="openMenuModal('${e.id}')" aria-label="${t("dropdown_edit")}" title="${t("dropdown_edit")}">${icon("pencil", 16)}</button>
+        </div>
+
+        ${e.hasRecipe ? `
+          <div class="recipe-card__metrics">
+            <div class="recipe-card__metric">
+              <div class="recipe-card__metric-label">${t("rec_food_cost")}</div>
+              <div class="recipe-card__metric-value" style="color:var(--text2)">${fmtMoney(e.foodCost)}</div>
+            </div>
+            <div class="recipe-card__metric">
+              <div class="recipe-card__metric-label">${t("rec_selling_price")}</div>
+              <div class="recipe-card__metric-value">${e.price > 0 ? fmtMoney(e.price) : "—"}</div>
+            </div>
+            <div class="recipe-card__metric">
+              <div class="recipe-card__metric-label">${t("rec_margin")}</div>
+              <div class="recipe-card__margin-pct">${e.price > 0 ? e.marginPct.toFixed(0) + "%" : "—"}</div>
+            </div>
+          </div>
+
+          <div class="recipe-card__ingredients">
+            ${visibleIng.join(" · ")}${extraCount > 0 ? ` <span style="color:var(--text3)">+${extraCount}</span>` : ""}
+          </div>
+        ` : `
+          <div class="recipe-card__no-recipe">
+            ${icon("plus", 14)} ${t("rec_no_composition")}
+            <br/><small style="color:var(--text3);font-size:11px;margin-top:6px;display:inline-block">${t("rec_no_recipes").split(".")[1] || ""}</small>
+          </div>
+        `}
+      </div>`;
+    });
+    h += `</div>`;
+  }
+
+  return h + `</div>`;
 }
