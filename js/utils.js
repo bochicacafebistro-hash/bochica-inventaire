@@ -11,14 +11,19 @@ function getStatus(p) {
 }
 
 function statusLabel(st) {
-  if (st === "red") return `<span class="icon-inline" style="color:var(--status-red)">${icon("alert", 13)} Commander</span>`;
-  if (st === "yellow") return `<span class="icon-inline" style="color:var(--status-yellow)">${icon("clock", 13)} Bientôt bas</span>`;
-  return `<span class="icon-inline" style="color:var(--status-green)">${icon("check", 13)} OK</span>`;
+  if (st === "red") return `<span class="icon-inline" style="color:var(--status-red)">${icon("alert", 13)} ${t("status_commander")}</span>`;
+  if (st === "yellow") return `<span class="icon-inline" style="color:var(--status-yellow)">${icon("clock", 13)} ${t("status_bientot_bas")}</span>`;
+  return `<span class="icon-inline" style="color:var(--status-green)">${icon("check", 13)} ${t("status_ok")}</span>`;
 }
 
 function orderLabel(p) {
   const q = p.orderQty || 0;
-  return p.orderUnit === "boîte" ? `${q} boîte${q > 1 ? "s" : ""}` : `${q} unité${q > 1 ? "s" : ""}`;
+  if (p.orderUnit === "boîte") {
+    const word = q > 1 ? t("unit_box") + (getUILang() === "fr" ? "s" : "s") : t("unit_box");
+    return `${q} ${word}`;
+  }
+  const word = q > 1 ? t("unit_units") : t("unit_unit");
+  return `${q} ${word}`;
 }
 
 function fmtDate(ts) {
@@ -63,12 +68,12 @@ function closeModal() { document.getElementById("modals").innerHTML = ""; }
 function openConfirm(title, msg, action, isDanger = false) {
   pendingConfirm = action;
   showModal(`<div class="modal" style="max-width:380px">
-    <div class="modal-header"><h3>${title}</h3><button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button></div>
+    <div class="modal-header"><h3>${title}</h3><button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button></div>
     <p style="color:var(--text2);font-size:14px;margin-bottom:20px;line-height:1.6">${msg}</p>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
       <button style="background:${isDanger ? "var(--status-red)" : "var(--status-green)"};color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px" onclick="confirmAction()">
-        ${icon(isDanger ? "trash" : "check", 14)} ${isDanger ? "Supprimer" : "Confirmer"}
+        ${icon(isDanger ? "trash" : "check", 14)} ${isDanger ? t("delete") : t("confirm")}
       </button>
     </div>
   </div>`);

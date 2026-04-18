@@ -64,8 +64,9 @@
       </div>
       <nav class="sidebar-nav" id="sidebar-nav" aria-label="Sections de l'application"></nav>
       <div class="sidebar-bottom">
-        <button class="btn-icon-sm" onclick="toggleDark()" title="Mode sombre" aria-label="Basculer le mode sombre" id="dark-btn"></button>
-        <button class="btn-icon-sm" onclick="logout()" title="Déconnexion" aria-label="Se déconnecter" id="logout-btn"></button>
+        <button class="btn-icon-sm" onclick="toggleDark()" id="dark-btn"></button>
+        <button class="btn-icon-sm" onclick="toggleUILang()" id="lang-btn"></button>
+        <button class="btn-icon-sm" onclick="logout()" id="logout-btn" style="flex:1"></button>
       </div>
     </aside>
 
@@ -93,6 +94,7 @@
 <script src="js/config.js"></script>
 <script src="js/state.js"></script>
 <script src="js/icons.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/inventaire.js"></script>
 <script src="js/modals-produits.js"></script>
@@ -104,10 +106,12 @@
 
 <!-- ═══ Init + PWA Service Worker ═══ -->
 <script>
+  // Init langue UI (avant tout le reste)
+  document.documentElement.lang = getUILang() === "es" ? "es" : "fr-CA";
   initDark();
   // Injecter les icônes statiques (hamburger, logout, dark) dès que icons.js est chargé
   document.getElementById("sidebar-toggle-btn").innerHTML = icon("menu", 18);
-  document.getElementById("logout-btn").innerHTML = icon("log-out", 14) + ' <span>Déconnexion</span>';
+  document.getElementById("logout-btn").innerHTML = icon("log-out", 14) + ' <span>' + t("logout") + '</span>';
   // Le bouton dark est mis à jour par initDark()/toggleDark()
   if (!restoreSession()) showLogin();
 

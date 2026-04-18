@@ -3,33 +3,33 @@ function openProductModal(id) {
   const p = id ? products.find(x => x.id === id) : null;
   const secs = getAllSections().filter(s => s !== "Toutes");
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>${p ? "Modifier" : "Ajouter"} un produit</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
-    <label>Nom<input id="p-name" value="${esc(p?.name || "")}"/></label>
-    <label>Section<select id="p-section">${secs.map(s => `<option value="${s}" ${(p?.section || "Cuisine") === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
+    <div class="modal-header"><h3>${p ? t("prod_modal_edit") : t("prod_modal_add")}</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
+    <label>${t("prod_field_name")}<input id="p-name" value="${esc(p?.name || "")}"/></label>
+    <label>${t("prod_field_section")}<select id="p-section">${secs.map(s => `<option value="${s}" ${(p?.section || "Cuisine") === s ? "selected" : ""}>${tSection(s)}</option>`).join("")}</select></label>
     <div class="form-row">
-      <label>Qté en inventaire<input id="p-stock" type="number" value="${p?.currentStock || 0}"/></label>
-      <label>Minimum requis<input id="p-minimum" type="number" value="${p?.minimum || 0}"/></label>
+      <label>${t("prod_field_stock")}<input id="p-stock" type="number" value="${p?.currentStock || 0}"/></label>
+      <label>${t("prod_field_minimum")}<input id="p-minimum" type="number" value="${p?.minimum || 0}"/></label>
     </div>
-    <label>Unité de commande<select id="p-orderunit" onchange="toggleBoxFields()">
-      <option value="unité" ${(p?.orderUnit || "unité") === "unité" ? "selected" : ""}>Unité</option>
-      <option value="boîte" ${p?.orderUnit === "boîte" ? "selected" : ""}>Boîte</option>
+    <label>${t("prod_field_order_unit")}<select id="p-orderunit" onchange="toggleBoxFields()">
+      <option value="unité" ${(p?.orderUnit || "unité") === "unité" ? "selected" : ""}>${t("unit_unit_cap")}</option>
+      <option value="boîte" ${p?.orderUnit === "boîte" ? "selected" : ""}>${t("unit_box_cap")}</option>
     </select></label>
     <div id="box-fields" style="display:${p?.orderUnit === "boîte" ? "block" : "none"}">
       <div class="form-row">
-        <label>Unités/boîte<input id="p-upb" type="number" value="${p?.unitsPerBox || 1}"/></label>
-        <label>Qté à commander<input id="p-oqty" type="number" value="${p?.orderQty || 0}"/></label>
+        <label>${t("prod_field_units_box")}<input id="p-upb" type="number" value="${p?.unitsPerBox || 1}"/></label>
+        <label>${t("prod_field_qty_order")}<input id="p-oqty" type="number" value="${p?.orderQty || 0}"/></label>
       </div>
     </div>
     <div id="unit-fields" style="display:${p?.orderUnit === "boîte" ? "none" : "block"}">
-      <label>Qté à commander<input id="p-oqty-u" type="number" value="${p?.orderQty || 0}"/></label>
+      <label>${t("prod_field_qty_order")}<input id="p-oqty-u" type="number" value="${p?.orderQty || 0}"/></label>
     </div>
-    <label>Fournisseur<select id="p-sup">
-      <option value="">— Aucun —</option>
+    <label>${t("prod_field_supplier")}<select id="p-sup">
+      <option value="">${t("none")}</option>
       ${suppliers.map(s => `<option value="${s.id}" ${p?.supplierId === s.id ? "selected" : ""}>${s.name}</option>`).join("")}
     </select></label>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveProduct('${id || ""}')">Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveProduct('${id || ""}')">${t("save")}</button>
     </div>
   </div>`);
 }
@@ -42,7 +42,7 @@ function toggleBoxFields() {
 
 async function saveProduct(id) {
   const name = document.getElementById("p-name").value.trim();
-  if (!name) return alert("Entrez un nom.");
+  if (!name) return alert(t("err_enter_name"));
   const orderUnit = document.getElementById("p-orderunit").value;
   const isBox = orderUnit === "boîte";
   const orderQty = isBox ? Number(document.getElementById("p-oqty").value) : Number(document.getElementById("p-oqty-u").value);
@@ -74,8 +74,8 @@ function openNoteModal(id) {
     <label>Note rapide<textarea id="note-text" style="height:100px;resize:vertical">${p.note || ""}</textarea></label>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="clearNote('${id}')">Effacer</button>
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveNote('${id}')">Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveNote('${id}')">${t("save")}</button>
     </div>
   </div>`);
 }
@@ -90,7 +90,7 @@ function openMoveModal(id) {
     <div class="modal-header"><h3>📁 Changer catégorie — ${p.name}</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
     <label>Catégorie<select id="move-sec">${secs.map(s => `<option value="${s}" ${s === p.section ? "selected" : ""}>${s}</option>`).join("")}</select></label>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
       <button class="btn btn-primary" onclick="confirmMove('${id}')">Déplacer</button>
     </div>
   </div>`);
@@ -113,7 +113,7 @@ function openReceiveModal(id) {
     </label>
     <div id="recv-preview" style="font-size:13px;color:var(--text2);min-height:20px;margin-bottom:8px"></div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
       <button class="btn btn-primary" onclick="confirmReceive()">✅ Confirmer</button>
     </div>
   </div>`);
