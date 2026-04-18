@@ -1,7 +1,9 @@
 // ── État global de l'application ──────────────────────
 let products = [], suppliers = [], customSections = [], logs = [];
 let employees = [], tasks = [], menuItems = [], expenses = [];
-let ingredients = []; // Ingrédients de recettes (séparés des produits d'inventaire)
+let ingredients = []; // Ingrédients de menu (avec coûts, séparés des produits d'inventaire)
+let recipes = [];    // Livre de cuisine — recettes pour préparation (sans coûts)
+let recipeFilter = "all"; // Filtre actif sur page Recettes
 
 let isAdmin = false, isLoggedIn = false, pinBuffer = "", darkMode = false;
 let activeSection = "Toutes", searchQuery = "", sectionsExpanded = false;

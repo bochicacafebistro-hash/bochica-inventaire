@@ -788,40 +788,73 @@ function renderMenu() {
     <div class="sec-tabs">${cats.map(c => `<button class="sec-btn ${activeMenuCat === c ? "active" : ""}" onclick="setMenuCat('${c}')">${c}</button>`).join("")}</div>
     ${filtered.length === 0
       ? `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("utensils", 36)}</div>Aucun item dans cette catégorie.</div>`
-      : `<div class="card-grid">${filtered.map(m => {
+      : `<div class="recipes-grid">${filtered.map(m => {
           const fc = computeRecipeFoodCost(m.recipe || []);
           const hasRec = Array.isArray(m.recipe) && m.recipe.length > 0;
           const margin = (m.price || 0) - fc;
           const marginPct = (m.price || 0) > 0 ? (margin / m.price) * 100 : 0;
-          let marginColor = "var(--text3)";
+          let cardClass = "recipe-card--no-recipe";
           if (hasRec && m.price > 0) {
-            if (marginPct >= 70) marginColor = "var(--status-green)";
-            else if (marginPct >= 50) marginColor = "var(--status-yellow)";
-            else marginColor = "var(--status-red)";
+            if (marginPct >= 70) cardClass = "recipe-card--good";
+            else if (marginPct >= 50) cardClass = "recipe-card--ok";
+            else cardClass = "recipe-card--bad";
           }
-          return `<div class="menu-item-card ${m.available === false ? "unavailable" : ""}">
-          <div style="flex:1;min-width:0">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-              <span style="font-weight:700;font-size:15px">${m.name || ""}</span>
-              ${m.available === false ? `<span class="badge-pill" style="background:var(--surface2);border:1px solid var(--border);color:var(--text3);font-size:10px">${t("menu_unavailable")}</span>` : ""}
+          if (m.available === false) cardClass += " recipe-card--unavailable";
+          // Liste compacte des ingrédients (max 4 affichés)
+          const ingList = (m.recipe || []).map(r => {
+            const ing = ingredients.find(i => i.id === r.ingredientId);
+            return ing ? `${r.qty} ${ing.unit} <strong>${esc(ing.name)}</strong>` : null;
+          }).filter(Boolean);
+          const visibleIng = ingList.slice(0, 4);
+          const extraCount = ingList.length - visibleIng.length;
+
+          return `<div class="recipe-card ${cardClass}">
+            <div class="recipe-card__head">
+              <div style="flex:1;min-width:0">
+                <h3 class="recipe-card__name">${m.name || "?"}</h3>
+                <div class="recipe-card__cat">
+                  ${m.category || ""}
+                  ${m.available === false ? ` · <span style="color:var(--status-yellow)">${t("menu_unavailable_short")}</span>` : ""}
+                </div>
+              </div>
+              <div class="menu-wrap">
+                <button class="dots-btn" onclick="toggleDrop('mn${m.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
+                <div class="dropdown" id="drop-mn${m.id}">
+                  <button onclick="openMenuModal('${m.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+                  <button onclick="toggleMenuAvailable('${m.id}',${m.available !== false});closeAllDrops()">${icon(m.available === false ? "check" : "x", 14)} ${m.available === false ? t("menu_available") : t("menu_unavailable")}</button>
+                  <div class="sep"></div>
+                  <button style="color:var(--status-red)" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
+                </div>
+              </div>
             </div>
-            ${m.description ? `<div style="font-size:12px;color:var(--text2);margin-bottom:6px">${m.description}</div>` : ""}
-            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-              <span class="badge-pill blue" style="font-size:11px">${m.category || ""}</span>
-              ${hasRec ? `<span class="icon-inline" style="font-size:11px;color:var(--text3)">${icon("utensils", 11)} ${fmtMoney(fc)} · <strong style="color:${marginColor}">${marginPct.toFixed(0)}% ${t("rec_margin").toLowerCase()}</strong></span>` : ""}
+
+            ${m.description ? `<div class="recipe-card__desc">${esc(m.description)}</div>` : ""}
+
+            <div class="recipe-card__metrics">
+              <div class="recipe-card__metric">
+                <div class="recipe-card__metric-label">${t("menu_food_cost")}</div>
+                <div class="recipe-card__metric-value" style="color:var(--text2)">${hasRec ? fmtMoney(fc) : "—"}</div>
+              </div>
+              <div class="recipe-card__metric">
+                <div class="recipe-card__metric-label">${t("menu_price")}</div>
+                <div class="recipe-card__metric-value">${m.price > 0 ? fmtMoney(m.price) : "—"}</div>
+              </div>
+              <div class="recipe-card__metric">
+                <div class="recipe-card__metric-label">${t("menu_margin_label")}</div>
+                <div class="recipe-card__margin-pct">${hasRec && m.price > 0 ? marginPct.toFixed(0) + "%" : "—"}</div>
+              </div>
             </div>
-          </div>
-          <div style="text-align:right;flex-shrink:0;margin-left:12px">
-            <div class="price-tag">${fmtMoney(m.price)}</div>
-            <div class="menu-wrap" style="margin-top:6px"><button class="dots-btn" onclick="toggleDrop('mn${m.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
-            <div class="dropdown" id="drop-mn${m.id}">
-              <button onclick="openMenuModal('${m.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
-              <button onclick="toggleMenuAvailable('${m.id}',${m.available !== false});closeAllDrops()">${icon(m.available === false ? "check" : "x", 14)} ${m.available === false ? t("menu_available") : t("menu_unavailable")}</button>
-              <div class="sep"></div>
-              <button style="color:var(--status-red)" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
-            </div></div>
-          </div>
-        </div>`;
+
+            ${hasRec ? `
+              <div class="recipe-card__ingredients">
+                ${visibleIng.join(" · ")}${extraCount > 0 ? ` <span style="color:var(--text3)">+${extraCount}</span>` : ""}
+              </div>
+            ` : `
+              <div class="recipe-card__no-recipe">
+                ${icon("plus", 14)} ${t("menu_no_composition")}
+              </div>
+            `}
+          </div>`;
         }).join("")}</div>`}
   </div>`;
 }
@@ -1609,10 +1642,7 @@ function setIngredientCat(cat) {
 }
 
 function renderIngredients() {
-  const filtered = activeIngredientCat === "Toutes"
-    ? ingredients
-    : ingredients.filter(i => i.category === activeIngredientCat);
-
+  const isMobile = window.innerWidth <= 640;
   const totalIngredients = ingredients.length;
   const avgCost = totalIngredients > 0
     ? ingredients.reduce((s, i) => s + Number(i.costPerUnit || 0), 0) / totalIngredients
@@ -1625,43 +1655,56 @@ function renderIngredients() {
         <p style="font-size:13px;color:var(--text3);margin-top:2px">${t("ing_subtitle")}</p>
       </div>
       ${isAdmin ? `<button class="btn btn-primary" onclick="openIngredientModal()">${icon("plus", 16)} ${t("ing_add")}</button>` : ""}
-    </div>
-
-    ${totalIngredients > 0 ? `
-      <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:16px">
-        <div class="stat-card">
-          <div class="stat-num" style="color:var(--accent)">${totalIngredients}</div>
-          <div class="stat-label">${icon("package", 14)} ${t("ing_title")}</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-num" style="color:var(--text);font-size:20px">${fmtMoney(avgCost)}</div>
-          <div class="stat-label">${t("rec_avg_margin").replace("Marge", "Coût")}</div>
-        </div>
-      </div>
-    ` : ""}
-
-    <!-- Filtres par catégorie -->
-    <div class="section-tabs section-tabs--scroll" role="tablist" aria-label="${t("filter_by_category")}">
-      <button class="sec-btn ${activeIngredientCat === "Toutes" ? "active" : ""}" onclick="setIngredientCat('Toutes')">${t("ing_filter_all")}<span class="badge-count">${totalIngredients}</span></button>
-      ${INGREDIENT_CATEGORIES.map(cat => {
-        const cnt = ingredients.filter(i => i.category === cat).length;
-        if (cnt === 0) return "";
-        return `<button class="sec-btn ${activeIngredientCat === cat ? "active" : ""}" onclick="setIngredientCat('${cat}')">${tIngCat(cat)}<span class="badge-count">${cnt}</span></button>`;
-      }).join("")}
     </div>`;
 
-  if (!filtered.length) {
+  if (totalIngredients > 0) {
+    h += `<div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:16px">
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--accent)">${totalIngredients}</div>
+        <div class="stat-label">${icon("tag", 14)} ${t("ing_title")}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--text);font-size:20px">${fmtMoney(avgCost)}</div>
+        <div class="stat-label">${icon("dollar-sign", 14)} ${t("ing_field_cost")}</div>
+      </div>
+    </div>`;
+  }
+
+  if (totalIngredients === 0) {
     h += `<div class="empty">
       <div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("utensils", 48)}</div>
       ${t("ing_no_ingredients")}
     </div>`;
-  } else {
-    // Grille de cartes ingrédients
-    h += `<div class="ing-grid">`;
-    filtered.forEach(ing => {
-      h += `<div class="ing-card">
-        <div class="ing-card__head">
-          <div class="ing-card__name">${ing.name || "?"}</div>
+    return h + `</div>`;
+  }
+
+  // Liste groupée par catégorie (ordre prédéfini)
+  // Catégories ordonnées : Base, Protéine, Garniture, Sauce, Légume, Boisson, Dessert, Autre
+  INGREDIENT_CATEGORIES.forEach(cat => {
+    const items = ingredients.filter(i => i.category === cat)
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    if (items.length === 0) return;
+
+    h += `<section class="ing-section">
+      <h3 class="ing-section__title">
+        <span class="ing-section__title-icon">${icon("folder", 14)}</span>
+        ${tIngCat(cat)}
+        <span class="ing-section__count">${items.length}</span>
+      </h3>`;
+
+    if (isMobile) {
+      // Mobile : liste compacte une ligne par item
+      h += `<div class="ing-list-mobile">`;
+      items.forEach(ing => {
+        h += `<div class="ing-row-mobile">
+          <div class="ing-row-mobile__main">
+            <div class="ing-row-mobile__name">${esc(ing.name || "?")}</div>
+            ${ing.notes ? `<div class="ing-row-mobile__notes">${esc(ing.notes)}</div>` : ""}
+          </div>
+          <div class="ing-row-mobile__price">
+            ${fmtMoney(ing.costPerUnit || 0)}
+            <small>/ ${esc(ing.unit || "—")}</small>
+          </div>
           ${isAdmin ? `<div class="menu-wrap">
             <button class="dots-btn" onclick="toggleDrop('ing${ing.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
             <div class="dropdown" id="drop-ing${ing.id}">
@@ -1670,14 +1713,42 @@ function renderIngredients() {
               <button style="color:var(--status-red)" onclick="askDelete('ingredients','${ing.id}','${esc(ing.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
             </div>
           </div>` : ""}
-        </div>
-        <div class="ing-card__price">${fmtMoney(ing.costPerUnit || 0)}<span class="ing-card__unit">/ ${ing.unit || "—"}</span></div>
-        ${ing.category ? `<div class="ing-card__cat">${tIngCat(ing.category)}</div>` : ""}
-        ${ing.notes ? `<div class="ing-card__notes">${ing.notes}</div>` : ""}
-      </div>`;
-    });
-    h += `</div>`;
-  }
+        </div>`;
+      });
+      h += `</div>`;
+    } else {
+      // Desktop : tableau
+      h += `<div class="table-wrap" style="margin-bottom:24px">
+        <table>
+          <thead><tr>
+            <th>${t("ing_field_name")}</th>
+            <th style="width:80px">${t("ing_field_unit")}</th>
+            <th style="width:120px;text-align:right">${t("ing_field_cost")}</th>
+            <th style="width:200px;color:var(--text3)">${t("ing_field_notes")}</th>
+            ${isAdmin ? `<th style="width:50px"></th>` : ""}
+          </tr></thead>
+          <tbody>`;
+      items.forEach(ing => {
+        h += `<tr>
+          <td><strong>${esc(ing.name || "?")}</strong></td>
+          <td style="color:var(--text2)">${esc(ing.unit || "—")}</td>
+          <td style="text-align:right;font-family:var(--font-heading);font-weight:700;font-style:italic;color:var(--accent)">${fmtMoney(ing.costPerUnit || 0)}</td>
+          <td style="color:var(--text3);font-size:12px;font-style:italic">${esc(ing.notes || "")}</td>
+          ${isAdmin ? `<td><div class="menu-wrap">
+            <button class="dots-btn" onclick="toggleDrop('ing${ing.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
+            <div class="dropdown" id="drop-ing${ing.id}">
+              <button onclick="openIngredientModal('${ing.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+              <div class="sep"></div>
+              <button style="color:var(--status-red)" onclick="askDelete('ingredients','${ing.id}','${esc(ing.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
+            </div>
+          </div></td>` : ""}
+        </tr>`;
+      });
+      h += `</tbody></table></div>`;
+    }
+    h += `</section>`;
+  });
+
   return h + `</div>`;
 }
 
@@ -1734,16 +1805,223 @@ async function saveIngredient(id) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PAGE RECETTES — Analyse rentabilité des items du menu
+// PAGE RECETTES — Livre de cuisine pour préparation des plats
+// (Indépendante du menu, accessible aux admins ET employés)
 // ═══════════════════════════════════════════════════════════════
 
-let recipesFilter = "with"; // 'all', 'with', 'without'
-let recipesSort = "margin"; // 'margin', 'price', 'name'
+const RECIPE_CATEGORIES = ["main", "starter", "dessert", "drink", "sauce", "base", "other"];
 
-function setRecipesFilter(f) { recipesFilter = f; renderPage(); }
-function setRecipesSort(s) { recipesSort = s; renderPage(); }
+function tRecipeCat(cat) {
+  const map = {
+    main: t("rec_cat_main"),
+    starter: t("rec_cat_starter"),
+    dessert: t("rec_cat_dessert"),
+    drink: t("rec_cat_drink"),
+    sauce: t("rec_cat_sauce"),
+    base: t("rec_cat_base"),
+    other: t("rec_cat_other"),
+  };
+  return map[cat] || cat;
+}
+
+function setRecipeFilter(f) { recipeFilter = f; renderPage(); }
 
 function renderRecettes() {
+  // Filtrage par catégorie
+  let filtered = recipeFilter === "all"
+    ? recipes
+    : recipes.filter(r => r.category === recipeFilter);
+
+  let h = `<div class="page">
+    <div class="toolbar">
+      <div>
+        <h2 style="font-size:18px">${t("rec_title")}</h2>
+        <p style="font-size:13px;color:var(--text3);margin-top:2px">${t("rec_subtitle")}</p>
+      </div>
+      ${isAdmin ? `<button class="btn btn-primary" onclick="openRecipeModal()">${icon("plus", 16)} ${t("rec_add")}</button>` : ""}
+    </div>`;
+
+  // Filtres par catégorie (seulement si recettes existent)
+  if (recipes.length > 0) {
+    h += `<div class="section-tabs section-tabs--scroll" role="tablist" aria-label="${t("filter_by_category")}">
+      <button class="sec-btn ${recipeFilter === "all" ? "active" : ""}" onclick="setRecipeFilter('all')">${t("rec_filter_all")}<span class="badge-count">${recipes.length}</span></button>
+      ${RECIPE_CATEGORIES.map(cat => {
+        const cnt = recipes.filter(r => r.category === cat).length;
+        if (cnt === 0) return "";
+        return `<button class="sec-btn ${recipeFilter === cat ? "active" : ""}" onclick="setRecipeFilter('${cat}')">${tRecipeCat(cat)}<span class="badge-count">${cnt}</span></button>`;
+      }).join("")}
+    </div>`;
+  }
+
+  if (filtered.length === 0) {
+    h += `<div class="empty">
+      <div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("file-text", 48)}</div>
+      ${t("rec_no_recipes")}
+    </div>`;
+  } else {
+    h += `<div class="recipes-grid">`;
+    filtered.forEach(r => {
+      const totalTime = (Number(r.prepTime) || 0) + (Number(r.cookTime) || 0);
+      const ingCount = (r.ingredients || "").trim().split(/\n/).filter(l => l.trim()).length;
+
+      h += `<div class="recipe-book-card" onclick="openRecipeViewModal('${r.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openRecipeViewModal('${r.id}')}">
+        <div class="recipe-book-card__head">
+          <div style="flex:1;min-width:0">
+            <h3 class="recipe-book-card__name">${esc(r.name || "?")}</h3>
+            ${r.category ? `<div class="recipe-book-card__cat">${tRecipeCat(r.category)}</div>` : ""}
+          </div>
+          ${isAdmin ? `<div class="menu-wrap" onclick="event.stopPropagation()">
+            <button class="dots-btn" onclick="toggleDrop('rec${r.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
+            <div class="dropdown" id="drop-rec${r.id}">
+              <button onclick="openRecipeModal('${r.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+              <div class="sep"></div>
+              <button style="color:var(--status-red)" onclick="askDelete('recipes','${r.id}','${esc(r.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
+            </div>
+          </div>` : ""}
+        </div>
+
+        ${r.description ? `<div class="recipe-book-card__desc">${esc(r.description)}</div>` : ""}
+
+        <div class="recipe-book-card__meta">
+          ${totalTime > 0 ? `<span class="icon-inline">${icon("clock", 13)} ${totalTime} ${t("rec_minutes")}</span>` : ""}
+          ${r.servings ? `<span class="icon-inline">${icon("users", 13)} ${r.servings} ${r.servings > 1 ? t("rec_servings_label_pl") : t("rec_servings_label")}</span>` : ""}
+          ${ingCount > 0 ? `<span class="icon-inline">${icon("tag", 13)} ${ingCount} ${ingCount > 1 ? t("chart_categories_pl") : t("chart_categories")}</span>` : ""}
+        </div>
+      </div>`;
+    });
+    h += `</div>`;
+  }
+
+  return h + `</div>`;
+}
+
+// ── Modal Visualisation Recette (lecture seule, pour cuisinier) ──
+function openRecipeViewModal(id) {
+  const r = recipes.find(x => x.id === id);
+  if (!r) return;
+  const totalTime = (Number(r.prepTime) || 0) + (Number(r.cookTime) || 0);
+
+  showModal(`<div class="modal" style="max-width:640px;padding:0">
+    <div class="recipe-view__header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
+        <div style="flex:1;min-width:0">
+          <h2 class="recipe-view__title">${esc(r.name || "?")}</h2>
+          ${r.description ? `<p class="recipe-view__desc">${esc(r.description)}</p>` : ""}
+          ${r.category ? `<span class="recipe-view__cat">${tRecipeCat(r.category)}</span>` : ""}
+        </div>
+        <div style="display:flex;gap:6px;flex-shrink:0">
+          <button class="btn-icon-only" onclick="window.print()" aria-label="${t("rec_print")}" title="${t("rec_print")}">${icon("printer", 16)}</button>
+          ${isAdmin ? `<button class="btn-icon-only" onclick="closeModal();openRecipeModal('${r.id}')" aria-label="${t("dropdown_edit")}" title="${t("dropdown_edit")}">${icon("pencil", 16)}</button>` : ""}
+          <button class="btn-icon-only" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 16)}</button>
+        </div>
+      </div>
+
+      <div class="recipe-view__meta">
+        ${r.servings ? `<div class="recipe-view__meta-item">${icon("users", 18)}<div><div class="recipe-view__meta-label">${t("rec_field_servings")}</div><div class="recipe-view__meta-value">${r.servings}</div></div></div>` : ""}
+        ${r.prepTime ? `<div class="recipe-view__meta-item">${icon("clock", 18)}<div><div class="recipe-view__meta-label">${t("rec_field_prep_time")}</div><div class="recipe-view__meta-value">${r.prepTime} ${t("rec_minutes")}</div></div></div>` : ""}
+        ${r.cookTime ? `<div class="recipe-view__meta-item">${icon("utensils", 18)}<div><div class="recipe-view__meta-label">${t("rec_field_cook_time")}</div><div class="recipe-view__meta-value">${r.cookTime} ${t("rec_minutes")}</div></div></div>` : ""}
+        ${totalTime > 0 ? `<div class="recipe-view__meta-item">${icon("trending-up", 18)}<div><div class="recipe-view__meta-label">${t("rec_total_time")}</div><div class="recipe-view__meta-value"><strong>${totalTime} ${t("rec_minutes")}</strong></div></div></div>` : ""}
+      </div>
+    </div>
+
+    <div class="recipe-view__body">
+      <section class="recipe-view__section">
+        <h3 class="recipe-view__section-title">${icon("tag", 16)} ${t("rec_field_ingredients")}</h3>
+        <div class="recipe-view__ingredients">
+          ${r.ingredients ? r.ingredients.split(/\n/).filter(l => l.trim()).map(line =>
+            `<div class="recipe-view__ing-line">• ${esc(line.trim())}</div>`
+          ).join("") : `<div style="color:var(--text3);font-style:italic">${t("rec_no_ingredients")}</div>`}
+        </div>
+      </section>
+
+      <section class="recipe-view__section">
+        <h3 class="recipe-view__section-title">${icon("file-text", 16)} ${t("rec_field_steps")}</h3>
+        <ol class="recipe-view__steps">
+          ${r.steps ? r.steps.split(/\n/).filter(l => l.trim()).map(line =>
+            `<li>${esc(line.trim())}</li>`
+          ).join("") : `<div style="color:var(--text3);font-style:italic">${t("rec_no_steps")}</div>`}
+        </ol>
+      </section>
+
+      ${r.tips ? `<section class="recipe-view__tips">
+        <h3 class="recipe-view__section-title">${icon("lightbulb", 16)} ${t("rec_field_tips")}</h3>
+        <p>${esc(r.tips)}</p>
+      </section>` : ""}
+    </div>
+  </div>`);
+}
+
+// ── Modal Édition Recette (admin) ──
+function openRecipeModal(id) {
+  const r = id ? recipes.find(x => x.id === id) : null;
+  showModal(`<div class="modal" style="max-width:640px">
+    <div class="modal-header">
+      <h3>${r ? t("rec_modal_edit") : t("rec_modal_add")}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
+    </div>
+
+    <label>${t("rec_field_name")}<input id="rec-name" value="${esc(r?.name || "")}"/></label>
+    <label>${t("rec_field_desc")}<textarea id="rec-desc" style="height:50px">${esc(r?.description || "")}</textarea></label>
+
+    <div class="form-row">
+      <label>${t("rec_field_category")}
+        <select id="rec-cat">
+          ${RECIPE_CATEGORIES.map(c => `<option value="${c}" ${(r?.category || "main") === c ? "selected" : ""}>${tRecipeCat(c)}</option>`).join("")}
+        </select>
+      </label>
+      <label>${t("rec_field_servings")}<input id="rec-servings" type="number" min="1" value="${r?.servings || 1}"/></label>
+    </div>
+
+    <div class="form-row">
+      <label>${t("rec_field_prep_time")}<input id="rec-prep" type="number" min="0" value="${r?.prepTime || ""}"/></label>
+      <label>${t("rec_field_cook_time")}<input id="rec-cook" type="number" min="0" value="${r?.cookTime || ""}"/></label>
+    </div>
+
+    <label>${t("rec_field_ingredients")}
+      <textarea id="rec-ingredients" style="height:120px;font-family:var(--font-body)">${esc(r?.ingredients || "")}</textarea>
+      <small class="field-hint">${t("rec_field_ingredients_hint")}</small>
+    </label>
+
+    <label>${t("rec_field_steps")}
+      <textarea id="rec-steps" style="height:160px;font-family:var(--font-body)">${esc(r?.steps || "")}</textarea>
+      <small class="field-hint">${t("rec_field_steps_hint")}</small>
+    </label>
+
+    <label>${t("rec_field_tips")}<textarea id="rec-tips" style="height:60px">${esc(r?.tips || "")}</textarea></label>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveRecipe('${id || ""}')">${t("save")}</button>
+    </div>
+  </div>`);
+}
+
+async function saveRecipe(id) {
+  const name = document.getElementById("rec-name").value.trim();
+  if (!name) return alert(t("err_enter_name"));
+  const data = {
+    name,
+    description: document.getElementById("rec-desc").value.trim(),
+    category: document.getElementById("rec-cat").value,
+    servings: Number(document.getElementById("rec-servings").value) || 1,
+    prepTime: Number(document.getElementById("rec-prep").value) || 0,
+    cookTime: Number(document.getElementById("rec-cook").value) || 0,
+    ingredients: document.getElementById("rec-ingredients").value,
+    steps: document.getElementById("rec-steps").value,
+    tips: document.getElementById("rec-tips").value.trim(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+  };
+  if (id) await db.collection("recipes").doc(id).update(data);
+  else { const nid = genId(); await db.collection("recipes").doc(nid).set({ ...data, id: nid, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+  closeModal();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LEGACY : ancienne page Recettes (analyse rentabilité du menu)
+// Renommée en renderMenuAnalysis - non utilisée pour l'instant
+// ═══════════════════════════════════════════════════════════════
+
+function renderMenuAnalysisLEGACY() {
   // Calcul pour chaque item du menu
   const enriched = menuItems.map(m => {
     const foodCost = computeRecipeFoodCost(m.recipe || []);

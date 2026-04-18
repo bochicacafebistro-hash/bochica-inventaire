@@ -3,6 +3,7 @@ function buildSidebar() {
   const nav = document.getElementById("sidebar-nav"); if (!nav) return;
   const employeeNav = [
     { icon: "package", label: t("nav_inventaire"), page: "inventaire" },
+    { icon: "file-text", label: t("nav_recipes"), page: "recettes" },
     { icon: "clipboard", label: t("nav_my_tasks"), page: "taches" }
   ];
   const adminNav = [
@@ -124,7 +125,7 @@ function renderPage() {
   }
   else if (activePage === "menu" && isAdmin) pc.innerHTML = renderMenu();
   else if (activePage === "ingredients" && isAdmin) pc.innerHTML = renderIngredients();
-  else if (activePage === "recettes" && isAdmin) pc.innerHTML = renderRecettes();
+  else if (activePage === "recettes") pc.innerHTML = renderRecettes(); // Accessible aux employés
   else if (activePage === "fournisseurs") pc.innerHTML = renderFournisseurs();
   else pc.innerHTML = `<div class="page"><div class="empty">Accès non autorisé.</div></div>`;
 }
