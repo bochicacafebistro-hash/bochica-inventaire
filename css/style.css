@@ -170,6 +170,32 @@ h1,h2,h3,h4,h5,h6{font-family:var(--font-heading);font-optical-sizing:auto}
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   ICÔNES (Lucide SVG)
+   ═══════════════════════════════════════════════════════════════ */
+
+svg{flex-shrink:0;vertical-align:middle}
+.icon-inline{display:inline-flex;align-items:center;gap:6px;line-height:1}
+.icon-stroke-thin svg{stroke-width:1.5}
+.icon-stroke-thick svg{stroke-width:2.5}
+
+/* Bouton avec icône uniquement (carré) */
+.btn-icon-only{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:36px;
+  height:36px;
+  padding:0;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text2);
+  border-radius:var(--radius-md);
+  cursor:pointer;
+  transition:var(--transition-fast);
+}
+.btn-icon-only:hover{background:var(--surface2);color:var(--accent);border-color:var(--accent)}
+
+/* ═══════════════════════════════════════════════════════════════
    LAYOUT
    ═══════════════════════════════════════════════════════════════ */
 
@@ -666,7 +692,7 @@ input:focus,select:focus,textarea:focus{
 .field-hint{font-size:var(--fs-xs);color:var(--text3);font-weight:400;margin-top:2px}
 
 /* ═══════════════════════════════════════════════════════════════
-   INVENTAIRE — Cartes mobile
+   INVENTAIRE — Cartes (anciennes, conservées pour rétrocompat)
    ═══════════════════════════════════════════════════════════════ */
 
 .inv-card{
@@ -683,6 +709,7 @@ input:focus,select:focus,textarea:focus{
   border-radius:var(--radius-md);
   padding:var(--sp-3) var(--sp-4);
   flex:1;
+  min-width:0;
 }
 .inv-card-label{
   font-size:10px;
@@ -695,6 +722,225 @@ input:focus,select:focus,textarea:focus{
 .inv-card-value{font-family:var(--font-heading);font-weight:700;font-size:var(--fs-xl)}
 .inv-card-sub{font-size:10px;color:var(--text3);margin-top:var(--sp-1)}
 .note-badge{font-size:var(--fs-xs);color:var(--text3);font-style:italic;margin-top:var(--sp-1);font-family:var(--font-heading)}
+
+/* ═══════════════════════════════════════════════════════════════
+   INVENTAIRE — Cartes mobile (NOUVEAU design touch-friendly)
+   Largeur 100% garantie, lisibilité max, ergonomie tactile
+   ═══════════════════════════════════════════════════════════════ */
+
+.inv-card-mobile{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:4px solid var(--text3); /* surchargé par status */
+  border-radius:var(--radius-lg);
+  padding:var(--sp-4);
+  margin-bottom:var(--sp-3);
+  box-shadow:var(--shadow-sm);
+  width:100%;
+  max-width:100%;
+  box-sizing:border-box;
+  overflow-wrap:anywhere;
+  word-wrap:break-word;
+  display:flex;
+  flex-direction:column;
+  gap:var(--sp-3);
+}
+.inv-card-mobile--red{border-left-color:var(--status-red)}
+.inv-card-mobile--yellow{border-left-color:var(--status-yellow)}
+.inv-card-mobile--green{border-left-color:var(--status-green)}
+
+/* En-tête : nom + bouton actions */
+.inv-card-mobile__head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:var(--sp-2);
+  min-width:0;
+}
+.inv-card-mobile__title{
+  flex:1;
+  min-width:0; /* CRITIQUE : permet au texte de se wrap */
+}
+.inv-card-mobile__name{
+  font-family:var(--font-heading);
+  font-size:var(--fs-md);
+  font-weight:700;
+  color:var(--text);
+  margin:0;
+  line-height:1.25;
+  letter-spacing:-.2px;
+  word-break:break-word;
+  overflow-wrap:anywhere;
+}
+.inv-card-mobile__meta{
+  font-size:var(--fs-xs);
+  color:var(--text3);
+  margin-top:var(--sp-1);
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:6px;
+  line-height:1.4;
+}
+.inv-card-mobile__meta strong{color:var(--text2);font-weight:600}
+.inv-card-mobile__sep{color:var(--border-strong)}
+
+/* Note du produit */
+.inv-card-mobile__note{
+  font-size:var(--fs-xs);
+  color:var(--text3);
+  font-style:italic;
+  background:var(--surface2);
+  padding:var(--sp-2) var(--sp-3);
+  border-radius:var(--radius-sm);
+  font-family:var(--font-heading);
+}
+
+/* Stock géant (lisible de loin) */
+.inv-card-mobile__stock{
+  background:var(--surface2);
+  border-radius:var(--radius-md);
+  padding:var(--sp-3) var(--sp-4);
+  text-align:center;
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:4px;
+}
+.inv-card-mobile__stock-label{
+  font-size:10px;
+  color:var(--text3);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:1.5px;
+}
+.inv-card-mobile__stock-value{
+  font-family:var(--font-heading);
+  font-size:48px;
+  font-weight:700;
+  line-height:1;
+  letter-spacing:-2px;
+  margin:2px 0;
+}
+.inv-card-mobile--red .inv-card-mobile__stock-value{color:var(--status-red)}
+.inv-card-mobile--yellow .inv-card-mobile__stock-value{color:var(--status-yellow)}
+.inv-card-mobile--green .inv-card-mobile__stock-value{color:var(--status-green)}
+.inv-card-mobile__badge{
+  margin-top:4px;
+}
+
+/* Section À commander (mode rapport) */
+.inv-card-mobile__order{
+  background:rgba(107,26,31,.05);
+  border:1px solid rgba(107,26,31,.15);
+  border-radius:var(--radius-md);
+  padding:var(--sp-3) var(--sp-4);
+  text-align:center;
+}
+.dark .inv-card-mobile__order{
+  background:rgba(196,75,81,.1);
+  border-color:rgba(196,75,81,.25);
+}
+.inv-card-mobile__order-label{
+  font-size:10px;
+  color:var(--accent);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:1.5px;
+  margin-bottom:4px;
+}
+.inv-card-mobile__order-value{
+  font-family:var(--font-heading);
+  font-size:var(--fs-xl);
+  font-weight:700;
+  color:var(--accent);
+  font-style:italic;
+}
+.inv-card-mobile__order-sub{
+  font-size:11px;
+  color:var(--text3);
+  margin-top:2px;
+}
+
+/* Mise à jour stock — input + bouton */
+.inv-card-mobile__update{
+  background:var(--surface2);
+  border-radius:var(--radius-md);
+  padding:var(--sp-3);
+}
+.inv-card-mobile__update-label{
+  display:block;
+  font-size:11px;
+  color:var(--text2);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:1px;
+  margin-bottom:6px;
+}
+.inv-card-mobile__update-row{
+  display:flex;
+  gap:var(--sp-2);
+  align-items:stretch;
+}
+.inv-card-mobile__input{
+  flex:1;
+  min-width:0;
+  height:48px;
+  font-size:18px;
+  font-weight:600;
+  text-align:center;
+  border:1.5px solid var(--border-strong);
+  border-radius:var(--radius-md);
+  background:var(--surface);
+  color:var(--text);
+  font-family:var(--font-body);
+  padding:0 var(--sp-3);
+}
+.inv-card-mobile__input:focus{
+  border-color:var(--accent);
+  outline:none;
+  box-shadow:0 0 0 3px rgba(107,26,31,.15);
+}
+
+/* Boutons CTA carte mobile */
+.inv-card-mobile__cta{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:6px;
+  height:48px;
+  min-width:48px;
+  padding:0 var(--sp-4);
+  border:none;
+  border-radius:var(--radius-md);
+  font-family:var(--font-body);
+  font-size:var(--fs-base);
+  font-weight:700;
+  cursor:pointer;
+  transition:var(--transition-base);
+  white-space:nowrap;
+  width:100%;
+}
+.inv-card-mobile__cta--primary{
+  background:var(--accent);
+  color:var(--accent-text);
+  width:auto;
+  min-width:56px;
+  padding:0 var(--sp-3);
+}
+.inv-card-mobile__cta--primary:hover,
+.inv-card-mobile__cta--primary:active{
+  background:var(--accent-hover);
+}
+.inv-card-mobile__cta--success{
+  background:var(--status-green);
+  color:#fff;
+}
+.inv-card-mobile__cta--success:hover,
+.inv-card-mobile__cta--success:active{
+  background:var(--success-text);
+}
 
 /* ═══════════════════════════════════════════════════════════════
    DRAG & DROP
@@ -912,6 +1158,58 @@ tr.drag-over td{border-top:2px solid var(--accent)}
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   GRAPHIQUES Chart.js
+   ═══════════════════════════════════════════════════════════════ */
+
+.charts-wrap{
+  display:grid;
+  grid-template-columns:2fr 1fr;
+  gap:var(--sp-4);
+  margin-bottom:var(--sp-6);
+  width:100%;
+}
+.chart-card{
+  display:flex;
+  flex-direction:column;
+  padding:var(--sp-5);
+  min-width:0;
+}
+.chart-card--wide{grid-column:span 1}
+.chart-card__header{margin-bottom:var(--sp-4)}
+.chart-card__title{
+  font-family:var(--font-heading);
+  font-weight:700;
+  font-size:var(--fs-md);
+  color:var(--text);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  letter-spacing:-.2px;
+}
+.chart-card__sub{
+  font-size:var(--fs-xs);
+  color:var(--text3);
+  margin-top:var(--sp-1);
+}
+.chart-canvas-wrap{
+  position:relative;
+  width:100%;
+  height:280px;
+  flex:1;
+  min-height:240px;
+}
+
+@media(max-width:900px){
+  .charts-wrap{grid-template-columns:1fr}
+  .chart-card--wide{grid-column:span 1}
+  .chart-canvas-wrap{height:240px}
+}
+@media(max-width:480px){
+  .chart-canvas-wrap{height:220px}
+  .chart-card{padding:var(--sp-4)}
+}
+
+/* ═══════════════════════════════════════════════════════════════
    RESPONSIVE
    ═══════════════════════════════════════════════════════════════ */
 
@@ -921,7 +1219,23 @@ tr.drag-over td{border-top:2px solid var(--accent)}
   .main{margin-left:0}
   .task-cols{grid-template-columns:1fr}
   .schedule-grid{grid-template-columns:100px repeat(7,1fr);font-size:10px}
-  .page{padding:var(--sp-4)}
-  .topbar{padding:var(--sp-3) var(--sp-4)}
+  .page{padding:var(--sp-3)}
+  .topbar{padding:var(--sp-3) var(--sp-3)}
   .pin-btn{width:58px;height:58px}
+  /* Cartes inventaire : padding adapté mobile */
+  .inv-card-mobile{padding:var(--sp-3)}
+  .inv-card-mobile__stock-value{font-size:42px}
+}
+
+/* Très petits écrans (iPhone SE 375px et moins) */
+@media(max-width:380px){
+  .page{padding:var(--sp-2)}
+  .topbar{padding:var(--sp-2) var(--sp-3)}
+  .inv-card-mobile{padding:var(--sp-3) var(--sp-2);gap:var(--sp-2)}
+  .inv-card-mobile__stock{padding:var(--sp-3) var(--sp-2)}
+  .inv-card-mobile__stock-value{font-size:38px}
+  .inv-card-mobile__name{font-size:var(--fs-base)}
+  .sec-btn{padding:5px var(--sp-3);font-size:12px}
+  .section-tabs{gap:4px}
+  .toolbar{gap:var(--sp-2)}
 }

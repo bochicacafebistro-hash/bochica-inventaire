@@ -33,6 +33,16 @@
   <!-- ═══ Firebase ═══ -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <!-- ═══ Bibliothèques externes (chargées en defer pour pas bloquer le rendu) ═══ -->
+  <!-- Chart.js : graphiques modernes -->
+  <script defer src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js"></script>
+  <!-- SheetJS : export Excel (.xlsx) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- jsPDF : export PDF -->
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js"></script>
+  <!-- jsPDF AutoTable : tableaux dans PDF -->
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.4/dist/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
 
@@ -54,8 +64,8 @@
       </div>
       <nav class="sidebar-nav" id="sidebar-nav" aria-label="Sections de l'application"></nav>
       <div class="sidebar-bottom">
-        <button class="btn-icon-sm" onclick="toggleDark()" title="Mode sombre" aria-label="Basculer le mode sombre" id="dark-btn">🌙</button>
-        <button class="btn-icon-sm" onclick="logout()" title="Déconnexion" aria-label="Se déconnecter">↩ Déconnexion</button>
+        <button class="btn-icon-sm" onclick="toggleDark()" title="Mode sombre" aria-label="Basculer le mode sombre" id="dark-btn"></button>
+        <button class="btn-icon-sm" onclick="logout()" title="Déconnexion" aria-label="Se déconnecter" id="logout-btn"></button>
       </div>
     </aside>
 
@@ -63,7 +73,7 @@
     <main class="main" id="main-area">
       <header class="topbar">
         <div style="display:flex;align-items:center;gap:12px">
-          <button class="btn-icon-sm" onclick="toggleSidebar()" aria-label="Ouvrir/fermer le menu" style="border:1px solid var(--border-strong);color:var(--text2)">☰</button>
+          <button class="btn-icon-sm" onclick="toggleSidebar()" aria-label="Ouvrir/fermer le menu" id="sidebar-toggle-btn" style="border:1px solid var(--border-strong);color:var(--text2)"></button>
           <h1 class="topbar-title" id="topbar-title">Inventaire</h1>
         </div>
         <div class="topbar-right">
@@ -82,6 +92,7 @@
 <!-- ═══ Scripts (ordre critique !) ═══ -->
 <script src="js/config.js"></script>
 <script src="js/state.js"></script>
+<script src="js/icons.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/inventaire.js"></script>
 <script src="js/modals-produits.js"></script>
@@ -94,6 +105,10 @@
 <!-- ═══ Init + PWA Service Worker ═══ -->
 <script>
   initDark();
+  // Injecter les icônes statiques (hamburger, logout, dark) dès que icons.js est chargé
+  document.getElementById("sidebar-toggle-btn").innerHTML = icon("menu", 18);
+  document.getElementById("logout-btn").innerHTML = icon("log-out", 14) + ' <span>Déconnexion</span>';
+  // Le bouton dark est mis à jour par initDark()/toggleDark()
   if (!restoreSession()) showLogin();
 
   // Enregistrer le service worker pour PWA

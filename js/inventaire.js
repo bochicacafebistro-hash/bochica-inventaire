@@ -39,7 +39,7 @@ function renderInventaire() {
   }
 
   if (isAdmin && archivedProducts.length > 0) {
-    h += `<div class="archived-banner"><span>📦 ${archivedProducts.length} produit${archivedProducts.length > 1 ? "s" : ""} archivé${archivedProducts.length > 1 ? "s" : ""}</span>
+    h += `<div class="archived-banner"><span class="icon-inline">${icon("archive", 14)} ${archivedProducts.length} produit${archivedProducts.length > 1 ? "s" : ""} archivé${archivedProducts.length > 1 ? "s" : ""}</span>
       <button onclick="toggleShowArchived()" style="border:1px solid var(--status-yellow);background:none;color:var(--yellow-text);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600">
         ${showArchived ? "Voir actifs" : "Voir archivés"}
       </button></div>`;
@@ -51,18 +51,18 @@ function renderInventaire() {
       const cnt = s === "Toutes" ? lowCount : activeProducts.filter(p => p.section === s && ["red", "yellow"].includes(getStatus(p))).length;
       h += `<button class="sec-btn ${s === activeSection ? "active" : ""}" onclick="setSection('${s}')">${s}${cnt > 0 ? `<span class="badge-count">${cnt}</span>` : ""}</button>`;
     });
-    if (hasMore) h += `<button class="sec-toggle" onclick="toggleSections()">${sectionsExpanded ? "▲" : "▼"}</button>`;
-    if (isAdmin) h += `<button class="sec-btn" onclick="openCategoryModal()" style="border-style:dashed;color:var(--text3)">⚙️</button>`;
+    if (hasMore) h += `<button class="sec-toggle" onclick="toggleSections()" aria-label="${sectionsExpanded ? "Réduire" : "Voir plus"}">${icon(sectionsExpanded ? "chevron-up" : "chevron-down", 14)}</button>`;
+    if (isAdmin) h += `<button class="sec-btn" onclick="openCategoryModal()" aria-label="Gérer les catégories" style="border-style:dashed;color:var(--text3);display:inline-flex;align-items:center">${icon("settings", 14)}</button>`;
     h += `</div>`;
   }
 
   h += `<div class="toolbar">
-    <div class="search-box"><span style="color:var(--text3)">🔍</span><input type="text" placeholder="Rechercher..." value="${searchQuery}" oninput="setSearch(this.value)"/></div>
-    ${isAdmin && !showArchived ? `<button class="btn btn-primary" onclick="openProductModal()">+ Produit</button>` : ""}
+    <div class="search-box"><span style="color:var(--text3);display:flex">${icon("search", 16)}</span><input type="text" placeholder="Rechercher..." value="${searchQuery}" oninput="setSearch(this.value)"/></div>
+    ${isAdmin && !showArchived ? `<button class="btn btn-primary" onclick="openProductModal()">${icon("plus", 16)} Produit</button>` : ""}
   </div>`;
 
   if (!filtered.length) {
-    h += `<div class="empty"><div style="font-size:36px;margin-bottom:8px">${searchQuery ? "🔍" : "📭"}</div>${searchQuery ? "Aucun résultat" : showArchived ? "Aucun produit archivé" : "Aucun produit dans cette section."}</div>`;
+    h += `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon(searchQuery ? "search" : "package", 36)}</div>${searchQuery ? "Aucun résultat" : showArchived ? "Aucun produit archivé" : "Aucun produit dans cette section."}</div>`;
   } else if (isMobile) {
     filtered.forEach(p => { h += buildInvCard(p, true, false); });
   } else {
@@ -77,10 +77,10 @@ function renderInventaire() {
       const borderColor = st === "red" ? "var(--status-red)" : st === "yellow" ? "var(--status-yellow)" : "var(--status-green)";
       const nameColor = st === "red" ? "var(--status-red)" : st === "yellow" ? "var(--status-yellow)" : darkMode ? "var(--text)" : "var(--text)";
       h += `<tr data-id="${p.id}" style="border-left:3px solid ${borderColor}" ${isAdmin && !showArchived ? `draggable="true" ondragstart="dragStart(event,'${p.id}')" ondragover="dragOver(event,'${p.id}')" ondrop="dropOn(event,'${p.id}')" ondragleave="dragLeave(event)" ondragend="dragEnd(event)"` : ""}>
-        ${isAdmin ? `<td style="padding:0 4px">${!showArchived ? `<span class="drag-handle">⠿</span>` : ""}</td>` : ""}
+        ${isAdmin ? `<td style="padding:0 4px">${!showArchived ? `<span class="drag-handle" style="display:inline-flex;align-items:center">${icon("grip-vertical", 16)}</span>` : ""}</td>` : ""}
         <td><strong style="color:${nameColor}">${p.name}</strong>
           ${activeSection === "Toutes" ? `<div style="font-size:11px;color:var(--text3)">${p.section}</div>` : ""}
-          ${p.note ? `<div style="font-size:11px;color:var(--text3);font-style:italic;margin-top:2px">📝 ${p.note}</div>` : ""}
+          ${p.note ? `<div class="icon-inline" style="font-size:11px;color:var(--text3);font-style:italic;margin-top:2px">${icon("file-text", 11)} ${p.note}</div>` : ""}
         </td>
         <td><span style="font-weight:700;color:${borderColor}">${stock}</span></td>
         <td>${!showArchived ? `<input class="stock-input" type="number" placeholder="Qté restante" id="si_${p.id}" style="width:100px" onkeydown="if(event.key==='Enter')commitStock('${p.id}','si_${p.id}')" onblur="commitStock('${p.id}','si_${p.id}')"/>` : "—"}</td>
@@ -88,13 +88,13 @@ function renderInventaire() {
         <td style="font-size:13px;color:var(--text2)">${sup ? sup.name : "—"}</td>
         <td><span class="badge-pill ${st}">${statusLabel(st)}</span></td>
         <td style="font-weight:600;color:var(--accent)">${orderLabel(p)}${p.orderUnit === "boîte" ? `<div style="font-size:11px;color:var(--text3)">${(p.orderQty || 0) * (p.unitsPerBox || 1)} unités</div>` : ""}</td>
-        ${isAdmin ? `<td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('${p.id}')">⋯</button><div class="dropdown" id="drop-${p.id}">
-          <button onclick="openProductModal('${p.id}');closeAllDrops()">✏️ Modifier</button>
-          <button onclick="openNoteModal('${p.id}');closeAllDrops()">📝 Note</button>
-          <button onclick="openMoveModal('${p.id}');closeAllDrops()">📁 Changer catégorie</button>
-          <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${p.archived ? "📤 Restaurer" : "📦 Archiver"}</button>
+        ${isAdmin ? `<td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('${p.id}')" aria-label="Actions">${icon("more-vertical", 16)}</button><div class="dropdown" id="drop-${p.id}">
+          <button onclick="openProductModal('${p.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
+          <button onclick="openNoteModal('${p.id}');closeAllDrops()">${icon("file-text", 14)} Note</button>
+          <button onclick="openMoveModal('${p.id}');closeAllDrops()">${icon("folder", 14)} Changer catégorie</button>
+          <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${icon(p.archived ? "upload" : "archive", 14)} ${p.archived ? "Restaurer" : "Archiver"}</button>
           <div class="sep"></div>
-          <button style="color:var(--status-red)" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">🗑️ Supprimer</button>
+          <button style="color:var(--status-red)" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
         </div></div></td>` : ""}
       </tr>`;
     });
@@ -105,52 +105,76 @@ function renderInventaire() {
 
 function buildInvCard(p, showInput, showOrderBtn) {
   const st = getStatus(p), stock = getCurrentStock(p);
-  const borderColor = st === "red" ? "var(--status-red)" : st === "yellow" ? "var(--status-yellow)" : "var(--status-green)";
-  const nameColor = st === "red" ? "var(--status-red)" : st === "yellow" ? "var(--status-yellow)" : darkMode ? "var(--text)" : "var(--text)";
-  const stockColor = st === "red" ? "var(--status-red)" : st === "yellow" ? "var(--status-yellow)" : "var(--status-green)";
   const sup = p.supplierId ? suppliers.find(s => s.id === p.supplierId) : null;
   const oq = p.orderQty || 0, upb = p.unitsPerBox || 1;
   const oLabel = p.orderUnit === "boîte" ? `${oq} boîte${oq > 1 ? "s" : ""}` : `${oq} unité${oq > 1 ? "s" : ""}`;
   const units = oq * (p.orderUnit === "boîte" ? upb : 1);
   const inputId = `si_m${p.id}`;
-  return `<div class="inv-card" style="border:0.5px solid ${borderColor}">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:${p.note ? 4 : 12}px">
-      <div style="flex:1">
-        <div style="font-weight:700;font-size:15px;color:${nameColor}">${p.name}</div>
-        ${showOrderBtn && sup ? `<div style="font-size:12px;color:var(--text2);margin-top:2px">🏪 ${sup.name}${sup.contact ? ` · ${sup.contact}` : ""}</div>` : ""}
-        ${activeSection === "Toutes" && !showOrderBtn ? `<div style="font-size:11px;color:var(--text3)">${p.section}</div>` : ""}
+  // Classes status pour border-left coloré + pastille
+  const statusClass = `inv-card--${st}`; // inv-card--red / yellow / green
+
+  return `<article class="inv-card-mobile ${statusClass}" data-id="${p.id}">
+    <!-- ── EN-TÊTE : nom + statut + menu ── -->
+    <header class="inv-card-mobile__head">
+      <div class="inv-card-mobile__title">
+        <h3 class="inv-card-mobile__name">${p.name}</h3>
+        <div class="inv-card-mobile__meta">
+          ${activeSection === "Toutes" && !showOrderBtn ? `<span>${p.section}</span>` : ""}
+          ${activeSection === "Toutes" && !showOrderBtn ? `<span class="inv-card-mobile__sep">·</span>` : ""}
+          <span>Min : <strong>${p.minimum || 0}</strong></span>
+          ${oq > 0 ? `<span class="inv-card-mobile__sep">·</span><span>Cmd : <strong>${oLabel}</strong></span>` : ""}
+          ${showOrderBtn && sup ? `<span class="inv-card-mobile__sep">·</span><span class="icon-inline">${icon("store", 11)} ${sup.name}</span>` : ""}
+        </div>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:8px">
-        <span class="badge-pill ${st}">${statusLabel(st)}</span>
-        ${isAdmin && showInput ? `<div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('m${p.id}')">⋯</button><div class="dropdown" id="drop-m${p.id}">
-          <button onclick="openProductModal('${p.id}');closeAllDrops()">✏️ Modifier</button>
-          <button onclick="openNoteModal('${p.id}');closeAllDrops()">📝 Note</button>
-          <button onclick="openMoveModal('${p.id}');closeAllDrops()">📁 Changer catégorie</button>
-          <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${p.archived ? "📤 Restaurer" : "📦 Archiver"}</button>
-          <div class="sep"></div>
-          <button style="color:var(--status-red)" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">🗑️ Supprimer</button>
-        </div></div>` : ""}
-      </div>
+      ${isAdmin && showInput ? `
+        <div class="menu-wrap">
+          <button class="dots-btn" onclick="toggleDrop('m${p.id}')" aria-label="Actions">${icon("more-vertical", 18)}</button>
+          <div class="dropdown" id="drop-m${p.id}">
+            <button onclick="openProductModal('${p.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
+            <button onclick="openNoteModal('${p.id}');closeAllDrops()">${icon("file-text", 14)} Note</button>
+            <button onclick="openMoveModal('${p.id}');closeAllDrops()">${icon("folder", 14)} Changer catégorie</button>
+            <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${icon(p.archived ? "upload" : "archive", 14)} ${p.archived ? "Restaurer" : "Archiver"}</button>
+            <div class="sep"></div>
+            <button style="color:var(--status-red)" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
+          </div>
+        </div>
+      ` : ""}
+    </header>
+
+    ${p.note ? `<div class="inv-card-mobile__note icon-inline">${icon("file-text", 12)} ${p.note}</div>` : ""}
+
+    <!-- ── STOCK GÉANT (très lisible) ── -->
+    <div class="inv-card-mobile__stock">
+      <div class="inv-card-mobile__stock-label">Stock actuel</div>
+      <div class="inv-card-mobile__stock-value">${stock}</div>
+      <span class="badge-pill ${st} inv-card-mobile__badge">${statusLabel(st)}</span>
     </div>
-    ${p.note ? `<div class="note-badge" style="margin-bottom:10px">📝 ${p.note}</div>` : ""}
-    <div class="inv-card-body">
-      <div class="inv-card-block">
-        <div class="inv-card-label">Stock actuel</div>
-        <div class="inv-card-value" style="color:${stockColor}">${stock}</div>
-        <div class="inv-card-sub">Min : ${p.minimum || 0} · Cmd : ${oLabel}</div>
+
+    ${showOrderBtn ? `
+      <!-- ── À COMMANDER ── -->
+      <div class="inv-card-mobile__order">
+        <div class="inv-card-mobile__order-label">À commander</div>
+        <div class="inv-card-mobile__order-value">${oLabel}</div>
+        ${p.orderUnit === "boîte" ? `<div class="inv-card-mobile__order-sub">= ${units} unités</div>` : ""}
       </div>
-      ${showInput ? `<div class="inv-card-block" style="display:flex;flex-direction:column">
-        <div class="inv-card-label">Mettre à jour</div>
-        <input class="stock-input" type="number" placeholder="Qté restante" id="${inputId}" onkeydown="if(event.key==='Enter')commitStock('${p.id}','${inputId}')" onblur="commitStock('${p.id}','${inputId}')" style="width:100%;height:38px;font-size:15px;margin-top:6px"/>
-      </div>` : ""}
-      ${showOrderBtn ? `<div class="inv-card-block">
-        <div class="inv-card-label">À commander</div>
-        <div style="font-weight:700;font-size:15px;color:var(--accent);margin-top:4px">${oLabel}</div>
-        ${p.orderUnit === "boîte" ? `<div style="font-size:11px;color:var(--text3)">${units} unités</div>` : ""}
-      </div>` : ""}
-    </div>
-    ${showOrderBtn ? `<button onclick="openReceiveModal('${p.id}')" style="width:100%;margin-top:12px;background:var(--status-green);color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer">📦 Réceptionner la commande</button>` : ""}
-  </div>`;
+      <button class="inv-card-mobile__cta inv-card-mobile__cta--success" onclick="openReceiveModal('${p.id}')">
+        ${icon("package", 16)} Réceptionner la commande
+      </button>
+    ` : ""}
+
+    ${showInput ? `
+      <!-- ── MISE À JOUR DU STOCK (touch-friendly) ── -->
+      <div class="inv-card-mobile__update">
+        <label class="inv-card-mobile__update-label" for="${inputId}">Nouvelle quantité</label>
+        <div class="inv-card-mobile__update-row">
+          <input class="inv-card-mobile__input" type="number" inputmode="numeric" placeholder="Qté restante" id="${inputId}" onkeydown="if(event.key==='Enter')commitStock('${p.id}','${inputId}')" />
+          <button class="inv-card-mobile__cta inv-card-mobile__cta--primary" onclick="commitStock('${p.id}','${inputId}')" aria-label="Sauvegarder le stock">
+            ${icon("check", 18)}
+          </button>
+        </div>
+      </div>
+    ` : ""}
+  </article>`;
 }
 
 async function commitStock(id, inputId) {

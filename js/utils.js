@@ -11,7 +11,9 @@ function getStatus(p) {
 }
 
 function statusLabel(st) {
-  return st === "red" ? "⚠️ Commander" : st === "yellow" ? "🟡 Bientôt bas" : "✅ OK";
+  if (st === "red") return `<span class="icon-inline" style="color:var(--status-red)">${icon("alert", 13)} Commander</span>`;
+  if (st === "yellow") return `<span class="icon-inline" style="color:var(--status-yellow)">${icon("clock", 13)} Bientôt bas</span>`;
+  return `<span class="icon-inline" style="color:var(--status-green)">${icon("check", 13)} OK</span>`;
 }
 
 function orderLabel(p) {
@@ -43,7 +45,11 @@ function toggleDark() { darkMode = !darkMode; localStorage.setItem("bochica-dark
 function applyDark() {
   document.body.classList.toggle("dark", darkMode);
   const b = document.getElementById("dark-btn");
-  if (b) b.textContent = darkMode ? "☀️" : "🌙";
+  if (b) {
+    b.innerHTML = icon(darkMode ? "sun" : "moon", 14);
+    b.setAttribute("aria-label", darkMode ? "Activer le mode clair" : "Activer le mode sombre");
+    b.setAttribute("title", darkMode ? "Mode clair" : "Mode sombre");
+  }
 }
 
 // ── Dropdown ──────────────────────────────────────────
@@ -57,11 +63,13 @@ function closeModal() { document.getElementById("modals").innerHTML = ""; }
 function openConfirm(title, msg, action, isDanger = false) {
   pendingConfirm = action;
   showModal(`<div class="modal" style="max-width:380px">
-    <div class="modal-header"><h3>${title}</h3></div>
+    <div class="modal-header"><h3>${title}</h3><button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button></div>
     <p style="color:var(--text2);font-size:14px;margin-bottom:20px;line-height:1.6">${msg}</p>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button style="background:${isDanger ? "var(--status-red)" : "var(--status-green)"};color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px" onclick="confirmAction()">${isDanger ? "Supprimer" : "Confirmer"}</button>
+      <button style="background:${isDanger ? "var(--status-red)" : "var(--status-green)"};color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px;display:inline-flex;align-items:center;gap:6px" onclick="confirmAction()">
+        ${icon(isDanger ? "trash" : "check", 14)} ${isDanger ? "Supprimer" : "Confirmer"}
+      </button>
     </div>
   </div>`);
 }
