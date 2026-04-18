@@ -21,53 +21,54 @@ function renderInventaire() {
     h += `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
       <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:14px 16px">
         <div style="font-size:22px;font-weight:700;color:var(--accent)">${activeProducts.length}</div>
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Produits</div>
+        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">${t("stock_products")}</div>
       </div>
       <div style="background:var(--status-red-bg);border:0.5px solid var(--status-red-border);border-radius:10px;padding:14px 16px">
         <div style="font-size:22px;font-weight:700;color:var(--status-red)">${redCount}</div>
-        <div style="font-size:10px;color:var(--status-red);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">À commander</div>
+        <div style="font-size:10px;color:var(--status-red);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">${t("stock_to_order")}</div>
       </div>
       <div style="background:var(--status-yellow-bg);border:0.5px solid var(--status-yellow-border);border-radius:10px;padding:14px 16px">
         <div style="font-size:22px;font-weight:700;color:var(--status-yellow)">${yellowCount}</div>
-        <div style="font-size:10px;color:var(--status-yellow);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Bientôt bas</div>
+        <div style="font-size:10px;color:var(--status-yellow);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">${t("stock_low")}</div>
       </div>
       <div style="background:var(--status-green-bg);border:0.5px solid var(--status-green-border);border-radius:10px;padding:14px 16px">
         <div style="font-size:22px;font-weight:700;color:var(--status-green)">${okCount}</div>
-        <div style="font-size:10px;color:var(--status-green);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">En stock</div>
+        <div style="font-size:10px;color:var(--status-green);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">${t("stock_in_stock")}</div>
       </div>
     </div>`;
   }
 
   if (isAdmin && archivedProducts.length > 0) {
-    h += `<div class="archived-banner"><span class="icon-inline">${icon("archive", 14)} ${archivedProducts.length} produit${archivedProducts.length > 1 ? "s" : ""} archivé${archivedProducts.length > 1 ? "s" : ""}</span>
+    h += `<div class="archived-banner"><span class="icon-inline">${icon("archive", 14)} ${t("archived_count", { n: archivedProducts.length })}</span>
       <button onclick="toggleShowArchived()" style="border:1px solid var(--status-yellow);background:none;color:var(--yellow-text);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600">
-        ${showArchived ? "Voir actifs" : "Voir archivés"}
+        ${showArchived ? t("view_active") : t("view_archived")}
       </button></div>`;
   }
 
   if (!showArchived) {
-    h += `<div class="section-tabs section-tabs--scroll" role="tablist" aria-label="Filtrer par catégorie">`;
+    h += `<div class="section-tabs section-tabs--scroll" role="tablist" aria-label="${t("filter_by_category")}">`;
     visibleSecs.forEach(s => {
       const cnt = s === "Toutes" ? lowCount : activeProducts.filter(p => p.section === s && ["red", "yellow"].includes(getStatus(p))).length;
-      h += `<button class="sec-btn ${s === activeSection ? "active" : ""}" role="tab" aria-selected="${s === activeSection}" onclick="setSection('${s}')">${s}${cnt > 0 ? `<span class="badge-count">${cnt}</span>` : ""}</button>`;
+      h += `<button class="sec-btn ${s === activeSection ? "active" : ""}" role="tab" aria-selected="${s === activeSection}" onclick="setSection('${s}')">${tSection(s)}${cnt > 0 ? `<span class="badge-count">${cnt}</span>` : ""}</button>`;
     });
-    if (isAdmin) h += `<button class="sec-btn sec-btn--manage" onclick="openCategoryModal()" aria-label="Gérer les catégories">${icon("settings", 14)}</button>`;
+    if (isAdmin) h += `<button class="sec-btn sec-btn--manage" onclick="openCategoryModal()" aria-label="${t("manage_categories")}">${icon("settings", 14)}</button>`;
     h += `</div>`;
   }
 
   h += `<div class="toolbar">
-    <div class="search-box"><span style="color:var(--text3);display:flex">${icon("search", 16)}</span><input type="text" placeholder="Rechercher..." value="${searchQuery}" oninput="setSearch(this.value)"/></div>
-    ${isAdmin && !showArchived ? `<button class="btn btn-primary" onclick="openProductModal()">${icon("plus", 16)} Produit</button>` : ""}
+    <div class="search-box"><span style="color:var(--text3);display:flex">${icon("search", 16)}</span><input type="text" placeholder="${t("search")}" value="${searchQuery}" oninput="setSearch(this.value)"/></div>
+    ${isAdmin && !showArchived ? `<button class="btn btn-primary" onclick="openProductModal()">${icon("plus", 16)} ${t("add_product")}</button>` : ""}
   </div>`;
 
   if (!filtered.length) {
-    h += `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon(searchQuery ? "search" : "package", 36)}</div>${searchQuery ? "Aucun résultat" : showArchived ? "Aucun produit archivé" : "Aucun produit dans cette section."}</div>`;
+    const emptyMsg = searchQuery ? t("no_results") : showArchived ? t("no_archived") : t("no_products_section");
+    h += `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon(searchQuery ? "search" : "package", 36)}</div>${emptyMsg}</div>`;
   } else if (isMobile) {
     filtered.forEach(p => { h += buildInvCard(p, true, false); });
   } else {
     h += `<div class="table-wrap overflow"><table><thead><tr>
       ${isAdmin ? `<th style="width:30px"></th>` : ""}
-      <th>Produit</th><th>Stock actuel</th><th>Mettre à jour</th><th>Minimum</th><th>Fournisseur</th><th>Statut</th><th>À commander</th>
+      <th>${t("tbl_product")}</th><th>${t("stock_actual_full")}</th><th>${t("stock_new_qty")}</th><th>${t("tbl_minimum")}</th><th>${t("exp_table_supplier")}</th><th>${t("tbl_status")}</th><th>${t("rapport_to_order_label")}</th>
       ${isAdmin ? `<th></th>` : ""}
     </tr></thead><tbody id="product-tbody">`;
     filtered.forEach(p => {
@@ -82,18 +83,18 @@ function renderInventaire() {
           ${p.note ? `<div class="icon-inline" style="font-size:11px;color:var(--text3);font-style:italic;margin-top:2px">${icon("file-text", 11)} ${p.note}</div>` : ""}
         </td>
         <td><span style="font-weight:700;color:${borderColor}">${stock}</span></td>
-        <td>${!showArchived ? `<input class="stock-input" type="number" placeholder="Qté restante" id="si_${p.id}" style="width:100px" onkeydown="if(event.key==='Enter')commitStock('${p.id}','si_${p.id}')" onblur="commitStock('${p.id}','si_${p.id}')"/>` : "—"}</td>
+        <td>${!showArchived ? `<input class="stock-input" type="number" placeholder="${t(`qty_remaining_ph`)}" id="si_${p.id}" style="width:100px" onkeydown="if(event.key==='Enter')commitStock('${p.id}','si_${p.id}')" onblur="commitStock('${p.id}','si_${p.id}')"/>` : "—"}</td>
         <td style="text-align:center">${p.minimum || 0}</td>
         <td style="font-size:13px;color:var(--text2)">${sup ? sup.name : "—"}</td>
         <td><span class="badge-pill ${st}">${statusLabel(st)}</span></td>
-        <td style="font-weight:600;color:var(--accent)">${orderLabel(p)}${p.orderUnit === "boîte" ? `<div style="font-size:11px;color:var(--text3)">${(p.orderQty || 0) * (p.unitsPerBox || 1)} unités</div>` : ""}</td>
-        ${isAdmin ? `<td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('${p.id}')" aria-label="Actions">${icon("more-vertical", 16)}</button><div class="dropdown" id="drop-${p.id}">
-          <button onclick="openProductModal('${p.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
-          <button onclick="openNoteModal('${p.id}');closeAllDrops()">${icon("file-text", 14)} Note</button>
-          <button onclick="openMoveModal('${p.id}');closeAllDrops()">${icon("folder", 14)} Changer catégorie</button>
-          <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${icon(p.archived ? "upload" : "archive", 14)} ${p.archived ? "Restaurer" : "Archiver"}</button>
+        <td style="font-weight:600;color:var(--accent)">${orderLabel(p)}${p.orderUnit === "boîte" ? `<div style="font-size:11px;color:var(--text3)">${(p.orderQty || 0) * (p.unitsPerBox || 1)} ${t("unit_units")}</div>` : ""}</td>
+        ${isAdmin ? `<td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('${p.id}')" aria-label="${t(`actions`)}">${icon("more-vertical", 16)}</button><div class="dropdown" id="drop-${p.id}">
+          <button onclick="openProductModal('${p.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+          <button onclick="openNoteModal('${p.id}');closeAllDrops()">${icon("file-text", 14)} ${t("dropdown_note")}</button>
+          <button onclick="openMoveModal('${p.id}');closeAllDrops()">${icon("folder", 14)} ${t("dropdown_change_cat")}</button>
+          <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${icon(p.archived ? "upload" : "archive", 14)} ${p.archived ? t("dropdown_restore") : t("dropdown_archive")}</button>
           <div class="sep"></div>
-          <button style="color:var(--status-red)" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
+          <button style="color:var(--status-red)" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
         </div></div></td>` : ""}
       </tr>`;
     });
@@ -118,21 +119,21 @@ function buildInvCard(p, showInput, showOrderBtn) {
         <h3 class="inv-card-mobile__name">${p.name}</h3>
         <div class="inv-card-mobile__meta">
           ${activeSection === "Toutes" && !showOrderBtn ? `<span>${p.section}</span><span class="inv-card-mobile__sep">·</span>` : ""}
-          <span>Min : <strong>${p.minimum || 0}</strong></span>
-          ${oq > 0 ? `<span class="inv-card-mobile__sep">·</span><span>Cmd : <strong>${oLabel}</strong></span>` : ""}
+          <span>${t("stock_min")} : <strong>${p.minimum || 0}</strong></span>
+          ${oq > 0 ? `<span class="inv-card-mobile__sep">·</span><span>${t("stock_cmd")} : <strong>${oLabel}</strong></span>` : ""}
           ${showOrderBtn && sup ? `<span class="inv-card-mobile__sep">·</span><span class="icon-inline">${icon("store", 11)} ${sup.name}</span>` : ""}
         </div>
       </div>
       ${isAdmin && showInput ? `
         <div class="menu-wrap">
-          <button class="dots-btn" onclick="toggleDrop('m${p.id}')" aria-label="Actions">${icon("more-vertical", 18)}</button>
+          <button class="dots-btn" onclick="toggleDrop('m${p.id}')" aria-label="${t(`actions`)}">${icon("more-vertical", 18)}</button>
           <div class="dropdown" id="drop-m${p.id}">
-            <button onclick="openProductModal('${p.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
-            <button onclick="openNoteModal('${p.id}');closeAllDrops()">${icon("file-text", 14)} Note</button>
-            <button onclick="openMoveModal('${p.id}');closeAllDrops()">${icon("folder", 14)} Changer catégorie</button>
-            <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${icon(p.archived ? "upload" : "archive", 14)} ${p.archived ? "Restaurer" : "Archiver"}</button>
+            <button onclick="openProductModal('${p.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+            <button onclick="openNoteModal('${p.id}');closeAllDrops()">${icon("file-text", 14)} ${t("dropdown_note")}</button>
+            <button onclick="openMoveModal('${p.id}');closeAllDrops()">${icon("folder", 14)} ${t("dropdown_change_cat")}</button>
+            <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${icon(p.archived ? "upload" : "archive", 14)} ${p.archived ? t("dropdown_restore") : t("dropdown_archive")}</button>
             <div class="sep"></div>
-            <button style="color:var(--status-red)" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
+            <button style="color:var(--status-red)" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
           </div>
         </div>
       ` : ""}
@@ -144,14 +145,14 @@ function buildInvCard(p, showInput, showOrderBtn) {
       <!-- ── STOCK + NOUVELLE QTÉ : côte à côte (compact) ── -->
       <div class="inv-card-mobile__row">
         <div class="inv-card-mobile__stock">
-          <div class="inv-card-mobile__stock-label">Stock</div>
+          <div class="inv-card-mobile__stock-label">${t("stock_actual")}</div>
           <div class="inv-card-mobile__stock-value">${stock}</div>
         </div>
         <div class="inv-card-mobile__update">
-          <label class="inv-card-mobile__update-label" for="${inputId}">Nouvelle qté</label>
+          <label class="inv-card-mobile__update-label" for="${inputId}">${t("stock_new_qty")}</label>
           <div class="inv-card-mobile__update-row">
             <input class="inv-card-mobile__input" type="number" inputmode="numeric" placeholder="—" id="${inputId}" onkeydown="if(event.key==='Enter')commitStock('${p.id}','${inputId}')" />
-            <button class="inv-card-mobile__cta-icon" onclick="commitStock('${p.id}','${inputId}')" aria-label="Sauvegarder">${icon("check", 18)}</button>
+            <button class="inv-card-mobile__cta-icon" onclick="commitStock('${p.id}','${inputId}')" aria-label="${t(`stock_save`)}">${icon("check", 18)}</button>
           </div>
         </div>
       </div>
@@ -159,13 +160,13 @@ function buildInvCard(p, showInput, showOrderBtn) {
       <!-- ── Mode "À commander" : Stock + À commander côte à côte ── -->
       <div class="inv-card-mobile__row">
         <div class="inv-card-mobile__stock">
-          <div class="inv-card-mobile__stock-label">Stock</div>
+          <div class="inv-card-mobile__stock-label">${t("stock_actual")}</div>
           <div class="inv-card-mobile__stock-value">${stock}</div>
         </div>
         <div class="inv-card-mobile__order">
-          <div class="inv-card-mobile__order-label">À commander</div>
+          <div class="inv-card-mobile__order-label">${t("rapport_to_order_label")}</div>
           <div class="inv-card-mobile__order-value">${oLabel}</div>
-          ${p.orderUnit === "boîte" ? `<div class="inv-card-mobile__order-sub">= ${units} unités</div>` : ""}
+          ${p.orderUnit === "boîte" ? `<div class="inv-card-mobile__order-sub">= ${units} ${t("rapport_units")}</div>` : ""}
         </div>
       </div>
     `}

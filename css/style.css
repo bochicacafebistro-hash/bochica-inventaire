@@ -1312,7 +1312,7 @@ tr.drag-over td{border-top:2px solid var(--accent)}
   .pin-btn{width:58px;height:58px}
 }
 
-/* Mobile : section-tabs scrollables avec boutons plus gros (touch-friendly) */
+/* Mobile : section-tabs scrollables, sticky, boutons touch-friendly */
 @media(max-width:768px){
   .section-tabs--scroll .sec-btn{
     padding:11px 18px;
@@ -1329,8 +1329,21 @@ tr.drag-over td{border-top:2px solid var(--accent)}
     font-size:11px;
   }
   .section-tabs--scroll{
-    margin-bottom:var(--sp-4);
-    padding-bottom:8px;
+    /* Reste visible quand on scroll les items */
+    position:sticky;
+    top:60px; /* Hauteur approximative de la topbar mobile (padding 12+12 + contenu 36) */
+    z-index:30;
+    background:var(--bg);
+    padding-top:var(--sp-3);
+    padding-bottom:var(--sp-3);
+    margin-top:calc(-1 * var(--sp-3));
+    margin-bottom:var(--sp-3);
+    /* Ombre subtile en bas pour démarquer du contenu qui défile derrière */
+    box-shadow:0 4px 6px -3px rgba(14,14,14,.06);
+    border-bottom:1px solid var(--border);
+  }
+  .dark .section-tabs--scroll{
+    box-shadow:0 4px 6px -3px rgba(0,0,0,.3);
   }
 }
 
@@ -1349,6 +1362,7 @@ tr.drag-over td{border-top:2px solid var(--accent)}
     margin-right:calc(-1 * var(--sp-2));
     padding-left:var(--sp-2);
     padding-right:var(--sp-2);
+    top:52px; /* topbar plus petite sur SE (padding sp-2) */
   }
   .toolbar{gap:var(--sp-2)}
 }

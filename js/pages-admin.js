@@ -7,14 +7,14 @@ function renderEmployes() {
   return `<div class="page">
     <div class="toolbar">
       <h2 style="font-size:18px">Employés & Horaires</h2>
-      <button class="btn btn-primary" onclick="openEmployeeModal()">${icon("plus", 16)} Employé</button>
+      <button class="btn btn-primary" onclick="openEmployeeModal()">${icon("plus", 16)} ${t("emp_add")}</button>
     </div>
     ${employees.length === 0
       ? `<div class="empty"><div style="font-size:36px;margin-bottom:8px">👥</div>Aucun employé enregistré.</div>`
       : `<div class="card" style="margin-bottom:20px;overflow-x:auto">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
           <h3 style="font-size:15px">Horaire — Semaine du ${weekDays[0].toLocaleDateString("fr-CA", { month: "short", day: "numeric" })}</h3>
-          <div style="display:flex;gap:6px">${SHIFT_TYPES.map(s => `<span style="background:${s.color};color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">${s.label}</span>`).join("")}</div>
+          <div style="display:flex;gap:6px">${SHIFT_TYPES.map(s => `<span style="background:${s.color};color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">${tShift(s.label)}</span>`).join("")}</div>
         </div>
         <div class="schedule-grid">
           <div></div>${DAYS_FR.map((d, i) => `<div class="sch-header">${d}<div style="font-size:10px;font-weight:400;color:var(--text3)">${weekDays[i].getDate()}</div></div>`).join("")}
@@ -26,7 +26,7 @@ function renderEmployes() {
               const s = shifts[dk];
               return `<div class="sch-cell ${s ? "has-shift" : ""}" onclick="openShiftModal('${emp.id}','${dk}')">
                 ${s
-                  ? `<div class="shift-tag" style="background:${s.color || "var(--blue)"}">${s.label || ""}
+                  ? `<div class="shift-tag" style="background:${s.color || "var(--blue)"}">${tShift(s.label) || ""}
                       <span onclick="event.stopPropagation();removeShift('${emp.id}','${dk}')" style="cursor:pointer;opacity:.7;margin-left:4px">${icon("x", 18)}</span>
                     </div>`
                   : `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px">+</div>`}
@@ -83,10 +83,10 @@ function openEmployeeModal(id) {
     <label>Code PIN employé<input id="e-pin" type="text" maxlength="4" value="${esc(emp?.pin || "")}" placeholder="4 chiffres (optionnel)"/>
       <span class="field-hint">Pour la connexion à l'application</span>
     </label>
-    <label>Notes<textarea id="e-notes" style="height:60px">${emp?.notes || ""}</textarea></label>
+    <label>${t("exp_table_notes")}<textarea id="e-notes" style="height:60px">${emp?.notes || ""}</textarea></label>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveEmployee('${id || ""}')">Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveEmployee('${id || ""}')">${t("save")}</button>
     </div>
   </div>`);
 }
@@ -113,10 +113,10 @@ function openShiftModal(empId, dayKey) {
     <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Sélectionnez le type de quart :</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       ${SHIFT_TYPES.map(s => `<button onclick="assignShift('${empId}','${dayKey}','${s.label}','${s.color}')"
-        style="background:${s.color};color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer">${s.label}</button>`).join("")}
+        style="background:${s.color};color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer">${tShift(s.label)}</button>`).join("")}
     </div>
     <div class="modal-actions" style="margin-top:12px">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
     </div>
   </div>`);
 }
@@ -149,7 +149,7 @@ async function autoApplyFixedExpenses() {
   if (!templates.length) return;
 
   const batch = db.batch();
-  templates.forEach(t => {
+  templates.forEach(tpl => {
     const nid = genId();
     const ref = db.collection("expenses").doc(nid);
     batch.set(ref, {
@@ -266,18 +266,18 @@ function renderDepenses() {
 
   return `<div class="page">
     <div class="toolbar">
-      <h2 style="font-size:18px">Dépenses & Revenus</h2>
+      <h2 style="font-size:18px">${t("exp_title")}</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="openRevenueModal()">${icon("plus", 16)} Revenu</button>
-        <button class="btn btn-primary" onclick="openExpenseModal()">${icon("plus", 16)} Dépense</button>
-        ${isAdmin ? `<button class="btn btn-secondary" onclick="openCustomReportModal()">${icon("file-spreadsheet", 14)} Rapport</button>` : ""}
-        ${isAdmin ? `<button class="btn btn-secondary" onclick="openExpenseCatModal()">${icon("settings", 14)} Catégories</button>` : ""}
-        ${isAdmin ? `<button class="btn btn-secondary" onclick="openFixedTemplatesModal()">${icon("shield-check", 14)} Frais fixes</button>` : ""}
+        <button class="btn btn-primary" onclick="openExpenseModal()">${icon("plus", 16)} ${t("exp_add_expense")}</button>
+        ${isAdmin ? `<button class="btn btn-secondary" onclick="openCustomReportModal()">${icon("file-spreadsheet", 14)} ${t("exp_report")}</button>` : ""}
+        ${isAdmin ? `<button class="btn btn-secondary" onclick="openExpenseCatModal()">${icon("settings", 14)} ${t("exp_categories")}</button>` : ""}
+        ${isAdmin ? `<button class="btn btn-secondary" onclick="openFixedTemplatesModal()">${icon("shield-check", 14)} ${t("exp_fixed_templates")}</button>` : ""}
       </div>
     </div>
 
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      ${["semaine","mois","année"].map(p => `<button class="sec-btn ${activeExpensePeriod===p?"active":""}" onclick="setExpensePeriod('${p}')">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join("")}
+      ${["semaine","mois","année"].map(p => `<button class="sec-btn ${activeExpensePeriod===p?"active":""}" onclick="setExpensePeriod('${p}')">${({"semaine":t("exp_period_week"),"mois":t("exp_period_month"),"année":t("exp_period_year")})[p]||p}</button>`).join("")}
     </div>
 
     ${monthPicker}
@@ -286,27 +286,27 @@ function renderDepenses() {
     <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:20px">
       <div class="stat-card" style="border-left:4px solid var(--status-green)">
         <div class="stat-num" style="color:var(--status-green)">${fmtMoney(totalRev)}</div>
-        <div class="stat-label">${icon("wallet", 14)} Revenus</div>
+        <div class="stat-label">${icon("wallet", 14)} ${t("exp_revenues")}</div>
       </div>
       <div class="stat-card" style="border-left:4px solid var(--status-red)">
         <div class="stat-num" style="color:var(--status-red)">${fmtMoney(totalExp)}</div>
-        <div class="stat-label">💸 Dépenses (avant taxes)</div>
+        <div class="stat-label">💸 ${t("exp_expenses_pre_tax")}</div>
       </div>
       <div class="stat-card" style="border-left:4px solid var(--status-yellow)">
         <div class="stat-num" style="color:var(--status-yellow);font-size:20px">${fmtMoney(totalTPS+totalTVQ)}</div>
-        <div class="stat-label">🧾 Taxes (TPS+TVQ)</div>
+        <div class="stat-label">🧾 ${t("exp_taxes")}</div>
       </div>
       <div class="stat-card" style="border-left:4px solid ${isProfit?"var(--status-green)":"var(--status-red)"}">
         <div class="stat-num" style="color:${isProfit?"var(--status-green)":"var(--status-red)"}">${fmtMoney(Math.abs(profit))}</div>
-        <div class="stat-label">${isProfit?"📈 Profit":"📉 Déficit"}</div>
+        <div class="stat-label">${isProfit?t("exp_profit"):t("exp_deficit")}</div>
       </div>
       <div class="stat-card" style="border-left:4px solid var(--accent-soft)">
         <div class="stat-num" style="font-size:20px;color:var(--accent-soft)">${fmtMoney(totalFixed)}</div>
-        <div class="stat-label">🔒 Frais fixes</div>
+        <div class="stat-label">🔒 ${t("exp_fixed")}</div>
       </div>
       <div class="stat-card" style="border-left:4px solid var(--text3)">
         <div class="stat-num" style="font-size:20px;color:var(--text3)">${fmtMoney(totalVar)}</div>
-        <div class="stat-label">${icon("bar-chart", 14)} Frais variables</div>
+        <div class="stat-label">${icon("bar-chart", 14)} ${t("exp_variable")}</div>
       </div>
     </div>
 
@@ -315,8 +315,8 @@ function renderDepenses() {
       <!-- Combo bars + line : Revenus vs Dépenses + Profit (6 mois) -->
       <div class="card chart-card chart-card--wide">
         <div class="chart-card__header">
-          <div class="chart-card__title">${icon("trending-up", 16)} Revenus, Dépenses & Profit — 6 derniers mois</div>
-          <div class="chart-card__sub">Survolez les barres pour voir les détails</div>
+          <div class="chart-card__title">${icon("trending-up", 16)} ${t("chart_combo_title")}</div>
+          <div class="chart-card__sub">${t("chart_combo_sub")}</div>
         </div>
         <div class="chart-canvas-wrap"><canvas id="chart-revenue-expense"></canvas></div>
       </div>
@@ -324,11 +324,11 @@ function renderDepenses() {
       <!-- Doughnut : Dépenses par catégorie -->
       <div class="card chart-card">
         <div class="chart-card__header">
-          <div class="chart-card__title">${icon("pie-chart", 16)} Répartition des dépenses</div>
-          <div class="chart-card__sub">${catTotals.length === 0 ? "Aucune dépense" : `${catTotals.length} catégorie${catTotals.length > 1 ? "s" : ""}`}</div>
+          <div class="chart-card__title">${icon("pie-chart", 16)} ${t("chart_pie_title")}</div>
+          <div class="chart-card__sub">${catTotals.length === 0 ? t("chart_pie_no_data") : `${catTotals.length} ${catTotals.length > 1 ? t("chart_categories_pl") : t("chart_categories")}`}</div>
         </div>
         ${catTotals.length === 0
-          ? `<div class="empty" style="margin-top:20px">${icon("pie-chart", 48)}<br/>Aucune dépense pour cette période</div>`
+          ? `<div class="empty" style="margin-top:20px">${icon("pie-chart", 48)}<br/>${t("chart_pie_no_data")}</div>`
           : `<div class="chart-canvas-wrap"><canvas id="chart-categories"></canvas></div>`}
       </div>
     </div>
@@ -347,7 +347,7 @@ function renderDepenses() {
     ${filteredRev.length > 0 ? `
     <h3 style="font-size:15px;margin-bottom:10px">${icon("wallet", 14)} Revenus</h3>
     <div class="table-wrap overflow" style="margin-bottom:20px">
-      <table><thead><tr><th>Période</th><th>Description</th><th>Montant</th><th>TPS</th><th>TVQ</th><th></th></tr></thead>
+      <table><thead><tr><th>${t("exp_table_period")}</th><th>${t("exp_table_desc")}</th><th>${t("exp_table_amount")}</th><th>TPS</th><th>TVQ</th><th></th></tr></thead>
       <tbody>${filteredRev.map(r => `<tr>
         <td style="white-space:nowrap;font-size:12px;color:var(--text2)">${fmtRevenuePeriod(r) || r.date || ""}</td>
         <td><strong>${r.description||""}</strong></td>
@@ -366,9 +366,9 @@ function renderDepenses() {
     <!-- Dépenses -->
     <h3 style="font-size:15px;margin-bottom:10px">💸 Dépenses</h3>
     <div class="table-wrap overflow">
-      <table><thead><tr><th>Date</th><th>Fournisseur</th><th>Catégorie</th><th>Type</th><th>Avant taxes</th><th>TPS</th><th>TVQ</th><th>Total</th><th></th></tr></thead>
+      <table><thead><tr><th>${t("exp_table_date")}</th><th>${t("exp_table_supplier")}</th><th>${t("exp_table_category")}</th><th>Type</th><th>Avant taxes</th><th>TPS</th><th>TVQ</th><th>Total</th><th></th></tr></thead>
       <tbody>${filteredExp.length === 0
-        ? `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px">Aucune dépense pour cette période.</td></tr>`
+        ? `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px">${t("chart_pie_no_data")}.</td></tr>`
         : filteredExp.map(e => {
             const total = Number(e.amount||0) + Number(e.tps||0) + Number(e.tvq||0);
             const type = getExpenseCatType(e.category);
@@ -412,54 +412,54 @@ function openExpenseModal(id) {
   const currentType = e?.type || getExpenseCatType(currentCat);
 
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>${e ? "Modifier" : "Ajouter"} une dépense</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
+    <div class="modal-header"><h3>${e ? t("exp_modal_edit") : t("exp_modal_add")}</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
 
-    <label>Description
+    <label>${t("exp_table_desc")}
       <input id="ex-desc" value="${esc(e?.description||"")}"/>
     </label>
-    <label>Fournisseur (optionnel)
-      <input id="ex-sup" list="ex-sup-list" value="${esc(e?.supplier||"")}" placeholder="Tapez un nom (création auto si nouveau)" autocomplete="off"/>
+    <label>${t("exp_field_supplier")}
+      <input id="ex-sup" list="ex-sup-list" value="${esc(e?.supplier||"")}" placeholder="${t(`exp_field_supplier_ph`)}" autocomplete="off"/>
       <datalist id="ex-sup-list">
         ${suppliers.map(s => `<option value="${esc(s.name)}"></option>`).join("")}
       </datalist>
-      <small class="field-hint">${icon("info", 11)} Si le fournisseur n'existe pas, il sera créé automatiquement à l'enregistrement.</small>
+      <small class="field-hint">${icon("info", 11)} ${t("exp_field_supplier_hint")}</small>
     </label>
 
     <div class="form-row">
-      <label>Catégorie
+      <label>${t("exp_field_category")}
         <select id="ex-cat" onchange="updateExpenseType()">
           ${cats.map(c => `<option value="${c}" ${currentCat===c?"selected":""}>${c}</option>`).join("")}
         </select>
       </label>
-      <label>Type de frais
+      <label>${t("exp_field_type")}
         <select id="ex-type">
-          <option value="variable" ${currentType==="variable"?"selected":""}>${icon("bar-chart", 14)} Variable</option>
-          <option value="fixe" ${currentType==="fixe"?"selected":""}>🔒 Fixe</option>
+          <option value="variable" ${currentType==="variable"?"selected":""}>${icon("bar-chart", 14)} ${t("exp_type_variable")}</option>
+          <option value="fixe" ${currentType==="fixe"?"selected":""}>🔒 ${t("exp_type_fixed")}</option>
         </select>
       </label>
     </div>
 
-    <label>Date<input id="ex-date" type="date" value="${e?.date||today}"/></label>
+    <label>${t("exp_table_date")}<input id="ex-date" type="date" value="${e?.date||today}"/></label>
 
-    <label>Montant avant taxes ($)
+    <label>${t("exp_field_amount_pre")}
       <input id="ex-amt" type="number" step="0.01" value="${e?.amount||""}" oninput="calcExpenseTaxes()"/>
     </label>
 
     <div class="form-row">
-      <label>TPS (5%)
+      <label>${t("exp_field_tps")}
         <input id="ex-tps" type="number" step="0.01" value="${e?.tps||""}"/>
       </label>
-      <label>TVQ (9.975%)
+      <label>${t("exp_field_tvq")}
         <input id="ex-tvq" type="number" step="0.01" value="${e?.tvq||""}"/>
       </label>
     </div>
     <div id="ex-total-preview" style="font-size:13px;color:var(--text2);margin-bottom:10px;text-align:right"></div>
 
-    <label>Notes<textarea id="ex-notes" style="height:60px">${e?.notes||""}</textarea></label>
+    <label>${t("exp_table_notes")}<textarea id="ex-notes" style="height:60px">${e?.notes||""}</textarea></label>
 
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveExpense('${id||""}')">Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveExpense('${id||""}')">${t("save")}</button>
     </div>
   </div>`);
   setTimeout(calcExpenseTaxes, 50);
@@ -481,14 +481,14 @@ function calcExpenseTaxes() {
   if (tvqEl && !tvqEl.dataset.manual) tvqEl.value = amt > 0 ? (amt * TVQ_RATE).toFixed(2) : "";
   const tps = Number(tpsEl?.value) || 0;
   const tvq = Number(tvqEl?.value) || 0;
-  if (prev && amt > 0) prev.innerHTML = `Total avec taxes : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
+  if (prev && amt > 0) prev.innerHTML = `${t("exp_total_with_tax")} : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
 }
 async function saveExpense(id) {
   const sup = document.getElementById("ex-sup").value.trim();
   const desc = document.getElementById("ex-desc").value.trim();
   const amt = Number(document.getElementById("ex-amt").value) || 0;
-  if (!desc) return alert("Entrez une description.");
-  if (!amt) return alert("Entrez un montant.");
+  if (!desc) return alert(t("err_enter_desc"));
+  if (!amt) return alert(t("err_enter_amount"));
 
   // Auto-création du fournisseur si saisi mais non existant
   if (sup) {
@@ -535,35 +535,35 @@ function openRevenueModal(id) {
   const startDate = r?.dateStart || r?.date || today;
   const endDate = r?.dateEnd || "";
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>${r ? "Modifier" : "Ajouter"} un revenu</h3><button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button></div>
+    <div class="modal-header"><h3>${r ? t("rev_modal_edit") : t("rev_modal_add")}</h3><button class="close-btn" onclick="closeModal()" aria-label="${t(`close`)}">${icon("x", 18)}</button></div>
     <label>Description<input id="rv-desc" value="${esc(r?.description||"")}"/></label>
 
     <div class="form-row">
-      <label>Date de début
+      <label>${t("rev_date_start")}
         <input id="rv-date-start" type="date" value="${startDate}" required/>
       </label>
-      <label>Date de fin <span style="font-weight:400;color:var(--text3);font-size:11px">(optionnel)</span>
+      <label>${t("rev_date_end")} <span style="font-weight:400;color:var(--text3);font-size:11px">(optionnel)</span>
         <input id="rv-date-end" type="date" value="${endDate}" min="${startDate}"/>
       </label>
     </div>
-    <small class="field-hint" style="margin-top:-6px;margin-bottom:10px;display:block">${icon("info", 11)} Laissez la date de fin vide pour un revenu ponctuel. Sinon, le revenu couvrira toute la période (utile pour une semaine, un mois, etc.).</small>
+    <small class="field-hint" style="margin-top:-6px;margin-bottom:10px;display:block">${icon("info", 11)} ${t("rev_date_end_hint")}</small>
 
-    <label>Montant ($)
+    <label>${t("exp_field_amount")}
       <input id="rv-amt" type="number" step="0.01" value="${r?.amount||""}" oninput="calcRevenueTaxes()"/>
     </label>
     <div class="form-row">
-      <label>TPS perçue (5%)
+      <label>${t("exp_field_tps_recv")}
         <input id="rv-tps" type="number" step="0.01" value="${r?.tps||""}"/>
       </label>
-      <label>TVQ perçue (9.975%)
+      <label>${t("exp_field_tvq_recv")}
         <input id="rv-tvq" type="number" step="0.01" value="${r?.tvq||""}"/>
       </label>
     </div>
     <div id="rv-total-preview" style="font-size:13px;color:var(--text2);margin-bottom:10px;text-align:right"></div>
-    <label>Notes<textarea id="rv-notes" style="height:60px">${r?.notes||""}</textarea></label>
+    <label>${t("exp_table_notes")}<textarea id="rv-notes" style="height:60px">${r?.notes||""}</textarea></label>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveRevenue('${id||""}')">Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveRevenue('${id||""}')">${t("save")}</button>
     </div>
   </div>`);
   setTimeout(calcRevenueTaxes, 50);
@@ -589,18 +589,18 @@ function calcRevenueTaxes() {
   if (tvqEl) tvqEl.value = amt > 0 ? (amt * TVQ_RATE).toFixed(2) : "";
   const tps = Number(tpsEl?.value) || 0;
   const tvq = Number(tvqEl?.value) || 0;
-  if (prev && amt > 0) prev.innerHTML = `Total avec taxes : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
+  if (prev && amt > 0) prev.innerHTML = `${t("exp_total_with_tax")} : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
 }
 
 async function saveRevenue(id) {
   const desc = document.getElementById("rv-desc").value.trim();
   const amt = Number(document.getElementById("rv-amt").value) || 0;
-  if (!desc) return alert("Entrez une description.");
-  if (!amt) return alert("Entrez un montant.");
+  if (!desc) return alert(t("err_enter_desc"));
+  if (!amt) return alert(t("err_enter_amount"));
   const dateStart = document.getElementById("rv-date-start").value;
   const dateEnd = document.getElementById("rv-date-end").value || null;
-  if (!dateStart) return alert("Entrez une date de début.");
-  if (dateEnd && dateEnd < dateStart) return alert("La date de fin doit être après la date de début.");
+  if (!dateStart) return alert(t("err_enter_start_date"));
+  if (dateEnd && dateEnd < dateStart) return alert(t("err_end_after_start"));
   const data = {
     description: desc,
     amount: amt,
@@ -645,7 +645,7 @@ function openQuickSupplier() {
     <label>Téléphone<input id="qs-phone"/></label>
     <label>Courriel<input id="qs-email"/></label>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="openExpenseModal()">Annuler</button>
+      <button class="btn-cancel" onclick="openExpenseModal()">${t("cancel")}</button>
       <button class="btn btn-primary" onclick="saveQuickSupplier()">Créer</button>
     </div>
   </div>`);
@@ -682,8 +682,8 @@ function openExpenseCatModal() {
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
       <input id="new-cat-name" placeholder="Nom de la catégorie" style="flex:2"/>
       <select id="new-cat-type" style="flex:1">
-        <option value="variable">${icon("bar-chart", 14)} Variable</option>
-        <option value="fixe">🔒 Fixe</option>
+        <option value="variable">${icon("bar-chart", 14)} ${t("exp_type_variable")}</option>
+        <option value="fixe">🔒 ${t("exp_type_fixed")}</option>
       </select>
       <button class="btn btn-primary" onclick="addExpenseCat()">Ajouter</button>
     </div>
@@ -715,10 +715,10 @@ function openFixedTemplatesModal() {
         ? `<p style="color:var(--text3);font-size:13px;text-align:center;padding:16px">Aucun modèle de frais fixe.</p>`
         : templates.map(t => `<div class="cat-item" style="justify-content:space-between">
             <div style="flex:1">
-              <div style="font-weight:600;font-size:13px">${t.supplier||t.description||"—"}</div>
-              <div style="font-size:11px;color:var(--text3)">${t.category||""} · ${fmtMoney(t.amount)}</div>
+              <div style="font-weight:600;font-size:13px">${tpl.supplier||t.description||"—"}</div>
+              <div style="font-size:11px;color:var(--text3)">${tpl.category||""} · ${fmtMoney(t.amount)}</div>
             </div>
-            <button class="btn-danger-sm" onclick="deleteFixedTemplate('${t.id}')">🗑️</button>
+            <button class="btn-danger-sm" onclick="deleteFixedTemplate('${tpl.id}')">🗑️</button>
           </div>`).join("")}
     </div>
     <div style="border-top:1px solid var(--border);padding-top:12px">
@@ -730,7 +730,7 @@ function openFixedTemplatesModal() {
             ${suppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join("")}
           </select>
         </label>
-        <label>Catégorie
+        <label>${t("exp_field_category")}
           <select id="ft-cat">
             ${getAllExpenseCats().map(c => `<option value="${c}">${c}</option>`).join("")}
           </select>
@@ -756,7 +756,7 @@ function calcFtTaxes() {
 
 async function saveFixedTemplate() {
   const amt = Number(document.getElementById("ft-amt").value) || 0;
-  if (!amt) return alert("Entrez un montant.");
+  if (!amt) return alert(t("err_enter_amount"));
   const nid = genId();
   await db.collection("fixedExpenseTemplates").doc(nid).set({
     id: nid,
@@ -781,9 +781,9 @@ function renderMenu() {
   const available = menuItems.filter(m => m.available !== false).length;
   return `<div class="page">
     <div class="toolbar">
-      <div><h2 style="font-size:18px">Menu</h2>
+      <div><h2 style="font-size:18px">${t("menu_title")}</h2>
       <p style="font-size:13px;color:var(--text3);margin-top:2px">${available} item${available > 1 ? "s" : ""} disponible${available > 1 ? "s" : ""}</p></div>
-      <button class="btn btn-primary" onclick="openMenuModal()">${icon("plus", 16)} Item</button>
+      <button class="btn btn-primary" onclick="openMenuModal()">${icon("plus", 16)} ${t("menu_add")}</button>
     </div>
     <div class="sec-tabs">${cats.map(c => `<button class="sec-btn ${activeMenuCat === c ? "active" : ""}" onclick="setMenuCat('${c}')">${c}</button>`).join("")}</div>
     ${filtered.length === 0
@@ -826,8 +826,8 @@ function openMenuModal(id) {
       <label>Catégorie<select id="mn-cat">${MENU_CATS.map(c => `<option value="${c}" ${(m?.category || "Plats principaux") === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>
     </div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveMenuItem('${id || ""}')">Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveMenuItem('${id || ""}')">${t("save")}</button>
     </div>
   </div>`);
 }
@@ -852,8 +852,8 @@ function renderFournisseurs() {
   const activeProducts = products.filter(p => !p.archived);
   return `<div class="page">
     <div class="toolbar">
-      <h2 style="font-size:18px">Fournisseurs</h2>
-      ${isAdmin ? `<button class="btn btn-primary" onclick="openSupplierModal()">${icon("plus", 16)} Fournisseur</button>` : ""}
+      <h2 style="font-size:18px">${t("sup_title")}</h2>
+      ${isAdmin ? `<button class="btn btn-primary" onclick="openSupplierModal()">${icon("plus", 16)} ${t("sup_add")}</button>` : ""}
     </div>
     ${suppliers.length === 0
       ? `<div class="empty"><div style="font-size:40px;margin-bottom:8px">🏪</div>Aucun fournisseur.</div>`
@@ -890,10 +890,10 @@ function openSupplierModal(id) {
     <label>Nom<input id="s-name" value="${esc(s?.name || "")}"/></label>
     <label>Téléphone<input id="s-contact" value="${esc(s?.contact || "")}"/></label>
     <label>Courriel<input id="s-email" value="${esc(s?.email || "")}"/></label>
-    <label>Notes<textarea id="s-notes" style="height:70px">${s?.notes || ""}</textarea></label>
+    <label>${t("exp_table_notes")}<textarea id="s-notes" style="height:70px">${s?.notes || ""}</textarea></label>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveSupplier('${id || ""}')">Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveSupplier('${id || ""}')">${t("save")}</button>
     </div>
   </div>`);
 }
@@ -925,40 +925,40 @@ function openCustomReportModal() {
 
   showModal(`<div class="modal" style="max-width:520px">
     <div class="modal-header">
-      <h3>${icon("file-spreadsheet", 18)} Rapport personnalisé</h3>
-      <button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button>
+      <h3>${icon("file-spreadsheet", 18)} ${t("report_title")}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t(`close`)}">${icon("x", 18)}</button>
     </div>
     <p style="color:var(--text2);font-size:13px;margin-bottom:16px;line-height:1.5">
-      Choisissez la période et le contenu, puis exportez en Excel ou PDF.
+      ${t("report_intro")}
     </p>
 
     <div class="form-row">
-      <label>Date de début
+      <label>${t("rev_date_start")}
         <input id="rep-start" type="date" value="${defaultStart}"/>
       </label>
-      <label>Date de fin
+      <label>${t("report_date_end")}
         <input id="rep-end" type="date" value="${today}"/>
       </label>
     </div>
 
-    <label style="margin-top:8px">Contenu du rapport</label>
+    <label style="margin-top:8px">${t("report_content")}</label>
     <div style="display:flex;flex-direction:column;gap:8px;background:var(--surface2);padding:12px 14px;border-radius:8px;margin-bottom:14px">
       <label style="display:flex;align-items:center;gap:8px;font-weight:500;font-size:14px;color:var(--text);margin:0;cursor:pointer">
         <input type="checkbox" id="rep-include-rev" checked style="width:auto;margin:0;cursor:pointer"/>
-        ${icon("trending-up", 14)} Inclure les revenus
+        ${icon("trending-up", 14)} ${t("report_include_rev")}
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-weight:500;font-size:14px;color:var(--text);margin:0;cursor:pointer">
         <input type="checkbox" id="rep-include-exp" checked style="width:auto;margin:0;cursor:pointer"/>
-        ${icon("trending-down", 14)} Inclure les dépenses
+        ${icon("trending-down", 14)} ${t("report_include_exp")}
       </label>
     </div>
 
     <div id="rep-preview" style="background:var(--surface2);padding:10px 14px;border-radius:8px;font-size:13px;color:var(--text2);margin-bottom:14px"></div>
 
     <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-secondary" onclick="exportReport('pdf')">${icon("file-text", 14)} Exporter PDF</button>
-      <button class="btn btn-primary" onclick="exportReport('xlsx')">${icon("file-spreadsheet", 14)} Exporter Excel</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-secondary" onclick="exportReport('pdf')">${icon("file-text", 14)} ${t("report_export_pdf")}</button>
+      <button class="btn btn-primary" onclick="exportReport('xlsx')">${icon("file-spreadsheet", 14)} ${t("report_export_excel")}</button>
     </div>
   </div>`);
   // Mettre à jour le preview en live
@@ -989,7 +989,7 @@ function updateReportPreview() {
   const totalExp = filteredExp.reduce((s, e) => s + Number(e.amount || 0), 0);
   const profit = totalRev - totalExp;
 
-  let html = `<strong>Aperçu :</strong> `;
+  let html = `<strong>${t("report_preview")} :</strong> `;
   const parts = [];
   if (incRev) parts.push(`${filteredRev.length} revenu${filteredRev.length > 1 ? "s" : ""} (${fmtMoney(totalRev)})`);
   if (incExp) parts.push(`${filteredExp.length} dépense${filteredExp.length > 1 ? "s" : ""} (${fmtMoney(totalExp)})`);
@@ -1005,9 +1005,9 @@ function getReportData() {
   const end = document.getElementById("rep-end").value;
   const incRev = document.getElementById("rep-include-rev").checked;
   const incExp = document.getElementById("rep-include-exp").checked;
-  if (!start || !end) { alert("Choisissez une période."); return null; }
-  if (start > end) { alert("La date de fin doit être après la date de début."); return null; }
-  if (!incRev && !incExp) { alert("Sélectionnez au moins une catégorie (revenus ou dépenses)."); return null; }
+  if (!start || !end) { alert(t("report_choose_period")); return null; }
+  if (start > end) { alert(t("err_end_after_start")); return null; }
+  if (!incRev && !incExp) { alert(t("report_select_one")); return null; }
 
   const filteredRev = incRev ? revenues.filter(r => {
     const d = r.dateStart || r.date;
@@ -1029,13 +1029,13 @@ async function exportReport(format) {
 
   if (format === "xlsx") {
     if (typeof XLSX === "undefined") {
-      alert("La bibliothèque Excel n'est pas chargée. Vérifiez votre connexion internet et rechargez.");
+      alert(t("report_lib_excel_err"));
       return;
     }
     exportReportExcel(filteredRev, filteredExp, filename, start, end, incRev, incExp);
   } else if (format === "pdf") {
     if (typeof window.jspdf === "undefined") {
-      alert("La bibliothèque PDF n'est pas chargée. Vérifiez votre connexion internet et rechargez.");
+      alert(t("report_lib_pdf_err"));
       return;
     }
     exportReportPDF(filteredRev, filteredExp, filename, start, end, incRev, incExp);
