@@ -812,7 +812,23 @@ tr.drag-over td{border-top:2px solid var(--accent)}
   padding:var(--sp-1) var(--sp-3);
   font-size:var(--fs-sm);
   font-weight:700;
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  border:none;
+  font-family:var(--font-body);
 }
+.alert-pill-btn{
+  cursor:pointer;
+  transition:background var(--transition-base),transform var(--transition-base),box-shadow var(--transition-base);
+  box-shadow:0 1px 3px rgba(192,57,43,.3);
+}
+.alert-pill-btn:hover{
+  background:var(--accent);
+  transform:translateY(-1px);
+  box-shadow:0 4px 10px rgba(107,26,31,.35);
+}
+.alert-pill-btn:active{transform:translateY(0)}
 .stock-input{
   border:1px solid var(--border-strong);
   border-radius:var(--radius-sm);

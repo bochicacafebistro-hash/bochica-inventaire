@@ -17,16 +17,21 @@ function renderInventaire() {
   if (!isMobile) {
     const okCount = activeProducts.filter(p => getStatus(p) === "green").length;
     const redCount = activeProducts.filter(p => getStatus(p) === "red").length;
-    h += `<div style="display:flex;gap:10px;margin-bottom:18px">
-      <div style="flex:1;background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:14px 16px">
+    const yellowCount = activeProducts.filter(p => getStatus(p) === "yellow").length;
+    h += `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
+      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:14px 16px">
         <div style="font-size:22px;font-weight:700;color:var(--accent)">${activeProducts.length}</div>
         <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Produits</div>
       </div>
-      <div style="flex:1;background:var(--status-red-bg);border:0.5px solid var(--status-red-border);border-radius:10px;padding:14px 16px">
+      <div style="background:var(--status-red-bg);border:0.5px solid var(--status-red-border);border-radius:10px;padding:14px 16px">
         <div style="font-size:22px;font-weight:700;color:var(--status-red)">${redCount}</div>
         <div style="font-size:10px;color:var(--status-red);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">À commander</div>
       </div>
-      <div style="flex:1;background:var(--status-green-bg);border:0.5px solid var(--status-green-border);border-radius:10px;padding:14px 16px">
+      <div style="background:var(--status-yellow-bg);border:0.5px solid var(--status-yellow-border);border-radius:10px;padding:14px 16px">
+        <div style="font-size:22px;font-weight:700;color:var(--status-yellow)">${yellowCount}</div>
+        <div style="font-size:10px;color:var(--status-yellow);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Bientôt bas</div>
+      </div>
+      <div style="background:var(--status-green-bg);border:0.5px solid var(--status-green-border);border-radius:10px;padding:14px 16px">
         <div style="font-size:22px;font-weight:700;color:var(--status-green)">${okCount}</div>
         <div style="font-size:10px;color:var(--status-green);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">En stock</div>
       </div>
