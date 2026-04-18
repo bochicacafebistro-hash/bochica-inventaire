@@ -1,9 +1,13 @@
-# 📋 CONTEXTE — Projet Bochica
+# 📋 CONTEXTE — Projet Bochica Inventaire
+
+> ⚠️ **Mise à jour majeure : 18 avril 2026** — refactoring design system pour s'aligner sur le site web bochicacafebistro.ca + PWA installable.
 
 ## 🏠 Description
-Application web de gestion pour le **restaurant colombien Bochica**.
-Déployée sur **Vercel** via **GitHub** (100% web, aucune installation locale).
-Base de données : **Firebase Firestore** (temps réel).
+Application web de **gestion interne** pour le restaurant colombien Bochica.
+- Hébergement : **Vercel** via **GitHub** (100% web, aucune installation locale)
+- Base de données : **Firebase Firestore** (temps réel)
+- **Installable comme PWA** sur mobile et desktop (Add to Home Screen)
+- Pas de SEO — outil interne (`<meta name="robots" content="noindex, nofollow">`)
 
 ## 🔗 Liens
 - GitHub : https://github.com/bochicacafebistro-hash/bochica-inventaire
@@ -13,21 +17,39 @@ Base de données : **Firebase Firestore** (temps réel).
 - Admin : `0000`
 - Employé : `1111`
 - Session sauvegardée dans localStorage (pas de déconnexion au rechargement)
+- **Saisie clavier supportée** : chiffres pour entrer le PIN, Backspace pour effacer un chiffre, Escape/Delete pour effacer tout
 
 ## 🗂️ Structure des fichiers
+```
 bochica-inventaire/
-├── index.html                  ← HTML + CSS + imports des scripts
-└── js/
-├── config.js               ← Config Firebase + constantes globales
-├── state.js                ← Variables globales
-├── utils.js                ← Fonctions utilitaires
-├── inventaire.js           ← Page inventaire, stock, drag & drop
-├── modals-produits.js      ← Modals produit, note, catégorie, réception
-├── pages-secondaires.js    ← Pages rapport, historique, tâches
-├── pages-admin.js          ← Pages employés, dépenses, revenus, menu, fournisseurs
-├── sidebar.js              ← Navigation, sidebar, renderPage()
-├── auth.js                 ← Connexion PIN, logout, session
-└── firebase-listeners.js   ← Listeners Firestore temps réel
+├── index.html              ← HTML squelette (CSS externalisé)
+├── manifest.json           ← Configuration PWA
+├── sw.js                   ← Service Worker (cache offline)
+├── favicon.ico
+├── CONTEXTE.md             ← ce fichier
+├── README.md
+├── css/
+│   └── style.css           ← Design system complet (700+ lignes)
+├── js/
+│   ├── config.js           ← Config Firebase + constantes globales
+│   ├── state.js            ← Variables globales
+│   ├── utils.js            ← Fonctions utilitaires
+│   ├── inventaire.js       ← Page inventaire, stock, drag & drop
+│   ├── modals-produits.js  ← Modals produit, note, catégorie, réception
+│   ├── pages-secondaires.js ← Pages rapport, historique, tâches
+│   ├── pages-admin.js      ← Pages employés, dépenses, revenus, menu, fournisseurs
+│   ├── sidebar.js          ← Navigation, sidebar, renderPage()
+│   ├── auth.js             ← Connexion PIN, logout, session, support clavier
+│   └── firebase-listeners.js ← Listeners Firestore temps réel
+└── images/
+    ├── favicon-16x16.png
+    ├── favicon-32x32.png
+    ├── apple-touch-icon.png
+    ├── icon-192.png
+    ├── icon-512.png
+    └── icon-maskable-512.png
+```
+
 ## ⚠️ Ordre des scripts dans index.html (critique !)
 ```html
 <script src="js/config.js"></script>
@@ -57,28 +79,55 @@ bochica-inventaire/
   - `logs` — historique des actions
   - `settings/sections` — catégories personnalisées d'inventaire
 
-## 🎨 Design — Palette Gris perle & Violet doux (Design A)
-```css
-:root {
-  --bg: #fafafa;
-  --surface: #ffffff;
-  --surface2: #f0f0f8;
-  --surface3: #e8e8f0;
-  --border: #e0e0e6;
-  --text: #1a1a2e;
-  --text2: #888899;
-  --text3: #aaaabc;
-  --accent: #5b5bd6;
-  --accent2: #7c7ce8;
-  --header-from: #2a2a3e;
-  --header-to: #333348;
-}
-```
-- Badges : rouge `#c0392b`, jaune `#b8860b`, vert `#27ae60`, bleu/violet `#5b5bd6`
-- Borders : `0.5px solid` partout (pas 1px)
-- Couleurs statuts dans JS : rouge `#c0392b`, jaune `#b8860b`, vert `#27ae60`
+## 🎨 Design System Bochica (aligné sur le site web)
 
-## ✅ Fonctionnalités existantes
+### Palette
+- **Accent principal** : bordeaux `--accent: #6b1a1f` (au lieu de l'ancien violet)
+- **Fonds clair** : crème `--bg: #faf6f0`, `--surface: #ffffff`, `--surface2: #f3ede3`
+- **Texte** : `--text: #1a1010`, `--text2: #5a4a45`, `--text3: #5e524f`
+- **Tricolore Colombie** : `--yellow: #f5a623`, `--blue: #4a90e2`, `--red: #e74c3c` (sidebar, accents)
+- **États stock** : rouge `#c0392b`, jaune `#92400e`, vert `#27ae60` (sémantiques universels)
+
+### Dark mode adapté on-brand
+- Fonds : `#13100f`, `#1c1815` (chaleureux, pas gris bleuté)
+- Accent : bordeaux clairci `#c44b51` (visible sur fond foncé)
+
+### Typographie
+- **Titres** : `Fraunces` (serif élégant) — h1, h2, h3, prix, badges importants
+- **Corps** : `Inter` (sans-serif moderne) — UI, formulaires, boutons
+- **Échelle** : `--fs-xs` (11) → `--fs-sm` (13) → `--fs-base` (14) → `--fs-md` (16) → `--fs-lg` (18) → `--fs-xl` (22) → `--fs-2xl` (28) → `--fs-3xl` (36)
+
+### Espacement
+Échelle 4/8 : `--sp-1` (4) → `--sp-2` (8) → `--sp-3` (12) → `--sp-4` (16) → `--sp-5` (20) → `--sp-6` (24) → `--sp-7` (32) → `--sp-8` (48)
+
+### Border-radius
+`--radius-sm` (4) → `--radius-md` (8) → `--radius-lg` (12) → `--radius-xl` (16) → `--radius-pill` (20) → `--radius-full` (50%)
+
+### Ombres et transitions
+- `--shadow-sm/md/lg/modal`
+- `--transition-fast/base`
+
+## 📱 PWA (Progressive Web App)
+
+### Installation
+- **iOS Safari** : Bouton Partager → "Sur l'écran d'accueil"
+- **Android Chrome** : Bandeau auto "Ajouter à l'écran d'accueil" ou menu ⋮ → "Installer"
+- **Desktop Chrome/Edge** : Icône d'installation dans la barre d'adresse
+
+### Configuration (`manifest.json`)
+- `name` : "Bochica — Gestion"
+- `short_name` : "Bochica"
+- `display` : "standalone" (sans barre d'adresse)
+- `theme_color` : `#6b1a1f` (bordeaux)
+- `background_color` : `#faf6f0` (crème)
+- **Shortcuts** : raccourcis vers Inventaire, Tâches, Dépenses
+
+### Service Worker (`sw.js`)
+- **Stratégie cache** : cache-first pour app shell (HTML, CSS, JS, fonts)
+- **Stratégie réseau** : network-only pour Firebase (données toujours fraîches)
+- **Mise à jour** : incrémenter `CACHE_VERSION` dans sw.js après un déploiement majeur
+
+## ✅ Fonctionnalités existantes (inchangées)
 
 ### 📦 Inventaire
 - Stats desktop : total produits, à commander, en stock (3 cartes en haut)
@@ -86,43 +135,37 @@ bochica-inventaire/
 - Sections par défaut : Cuisine, Emballage, Bar, Autre + sections personnalisées
 - Vue tableau desktop, vue cartes mobile
 
-### 📋 Rapport
-- Produits à commander par section, export imprimable
-
-### 🕐 Historique
-- Log de toutes les actions avec filtre
-
-### 📋 Tâches
-- Kanban 3 colonnes (À faire / En cours / Complété)
-- Priorités, assignation, date limite
+### 📋 Rapport / Historique / Tâches
+- Rapport imprimable, log d'actions, Kanban 3 colonnes
 
 ### 👥 Employés & Horaires
-- Fiche employé (nom, rôle, phone, email, PIN)
-- Grille horaire semaine, quarts : Matin/Soir/Journée/Congé
+- Fiche employé + grille horaire semaine
 
 ### 💰 Dépenses & Revenus
-- Dépenses : description + fournisseur optionnel, catégorie, type fixe/variable
-- TPS (5%) et TVQ (9.975%) auto mais modifiables
-- Revenus : description, montant, TPS/TVQ perçues
-- Frais fixes auto : copiés le 1er du mois depuis `fixedExpenseTemplates`
-- Catégories par défaut : Nourriture (var), Loyer (fixe), Électricité (fixe),
-  Internet (fixe), Logiciels (fixe), Abonnements (fixe), Salaires (fixe), Taxes (fixe), Autres (var)
-- Catégories personnalisées via ⚙️
-- Sélecteur de mois avec navigation ◀ ▶
-- Stats : revenus, dépenses, taxes, profit/déficit, frais fixes vs variables
+- Calcul TPS/TVQ auto, catégories personnalisables, frais fixes auto
+- Stats : revenus, dépenses, taxes, profit/déficit
 - Graphiques : barres 6 mois + camembert par catégorie
-- Créer fournisseur rapide depuis modal dépense
 
-### 🍽️ Menu
-- Items par catégorie, toggle disponible/indisponible
-
-### 🏪 Fournisseurs
-- Fiches avec produits liés
+### 🍽️ Menu / 🏪 Fournisseurs
+- Items par catégorie avec toggle disponible
+- Fiches fournisseurs avec produits liés
 
 ### 🌙 Général
 - Dark mode (toggle, localStorage)
 - Mobile responsive
-- Session persistante (localStorage)
+- Session persistante
+- **PWA installable** (nouveau!)
+- **Saisie clavier PIN** (nouveau!)
+
+## ♿ Accessibilité (post-refactoring)
+
+- **`<html lang="fr-CA">`** au lieu de `fr` (cohérence régionale)
+- **Landmarks ARIA** : `<aside>` sidebar, `<main>`, `<header>` topbar, `<nav>` sidebar-nav
+- **PIN-pad accessible** : `aria-label` sur chaque bouton, `role="alert"` sur l'erreur, `aria-live` sur affichage chiffres saisis
+- **Navigation clavier** : Tab partout + chiffres/Backspace/Escape sur PIN
+- **Focus visible** : outline 2px bordeaux global via `:focus-visible`
+- **`prefers-reduced-motion`** respecté
+- **Topbar** : `aria-live="polite"` sur badge alerte
 
 ## 🔧 Constantes importantes (config.js)
 - `ADMIN_PIN` = "0000"
@@ -137,11 +180,34 @@ bochica-inventaire/
 
 ## 🚧 Contraintes importantes
 - Aucune installation locale — tout via GitHub.com + Vercel
-- Vanilla JS uniquement — pas de React, pas de build
+- **Vanilla JS uniquement** — pas de React, pas de build
+- **CSS externalisé** dans `css/style.css` (utiliser les tokens, ne pas hardcoder les couleurs)
+- Pour les couleurs dans les `style="..."` inline JS : utiliser `var(--token)` plutôt que `#hex`
 - Chaque fichier JS = une section de l'app
-- Vercel redéploie automatiquement à chaque commit
 - L'ordre des scripts dans index.html est critique
 - Pour déboguer : F12 → Console → messages en rouge
 
-## 📝 Fonctionnalités à ajouter (liste évolutive)
-- [ ] À compléter selon les besoins futurs...
+## 📝 CHANGELOG
+
+### 18 avril 2026 — Refactoring design + PWA (branche `refactor/design-system`)
+- **Design system unifié** avec le site web (bordeaux + crème + tricolore Colombie)
+- **Typographie** : Fraunces (titres) + Inter (corps), au lieu de system-ui
+- **CSS externalisé** dans `css/style.css` (700+ lignes structurées avec tokens)
+- **Dark mode** revu pour rester on-brand (chaleureux, pas gris bleuté)
+- **80 couleurs hardcodées** migrées vers tokens CSS dans les modules JS
+- **PWA installable** : manifest.json + sw.js + icônes 192/512
+  - Cache app shell offline, données Firebase toujours fraîches
+  - Shortcuts : Inventaire, Tâches, Dépenses
+- **Login refait** : couleurs Bochica (gradient noir → bordeaux), logo Fraunces avec accent jaune sur "CA"
+- **Accessibilité** :
+  - PIN-pad avec aria-label, aria-live, support clavier complet (chiffres + Backspace + Escape)
+  - Landmarks ARIA (`<aside>`, `<main>`, `<header>`, `<nav>`)
+  - `<html lang="fr-CA">`, focus visible global, prefers-reduced-motion respecté
+- **Animations** modale : fadeIn + slideUp pour transitions plus fluides
+
+## 📝 Reste à faire (post-refactoring)
+- [ ] Optimiser icon-maskable-512.png (actuellement copie de icon-512.png — devrait avoir un padding pour le "safe zone" Android)
+- [ ] Tester l'installation PWA sur iOS et Android
+- [ ] Ajouter une page "À propos" / "Versions" pour suivre les mises à jour
+- [ ] Considérer un mode hors ligne avec indication visuelle (badge "offline")
+- [ ] Notifications push (anniversaires employés, frais fixes du mois, etc.)

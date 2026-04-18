@@ -1,0 +1,45 @@
+# ============================================
+# .gitignore — Bochica Inventaire
+# ============================================
+
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+.AppleDouble
+.LSOverride
+Icon
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# Linux
+*~
+.directory
+
+# Éditeurs
+.vscode/
+.idea/
+*.swp
+*.swo
+.project
+.settings/
+
+# Sauvegardes / temporaires
+*.bak
+*.tmp
+*.log
+
+# Variables d'environnement (sensibles — clés Firebase si jamais)
+.env
+.env.local
+.env.*.local
+
+# Node (si jamais on ajoute des outils)
+node_modules/
+npm-debug.log*

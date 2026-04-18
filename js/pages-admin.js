@@ -26,7 +26,7 @@ function renderEmployes() {
               const s = shifts[dk];
               return `<div class="sch-cell ${s ? "has-shift" : ""}" onclick="openShiftModal('${emp.id}','${dk}')">
                 ${s
-                  ? `<div class="shift-tag" style="background:${s.color || "#3b82f6"}">${s.label || ""}
+                  ? `<div class="shift-tag" style="background:${s.color || "var(--blue)"}">${s.label || ""}
                       <span onclick="event.stopPropagation();removeShift('${emp.id}','${dk}')" style="cursor:pointer;opacity:.7;margin-left:4px">✕</span>
                     </div>`
                   : `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px">+</div>`}
@@ -50,7 +50,7 @@ function renderEmployes() {
             <div class="dropdown" id="drop-emp${emp.id}">
               <button onclick="openEmployeeModal('${emp.id}');closeAllDrops()">✏️ Modifier</button>
               <div class="sep"></div>
-              <button style="color:#ef4444" onclick="askDelete('employees','${emp.id}','${esc(emp.name || "")}');closeAllDrops()">🗑️ Supprimer</button>
+              <button style="color:var(--status-red)" onclick="askDelete('employees','${emp.id}','${esc(emp.name || "")}');closeAllDrops()">🗑️ Supprimer</button>
             </div></div>
           </div>
         </div>`).join("")}
@@ -246,7 +246,7 @@ function renderDepenses() {
     total: filteredExp.filter(e => e.category === cat).reduce((s,e)=>s+Number(e.amount||0),0)
   })).filter(c => c.total > 0);
   const pieTotal = catTotals.reduce((s,c)=>s+c.total,0);
-  const pieColors = ["#3b82f6","#ef4444","#22c55e","#f59e0b","#8b5cf6","#ec4899","#14b8a6","#f97316","#64748b"];
+  const pieColors = ["var(--blue)","var(--status-red)","var(--status-green)","var(--status-yellow)","var(--accent-soft)","#ec4899","#14b8a6","#f97316","var(--text3)"];
 
   // Month picker
   let monthPicker = "";
@@ -283,28 +283,28 @@ function renderDepenses() {
 
     <!-- Stats -->
     <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:20px">
-      <div class="stat-card" style="border-left:4px solid #22c55e">
-        <div class="stat-num" style="color:#22c55e">${fmtMoney(totalRev)}</div>
+      <div class="stat-card" style="border-left:4px solid var(--status-green)">
+        <div class="stat-num" style="color:var(--status-green)">${fmtMoney(totalRev)}</div>
         <div class="stat-label">💰 Revenus</div>
       </div>
-      <div class="stat-card" style="border-left:4px solid #ef4444">
-        <div class="stat-num" style="color:#ef4444">${fmtMoney(totalExp)}</div>
+      <div class="stat-card" style="border-left:4px solid var(--status-red)">
+        <div class="stat-num" style="color:var(--status-red)">${fmtMoney(totalExp)}</div>
         <div class="stat-label">💸 Dépenses (avant taxes)</div>
       </div>
-      <div class="stat-card" style="border-left:4px solid #f59e0b">
-        <div class="stat-num" style="color:#f59e0b;font-size:20px">${fmtMoney(totalTPS+totalTVQ)}</div>
+      <div class="stat-card" style="border-left:4px solid var(--status-yellow)">
+        <div class="stat-num" style="color:var(--status-yellow);font-size:20px">${fmtMoney(totalTPS+totalTVQ)}</div>
         <div class="stat-label">🧾 Taxes (TPS+TVQ)</div>
       </div>
-      <div class="stat-card" style="border-left:4px solid ${isProfit?"#22c55e":"#ef4444"}">
-        <div class="stat-num" style="color:${isProfit?"#22c55e":"#ef4444"}">${fmtMoney(Math.abs(profit))}</div>
+      <div class="stat-card" style="border-left:4px solid ${isProfit?"var(--status-green)":"var(--status-red)"}">
+        <div class="stat-num" style="color:${isProfit?"var(--status-green)":"var(--status-red)"}">${fmtMoney(Math.abs(profit))}</div>
         <div class="stat-label">${isProfit?"📈 Profit":"📉 Déficit"}</div>
       </div>
-      <div class="stat-card" style="border-left:4px solid #8b5cf6">
-        <div class="stat-num" style="font-size:20px;color:#8b5cf6">${fmtMoney(totalFixed)}</div>
+      <div class="stat-card" style="border-left:4px solid var(--accent-soft)">
+        <div class="stat-num" style="font-size:20px;color:var(--accent-soft)">${fmtMoney(totalFixed)}</div>
         <div class="stat-label">🔒 Frais fixes</div>
       </div>
-      <div class="stat-card" style="border-left:4px solid #64748b">
-        <div class="stat-num" style="font-size:20px;color:#64748b">${fmtMoney(totalVar)}</div>
+      <div class="stat-card" style="border-left:4px solid var(--text3)">
+        <div class="stat-num" style="font-size:20px;color:var(--text3)">${fmtMoney(totalVar)}</div>
         <div class="stat-label">📊 Frais variables</div>
       </div>
     </div>
@@ -322,16 +322,16 @@ function renderDepenses() {
             const expH = Math.round((exp / chartMax) * 120);
             return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative">
               <div style="display:flex;align-items:flex-end;gap:2px;height:120px">
-                <div title="${fmtMoney(rev)}" style="width:12px;height:${revH}px;background:#22c55e;border-radius:3px 3px 0 0;min-height:${rev>0?2:0}px"></div>
-                <div title="${fmtMoney(exp)}" style="width:12px;height:${expH}px;background:#ef4444;border-radius:3px 3px 0 0;min-height:${exp>0?2:0}px"></div>
+                <div title="${fmtMoney(rev)}" style="width:12px;height:${revH}px;background:var(--status-green);border-radius:3px 3px 0 0;min-height:${rev>0?2:0}px"></div>
+                <div title="${fmtMoney(exp)}" style="width:12px;height:${expH}px;background:var(--status-red);border-radius:3px 3px 0 0;min-height:${exp>0?2:0}px"></div>
               </div>
               <div style="font-size:10px;color:var(--text3);position:absolute;bottom:0">${m.label}</div>
             </div>`;
           }).join("")}
         </div>
         <div style="display:flex;gap:16px;margin-top:4px">
-          <span style="font-size:11px;color:#22c55e;font-weight:600">■ Revenus</span>
-          <span style="font-size:11px;color:#ef4444;font-weight:600">■ Dépenses</span>
+          <span style="font-size:11px;color:var(--status-green);font-weight:600">■ Revenus</span>
+          <span style="font-size:11px;color:var(--status-red);font-weight:600">■ Dépenses</span>
         </div>
       </div>
 
@@ -374,14 +374,14 @@ function renderDepenses() {
       <tbody>${filteredRev.map(r => `<tr>
         <td>${r.date||""}</td>
         <td><strong>${r.description||""}</strong></td>
-        <td style="font-weight:700;color:#22c55e">${fmtMoney(r.amount)}</td>
+        <td style="font-weight:700;color:var(--status-green)">${fmtMoney(r.amount)}</td>
         <td style="color:var(--text3)">${r.tps?fmtMoney(r.tps):"—"}</td>
         <td style="color:var(--text3)">${r.tvq?fmtMoney(r.tvq):"—"}</td>
         <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('rev${r.id}')">⋯</button>
           <div class="dropdown" id="drop-rev${r.id}">
             <button onclick="openRevenueModal('${r.id}');closeAllDrops()">✏️ Modifier</button>
             <div class="sep"></div>
-            <button style="color:#ef4444" onclick="askDelete('revenues','${r.id}','${esc(r.description||"")}');closeAllDrops()">🗑️ Supprimer</button>
+            <button style="color:var(--status-red)" onclick="askDelete('revenues','${r.id}','${esc(r.description||"")}');closeAllDrops()">🗑️ Supprimer</button>
           </div></div></td>
       </tr>`).join("")}</tbody></table>
     </div>` : ""}
@@ -396,7 +396,7 @@ function renderDepenses() {
             const total = Number(e.amount||0) + Number(e.tps||0) + Number(e.tvq||0);
             const type = getExpenseCatType(e.category);
             return `<tr>
-              <td>${e.date||""}${e.isFixedAuto?` <span style="font-size:10px;color:#8b5cf6">🔒auto</span>`:""}</td>
+              <td>${e.date||""}${e.isFixedAuto?` <span style="font-size:10px;color:var(--accent-soft)">🔒auto</span>`:""}</td>
               <td><strong>${e.supplier||e.description||"—"}</strong></td>
               <td><span class="badge-pill blue">${e.category||""}</span></td>
               <td><span class="badge-pill ${type==="fixe"?"green":"yellow"}">${type==="fixe"?"🔒 Fixe":"📊 Variable"}</span></td>
@@ -408,7 +408,7 @@ function renderDepenses() {
                 <div class="dropdown" id="drop-exp${e.id}">
                   <button onclick="openExpenseModal('${e.id}');closeAllDrops()">✏️ Modifier</button>
                   <div class="sep"></div>
-                  <button style="color:#ef4444" onclick="askDelete('expenses','${e.id}','${esc(e.supplier||e.description||"")}');closeAllDrops()">🗑️ Supprimer</button>
+                  <button style="color:var(--status-red)" onclick="askDelete('expenses','${e.id}','${esc(e.supplier||e.description||"")}');closeAllDrops()">🗑️ Supprimer</button>
                 </div></div></td>
             </tr>`;
           }).join("")}
@@ -754,7 +754,7 @@ function renderMenu() {
               <button onclick="openMenuModal('${m.id}');closeAllDrops()">✏️ Modifier</button>
               <button onclick="toggleMenuAvailable('${m.id}',${m.available !== false});closeAllDrops()">${m.available === false ? "✅ Marquer disponible" : "⛔ Marquer indisponible"}</button>
               <div class="sep"></div>
-              <button style="color:#ef4444" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">🗑️ Supprimer</button>
+              <button style="color:var(--status-red)" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">🗑️ Supprimer</button>
             </div></div>
           </div>
         </div>`).join("")}</div>`}
@@ -821,7 +821,7 @@ function renderFournisseurs() {
                 <div class="dropdown" id="drop-sup${s.id}">
                   <button onclick="openSupplierModal('${s.id}');closeAllDrops()">✏️ Modifier</button>
                   <div class="sep"></div>
-                  <button style="color:#ef4444" onclick="askDelete('suppliers','${s.id}','${esc(s.name || "")}');closeAllDrops()">🗑️ Supprimer</button>
+                  <button style="color:var(--status-red)" onclick="askDelete('suppliers','${s.id}','${esc(s.name || "")}');closeAllDrops()">🗑️ Supprimer</button>
                 </div></div>` : ""}
             </div>
             ${linked.length ? `<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">

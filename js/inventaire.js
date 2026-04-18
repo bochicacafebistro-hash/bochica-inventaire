@@ -22,20 +22,20 @@ function renderInventaire() {
         <div style="font-size:22px;font-weight:700;color:var(--accent)">${activeProducts.length}</div>
         <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">Produits</div>
       </div>
-      <div style="flex:1;background:#fff5f5;border:0.5px solid #ffd0d0;border-radius:10px;padding:14px 16px">
-        <div style="font-size:22px;font-weight:700;color:#c0392b">${redCount}</div>
-        <div style="font-size:10px;color:#c0392b;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">À commander</div>
+      <div style="flex:1;background:var(--status-red-bg);border:0.5px solid var(--status-red-border);border-radius:10px;padding:14px 16px">
+        <div style="font-size:22px;font-weight:700;color:var(--status-red)">${redCount}</div>
+        <div style="font-size:10px;color:var(--status-red);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">À commander</div>
       </div>
-      <div style="flex:1;background:#f0faf4;border:0.5px solid #c8ecd4;border-radius:10px;padding:14px 16px">
-        <div style="font-size:22px;font-weight:700;color:#27ae60">${okCount}</div>
-        <div style="font-size:10px;color:#27ae60;opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">En stock</div>
+      <div style="flex:1;background:var(--status-green-bg);border:0.5px solid var(--status-green-border);border-radius:10px;padding:14px 16px">
+        <div style="font-size:22px;font-weight:700;color:var(--status-green)">${okCount}</div>
+        <div style="font-size:10px;color:var(--status-green);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">En stock</div>
       </div>
     </div>`;
   }
 
   if (isAdmin && archivedProducts.length > 0) {
     h += `<div class="archived-banner"><span>📦 ${archivedProducts.length} produit${archivedProducts.length > 1 ? "s" : ""} archivé${archivedProducts.length > 1 ? "s" : ""}</span>
-      <button onclick="toggleShowArchived()" style="border:1px solid #eab308;background:none;color:#854d0e;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600">
+      <button onclick="toggleShowArchived()" style="border:1px solid var(--status-yellow);background:none;color:var(--yellow-text);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;font-weight:600">
         ${showArchived ? "Voir actifs" : "Voir archivés"}
       </button></div>`;
   }
@@ -69,8 +69,8 @@ function renderInventaire() {
     filtered.forEach(p => {
       const st = getStatus(p), stock = getCurrentStock(p);
       const sup = suppliers.find(s => s.id === p.supplierId);
-      const borderColor = st === "red" ? "#c0392b" : st === "yellow" ? "#b8860b" : "#27ae60";
-      const nameColor = st === "red" ? "#c0392b" : st === "yellow" ? "#b8860b" : darkMode ? "#e8e8f4" : "#1a1a2e";
+      const borderColor = st === "red" ? "var(--status-red)" : st === "yellow" ? "var(--status-yellow)" : "var(--status-green)";
+      const nameColor = st === "red" ? "var(--status-red)" : st === "yellow" ? "var(--status-yellow)" : darkMode ? "var(--text)" : "var(--text)";
       h += `<tr data-id="${p.id}" style="border-left:3px solid ${borderColor}" ${isAdmin && !showArchived ? `draggable="true" ondragstart="dragStart(event,'${p.id}')" ondragover="dragOver(event,'${p.id}')" ondrop="dropOn(event,'${p.id}')" ondragleave="dragLeave(event)" ondragend="dragEnd(event)"` : ""}>
         ${isAdmin ? `<td style="padding:0 4px">${!showArchived ? `<span class="drag-handle">⠿</span>` : ""}</td>` : ""}
         <td><strong style="color:${nameColor}">${p.name}</strong>
@@ -89,7 +89,7 @@ function renderInventaire() {
           <button onclick="openMoveModal('${p.id}');closeAllDrops()">📁 Changer catégorie</button>
           <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${p.archived ? "📤 Restaurer" : "📦 Archiver"}</button>
           <div class="sep"></div>
-          <button style="color:#ef4444" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">🗑️ Supprimer</button>
+          <button style="color:var(--status-red)" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">🗑️ Supprimer</button>
         </div></div></td>` : ""}
       </tr>`;
     });
@@ -100,9 +100,9 @@ function renderInventaire() {
 
 function buildInvCard(p, showInput, showOrderBtn) {
   const st = getStatus(p), stock = getCurrentStock(p);
-  const borderColor = st === "red" ? "#c0392b" : st === "yellow" ? "#b8860b" : "#27ae60";
-  const nameColor = st === "red" ? "#c0392b" : st === "yellow" ? "#b8860b" : darkMode ? "#e8e8f4" : "#1a1a2e";
-  const stockColor = st === "red" ? "#c0392b" : st === "yellow" ? "#b8860b" : "#27ae60";
+  const borderColor = st === "red" ? "var(--status-red)" : st === "yellow" ? "var(--status-yellow)" : "var(--status-green)";
+  const nameColor = st === "red" ? "var(--status-red)" : st === "yellow" ? "var(--status-yellow)" : darkMode ? "var(--text)" : "var(--text)";
+  const stockColor = st === "red" ? "var(--status-red)" : st === "yellow" ? "var(--status-yellow)" : "var(--status-green)";
   const sup = p.supplierId ? suppliers.find(s => s.id === p.supplierId) : null;
   const oq = p.orderQty || 0, upb = p.unitsPerBox || 1;
   const oLabel = p.orderUnit === "boîte" ? `${oq} boîte${oq > 1 ? "s" : ""}` : `${oq} unité${oq > 1 ? "s" : ""}`;
@@ -123,7 +123,7 @@ function buildInvCard(p, showInput, showOrderBtn) {
           <button onclick="openMoveModal('${p.id}');closeAllDrops()">📁 Changer catégorie</button>
           <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${p.archived ? "📤 Restaurer" : "📦 Archiver"}</button>
           <div class="sep"></div>
-          <button style="color:#ef4444" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">🗑️ Supprimer</button>
+          <button style="color:var(--status-red)" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">🗑️ Supprimer</button>
         </div></div>` : ""}
       </div>
     </div>
@@ -144,7 +144,7 @@ function buildInvCard(p, showInput, showOrderBtn) {
         ${p.orderUnit === "boîte" ? `<div style="font-size:11px;color:var(--text3)">${units} unités</div>` : ""}
       </div>` : ""}
     </div>
-    ${showOrderBtn ? `<button onclick="openReceiveModal('${p.id}')" style="width:100%;margin-top:12px;background:#27ae60;color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer">📦 Réceptionner la commande</button>` : ""}
+    ${showOrderBtn ? `<button onclick="openReceiveModal('${p.id}')" style="width:100%;margin-top:12px;background:var(--status-green);color:#fff;border:none;border-radius:8px;padding:9px;font-size:13px;font-weight:700;cursor:pointer">📦 Réceptionner la commande</button>` : ""}
   </div>`;
 }
 

@@ -20,39 +20,65 @@ function restoreSession() {
 // ── Login ─────────────────────────────────────────────
 function showLogin() {
   document.getElementById("login-screen").innerHTML = `
-  <div style="min-height:100vh;background:linear-gradient(135deg,#1e293b,#334155);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="min-height:100vh;background:linear-gradient(135deg,var(--header-from),var(--accent-soft));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
     <div style="margin-bottom:28px;text-align:center">
-      <div style="font-weight:900;font-size:32px;letter-spacing:6px;color:#fff">BOCHICA</div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.55);letter-spacing:2px;margin-top:4px">Restaurant Colombien</div>
-      <div style="display:flex;height:3px;width:170px;margin:10px auto 0">
-        <div style="flex:1;background:#f5a623"></div>
-        <div style="flex:1;background:#4a90e2"></div>
-        <div style="flex:1;background:#e74c3c"></div>
+      <div style="font-family:var(--font-heading);font-weight:800;font-size:34px;letter-spacing:6px;color:#faf6f0">BOCHI<span style="color:var(--yellow);font-style:italic">CA</span></div>
+      <div style="font-family:var(--font-body);font-size:11px;color:rgba(250,246,240,0.6);letter-spacing:2.5px;margin-top:6px;text-transform:uppercase;font-weight:500">Gestion interne</div>
+      <div style="display:flex;height:3px;width:170px;margin:12px auto 0" aria-hidden="true">
+        <div style="flex:1;background:var(--yellow)"></div>
+        <div style="flex:1;background:var(--blue)"></div>
+        <div style="flex:1;background:var(--red)"></div>
       </div>
     </div>
-    <div style="background:var(--surface);border-radius:20px;padding:28px;width:100%;max-width:310px;box-shadow:0 25px 60px rgba(0,0,0,0.3)">
-      <h2 style="text-align:center;color:var(--text);font-size:17px;margin-bottom:4px">Connexion</h2>
-      <p style="text-align:center;color:var(--text3);font-size:12px;margin-bottom:18px">Entrez votre code PIN</p>
-      <div class="pin-pad">
-        <div class="pin-display">
+    <div style="background:var(--surface);border-radius:var(--radius-xl);padding:28px;width:100%;max-width:320px;box-shadow:var(--shadow-modal)">
+      <h2 style="font-family:var(--font-heading);text-align:center;color:var(--text);font-size:20px;margin-bottom:4px;font-weight:700;letter-spacing:-.3px">Connexion</h2>
+      <p style="text-align:center;color:var(--text3);font-size:12px;margin-bottom:20px;font-family:var(--font-body)">Entrez votre code PIN à 4 chiffres</p>
+      <form class="pin-pad" onsubmit="event.preventDefault()" aria-label="Saisie du code PIN">
+        <div class="pin-display" role="status" aria-live="polite" aria-label="Chiffres saisis">
           <div class="pin-dot" id="dot0"></div>
           <div class="pin-dot" id="dot1"></div>
           <div class="pin-dot" id="dot2"></div>
           <div class="pin-dot" id="dot3"></div>
         </div>
-        <div class="pin-error" id="pin-error"></div>
+        <div class="pin-error" id="pin-error" role="alert" aria-live="assertive"></div>
         <div class="pin-grid">
-          ${[1,2,3,4,5,6,7,8,9].map(n => `<button class="pin-btn" onclick="pinPress('${n}')">${n}</button>`).join("")}
-          <button class="pin-btn" onclick="pinClear()" style="font-size:11px">Effacer</button>
-          <button class="pin-btn" onclick="pinPress('0')">0</button>
-          <button class="pin-btn" onclick="pinBackspace()" style="font-size:16px">⌫</button>
+          ${[1,2,3,4,5,6,7,8,9].map(n => `<button type="button" class="pin-btn" onclick="pinPress('${n}')" aria-label="Chiffre ${n}">${n}</button>`).join("")}
+          <button type="button" class="pin-btn" onclick="pinClear()" style="font-size:11px" aria-label="Effacer le code">Effacer</button>
+          <button type="button" class="pin-btn" onclick="pinPress('0')" aria-label="Chiffre 0">0</button>
+          <button type="button" class="pin-btn" onclick="pinBackspace()" style="font-size:16px" aria-label="Supprimer le dernier chiffre">⌫</button>
         </div>
-      </div>
+        <p style="text-align:center;color:var(--text3);font-size:11px;margin-top:14px;font-family:var(--font-body)">💡 Vous pouvez aussi taper sur le clavier</p>
+      </form>
     </div>
   </div>`;
   document.getElementById("login-screen").style.display = "block";
   document.getElementById("app-shell").style.display = "none";
+  // Focus sur le premier bouton pour navigation clavier
+  setTimeout(() => {
+    const firstBtn = document.querySelector(".pin-btn");
+    if (firstBtn) firstBtn.focus();
+  }, 50);
 }
+
+// ── Saisie clavier pour le PIN (accessibilité) ────────
+document.addEventListener("keydown", (e) => {
+  // Actif seulement si l'écran de login est affiché
+  const loginScreen = document.getElementById("login-screen");
+  if (!loginScreen || loginScreen.style.display === "none") return;
+  // Ignorer si focus dans un input/textarea
+  if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA") return;
+
+  if (e.key >= "0" && e.key <= "9") {
+    e.preventDefault();
+    pinPress(e.key);
+  } else if (e.key === "Backspace") {
+    e.preventDefault();
+    pinBackspace();
+  } else if (e.key === "Escape" || e.key === "Delete") {
+    e.preventDefault();
+    pinClear();
+  }
+});
 
 function logout() {
   isAdmin = false; isLoggedIn = false; pinBuffer = "";

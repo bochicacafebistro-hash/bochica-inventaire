@@ -18,8 +18,8 @@ function renderRapport() {
   }
 
   h += `<div class="summary-cards">
-    <div class="summary-card" style="border-color:#ef4444"><div style="font-weight:700;font-size:22px;color:#ef4444">${redCnt}</div><div style="font-size:13px;color:#ef4444">⚠️ À commander immédiatement</div></div>
-    <div class="summary-card" style="border-color:#eab308"><div style="font-weight:700;font-size:22px;color:#eab308">${yelCnt}</div><div style="font-size:13px;color:#eab308">🟡 Bientôt bas</div></div>
+    <div class="summary-card" style="border-color:var(--status-red)"><div style="font-weight:700;font-size:22px;color:var(--status-red)">${redCnt}</div><div style="font-size:13px;color:var(--status-red)">⚠️ À commander immédiatement</div></div>
+    <div class="summary-card" style="border-color:var(--status-yellow)"><div style="font-weight:700;font-size:22px;color:var(--status-yellow)">${yelCnt}</div><div style="font-size:13px;color:var(--status-yellow)">🟡 Bientôt bas</div></div>
   </div>`;
 
   getAllSections().filter(s => s !== "Toutes").forEach(section => {
@@ -39,7 +39,7 @@ function printReport() {
     .sort((a, b) => STATUS_ORDER[getStatus(a)] - STATUS_ORDER[getStatus(b)]);
   const rows = toOrder.map(p => {
     const sup = suppliers.find(s => s.id === p.supplierId), st = getStatus(p), stock = getCurrentStock(p);
-    return `<tr style="border-left:4px solid ${st === "red" ? "#ef4444" : "#eab308"}">
+    return `<tr style="border-left:4px solid ${st === "red" ? "var(--status-red)" : "var(--status-yellow)"}">
       <td>${p.name}</td><td>${p.section}</td><td>${stock}</td><td>${p.minimum || 0}</td>
       <td>${orderLabel(p)}${p.orderUnit === "boîte" ? ` (${(p.orderQty || 0) * (p.unitsPerBox || 1)} unités)` : ""}</td>
       <td>${sup ? sup.name : "—"}</td><td>${sup ? sup.contact || "—" : "—"}</td><td>${statusLabel(st)}</td>
@@ -52,10 +52,10 @@ function printReport() {
     <div style="font-size:26px;font-weight:900;letter-spacing:4px">BOCHICA</div>
     <div style="display:flex;height:3px;width:200px;margin:6px 0 14px"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
     <h2>Rapport de commande</h2>
-    <p style="color:#64748b;font-size:13px;margin-bottom:16px">${new Date().toLocaleDateString("fr-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
+    <p style="color:var(--text3);font-size:13px;margin-bottom:16px">${new Date().toLocaleDateString("fr-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
     <table><thead><tr><th>Produit</th><th>Section</th><th>Stock</th><th>Min</th><th>À commander</th><th>Fournisseur</th><th>Contact</th><th>Statut</th></tr></thead>
     <tbody>${rows}</tbody></table><br/>
-    <button onclick="window.print()" style="background:#3b82f6;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Imprimer</button>
+    <button onclick="window.print()" style="background:var(--blue);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:14px;cursor:pointer">🖨️ Imprimer</button>
     </body></html>`);
   win.document.close();
 }
@@ -83,7 +83,7 @@ function renderHistorique() {
 
 // ── Page Tâches ───────────────────────────────────────
 function renderTaches() {
-  const prioColor = { haute: "#ef4444", moyenne: "#f59e0b", basse: "#22c55e" };
+  const prioColor = { haute: "var(--status-red)", moyenne: "var(--status-yellow)", basse: "var(--status-green)" };
   const pendingTasks = tasks.filter(t => t.status !== "Complété").length;
   return `<div class="page">
     <div class="toolbar">
@@ -115,7 +115,7 @@ function renderTaches() {
               <div class="dropdown" id="drop-tk${t.id}">
                 <button onclick="openTaskModal('${t.id}');closeAllDrops()">✏️ Modifier</button>
                 <div class="sep"></div>
-                <button style="color:#ef4444" onclick="askDelete('tasks','${t.id}','${esc(t.title || "")}');closeAllDrops()">🗑️ Supprimer</button>
+                <button style="color:var(--status-red)" onclick="askDelete('tasks','${t.id}','${esc(t.title || "")}');closeAllDrops()">🗑️ Supprimer</button>
               </div></div>` : ""}
           </div>
         </div>`).join("")}
