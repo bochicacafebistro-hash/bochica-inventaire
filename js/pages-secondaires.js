@@ -10,22 +10,22 @@ function renderRapport() {
     <div class="toolbar">
       <div><h2 style="font-size:18px">À commander</h2>
       <p style="font-size:13px;color:var(--text3);margin-top:2px">Produits sous le minimum ou à moins de 20% du seuil</p></div>
-      <button class="btn btn-secondary" onclick="printReport()">🖨️ Exporter</button>
+      <button class="btn btn-secondary" onclick="printReport()">${icon("printer", 16)} Exporter</button>
     </div>`;
 
   if (!toOrder.length) {
-    return h + `<div class="empty"><div style="font-size:48px;margin-bottom:8px">✅</div>Tous les produits sont en quantité suffisante !</div></div>`;
+    return h + `<div class="empty"><div style="margin-bottom:12px;color:var(--status-green);display:flex;justify-content:center">${icon("check-circle", 48)}</div>Tous les produits sont en quantité suffisante !</div></div>`;
   }
 
   h += `<div class="summary-cards">
-    <div class="summary-card" style="border-color:var(--status-red)"><div style="font-weight:700;font-size:22px;color:var(--status-red)">${redCnt}</div><div style="font-size:13px;color:var(--status-red)">⚠️ À commander immédiatement</div></div>
-    <div class="summary-card" style="border-color:var(--status-yellow)"><div style="font-weight:700;font-size:22px;color:var(--status-yellow)">${yelCnt}</div><div style="font-size:13px;color:var(--status-yellow)">🟡 Bientôt bas</div></div>
+    <div class="summary-card" style="border-color:var(--status-red)"><div style="font-weight:700;font-size:22px;color:var(--status-red)">${redCnt}</div><div class="icon-inline" style="font-size:13px;color:var(--status-red)">${icon("alert", 14)} À commander immédiatement</div></div>
+    <div class="summary-card" style="border-color:var(--status-yellow)"><div style="font-weight:700;font-size:22px;color:var(--status-yellow)">${yelCnt}</div><div class="icon-inline" style="font-size:13px;color:var(--status-yellow)">${icon("clock", 14)} Bientôt bas</div></div>
   </div>`;
 
   getAllSections().filter(s => s !== "Toutes").forEach(section => {
     const items = toOrder.filter(p => p.section === section);
     if (!items.length) return;
-    h += `<h3 style="font-size:13px;color:var(--text2);border-bottom:2px solid var(--border);padding-bottom:6px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">📁 ${section}</h3>
+    h += `<h3 class="icon-inline" style="font-size:13px;color:var(--text2);border-bottom:2px solid var(--border);padding-bottom:6px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">${icon("folder", 14)} ${section}</h3>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:24px">`;
     items.forEach(p => { h += buildInvCard(p, false, true); });
     h += `</div>`;
@@ -65,11 +65,11 @@ function renderHistorique() {
   const filtered = logs.filter(l => logFilter === "" || l.productName?.toLowerCase().includes(logFilter.toLowerCase()));
   return `<div class="page">
     <div class="toolbar"><h2 style="font-size:18px">Historique</h2></div>
-    <div style="margin-bottom:14px"><div class="search-box" style="max-width:320px"><span style="color:var(--text3)">🔍</span>
+    <div style="margin-bottom:14px"><div class="search-box" style="max-width:320px"><span style="color:var(--text3);display:flex">${icon("search", 16)}</span>
       <input type="text" placeholder="Filtrer par produit..." value="${logFilter}" oninput="setLogFilter(this.value)"/>
     </div></div>
     ${filtered.length === 0
-      ? `<div class="empty"><div style="font-size:36px;margin-bottom:8px">📋</div>Aucune entrée.</div>`
+      ? `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("history", 36)}</div>Aucune entrée.</div>`
       : `<div class="table-wrap"><div style="padding:4px 0">${filtered.map(l => `
         <div class="log-item" style="padding:10px 16px">
           <div style="display:flex;justify-content:space-between;gap:8px">
@@ -89,37 +89,38 @@ function renderTaches() {
     <div class="toolbar">
       <div><h2 style="font-size:18px">Tâches</h2>
       <p style="font-size:13px;color:var(--text3);margin-top:2px">${pendingTasks} tâche${pendingTasks > 1 ? "s" : ""} en attente</p></div>
-      ${isAdmin ? `<button class="btn btn-primary" onclick="openTaskModal()">+ Tâche</button>` : ""}
+      ${isAdmin ? `<button class="btn btn-primary" onclick="openTaskModal()">${icon("plus", 16)} Tâche</button>` : ""}
     </div>
     <div class="task-cols">
     ${TASK_COLS.map(col => {
       const items = tasks.filter(t => t.status === col);
+      const colIcon = col === "À faire" ? "clipboard" : col === "En cours" ? "refresh" : "check-circle";
       return `<div class="task-col">
-        <div class="col-title">${col === "À faire" ? "📋" : col === "En cours" ? "🔄" : "✅"} ${col}
-          <span style="background:var(--surface3);border-radius:10px;padding:1px 7px;font-size:11px">${items.length}</span>
+        <div class="col-title icon-inline">${icon(colIcon, 14)} ${col}
+          <span style="background:var(--surface3);border-radius:10px;padding:1px 7px;font-size:11px;margin-left:6px">${items.length}</span>
         </div>
         ${items.map(t => `<div class="task-card" onclick="${isAdmin ? `openTaskModal('${t.id}')` : `cycleTaskStatus('${t.id}','${t.status}')`}">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div style="flex:1">
               <div style="font-weight:600;font-size:14px;display:flex;align-items:center">
-                <span class="task-prio" style="background:${prioColor[t.priority] || "#94a3b8"}"></span>${t.title || ""}
+                <span class="task-prio" style="background:${prioColor[t.priority] || "var(--text3)"}"></span>${t.title || ""}
               </div>
               ${t.description ? `<div style="font-size:12px;color:var(--text2);margin-top:4px">${t.description}</div>` : ""}
               <div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">
-                ${t.assignedTo ? `<span style="font-size:11px;color:var(--text3)">👤 ${t.assignedTo}</span>` : ""}
-                ${t.dueDate ? `<span style="font-size:11px;color:var(--text3)">📅 ${t.dueDate}</span>` : ""}
+                ${t.assignedTo ? `<span class="icon-inline" style="font-size:11px;color:var(--text3)">${icon("user", 11)} ${t.assignedTo}</span>` : ""}
+                ${t.dueDate ? `<span class="icon-inline" style="font-size:11px;color:var(--text3)">${icon("calendar", 11)} ${t.dueDate}</span>` : ""}
               </div>
             </div>
             ${isAdmin ? `<div class="menu-wrap" onclick="event.stopPropagation()">
-              <button class="dots-btn" onclick="toggleDrop('tk${t.id}')">⋯</button>
+              <button class="dots-btn" onclick="toggleDrop('tk${t.id}')" aria-label="Actions">${icon("more-vertical", 16)}</button>
               <div class="dropdown" id="drop-tk${t.id}">
-                <button onclick="openTaskModal('${t.id}');closeAllDrops()">✏️ Modifier</button>
+                <button onclick="openTaskModal('${t.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
                 <div class="sep"></div>
-                <button style="color:var(--status-red)" onclick="askDelete('tasks','${t.id}','${esc(t.title || "")}');closeAllDrops()">🗑️ Supprimer</button>
+                <button style="color:var(--status-red)" onclick="askDelete('tasks','${t.id}','${esc(t.title || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
               </div></div>` : ""}
           </div>
         </div>`).join("")}
-        ${isAdmin ? `<button onclick="openTaskModal(null,'${col}')" style="width:100%;border:1px dashed var(--border);background:none;color:var(--text3);border-radius:8px;padding:8px;cursor:pointer;font-size:13px;margin-top:4px">+ Ajouter</button>` : ""}
+        ${isAdmin ? `<button onclick="openTaskModal(null,'${col}')" style="width:100%;border:1px dashed var(--border);background:none;color:var(--text3);border-radius:8px;padding:8px;cursor:pointer;font-size:13px;margin-top:4px;display:inline-flex;align-items:center;justify-content:center;gap:6px">${icon("plus", 14)} Ajouter</button>` : ""}
       </div>`;
     }).join("")}
     </div>
@@ -137,15 +138,15 @@ function openTaskModal(id, defaultCol) {
   const t = id ? tasks.find(x => x.id === id) : null;
   const empNames = employees.map(e => e.name || "").filter(Boolean);
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>${t ? "Modifier" : "Ajouter"} une tâche</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>${t ? "Modifier" : "Ajouter"} une tâche</h3><button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button></div>
     <label>Titre<input id="t-title" value="${esc(t?.title || "")}"/></label>
     <label>Description<textarea id="t-desc" style="height:80px">${t?.description || ""}</textarea></label>
     <div class="form-row">
       <label>Statut<select id="t-status">${TASK_COLS.map(c => `<option value="${c}" ${(t?.status || defaultCol || "À faire") === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>
       <label>Priorité<select id="t-prio">
-        <option value="basse" ${t?.priority === "basse" ? "selected" : ""}>🟢 Basse</option>
-        <option value="moyenne" ${(t?.priority || "moyenne") === "moyenne" ? "selected" : ""}>🟡 Moyenne</option>
-        <option value="haute" ${t?.priority === "haute" ? "selected" : ""}>🔴 Haute</option>
+        <option value="basse" ${t?.priority === "basse" ? "selected" : ""}>Basse</option>
+        <option value="moyenne" ${(t?.priority || "moyenne") === "moyenne" ? "selected" : ""}>Moyenne</option>
+        <option value="haute" ${t?.priority === "haute" ? "selected" : ""}>Haute</option>
       </select></label>
     </div>
     <div class="form-row">

@@ -7,7 +7,7 @@ function renderEmployes() {
   return `<div class="page">
     <div class="toolbar">
       <h2 style="font-size:18px">Employés & Horaires</h2>
-      <button class="btn btn-primary" onclick="openEmployeeModal()">+ Employé</button>
+      <button class="btn btn-primary" onclick="openEmployeeModal()">${icon("plus", 16)} Employé</button>
     </div>
     ${employees.length === 0
       ? `<div class="empty"><div style="font-size:36px;margin-bottom:8px">👥</div>Aucun employé enregistré.</div>`
@@ -27,7 +27,7 @@ function renderEmployes() {
               return `<div class="sch-cell ${s ? "has-shift" : ""}" onclick="openShiftModal('${emp.id}','${dk}')">
                 ${s
                   ? `<div class="shift-tag" style="background:${s.color || "var(--blue)"}">${s.label || ""}
-                      <span onclick="event.stopPropagation();removeShift('${emp.id}','${dk}')" style="cursor:pointer;opacity:.7;margin-left:4px">✕</span>
+                      <span onclick="event.stopPropagation();removeShift('${emp.id}','${dk}')" style="cursor:pointer;opacity:.7;margin-left:4px">${icon("x", 18)}</span>
                     </div>`
                   : `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px">+</div>`}
               </div>`;
@@ -42,15 +42,15 @@ function renderEmployes() {
             <div>
               <div style="font-weight:700;font-size:15px">👤 ${emp.name || ""}</div>
               ${emp.role ? `<div style="font-size:13px;color:var(--text3);margin-top:2px">${emp.role}</div>` : ""}
-              ${emp.phone ? `<div style="font-size:13px;color:var(--text2);margin-top:4px">📞 ${emp.phone}</div>` : ""}
+              ${emp.phone ? `<div style="font-size:13px;color:var(--text2);margin-top:4px">${icon("phone", 12)} ${emp.phone}</div>` : ""}
               ${emp.email ? `<div style="font-size:13px;color:var(--text2)">✉️ ${emp.email}</div>` : ""}
               ${emp.pin ? `<div style="font-size:12px;color:var(--text3);margin-top:4px">🔑 PIN : ${emp.pin}</div>` : ""}
             </div>
-            <div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('emp${emp.id}')">⋯</button>
+            <div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('emp${emp.id}')">${icon("more-vertical", 16)}</button>
             <div class="dropdown" id="drop-emp${emp.id}">
-              <button onclick="openEmployeeModal('${emp.id}');closeAllDrops()">✏️ Modifier</button>
+              <button onclick="openEmployeeModal('${emp.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
               <div class="sep"></div>
-              <button style="color:var(--status-red)" onclick="askDelete('employees','${emp.id}','${esc(emp.name || "")}');closeAllDrops()">🗑️ Supprimer</button>
+              <button style="color:var(--status-red)" onclick="askDelete('employees','${emp.id}','${esc(emp.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
             </div></div>
           </div>
         </div>`).join("")}
@@ -73,7 +73,7 @@ async function removeShift(empId, dayKey) {
 function openEmployeeModal(id) {
   const emp = id ? employees.find(x => x.id === id) : null;
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>${emp ? "Modifier" : "Ajouter"} un employé</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>${emp ? "Modifier" : "Ajouter"} un employé</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
     <label>Nom<input id="e-name" value="${esc(emp?.name || "")}"/></label>
     <label>Poste / Rôle<input id="e-role" value="${esc(emp?.role || "")}" placeholder="ex: Serveur, Cuisinier..."/></label>
     <div class="form-row">
@@ -109,7 +109,7 @@ async function saveEmployee(id) {
 
 function openShiftModal(empId, dayKey) {
   showModal(`<div class="modal" style="max-width:320px">
-    <div class="modal-header"><h3>🕐 Quart de travail</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>🕐 Quart de travail</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
     <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Sélectionnez le type de quart :</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       ${SHIFT_TYPES.map(s => `<button onclick="assignShift('${empId}','${dayKey}','${s.label}','${s.color}')"
@@ -252,14 +252,14 @@ function renderDepenses() {
   let monthPicker = "";
   if (activeExpensePeriod === "mois") {
     monthPicker = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <button onclick="changeExpenseMonth(-1)" style="border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text)">◀</button>
+      <button onclick="changeExpenseMonth(-1)" style="border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text)">${icon("chevron-left", 14)}</button>
       <select onchange="setExpenseMonthYear(this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;background:var(--surface);color:var(--text);font-size:14px">
         ${Array.from({length:12},(_,i)=>`<option value="${i}" ${i===selectedExpenseMonth?"selected":""}>${MONTHS_FR[i]}</option>`).join("")}
       </select>
       <select onchange="setExpenseYear(this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;background:var(--surface);color:var(--text);font-size:14px">
         ${[now.getFullYear()-1, now.getFullYear(), now.getFullYear()+1].map(y=>`<option value="${y}" ${y===selectedExpenseYear?"selected":""}>${y}</option>`).join("")}
       </select>
-      <button onclick="changeExpenseMonth(1)" style="border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text)">▶</button>
+      <button onclick="changeExpenseMonth(1)" style="border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text)">${icon("chevron-right", 14)}</button>
       <span style="font-size:13px;color:var(--text3)">${MONTHS_FR[selectedExpenseMonth]} ${selectedExpenseYear}</span>
     </div>`;
   }
@@ -268,10 +268,11 @@ function renderDepenses() {
     <div class="toolbar">
       <h2 style="font-size:18px">Dépenses & Revenus</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="openRevenueModal()">+ Revenu</button>
-        <button class="btn btn-primary" onclick="openExpenseModal()">+ Dépense</button>
-        ${isAdmin ? `<button class="btn btn-secondary" onclick="openExpenseCatModal()">⚙️ Catégories</button>` : ""}
-        ${isAdmin ? `<button class="btn btn-secondary" onclick="openFixedTemplatesModal()">🔒 Frais fixes</button>` : ""}
+        <button class="btn btn-primary" onclick="openRevenueModal()">${icon("plus", 16)} Revenu</button>
+        <button class="btn btn-primary" onclick="openExpenseModal()">${icon("plus", 16)} Dépense</button>
+        ${isAdmin ? `<button class="btn btn-secondary" onclick="openCustomReportModal()">${icon("file-spreadsheet", 14)} Rapport</button>` : ""}
+        ${isAdmin ? `<button class="btn btn-secondary" onclick="openExpenseCatModal()">${icon("settings", 14)} Catégories</button>` : ""}
+        ${isAdmin ? `<button class="btn btn-secondary" onclick="openFixedTemplatesModal()">${icon("shield-check", 14)} Frais fixes</button>` : ""}
       </div>
     </div>
 
@@ -285,7 +286,7 @@ function renderDepenses() {
     <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:20px">
       <div class="stat-card" style="border-left:4px solid var(--status-green)">
         <div class="stat-num" style="color:var(--status-green)">${fmtMoney(totalRev)}</div>
-        <div class="stat-label">💰 Revenus</div>
+        <div class="stat-label">${icon("wallet", 14)} Revenus</div>
       </div>
       <div class="stat-card" style="border-left:4px solid var(--status-red)">
         <div class="stat-num" style="color:var(--status-red)">${fmtMoney(totalExp)}</div>
@@ -305,83 +306,59 @@ function renderDepenses() {
       </div>
       <div class="stat-card" style="border-left:4px solid var(--text3)">
         <div class="stat-num" style="font-size:20px;color:var(--text3)">${fmtMoney(totalVar)}</div>
-        <div class="stat-label">📊 Frais variables</div>
+        <div class="stat-label">${icon("bar-chart", 14)} Frais variables</div>
       </div>
     </div>
 
-    <!-- Graphiques -->
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-bottom:24px">
-
-      <!-- Barres : Revenus vs Dépenses -->
-      <div class="card">
-        <div style="font-weight:700;font-size:14px;margin-bottom:16px">📊 Revenus vs Dépenses — 6 derniers mois</div>
-        <div style="display:flex;align-items:flex-end;gap:8px;height:140px;padding-bottom:24px;position:relative">
-          ${last6.map((m, i) => {
-            const rev = chartRevs[i], exp = chartExps[i];
-            const revH = Math.round((rev / chartMax) * 120);
-            const expH = Math.round((exp / chartMax) * 120);
-            return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative">
-              <div style="display:flex;align-items:flex-end;gap:2px;height:120px">
-                <div title="${fmtMoney(rev)}" style="width:12px;height:${revH}px;background:var(--status-green);border-radius:3px 3px 0 0;min-height:${rev>0?2:0}px"></div>
-                <div title="${fmtMoney(exp)}" style="width:12px;height:${expH}px;background:var(--status-red);border-radius:3px 3px 0 0;min-height:${exp>0?2:0}px"></div>
-              </div>
-              <div style="font-size:10px;color:var(--text3);position:absolute;bottom:0">${m.label}</div>
-            </div>`;
-          }).join("")}
+    <!-- Graphiques Chart.js — pleine largeur, modernes -->
+    <div class="charts-wrap">
+      <!-- Combo bars + line : Revenus vs Dépenses + Profit (6 mois) -->
+      <div class="card chart-card chart-card--wide">
+        <div class="chart-card__header">
+          <div class="chart-card__title">${icon("trending-up", 16)} Revenus, Dépenses & Profit — 6 derniers mois</div>
+          <div class="chart-card__sub">Survolez les barres pour voir les détails</div>
         </div>
-        <div style="display:flex;gap:16px;margin-top:4px">
-          <span style="font-size:11px;color:var(--status-green);font-weight:600">■ Revenus</span>
-          <span style="font-size:11px;color:var(--status-red);font-weight:600">■ Dépenses</span>
-        </div>
+        <div class="chart-canvas-wrap"><canvas id="chart-revenue-expense"></canvas></div>
       </div>
 
-      <!-- Camembert : Dépenses par catégorie -->
-      <div class="card">
-        <div style="font-weight:700;font-size:14px;margin-bottom:16px">🥧 Dépenses par catégorie</div>
+      <!-- Doughnut : Dépenses par catégorie -->
+      <div class="card chart-card">
+        <div class="chart-card__header">
+          <div class="chart-card__title">${icon("pie-chart", 16)} Répartition des dépenses</div>
+          <div class="chart-card__sub">${catTotals.length === 0 ? "Aucune dépense" : `${catTotals.length} catégorie${catTotals.length > 1 ? "s" : ""}`}</div>
+        </div>
         ${catTotals.length === 0
-          ? `<div style="text-align:center;color:var(--text3);padding:40px 0">Aucune dépense</div>`
-          : `<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">
-            <svg viewBox="0 0 100 100" style="width:120px;height:120px;flex-shrink:0">
-              ${(() => {
-                let offset = 0;
-                return catTotals.map((c, i) => {
-                  const pct = c.total / pieTotal;
-                  const dash = pct * 100;
-                  const gap = 100 - dash;
-                  const rotate = offset * 3.6;
-                  offset += pct * 100;
-                  return `<circle cx="50" cy="50" r="15.915" fill="none" stroke="${pieColors[i%pieColors.length]}" stroke-width="30"
-                    stroke-dasharray="${dash} ${gap}" stroke-dashoffset="${25 - offset + pct*100}" transform="rotate(${rotate-90} 50 50)"/>`;
-                }).join("");
-              })()}
-            </svg>
-            <div style="flex:1;min-width:120px">
-              ${catTotals.map((c, i) => `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">
-                <div style="width:10px;height:10px;border-radius:2px;background:${pieColors[i%pieColors.length]};flex-shrink:0"></div>
-                <span style="font-size:11px;color:var(--text2);flex:1">${c.cat}</span>
-                <span style="font-size:11px;font-weight:700;color:var(--text)">${fmtMoney(c.total)}</span>
-              </div>`).join("")}
-            </div>
-          </div>`}
+          ? `<div class="empty" style="margin-top:20px">${icon("pie-chart", 48)}<br/>Aucune dépense pour cette période</div>`
+          : `<div class="chart-canvas-wrap"><canvas id="chart-categories"></canvas></div>`}
       </div>
     </div>
+
+    <!-- Données pour Chart.js (injectées via JSON pour éviter les soucis d'échappement) -->
+    <script type="application/json" id="chart-data">${JSON.stringify({
+      months: last6.map(m => m.label + " " + String(m.year).slice(-2)),
+      revenues: chartRevs,
+      expenses: chartExps,
+      categories: catTotals.map(c => c.cat),
+      categoryAmounts: catTotals.map(c => c.total),
+      darkMode
+    })}</script>
 
     <!-- Revenus -->
     ${filteredRev.length > 0 ? `
-    <h3 style="font-size:15px;margin-bottom:10px">💰 Revenus</h3>
+    <h3 style="font-size:15px;margin-bottom:10px">${icon("wallet", 14)} Revenus</h3>
     <div class="table-wrap overflow" style="margin-bottom:20px">
-      <table><thead><tr><th>Date</th><th>Description</th><th>Montant</th><th>TPS</th><th>TVQ</th><th></th></tr></thead>
+      <table><thead><tr><th>Période</th><th>Description</th><th>Montant</th><th>TPS</th><th>TVQ</th><th></th></tr></thead>
       <tbody>${filteredRev.map(r => `<tr>
-        <td>${r.date||""}</td>
+        <td style="white-space:nowrap;font-size:12px;color:var(--text2)">${fmtRevenuePeriod(r) || r.date || ""}</td>
         <td><strong>${r.description||""}</strong></td>
         <td style="font-weight:700;color:var(--status-green)">${fmtMoney(r.amount)}</td>
         <td style="color:var(--text3)">${r.tps?fmtMoney(r.tps):"—"}</td>
         <td style="color:var(--text3)">${r.tvq?fmtMoney(r.tvq):"—"}</td>
-        <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('rev${r.id}')">⋯</button>
+        <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('rev${r.id}')">${icon("more-vertical", 16)}</button>
           <div class="dropdown" id="drop-rev${r.id}">
-            <button onclick="openRevenueModal('${r.id}');closeAllDrops()">✏️ Modifier</button>
+            <button onclick="openRevenueModal('${r.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
             <div class="sep"></div>
-            <button style="color:var(--status-red)" onclick="askDelete('revenues','${r.id}','${esc(r.description||"")}');closeAllDrops()">🗑️ Supprimer</button>
+            <button style="color:var(--status-red)" onclick="askDelete('revenues','${r.id}','${esc(r.description||"")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
           </div></div></td>
       </tr>`).join("")}</tbody></table>
     </div>` : ""}
@@ -404,11 +381,11 @@ function renderDepenses() {
               <td style="color:var(--text3)">${e.tps?fmtMoney(e.tps):"—"}</td>
               <td style="color:var(--text3)">${e.tvq?fmtMoney(e.tvq):"—"}</td>
               <td style="font-weight:700">${fmtMoney(total)}</td>
-              <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('exp${e.id}')">⋯</button>
+              <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('exp${e.id}')">${icon("more-vertical", 16)}</button>
                 <div class="dropdown" id="drop-exp${e.id}">
-                  <button onclick="openExpenseModal('${e.id}');closeAllDrops()">✏️ Modifier</button>
+                  <button onclick="openExpenseModal('${e.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
                   <div class="sep"></div>
-                  <button style="color:var(--status-red)" onclick="askDelete('expenses','${e.id}','${esc(e.supplier||e.description||"")}');closeAllDrops()">🗑️ Supprimer</button>
+                  <button style="color:var(--status-red)" onclick="askDelete('expenses','${e.id}','${esc(e.supplier||e.description||"")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
                 </div></div></td>
             </tr>`;
           }).join("")}
@@ -435,16 +412,17 @@ function openExpenseModal(id) {
   const currentType = e?.type || getExpenseCatType(currentCat);
 
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>${e ? "Modifier" : "Ajouter"} une dépense</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>${e ? "Modifier" : "Ajouter"} une dépense</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
 
     <label>Description
       <input id="ex-desc" value="${esc(e?.description||"")}"/>
     </label>
     <label>Fournisseur (optionnel)
-      <select id="ex-sup">
-        <option value="">— Aucun —</option>
-        ${suppliers.map(s => `<option value="${s.name}" ${e?.supplier===s.name?"selected":""}>${s.name}</option>`).join("")}
-      </select>
+      <input id="ex-sup" list="ex-sup-list" value="${esc(e?.supplier||"")}" placeholder="Tapez un nom (création auto si nouveau)" autocomplete="off"/>
+      <datalist id="ex-sup-list">
+        ${suppliers.map(s => `<option value="${esc(s.name)}"></option>`).join("")}
+      </datalist>
+      <small class="field-hint">${icon("info", 11)} Si le fournisseur n'existe pas, il sera créé automatiquement à l'enregistrement.</small>
     </label>
 
     <div class="form-row">
@@ -455,7 +433,7 @@ function openExpenseModal(id) {
       </label>
       <label>Type de frais
         <select id="ex-type">
-          <option value="variable" ${currentType==="variable"?"selected":""}>📊 Variable</option>
+          <option value="variable" ${currentType==="variable"?"selected":""}>${icon("bar-chart", 14)} Variable</option>
           <option value="fixe" ${currentType==="fixe"?"selected":""}>🔒 Fixe</option>
         </select>
       </label>
@@ -506,11 +484,32 @@ function calcExpenseTaxes() {
   if (prev && amt > 0) prev.innerHTML = `Total avec taxes : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
 }
 async function saveExpense(id) {
-  const sup = document.getElementById("ex-sup").value;
+  const sup = document.getElementById("ex-sup").value.trim();
   const desc = document.getElementById("ex-desc").value.trim();
   const amt = Number(document.getElementById("ex-amt").value) || 0;
   if (!desc) return alert("Entrez une description.");
   if (!amt) return alert("Entrez un montant.");
+
+  // Auto-création du fournisseur si saisi mais non existant
+  if (sup) {
+    const existing = suppliers.find(s => (s.name || "").trim().toLowerCase() === sup.toLowerCase());
+    if (!existing) {
+      try {
+        const sid = genId();
+        await db.collection("suppliers").doc(sid).set({
+          id: sid,
+          name: sup,
+          contact: "",
+          email: "",
+          notes: "Créé automatiquement depuis une dépense"
+        });
+        await addLog(sup, "Création fournisseur", "Auto-créé depuis modal dépense");
+      } catch (err) {
+        console.warn("Impossible de créer le fournisseur :", err);
+      }
+    }
+  }
+
   const type = document.getElementById("ex-type").value;
   const data = {
     supplier: sup,
@@ -532,10 +531,23 @@ async function saveExpense(id) {
 function openRevenueModal(id) {
   const r = id ? revenues.find(x => x.id === id) : null;
   const today = new Date().toISOString().slice(0, 10);
+  // Compatibilité : si l'ancien champ "date" existe sans dateStart, le réutiliser
+  const startDate = r?.dateStart || r?.date || today;
+  const endDate = r?.dateEnd || "";
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>${r ? "Modifier" : "Ajouter"} un revenu</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>${r ? "Modifier" : "Ajouter"} un revenu</h3><button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button></div>
     <label>Description<input id="rv-desc" value="${esc(r?.description||"")}"/></label>
-    <label>Date<input id="rv-date" type="date" value="${r?.date||today}"/></label>
+
+    <div class="form-row">
+      <label>Date de début
+        <input id="rv-date-start" type="date" value="${startDate}" required/>
+      </label>
+      <label>Date de fin <span style="font-weight:400;color:var(--text3);font-size:11px">(optionnel)</span>
+        <input id="rv-date-end" type="date" value="${endDate}" min="${startDate}"/>
+      </label>
+    </div>
+    <small class="field-hint" style="margin-top:-6px;margin-bottom:10px;display:block">${icon("info", 11)} Laissez la date de fin vide pour un revenu ponctuel. Sinon, le revenu couvrira toute la période (utile pour une semaine, un mois, etc.).</small>
+
     <label>Montant ($)
       <input id="rv-amt" type="number" step="0.01" value="${r?.amount||""}" oninput="calcRevenueTaxes()"/>
     </label>
@@ -555,6 +567,17 @@ function openRevenueModal(id) {
     </div>
   </div>`);
   setTimeout(calcRevenueTaxes, 50);
+  // Synchroniser le min de dateEnd avec dateStart
+  setTimeout(() => {
+    const startEl = document.getElementById("rv-date-start");
+    const endEl = document.getElementById("rv-date-end");
+    if (startEl && endEl) {
+      startEl.addEventListener("change", () => {
+        endEl.min = startEl.value;
+        if (endEl.value && endEl.value < startEl.value) endEl.value = startEl.value;
+      });
+    }
+  }, 50);
 }
 
 function calcRevenueTaxes() {
@@ -574,12 +597,18 @@ async function saveRevenue(id) {
   const amt = Number(document.getElementById("rv-amt").value) || 0;
   if (!desc) return alert("Entrez une description.");
   if (!amt) return alert("Entrez un montant.");
+  const dateStart = document.getElementById("rv-date-start").value;
+  const dateEnd = document.getElementById("rv-date-end").value || null;
+  if (!dateStart) return alert("Entrez une date de début.");
+  if (dateEnd && dateEnd < dateStart) return alert("La date de fin doit être après la date de début.");
   const data = {
     description: desc,
     amount: amt,
     tps: Number(document.getElementById("rv-tps").value) || 0,
     tvq: Number(document.getElementById("rv-tvq").value) || 0,
-    date: document.getElementById("rv-date").value,
+    dateStart,
+    dateEnd,
+    date: dateStart, // Compatibilité : date = dateStart pour le tri/affichage existant
     notes: document.getElementById("rv-notes").value
   };
   if (id) await db.collection("revenues").doc(id).update(data);
@@ -587,10 +616,31 @@ async function saveRevenue(id) {
   closeModal();
 }
 
+// Helper : formater la plage de dates d'un revenu pour affichage
+function fmtRevenuePeriod(r) {
+  if (!r) return "";
+  const start = r.dateStart || r.date;
+  const end = r.dateEnd;
+  if (!end || end === start) return start || "";
+  // Plage : "10 nov - 16 nov 2026" si même année, sinon dates complètes
+  try {
+    const ds = new Date(start), de = new Date(end);
+    const sameYear = ds.getFullYear() === de.getFullYear();
+    const optShort = { day: "numeric", month: "short" };
+    const optFull = { day: "numeric", month: "short", year: "numeric" };
+    if (sameYear) {
+      return `${ds.toLocaleDateString("fr-CA", optShort)} – ${de.toLocaleDateString("fr-CA", optFull)}`;
+    }
+    return `${ds.toLocaleDateString("fr-CA", optFull)} – ${de.toLocaleDateString("fr-CA", optFull)}`;
+  } catch {
+    return `${start} – ${end}`;
+  }
+}
+
 // ── Modal Fournisseur rapide ──────────────────────────
 function openQuickSupplier() {
   showModal(`<div class="modal" style="max-width:380px">
-    <div class="modal-header"><h3>🏪 Nouveau fournisseur</h3><button class="close-btn" onclick="openExpenseModal()">✕</button></div>
+    <div class="modal-header"><h3>🏪 Nouveau fournisseur</h3><button class="close-btn" onclick="openExpenseModal()">${icon("x", 18)}</button></div>
     <label>Nom<input id="qs-name" placeholder="Nom du fournisseur"/></label>
     <label>Téléphone<input id="qs-phone"/></label>
     <label>Courriel<input id="qs-email"/></label>
@@ -614,7 +664,7 @@ async function saveQuickSupplier() {
 function openExpenseCatModal() {
   const customs = expenseCategories;
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>⚙️ Catégories de dépenses</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>⚙️ Catégories de dépenses</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
     <p style="font-size:12px;color:var(--text3);margin-bottom:8px">Catégories par défaut :</p>
     <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px">
       ${EXPENSE_CATS.map(c => `<span class="badge-pill ${c.type==="fixe"?"green":"yellow"}">${c.name} · ${c.type}</span>`).join("")}
@@ -632,7 +682,7 @@ function openExpenseCatModal() {
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
       <input id="new-cat-name" placeholder="Nom de la catégorie" style="flex:2"/>
       <select id="new-cat-type" style="flex:1">
-        <option value="variable">📊 Variable</option>
+        <option value="variable">${icon("bar-chart", 14)} Variable</option>
         <option value="fixe">🔒 Fixe</option>
       </select>
       <button class="btn btn-primary" onclick="addExpenseCat()">Ajouter</button>
@@ -658,7 +708,7 @@ async function deleteExpenseCat(id) {
 function openFixedTemplatesModal() {
   const templates = fixedExpenseTemplates;
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>🔒 Modèles de frais fixes</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>🔒 Modèles de frais fixes</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
     <p style="font-size:12px;color:var(--text3);margin-bottom:12px">Ces frais sont copiés automatiquement le 1er de chaque mois.</p>
     <div style="margin-bottom:12px">
       ${templates.length === 0
@@ -733,7 +783,7 @@ function renderMenu() {
     <div class="toolbar">
       <div><h2 style="font-size:18px">Menu</h2>
       <p style="font-size:13px;color:var(--text3);margin-top:2px">${available} item${available > 1 ? "s" : ""} disponible${available > 1 ? "s" : ""}</p></div>
-      <button class="btn btn-primary" onclick="openMenuModal()">+ Item</button>
+      <button class="btn btn-primary" onclick="openMenuModal()">${icon("plus", 16)} Item</button>
     </div>
     <div class="sec-tabs">${cats.map(c => `<button class="sec-btn ${activeMenuCat === c ? "active" : ""}" onclick="setMenuCat('${c}')">${c}</button>`).join("")}</div>
     ${filtered.length === 0
@@ -749,12 +799,12 @@ function renderMenu() {
           </div>
           <div style="text-align:right;flex-shrink:0;margin-left:12px">
             <div class="price-tag">${fmtMoney(m.price)}</div>
-            <div class="menu-wrap" style="margin-top:6px"><button class="dots-btn" onclick="toggleDrop('mn${m.id}')">⋯</button>
+            <div class="menu-wrap" style="margin-top:6px"><button class="dots-btn" onclick="toggleDrop('mn${m.id}')">${icon("more-vertical", 16)}</button>
             <div class="dropdown" id="drop-mn${m.id}">
-              <button onclick="openMenuModal('${m.id}');closeAllDrops()">✏️ Modifier</button>
+              <button onclick="openMenuModal('${m.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
               <button onclick="toggleMenuAvailable('${m.id}',${m.available !== false});closeAllDrops()">${m.available === false ? "✅ Marquer disponible" : "⛔ Marquer indisponible"}</button>
               <div class="sep"></div>
-              <button style="color:var(--status-red)" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">🗑️ Supprimer</button>
+              <button style="color:var(--status-red)" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
             </div></div>
           </div>
         </div>`).join("")}</div>`}
@@ -768,7 +818,7 @@ async function toggleMenuAvailable(id, current) {
 function openMenuModal(id) {
   const m = id ? menuItems.find(x => x.id === id) : null;
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>${m ? "Modifier" : "Ajouter"} un item au menu</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>${m ? "Modifier" : "Ajouter"} un item au menu</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
     <label>Nom<input id="mn-name" value="${esc(m?.name || "")}"/></label>
     <label>Description<textarea id="mn-desc" style="height:70px">${m?.description || ""}</textarea></label>
     <div class="form-row">
@@ -803,7 +853,7 @@ function renderFournisseurs() {
   return `<div class="page">
     <div class="toolbar">
       <h2 style="font-size:18px">Fournisseurs</h2>
-      ${isAdmin ? `<button class="btn btn-primary" onclick="openSupplierModal()">+ Fournisseur</button>` : ""}
+      ${isAdmin ? `<button class="btn btn-primary" onclick="openSupplierModal()">${icon("plus", 16)} Fournisseur</button>` : ""}
     </div>
     ${suppliers.length === 0
       ? `<div class="empty"><div style="font-size:40px;margin-bottom:8px">🏪</div>Aucun fournisseur.</div>`
@@ -813,15 +863,15 @@ function renderFournisseurs() {
             <div style="display:flex;justify-content:space-between">
               <div>
                 <div style="font-weight:700;font-size:16px">🏪 ${s.name || ""}</div>
-                ${s.contact ? `<div style="color:var(--text2);font-size:13px;margin-top:4px">📞 ${s.contact}</div>` : ""}
+                ${s.contact ? `<div style="color:var(--text2);font-size:13px;margin-top:4px">${icon("phone", 12)} ${s.contact}</div>` : ""}
                 ${s.email ? `<div style="color:var(--text2);font-size:13px">✉️ ${s.email}</div>` : ""}
                 ${s.notes ? `<div style="color:var(--text3);font-size:12px;margin-top:6px;font-style:italic">${s.notes}</div>` : ""}
               </div>
-              ${isAdmin ? `<div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('sup${s.id}')">⋯</button>
+              ${isAdmin ? `<div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('sup${s.id}')">${icon("more-vertical", 16)}</button>
                 <div class="dropdown" id="drop-sup${s.id}">
-                  <button onclick="openSupplierModal('${s.id}');closeAllDrops()">✏️ Modifier</button>
+                  <button onclick="openSupplierModal('${s.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
                   <div class="sep"></div>
-                  <button style="color:var(--status-red)" onclick="askDelete('suppliers','${s.id}','${esc(s.name || "")}');closeAllDrops()">🗑️ Supprimer</button>
+                  <button style="color:var(--status-red)" onclick="askDelete('suppliers','${s.id}','${esc(s.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
                 </div></div>` : ""}
             </div>
             ${linked.length ? `<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
@@ -836,7 +886,7 @@ function renderFournisseurs() {
 function openSupplierModal(id) {
   const s = id ? suppliers.find(x => x.id === id) : null;
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>${s ? "Modifier" : "Ajouter"} un fournisseur</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>${s ? "Modifier" : "Ajouter"} un fournisseur</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
     <label>Nom<input id="s-name" value="${esc(s?.name || "")}"/></label>
     <label>Téléphone<input id="s-contact" value="${esc(s?.contact || "")}"/></label>
     <label>Courriel<input id="s-email" value="${esc(s?.email || "")}"/></label>
@@ -860,4 +910,525 @@ async function saveSupplier(id) {
   if (id) await db.collection("suppliers").doc(id).update({ ...data });
   else { const nid = genId(); await db.collection("suppliers").doc(nid).set({ ...data, id: nid }); }
   closeModal();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RAPPORT PERSONNALISÉ — Export Excel et PDF
+// ═══════════════════════════════════════════════════════════════
+
+function openCustomReportModal() {
+  const today = new Date().toISOString().slice(0, 10);
+  // Par défaut : début du mois courant → aujourd'hui
+  const firstOfMonth = new Date();
+  firstOfMonth.setDate(1);
+  const defaultStart = firstOfMonth.toISOString().slice(0, 10);
+
+  showModal(`<div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3>${icon("file-spreadsheet", 18)} Rapport personnalisé</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button>
+    </div>
+    <p style="color:var(--text2);font-size:13px;margin-bottom:16px;line-height:1.5">
+      Choisissez la période et le contenu, puis exportez en Excel ou PDF.
+    </p>
+
+    <div class="form-row">
+      <label>Date de début
+        <input id="rep-start" type="date" value="${defaultStart}"/>
+      </label>
+      <label>Date de fin
+        <input id="rep-end" type="date" value="${today}"/>
+      </label>
+    </div>
+
+    <label style="margin-top:8px">Contenu du rapport</label>
+    <div style="display:flex;flex-direction:column;gap:8px;background:var(--surface2);padding:12px 14px;border-radius:8px;margin-bottom:14px">
+      <label style="display:flex;align-items:center;gap:8px;font-weight:500;font-size:14px;color:var(--text);margin:0;cursor:pointer">
+        <input type="checkbox" id="rep-include-rev" checked style="width:auto;margin:0;cursor:pointer"/>
+        ${icon("trending-up", 14)} Inclure les revenus
+      </label>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:500;font-size:14px;color:var(--text);margin:0;cursor:pointer">
+        <input type="checkbox" id="rep-include-exp" checked style="width:auto;margin:0;cursor:pointer"/>
+        ${icon("trending-down", 14)} Inclure les dépenses
+      </label>
+    </div>
+
+    <div id="rep-preview" style="background:var(--surface2);padding:10px 14px;border-radius:8px;font-size:13px;color:var(--text2);margin-bottom:14px"></div>
+
+    <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
+      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn btn-secondary" onclick="exportReport('pdf')">${icon("file-text", 14)} Exporter PDF</button>
+      <button class="btn btn-primary" onclick="exportReport('xlsx')">${icon("file-spreadsheet", 14)} Exporter Excel</button>
+    </div>
+  </div>`);
+  // Mettre à jour le preview en live
+  setTimeout(updateReportPreview, 50);
+  ["rep-start", "rep-end", "rep-include-rev", "rep-include-exp"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener("change", updateReportPreview);
+  });
+}
+
+function updateReportPreview() {
+  const start = document.getElementById("rep-start")?.value;
+  const end = document.getElementById("rep-end")?.value;
+  const incRev = document.getElementById("rep-include-rev")?.checked;
+  const incExp = document.getElementById("rep-include-exp")?.checked;
+  const preview = document.getElementById("rep-preview");
+  if (!preview) return;
+  if (!start || !end) { preview.innerHTML = "Choisissez une période valide."; return; }
+  if (start > end) { preview.innerHTML = `<span style="color:var(--status-red)">${icon("alert", 12)} La date de fin doit être après la date de début.</span>`; return; }
+
+  const filteredRev = incRev ? revenues.filter(r => {
+    const d = r.dateStart || r.date;
+    return d && d >= start && d <= end;
+  }) : [];
+  const filteredExp = incExp ? expenses.filter(e => e.date && e.date >= start && e.date <= end) : [];
+
+  const totalRev = filteredRev.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const totalExp = filteredExp.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const profit = totalRev - totalExp;
+
+  let html = `<strong>Aperçu :</strong> `;
+  const parts = [];
+  if (incRev) parts.push(`${filteredRev.length} revenu${filteredRev.length > 1 ? "s" : ""} (${fmtMoney(totalRev)})`);
+  if (incExp) parts.push(`${filteredExp.length} dépense${filteredExp.length > 1 ? "s" : ""} (${fmtMoney(totalExp)})`);
+  html += parts.join(" · ");
+  if (incRev && incExp) {
+    html += `<br/><strong>${profit >= 0 ? "Profit" : "Déficit"} : <span style="color:${profit >= 0 ? "var(--status-green)" : "var(--status-red)"}">${fmtMoney(Math.abs(profit))}</span></strong>`;
+  }
+  preview.innerHTML = html;
+}
+
+function getReportData() {
+  const start = document.getElementById("rep-start").value;
+  const end = document.getElementById("rep-end").value;
+  const incRev = document.getElementById("rep-include-rev").checked;
+  const incExp = document.getElementById("rep-include-exp").checked;
+  if (!start || !end) { alert("Choisissez une période."); return null; }
+  if (start > end) { alert("La date de fin doit être après la date de début."); return null; }
+  if (!incRev && !incExp) { alert("Sélectionnez au moins une catégorie (revenus ou dépenses)."); return null; }
+
+  const filteredRev = incRev ? revenues.filter(r => {
+    const d = r.dateStart || r.date;
+    return d && d >= start && d <= end;
+  }).sort((a, b) => (a.dateStart || a.date || "").localeCompare(b.dateStart || b.date || "")) : [];
+
+  const filteredExp = incExp ? expenses.filter(e => e.date && e.date >= start && e.date <= end)
+    .sort((a, b) => (a.date || "").localeCompare(b.date || "")) : [];
+
+  return { start, end, incRev, incExp, filteredRev, filteredExp };
+}
+
+async function exportReport(format) {
+  const data = getReportData();
+  if (!data) return;
+  const { start, end, incRev, incExp, filteredRev, filteredExp } = data;
+  const periodLabel = start === end ? start : `${start}_au_${end}`;
+  const filename = `bochica_rapport_${periodLabel}`;
+
+  if (format === "xlsx") {
+    if (typeof XLSX === "undefined") {
+      alert("La bibliothèque Excel n'est pas chargée. Vérifiez votre connexion internet et rechargez.");
+      return;
+    }
+    exportReportExcel(filteredRev, filteredExp, filename, start, end, incRev, incExp);
+  } else if (format === "pdf") {
+    if (typeof window.jspdf === "undefined") {
+      alert("La bibliothèque PDF n'est pas chargée. Vérifiez votre connexion internet et rechargez.");
+      return;
+    }
+    exportReportPDF(filteredRev, filteredExp, filename, start, end, incRev, incExp);
+  }
+  closeModal();
+}
+
+function exportReportExcel(filteredRev, filteredExp, filename, start, end, incRev, incExp) {
+  const wb = XLSX.utils.book_new();
+
+  // Feuille 1 : Résumé
+  const totalRev = filteredRev.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const totalExp = filteredExp.reduce((s, e) => s + Number(e.amount || 0), 0);
+  const totalRevTPS = filteredRev.reduce((s, r) => s + Number(r.tps || 0), 0);
+  const totalRevTVQ = filteredRev.reduce((s, r) => s + Number(r.tvq || 0), 0);
+  const totalExpTPS = filteredExp.reduce((s, e) => s + Number(e.tps || 0), 0);
+  const totalExpTVQ = filteredExp.reduce((s, e) => s + Number(e.tvq || 0), 0);
+
+  const summary = [
+    ["BOCHICA — Rapport personnalisé"],
+    [""],
+    ["Période", `Du ${start} au ${end}`],
+    ["Généré le", new Date().toLocaleDateString("fr-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })],
+    [""],
+    ["RÉSUMÉ"],
+  ];
+  if (incRev) {
+    summary.push(["Total revenus (avant taxes)", totalRev]);
+    summary.push(["TPS perçue (5%)", totalRevTPS]);
+    summary.push(["TVQ perçue (9.975%)", totalRevTVQ]);
+    summary.push(["Total revenus avec taxes", totalRev + totalRevTPS + totalRevTVQ]);
+    summary.push([""]);
+  }
+  if (incExp) {
+    summary.push(["Total dépenses (avant taxes)", totalExp]);
+    summary.push(["TPS payée (5%)", totalExpTPS]);
+    summary.push(["TVQ payée (9.975%)", totalExpTVQ]);
+    summary.push(["Total dépenses avec taxes", totalExp + totalExpTPS + totalExpTVQ]);
+    summary.push([""]);
+  }
+  if (incRev && incExp) {
+    const profit = totalRev - totalExp;
+    summary.push([profit >= 0 ? "PROFIT (avant taxes)" : "DÉFICIT (avant taxes)", profit]);
+  }
+  const wsSum = XLSX.utils.aoa_to_sheet(summary);
+  wsSum['!cols'] = [{ wch: 35 }, { wch: 18 }];
+  XLSX.utils.book_append_sheet(wb, wsSum, "Résumé");
+
+  // Feuille 2 : Revenus
+  if (incRev && filteredRev.length > 0) {
+    const headers = [["Date début", "Date fin", "Description", "Montant", "TPS", "TVQ", "Total", "Notes"]];
+    const rows = filteredRev.map(r => [
+      r.dateStart || r.date || "",
+      r.dateEnd || "",
+      r.description || "",
+      Number(r.amount || 0),
+      Number(r.tps || 0),
+      Number(r.tvq || 0),
+      Number(r.amount || 0) + Number(r.tps || 0) + Number(r.tvq || 0),
+      r.notes || ""
+    ]);
+    const wsRev = XLSX.utils.aoa_to_sheet([...headers, ...rows]);
+    wsRev['!cols'] = [{ wch: 12 }, { wch: 12 }, { wch: 32 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 30 }];
+    XLSX.utils.book_append_sheet(wb, wsRev, "Revenus");
+  }
+
+  // Feuille 3 : Dépenses
+  if (incExp && filteredExp.length > 0) {
+    const headers = [["Date", "Description", "Fournisseur", "Catégorie", "Type", "Montant", "TPS", "TVQ", "Total", "Notes"]];
+    const rows = filteredExp.map(e => [
+      e.date || "",
+      e.description || "",
+      e.supplier || "",
+      e.category || "",
+      e.type || "",
+      Number(e.amount || 0),
+      Number(e.tps || 0),
+      Number(e.tvq || 0),
+      Number(e.amount || 0) + Number(e.tps || 0) + Number(e.tvq || 0),
+      e.notes || ""
+    ]);
+    const wsExp = XLSX.utils.aoa_to_sheet([...headers, ...rows]);
+    wsExp['!cols'] = [{ wch: 12 }, { wch: 32 }, { wch: 22 }, { wch: 18 }, { wch: 10 }, { wch: 12 }, { wch: 10 }, { wch: 10 }, { wch: 12 }, { wch: 30 }];
+    XLSX.utils.book_append_sheet(wb, wsExp, "Dépenses");
+  }
+
+  XLSX.writeFile(wb, `${filename}.xlsx`);
+}
+
+function exportReportPDF(filteredRev, filteredExp, filename, start, end, incRev, incExp) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  // En-tête
+  doc.setFontSize(20);
+  doc.setFont(undefined, "bold");
+  doc.text("BOCHICA", 14, 18);
+  // Tricolore
+  doc.setFillColor(245, 166, 35); doc.rect(14, 22, 18, 1.5, "F");
+  doc.setFillColor(74, 144, 226);  doc.rect(32, 22, 18, 1.5, "F");
+  doc.setFillColor(231, 76, 60);   doc.rect(50, 22, 18, 1.5, "F");
+
+  doc.setFontSize(14);
+  doc.setFont(undefined, "normal");
+  doc.text("Rapport personnalisé", 14, 32);
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text(`Période : du ${start} au ${end}`, 14, 38);
+  doc.text(`Généré le ${new Date().toLocaleDateString("fr-CA", { year: "numeric", month: "long", day: "numeric" })}`, 14, 43);
+
+  let y = 52;
+
+  // Résumé
+  const totalRev = filteredRev.reduce((s, r) => s + Number(r.amount || 0), 0);
+  const totalExp = filteredExp.reduce((s, e) => s + Number(e.amount || 0), 0);
+  doc.setFontSize(12);
+  doc.setFont(undefined, "bold");
+  doc.setTextColor(0);
+  doc.text("Résumé", 14, y);
+  y += 5;
+
+  const summaryRows = [];
+  if (incRev) summaryRows.push(["Total revenus", `${totalRev.toFixed(2)} $`, `${filteredRev.length} entrée(s)`]);
+  if (incExp) summaryRows.push(["Total dépenses", `${totalExp.toFixed(2)} $`, `${filteredExp.length} entrée(s)`]);
+  if (incRev && incExp) {
+    const profit = totalRev - totalExp;
+    summaryRows.push([profit >= 0 ? "Profit" : "Déficit", `${Math.abs(profit).toFixed(2)} $`, profit >= 0 ? "positif" : "négatif"]);
+  }
+  doc.autoTable({
+    startY: y,
+    head: [["", "Montant", "Détail"]],
+    body: summaryRows,
+    theme: "striped",
+    headStyles: { fillColor: [107, 26, 31], textColor: 255 },
+    styles: { fontSize: 10 },
+    margin: { left: 14, right: 14 }
+  });
+  y = doc.lastAutoTable.finalY + 10;
+
+  // Revenus
+  if (incRev && filteredRev.length > 0) {
+    doc.setFontSize(12);
+    doc.setFont(undefined, "bold");
+    doc.text("Revenus", 14, y);
+    y += 2;
+    doc.autoTable({
+      startY: y + 2,
+      head: [["Période", "Description", "Montant", "TPS", "TVQ", "Total"]],
+      body: filteredRev.map(r => [
+        r.dateEnd && r.dateEnd !== r.dateStart ? `${r.dateStart || r.date}\nau ${r.dateEnd}` : (r.dateStart || r.date || ""),
+        r.description || "",
+        `${Number(r.amount || 0).toFixed(2)} $`,
+        `${Number(r.tps || 0).toFixed(2)}`,
+        `${Number(r.tvq || 0).toFixed(2)}`,
+        `${(Number(r.amount || 0) + Number(r.tps || 0) + Number(r.tvq || 0)).toFixed(2)} $`
+      ]),
+      theme: "striped",
+      headStyles: { fillColor: [39, 174, 96], textColor: 255 },
+      styles: { fontSize: 9, cellPadding: 2 },
+      margin: { left: 14, right: 14 }
+    });
+    y = doc.lastAutoTable.finalY + 10;
+  }
+
+  // Dépenses
+  if (incExp && filteredExp.length > 0) {
+    if (y > 240) { doc.addPage(); y = 20; }
+    doc.setFontSize(12);
+    doc.setFont(undefined, "bold");
+    doc.text("Dépenses", 14, y);
+    y += 2;
+    doc.autoTable({
+      startY: y + 2,
+      head: [["Date", "Description", "Fournisseur", "Catégorie", "Montant", "Total"]],
+      body: filteredExp.map(e => [
+        e.date || "",
+        e.description || "",
+        e.supplier || "",
+        e.category || "",
+        `${Number(e.amount || 0).toFixed(2)} $`,
+        `${(Number(e.amount || 0) + Number(e.tps || 0) + Number(e.tvq || 0)).toFixed(2)} $`
+      ]),
+      theme: "striped",
+      headStyles: { fillColor: [192, 57, 43], textColor: 255 },
+      styles: { fontSize: 9, cellPadding: 2 },
+      margin: { left: 14, right: 14 }
+    });
+  }
+
+  // Footer pages
+  const pageCount = doc.internal.getNumberOfPages();
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setTextColor(120);
+    doc.text(`Page ${i} / ${pageCount}`, 200, 290, { align: "right" });
+    doc.text("Bochica — Restaurant Colombien · 430 Rue Saint-Vallier Ouest, Québec", 14, 290);
+  }
+
+  doc.save(`${filename}.pdf`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CHART.JS — Initialisation après le rendu de la page Dépenses
+// ═══════════════════════════════════════════════════════════════
+
+let _bochicaCharts = { rev: null, cat: null };
+
+function initExpenseCharts() {
+  if (typeof Chart === "undefined") return; // Chart.js pas encore chargé
+  const dataEl = document.getElementById("chart-data");
+  if (!dataEl) return;
+  let data;
+  try { data = JSON.parse(dataEl.textContent); } catch { return; }
+
+  // Détruire les charts précédents (re-render)
+  if (_bochicaCharts.rev) { _bochicaCharts.rev.destroy(); _bochicaCharts.rev = null; }
+  if (_bochicaCharts.cat) { _bochicaCharts.cat.destroy(); _bochicaCharts.cat = null; }
+
+  // Couleurs adaptées au mode (dark/light)
+  const isDark = data.darkMode;
+  const textColor = isDark ? "#c9c0b8" : "#5a4a45";
+  const gridColor = isDark ? "rgba(250,246,240,.08)" : "rgba(26,16,16,.08)";
+  const tooltipBg = isDark ? "#25201d" : "#ffffff";
+  const tooltipText = isDark ? "#faf6f0" : "#1a1010";
+  const tooltipBorder = isDark ? "rgba(250,246,240,.18)" : "rgba(26,16,16,.18)";
+
+  // Couleurs Bochica
+  const revColor = "#27ae60";
+  const expColor = "#c0392b";
+  const profitColor = isDark ? "#c44b51" : "#6b1a1f";
+
+  // Profit par mois (revenus - dépenses)
+  const profits = data.revenues.map((r, i) => r - data.expenses[i]);
+
+  // ── 1. CHART REVENUS / DÉPENSES / PROFIT (combo bars + line) ──
+  const ctx1 = document.getElementById("chart-revenue-expense");
+  if (ctx1) {
+    _bochicaCharts.rev = new Chart(ctx1, {
+      type: "bar",
+      data: {
+        labels: data.months,
+        datasets: [
+          {
+            label: "Revenus",
+            data: data.revenues,
+            backgroundColor: revColor + "cc",
+            borderColor: revColor,
+            borderWidth: 1,
+            borderRadius: 6,
+            order: 2
+          },
+          {
+            label: "Dépenses",
+            data: data.expenses,
+            backgroundColor: expColor + "cc",
+            borderColor: expColor,
+            borderWidth: 1,
+            borderRadius: 6,
+            order: 2
+          },
+          {
+            label: "Profit",
+            type: "line",
+            data: profits,
+            borderColor: profitColor,
+            backgroundColor: profitColor + "33",
+            borderWidth: 3,
+            tension: 0.3,
+            pointBackgroundColor: profitColor,
+            pointBorderColor: "#fff",
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            pointHoverRadius: 7,
+            fill: false,
+            order: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: {
+            position: "bottom",
+            labels: {
+              color: textColor,
+              font: { size: 12, family: "Inter, sans-serif", weight: 500 },
+              padding: 16,
+              usePointStyle: true,
+              pointStyle: "rectRounded"
+            }
+          },
+          tooltip: {
+            backgroundColor: tooltipBg,
+            titleColor: tooltipText,
+            bodyColor: tooltipText,
+            borderColor: tooltipBorder,
+            borderWidth: 1,
+            padding: 12,
+            cornerRadius: 8,
+            displayColors: true,
+            titleFont: { size: 13, weight: 700 },
+            bodyFont: { size: 12 },
+            callbacks: {
+              label: (ctx) => `${ctx.dataset.label} : ${ctx.parsed.y.toFixed(2)} $`
+            }
+          }
+        },
+        scales: {
+          x: {
+            grid: { color: gridColor, display: false },
+            ticks: { color: textColor, font: { size: 11, family: "Inter, sans-serif" } }
+          },
+          y: {
+            grid: { color: gridColor },
+            ticks: {
+              color: textColor,
+              font: { size: 11, family: "Inter, sans-serif" },
+              callback: (v) => v.toLocaleString("fr-CA") + " $"
+            },
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  // ── 2. CHART CATÉGORIES (doughnut) ──
+  const ctx2 = document.getElementById("chart-categories");
+  if (ctx2 && data.categories.length > 0) {
+    // Palette tricolore Colombie + extensions
+    const palette = [
+      "#6b1a1f", // bordeaux Bochica
+      "#f5a623", // jaune Colombie
+      "#4a90e2", // bleu Colombie
+      "#e74c3c", // rouge Colombie
+      "#27ae60", // vert
+      "#8b5cf6", // violet
+      "#ec4899", // rose
+      "#14b8a6", // teal
+      "#f97316", // orange
+      "#64748b"  // gris
+    ];
+    _bochicaCharts.cat = new Chart(ctx2, {
+      type: "doughnut",
+      data: {
+        labels: data.categories,
+        datasets: [{
+          data: data.categoryAmounts,
+          backgroundColor: data.categories.map((_, i) => palette[i % palette.length]),
+          borderColor: isDark ? "#1c1815" : "#ffffff",
+          borderWidth: 2,
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "60%",
+        plugins: {
+          legend: {
+            position: "right",
+            labels: {
+              color: textColor,
+              font: { size: 12, family: "Inter, sans-serif", weight: 500 },
+              padding: 12,
+              usePointStyle: true,
+              pointStyle: "circle",
+              boxWidth: 10
+            }
+          },
+          tooltip: {
+            backgroundColor: tooltipBg,
+            titleColor: tooltipText,
+            bodyColor: tooltipText,
+            borderColor: tooltipBorder,
+            borderWidth: 1,
+            padding: 12,
+            cornerRadius: 8,
+            titleFont: { size: 13, weight: 700 },
+            bodyFont: { size: 12 },
+            callbacks: {
+              label: (ctx) => {
+                const total = ctx.dataset.data.reduce((s, v) => s + v, 0);
+                const pct = ((ctx.parsed / total) * 100).toFixed(1);
+                return `${ctx.label} : ${ctx.parsed.toFixed(2)} $ (${pct}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
 }

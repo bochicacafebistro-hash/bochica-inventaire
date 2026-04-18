@@ -3,7 +3,7 @@ function openProductModal(id) {
   const p = id ? products.find(x => x.id === id) : null;
   const secs = getAllSections().filter(s => s !== "Toutes");
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>${p ? "Modifier" : "Ajouter"} un produit</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>${p ? "Modifier" : "Ajouter"} un produit</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
     <label>Nom<input id="p-name" value="${esc(p?.name || "")}"/></label>
     <label>Section<select id="p-section">${secs.map(s => `<option value="${s}" ${(p?.section || "Cuisine") === s ? "selected" : ""}>${s}</option>`).join("")}</select></label>
     <div class="form-row">
@@ -70,7 +70,7 @@ async function saveProduct(id) {
 function openNoteModal(id) {
   const p = products.find(x => x.id === id); if (!p) return;
   showModal(`<div class="modal" style="max-width:400px">
-    <div class="modal-header"><h3>📝 Note — ${p.name}</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>📝 Note — ${p.name}</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
     <label>Note rapide<textarea id="note-text" style="height:100px;resize:vertical">${p.note || ""}</textarea></label>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="clearNote('${id}')">Effacer</button>
@@ -87,7 +87,7 @@ function openMoveModal(id) {
   const p = products.find(x => x.id === id); if (!p) return;
   const secs = getAllSections().filter(s => s !== "Toutes");
   showModal(`<div class="modal" style="max-width:360px">
-    <div class="modal-header"><h3>📁 Changer catégorie — ${p.name}</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>📁 Changer catégorie — ${p.name}</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
     <label>Catégorie<select id="move-sec">${secs.map(s => `<option value="${s}" ${s === p.section ? "selected" : ""}>${s}</option>`).join("")}</select></label>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
@@ -102,7 +102,7 @@ function openReceiveModal(id) {
   const p = products.find(x => x.id === id); if (!p) return; receivingProduct = p;
   const isBox = p.orderUnit === "boîte"; const upb = p.unitsPerBox || 1; const dq = p.orderQty || 0; const stock = getCurrentStock(p);
   showModal(`<div class="modal" style="max-width:400px">
-    <div class="modal-header"><h3>📦 Réception — ${p.name}</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>📦 Réception — ${p.name}</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
     <div style="background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:16px;font-size:13px;color:var(--text2)">
       Stock actuel : <strong>${stock} unités</strong><br>
       Commande prévue : <strong>${orderLabel(p)}</strong>${isBox ? ` (${dq * upb} unités)` : ""}
@@ -151,7 +151,7 @@ function openCategoryModal() {
         <button class="btn-danger-sm" onclick="askDeleteCategory(${i},'${esc(s)}')">🗑️</button>
       </div>`).join("");
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>⚙️ Catégories</h3><button class="close-btn" onclick="closeModal()">✕</button></div>
+    <div class="modal-header"><h3>⚙️ Catégories</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
     <div id="cat-list">${renderCats()}</div>
     <div style="display:flex;gap:8px;margin-top:8px">
       <input id="cat-new" placeholder="Nouvelle catégorie..."/>
