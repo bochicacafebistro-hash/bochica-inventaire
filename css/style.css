@@ -137,7 +137,7 @@
    ÉLÉMENTS DE BASE
    ═══════════════════════════════════════════════════════════════ */
 
-html{scroll-behavior:smooth}
+html{scroll-behavior:smooth;overflow-x:hidden}
 body{
   font-family:var(--font-body);
   background:var(--bg);
@@ -149,7 +149,12 @@ body{
   -webkit-font-smoothing:antialiased;
   -moz-osx-font-smoothing:grayscale;
   transition:background var(--transition-base),color var(--transition-base);
+  overflow-x:hidden;
+  max-width:100vw;
 }
+.main{min-width:0;max-width:100%}
+.page{min-width:0;max-width:100%;box-sizing:border-box}
+#page-content{min-width:0;max-width:100%}
 
 h1,h2,h3,h4,h5,h6{font-family:var(--font-heading);font-optical-sizing:auto}
 
@@ -724,26 +729,26 @@ input:focus,select:focus,textarea:focus{
 .note-badge{font-size:var(--fs-xs);color:var(--text3);font-style:italic;margin-top:var(--sp-1);font-family:var(--font-heading)}
 
 /* ═══════════════════════════════════════════════════════════════
-   INVENTAIRE — Cartes mobile (NOUVEAU design touch-friendly)
-   Largeur 100% garantie, lisibilité max, ergonomie tactile
+   INVENTAIRE — Cartes mobile COMPACTES (Stock | Nouvelle qté côte à côte)
    ═══════════════════════════════════════════════════════════════ */
 
 .inv-card-mobile{
   background:var(--surface);
   border:1px solid var(--border);
-  border-left:4px solid var(--text3); /* surchargé par status */
-  border-radius:var(--radius-lg);
-  padding:var(--sp-4);
-  margin-bottom:var(--sp-3);
+  border-left:5px solid var(--text3); /* surchargé par status */
+  border-radius:var(--radius-md);
+  padding:var(--sp-3);
+  margin-bottom:var(--sp-2);
   box-shadow:var(--shadow-sm);
   width:100%;
   max-width:100%;
   box-sizing:border-box;
+  overflow:hidden;
   overflow-wrap:anywhere;
   word-wrap:break-word;
   display:flex;
   flex-direction:column;
-  gap:var(--sp-3);
+  gap:var(--sp-2);
 }
 .inv-card-mobile--red{border-left-color:var(--status-red)}
 .inv-card-mobile--yellow{border-left-color:var(--status-yellow)}
@@ -759,7 +764,7 @@ input:focus,select:focus,textarea:focus{
 }
 .inv-card-mobile__title{
   flex:1;
-  min-width:0; /* CRITIQUE : permet au texte de se wrap */
+  min-width:0;
 }
 .inv-card-mobile__name{
   font-family:var(--font-heading);
@@ -767,20 +772,22 @@ input:focus,select:focus,textarea:focus{
   font-weight:700;
   color:var(--text);
   margin:0;
-  line-height:1.25;
+  line-height:1.2;
   letter-spacing:-.2px;
   word-break:break-word;
   overflow-wrap:anywhere;
 }
+.inv-card-mobile--red .inv-card-mobile__name{color:var(--status-red)}
+.inv-card-mobile--yellow .inv-card-mobile__name{color:var(--status-yellow)}
 .inv-card-mobile__meta{
   font-size:var(--fs-xs);
   color:var(--text3);
-  margin-top:var(--sp-1);
+  margin-top:2px;
   display:flex;
   flex-wrap:wrap;
   align-items:center;
-  gap:6px;
-  line-height:1.4;
+  gap:5px;
+  line-height:1.3;
 }
 .inv-card-mobile__meta strong{color:var(--text2);font-weight:600}
 .inv-card-mobile__sep{color:var(--border-strong)}
@@ -791,147 +798,181 @@ input:focus,select:focus,textarea:focus{
   color:var(--text3);
   font-style:italic;
   background:var(--surface2);
-  padding:var(--sp-2) var(--sp-3);
+  padding:6px 10px;
   border-radius:var(--radius-sm);
   font-family:var(--font-heading);
 }
 
-/* Stock géant (lisible de loin) */
+/* ── ROW : Stock | Nouvelle qté (côte à côte) ── */
+.inv-card-mobile__row{
+  display:flex;
+  gap:var(--sp-2);
+  align-items:stretch;
+  min-width:0;
+}
+
+/* Stock actuel — colonne gauche compacte */
 .inv-card-mobile__stock{
   background:var(--surface2);
   border-radius:var(--radius-md);
-  padding:var(--sp-3) var(--sp-4);
+  padding:var(--sp-2) var(--sp-3);
   text-align:center;
-  position:relative;
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:4px;
+  justify-content:center;
+  flex:0 0 90px;
+  min-width:0;
+  gap:2px;
 }
 .inv-card-mobile__stock-label{
-  font-size:10px;
+  font-size:9px;
   color:var(--text3);
   font-weight:700;
   text-transform:uppercase;
-  letter-spacing:1.5px;
+  letter-spacing:1px;
 }
 .inv-card-mobile__stock-value{
   font-family:var(--font-heading);
-  font-size:48px;
+  font-size:30px;
   font-weight:700;
   line-height:1;
-  letter-spacing:-2px;
-  margin:2px 0;
+  letter-spacing:-1.5px;
+  color:var(--text);
 }
 .inv-card-mobile--red .inv-card-mobile__stock-value{color:var(--status-red)}
 .inv-card-mobile--yellow .inv-card-mobile__stock-value{color:var(--status-yellow)}
 .inv-card-mobile--green .inv-card-mobile__stock-value{color:var(--status-green)}
-.inv-card-mobile__badge{
-  margin-top:4px;
-}
 
-/* Section À commander (mode rapport) */
+/* À commander (mode "À commander") — colonne droite */
 .inv-card-mobile__order{
-  background:rgba(107,26,31,.05);
+  flex:1;
+  background:rgba(107,26,31,.06);
   border:1px solid rgba(107,26,31,.15);
   border-radius:var(--radius-md);
-  padding:var(--sp-3) var(--sp-4);
-  text-align:center;
+  padding:var(--sp-2) var(--sp-3);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-width:0;
 }
 .dark .inv-card-mobile__order{
   background:rgba(196,75,81,.1);
   border-color:rgba(196,75,81,.25);
 }
 .inv-card-mobile__order-label{
-  font-size:10px;
+  font-size:9px;
   color:var(--accent);
   font-weight:700;
   text-transform:uppercase;
-  letter-spacing:1.5px;
-  margin-bottom:4px;
+  letter-spacing:1px;
+  margin-bottom:2px;
 }
 .inv-card-mobile__order-value{
   font-family:var(--font-heading);
-  font-size:var(--fs-xl);
+  font-size:var(--fs-md);
   font-weight:700;
   color:var(--accent);
   font-style:italic;
+  line-height:1.1;
 }
 .inv-card-mobile__order-sub{
-  font-size:11px;
+  font-size:10px;
   color:var(--text3);
   margin-top:2px;
 }
 
-/* Mise à jour stock — input + bouton */
+/* Mise à jour stock — input + bouton (colonne droite) */
 .inv-card-mobile__update{
+  flex:1;
   background:var(--surface2);
   border-radius:var(--radius-md);
-  padding:var(--sp-3);
+  padding:var(--sp-2);
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  min-width:0;
 }
 .inv-card-mobile__update-label{
   display:block;
-  font-size:11px;
+  font-size:9px;
   color:var(--text2);
   font-weight:700;
   text-transform:uppercase;
   letter-spacing:1px;
-  margin-bottom:6px;
+  margin-bottom:4px;
+  text-align:center;
 }
 .inv-card-mobile__update-row{
   display:flex;
-  gap:var(--sp-2);
+  gap:6px;
   align-items:stretch;
+  min-width:0;
 }
 .inv-card-mobile__input{
   flex:1;
   min-width:0;
-  height:48px;
-  font-size:18px;
+  width:100%;
+  height:42px;
+  font-size:17px;
   font-weight:600;
   text-align:center;
   border:1.5px solid var(--border-strong);
-  border-radius:var(--radius-md);
+  border-radius:var(--radius-sm);
   background:var(--surface);
   color:var(--text);
   font-family:var(--font-body);
-  padding:0 var(--sp-3);
+  padding:0 6px;
+  /* Cacher les flèches du number input pour gagner de la place */
+  -moz-appearance:textfield;
+}
+.inv-card-mobile__input::-webkit-outer-spin-button,
+.inv-card-mobile__input::-webkit-inner-spin-button{
+  -webkit-appearance:none;
+  margin:0;
 }
 .inv-card-mobile__input:focus{
   border-color:var(--accent);
   outline:none;
-  box-shadow:0 0 0 3px rgba(107,26,31,.15);
+  box-shadow:0 0 0 2px rgba(107,26,31,.15);
 }
 
-/* Boutons CTA carte mobile */
+/* Bouton ✓ icône seul (compact) */
+.inv-card-mobile__cta-icon{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:42px;
+  min-width:42px;
+  height:42px;
+  border:none;
+  border-radius:var(--radius-sm);
+  background:var(--accent);
+  color:var(--accent-text);
+  cursor:pointer;
+  transition:background var(--transition-base);
+  flex-shrink:0;
+}
+.inv-card-mobile__cta-icon:hover,
+.inv-card-mobile__cta-icon:active{background:var(--accent-hover)}
+
+/* Bouton CTA pleine largeur (Réceptionner) */
 .inv-card-mobile__cta{
   display:inline-flex;
   align-items:center;
   justify-content:center;
   gap:6px;
-  height:48px;
-  min-width:48px;
-  padding:0 var(--sp-4);
+  height:42px;
+  padding:0 var(--sp-3);
   border:none;
   border-radius:var(--radius-md);
   font-family:var(--font-body);
-  font-size:var(--fs-base);
+  font-size:var(--fs-sm);
   font-weight:700;
   cursor:pointer;
   transition:var(--transition-base);
   white-space:nowrap;
   width:100%;
-}
-.inv-card-mobile__cta--primary{
-  background:var(--accent);
-  color:var(--accent-text);
-  width:auto;
-  min-width:56px;
-  padding:0 var(--sp-3);
-}
-.inv-card-mobile__cta--primary:hover,
-.inv-card-mobile__cta--primary:active{
-  background:var(--accent-hover);
 }
 .inv-card-mobile__cta--success{
   background:var(--status-green);
@@ -1220,21 +1261,20 @@ tr.drag-over td{border-top:2px solid var(--accent)}
   .task-cols{grid-template-columns:1fr}
   .schedule-grid{grid-template-columns:100px repeat(7,1fr);font-size:10px}
   .page{padding:var(--sp-3)}
-  .topbar{padding:var(--sp-3) var(--sp-3)}
+  .topbar{padding:var(--sp-3)}
   .pin-btn{width:58px;height:58px}
-  /* Cartes inventaire : padding adapté mobile */
-  .inv-card-mobile{padding:var(--sp-3)}
-  .inv-card-mobile__stock-value{font-size:42px}
 }
 
 /* Très petits écrans (iPhone SE 375px et moins) */
 @media(max-width:380px){
   .page{padding:var(--sp-2)}
   .topbar{padding:var(--sp-2) var(--sp-3)}
-  .inv-card-mobile{padding:var(--sp-3) var(--sp-2);gap:var(--sp-2)}
-  .inv-card-mobile__stock{padding:var(--sp-3) var(--sp-2)}
-  .inv-card-mobile__stock-value{font-size:38px}
+  .inv-card-mobile{padding:var(--sp-2);gap:var(--sp-2)}
+  .inv-card-mobile__stock{flex:0 0 78px;padding:var(--sp-2)}
+  .inv-card-mobile__stock-value{font-size:26px}
   .inv-card-mobile__name{font-size:var(--fs-base)}
+  .inv-card-mobile__input{height:38px;font-size:15px}
+  .inv-card-mobile__cta-icon{width:38px;min-width:38px;height:38px}
   .sec-btn{padding:5px var(--sp-3);font-size:12px}
   .section-tabs{gap:4px}
   .toolbar{gap:var(--sp-2)}
