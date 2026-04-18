@@ -39,7 +39,14 @@ db.collection("menu").onSnapshot(snap => {
 db.collection("ingredients").onSnapshot(snap => {
   ingredients = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  if (isLoggedIn && ["ingredients", "menu", "recettes"].includes(activePage)) renderPage();
+  if (isLoggedIn && ["ingredients", "menu"].includes(activePage)) renderPage();
+});
+
+// Recettes (livre de cuisine — pour préparation des plats)
+db.collection("recipes").onSnapshot(snap => {
+  recipes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  if (isLoggedIn && activePage === "recettes") renderPage();
 });
 
 db.collection("expenses").orderBy("date", "desc").limit(500).onSnapshot(snap => {
