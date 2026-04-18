@@ -9,8 +9,8 @@ function renderInventaire() {
     (activeSection === "Toutes" || p.section === activeSection) &&
     (searchQuery === "" || p.name.toLowerCase().includes(searchQuery.toLowerCase()))
   ).sort((a, b) => STATUS_ORDER[getStatus(a)] - STATUS_ORDER[getStatus(b)]);
-  const visibleSecs = (!isMobile || sectionsExpanded) ? allSec : allSec.slice(0, 4);
-  const hasMore = isMobile && allSec.length > 4;
+  // Toujours afficher toutes les sections (scroll horizontal sur mobile)
+  const visibleSecs = allSec;
 
   let h = `<div class="page">`;
 
@@ -46,13 +46,12 @@ function renderInventaire() {
   }
 
   if (!showArchived) {
-    h += `<div class="section-tabs ${sectionsExpanded ? "expanded" : ""}">`;
+    h += `<div class="section-tabs section-tabs--scroll" role="tablist" aria-label="Filtrer par catégorie">`;
     visibleSecs.forEach(s => {
       const cnt = s === "Toutes" ? lowCount : activeProducts.filter(p => p.section === s && ["red", "yellow"].includes(getStatus(p))).length;
-      h += `<button class="sec-btn ${s === activeSection ? "active" : ""}" onclick="setSection('${s}')">${s}${cnt > 0 ? `<span class="badge-count">${cnt}</span>` : ""}</button>`;
+      h += `<button class="sec-btn ${s === activeSection ? "active" : ""}" role="tab" aria-selected="${s === activeSection}" onclick="setSection('${s}')">${s}${cnt > 0 ? `<span class="badge-count">${cnt}</span>` : ""}</button>`;
     });
-    if (hasMore) h += `<button class="sec-toggle" onclick="toggleSections()" aria-label="${sectionsExpanded ? "Réduire" : "Voir plus"}">${icon(sectionsExpanded ? "chevron-up" : "chevron-down", 14)}</button>`;
-    if (isAdmin) h += `<button class="sec-btn" onclick="openCategoryModal()" aria-label="Gérer les catégories" style="border-style:dashed;color:var(--text3);display:inline-flex;align-items:center">${icon("settings", 14)}</button>`;
+    if (isAdmin) h += `<button class="sec-btn sec-btn--manage" onclick="openCategoryModal()" aria-label="Gérer les catégories">${icon("settings", 14)}</button>`;
     h += `</div>`;
   }
 

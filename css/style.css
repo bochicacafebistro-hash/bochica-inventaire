@@ -525,9 +525,9 @@ tr:last-child td{border-bottom:none}
 
 .sec-tabs{display:flex;gap:var(--sp-2);flex-wrap:wrap;margin-bottom:var(--sp-4)}
 .sec-btn{
-  padding:6px var(--sp-4);
+  padding:8px var(--sp-4);
   border-radius:var(--radius-md);
-  border:1px solid var(--border);
+  border:1.5px solid var(--border);
   cursor:pointer;
   font-weight:600;
   font-size:var(--fs-sm);
@@ -536,13 +536,58 @@ tr:last-child td{border-bottom:none}
   white-space:nowrap;
   font-family:var(--font-body);
   transition:var(--transition-base);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  line-height:1.2;
+  min-height:36px;
 }
-.sec-btn:hover{background:var(--surface2);color:var(--text)}
-.sec-btn.active{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.sec-btn:hover{background:var(--surface2);color:var(--text);border-color:var(--text3)}
+.sec-btn.active{
+  background:var(--accent);
+  color:var(--accent-text);
+  border-color:var(--accent);
+  box-shadow:0 1px 4px rgba(107,26,31,.25);
+}
 .badge-count{background:var(--status-red);color:#fff;border-radius:var(--radius-sm);padding:1px 6px;font-size:10px;margin-left:var(--sp-1);font-weight:700}
 
 .section-tabs{display:flex;gap:var(--sp-2);flex-wrap:nowrap;overflow:hidden;align-items:center;margin-bottom:var(--sp-4)}
 .section-tabs.expanded{flex-wrap:wrap}
+
+/* Variante scroll horizontale (mobile-friendly) */
+.section-tabs--scroll{
+  display:flex;
+  flex-wrap:nowrap;
+  overflow-x:auto;
+  overflow-y:hidden;
+  scroll-snap-type:x proximity;
+  -webkit-overflow-scrolling:touch;
+  gap:var(--sp-2);
+  padding-bottom:6px; /* respiration sous les boutons */
+  margin-left:calc(-1 * var(--sp-3));
+  margin-right:calc(-1 * var(--sp-3));
+  padding-left:var(--sp-3);
+  padding-right:var(--sp-3);
+  /* Cacher la scrollbar tout en gardant le scroll */
+  scrollbar-width:none;
+  -ms-overflow-style:none;
+}
+.section-tabs--scroll::-webkit-scrollbar{display:none}
+.section-tabs--scroll .sec-btn{
+  scroll-snap-align:start;
+  flex-shrink:0; /* empêche les boutons de se compresser */
+}
+
+/* Bouton "Gérer les catégories" (sticky à droite) */
+.sec-btn--manage{
+  border-style:dashed!important;
+  color:var(--text3)!important;
+  display:inline-flex!important;
+  align-items:center;
+  justify-content:center;
+  min-width:42px;
+}
+
 .sec-toggle{
   background:none;
   border:1px solid var(--border);
@@ -1267,6 +1312,28 @@ tr.drag-over td{border-top:2px solid var(--accent)}
   .pin-btn{width:58px;height:58px}
 }
 
+/* Mobile : section-tabs scrollables avec boutons plus gros (touch-friendly) */
+@media(max-width:768px){
+  .section-tabs--scroll .sec-btn{
+    padding:11px 18px;
+    font-size:14px;
+    min-height:44px; /* touch target WCAG AA */
+    border-radius:var(--radius-pill);
+    border-width:1.5px;
+  }
+  .section-tabs--scroll .sec-btn.active{
+    box-shadow:0 2px 8px rgba(107,26,31,.3);
+  }
+  .section-tabs--scroll .badge-count{
+    padding:2px 7px;
+    font-size:11px;
+  }
+  .section-tabs--scroll{
+    margin-bottom:var(--sp-4);
+    padding-bottom:8px;
+  }
+}
+
 /* Très petits écrans (iPhone SE 375px et moins) */
 @media(max-width:380px){
   .page{padding:var(--sp-2)}
@@ -1277,7 +1344,11 @@ tr.drag-over td{border-top:2px solid var(--accent)}
   .inv-card-mobile__name{font-size:var(--fs-base)}
   .inv-card-mobile__input{height:38px;font-size:15px}
   .inv-card-mobile__cta-icon{width:38px;min-width:38px;height:38px}
-  .sec-btn{padding:5px var(--sp-3);font-size:12px}
-  .section-tabs{gap:4px}
+  .section-tabs--scroll{
+    margin-left:calc(-1 * var(--sp-2));
+    margin-right:calc(-1 * var(--sp-2));
+    padding-left:var(--sp-2);
+    padding-right:var(--sp-2);
+  }
   .toolbar{gap:var(--sp-2)}
 }
