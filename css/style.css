@@ -39,9 +39,10 @@
   --status-red:#c0392b;
   --status-red-bg:#fff5f5;
   --status-red-border:#ffd0d0;
-  --status-yellow:#92400e;
-  --status-yellow-bg:#fffbf0;
+  --status-yellow:#b45309;     /* Jaune-ambré reconnaissable (était trop brun #92400e) */
+  --status-yellow-bg:#fef9c3;
   --status-yellow-border:#fde68a;
+  --status-yellow-vivid:#f5a623; /* Jaune Colombie vivace pour borders/accents visuels */
   --status-green:#27ae60;
   --status-green-bg:#f0faf4;
   --status-green-border:#c8ecd4;
@@ -122,6 +123,7 @@
   --status-yellow:#fcd34d;
   --status-yellow-bg:rgba(184,134,11,.15);
   --status-yellow-border:rgba(184,134,11,.4);
+  --status-yellow-vivid:#fbbf24;
   --status-green:#86efac;
   --status-green-bg:rgba(39,174,96,.15);
   --status-green-border:rgba(39,174,96,.4);
@@ -751,7 +753,7 @@ input:focus,select:focus,textarea:focus{
   gap:var(--sp-2);
 }
 .inv-card-mobile--red{border-left-color:var(--status-red)}
-.inv-card-mobile--yellow{border-left-color:var(--status-yellow)}
+.inv-card-mobile--yellow{border-left-color:var(--status-yellow-vivid)} /* Jaune Colombie vif */
 .inv-card-mobile--green{border-left-color:var(--status-green)}
 
 /* En-tête : nom + bouton actions */
@@ -841,7 +843,7 @@ input:focus,select:focus,textarea:focus{
   color:var(--text);
 }
 .inv-card-mobile--red .inv-card-mobile__stock-value{color:var(--status-red)}
-.inv-card-mobile--yellow .inv-card-mobile__stock-value{color:var(--status-yellow)}
+.inv-card-mobile--yellow .inv-card-mobile__stock-value{color:var(--status-yellow-vivid)} /* Jaune Colombie vif */
 .inv-card-mobile--green .inv-card-mobile__stock-value{color:var(--status-green)}
 
 /* À commander (mode "À commander") — colonne droite */
