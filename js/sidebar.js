@@ -8,7 +8,7 @@ function buildSidebar() {
   const adminNav = [
     { section: "INVENTAIRE" },
     { icon: "📦", label: "Inventaire", page: "inventaire" },
-    { icon: "📋", label: "Rapport", page: "rapport" },
+    { icon: "🛒", label: "À commander", page: "rapport" },
     { icon: "🕐", label: "Historique", page: "historique" },
     { section: "DASHBOARD" },
     { icon: "📋", label: "Tâches", page: "taches" },
@@ -50,15 +50,25 @@ function toggleSidebar() {
 // ── Rendu principal ───────────────────────────────────
 function renderPage() {
   const pageLabels = {
-    inventaire: "📦 Inventaire", historique: "📋 Historique",
+    inventaire: "📦 Inventaire", historique: "🕐 Historique",
     taches: "📋 Tâches", employes: "👥 Employés & Horaires",
     depenses: "💰 Dépenses", menu: "🍽️ Menu",
-    fournisseurs: "🏪 Fournisseurs", rapport: "📋 Rapport"
+    fournisseurs: "🏪 Fournisseurs", rapport: "🛒 À commander"
   };
   document.getElementById("topbar-title").textContent = pageLabels[activePage] || activePage;
   const lowCount = products.filter(p => !p.archived && ["red", "yellow"].includes(getStatus(p))).length;
   const al = document.getElementById("topbar-alert");
-  if (al) al.innerHTML = lowCount > 0 ? `<div class="alert-pill">⚠️ ${lowCount}</div>` : "";
+  if (al) {
+    if (lowCount > 0 && isAdmin) {
+      // Admin : alerte cliquable qui ouvre la page À commander
+      al.innerHTML = `<button class="alert-pill alert-pill-btn" onclick="navTo('rapport')" aria-label="Voir les ${lowCount} produit${lowCount > 1 ? "s" : ""} à commander" title="Voir la liste à commander">⚠️ ${lowCount}</button>`;
+    } else if (lowCount > 0) {
+      // Employé : juste l'indicateur (pas d'accès à la page rapport)
+      al.innerHTML = `<div class="alert-pill" aria-label="${lowCount} produit${lowCount > 1 ? "s" : ""} à commander">⚠️ ${lowCount}</div>`;
+    } else {
+      al.innerHTML = "";
+    }
+  }
   const pc = document.getElementById("page-content"); if (!pc) return;
   if (activePage === "inventaire") pc.innerHTML = renderInventaire();
   else if (activePage === "rapport") pc.innerHTML = renderRapport();

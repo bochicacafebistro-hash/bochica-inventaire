@@ -8,7 +8,7 @@ function renderRapport() {
 
   let h = `<div class="page">
     <div class="toolbar">
-      <div><h2 style="font-size:18px">Rapport de commande</h2>
+      <div><h2 style="font-size:18px">À commander</h2>
       <p style="font-size:13px;color:var(--text3);margin-top:2px">Produits sous le minimum ou à moins de 20% du seuil</p></div>
       <button class="btn btn-secondary" onclick="printReport()">🖨️ Exporter</button>
     </div>`;
