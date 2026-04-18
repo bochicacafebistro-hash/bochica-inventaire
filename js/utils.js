@@ -61,7 +61,7 @@ function openConfirm(title, msg, action, isDanger = false) {
     <p style="color:var(--text2);font-size:14px;margin-bottom:20px;line-height:1.6">${msg}</p>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button style="background:${isDanger ? "#ef4444" : "#22c55e"};color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px" onclick="confirmAction()">${isDanger ? "Supprimer" : "Confirmer"}</button>
+      <button style="background:${isDanger ? "var(--status-red)" : "var(--status-green)"};color:#fff;border:none;border-radius:8px;padding:8px 18px;font-weight:600;cursor:pointer;font-size:14px" onclick="confirmAction()">${isDanger ? "Supprimer" : "Confirmer"}</button>
     </div>
   </div>`);
 }
