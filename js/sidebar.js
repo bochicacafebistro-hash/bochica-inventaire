@@ -2,21 +2,23 @@
 function buildSidebar() {
   const nav = document.getElementById("sidebar-nav"); if (!nav) return;
   const employeeNav = [
-    { icon: "package", label: "Inventaire", page: "inventaire" },
-    { icon: "clipboard", label: "Mes tâches", page: "taches" }
+    { icon: "package", label: t("nav_inventaire"), page: "inventaire" },
+    { icon: "clipboard", label: t("nav_my_tasks"), page: "taches" }
   ];
   const adminNav = [
-    { section: "INVENTAIRE" },
-    { icon: "package", label: "Inventaire", page: "inventaire" },
-    { icon: "cart", label: "À commander", page: "rapport" },
-    { icon: "history", label: "Historique", page: "historique" },
-    { section: "DASHBOARD" },
-    { icon: "clipboard", label: "Tâches", page: "taches" },
-    { icon: "users", label: "Employés & Horaires", page: "employes" },
-    { icon: "wallet", label: "Dépenses", page: "depenses" },
-    { icon: "utensils", label: "Menu", page: "menu" },
-    { section: "GESTION" },
-    { icon: "store", label: "Fournisseurs", page: "fournisseurs" },
+    { section: t("nav_section_inventory") },
+    { icon: "package", label: t("nav_inventaire"), page: "inventaire" },
+    { icon: "cart", label: t("nav_to_order"), page: "rapport" },
+    { icon: "history", label: t("nav_history"), page: "historique" },
+    { section: t("nav_section_dashboard") },
+    { icon: "clipboard", label: t("nav_tasks"), page: "taches" },
+    { icon: "users", label: t("nav_employees"), page: "employes" },
+    { icon: "wallet", label: t("nav_expenses"), page: "depenses" },
+    { icon: "utensils", label: t("nav_menu"), page: "menu" },
+    { icon: "tag", label: t("nav_ingredients"), page: "ingredients" },
+    { icon: "file-text", label: t("nav_recipes"), page: "recettes" },
+    { section: t("nav_section_management") },
+    { icon: "store", label: t("nav_suppliers"), page: "fournisseurs" },
   ];
   const items = isAdmin ? adminNav : employeeNav;
   nav.innerHTML = items.map(item => {
@@ -30,9 +32,33 @@ function buildSidebar() {
   const roleEl = document.getElementById("topbar-role");
   if (roleEl) {
     roleEl.innerHTML = isAdmin
-      ? `<span class="icon-inline">${icon("crown", 14)} Admin</span>`
-      : `<span class="icon-inline">${icon("user", 14)} Employé</span>`;
+      ? `<span class="icon-inline">${icon("crown", 14)} ${t("role_admin")}</span>`
+      : `<span class="icon-inline">${icon("user", 14)} ${t("role_employee")}</span>`;
   }
+  // Mettre à jour les boutons sidebar (dark + logout + lang)
+  const darkBtn = document.getElementById("dark-btn");
+  if (darkBtn) {
+    darkBtn.setAttribute("aria-label", darkMode ? t("toggle_light") : t("toggle_dark"));
+    darkBtn.setAttribute("title", darkMode ? t("toggle_light") : t("toggle_dark"));
+  }
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.innerHTML = icon("log-out", 14) + ` <span>${t("logout")}</span>`;
+    logoutBtn.setAttribute("aria-label", t("logout"));
+  }
+  // Bouton de langue (FR/ES)
+  const langBtn = document.getElementById("lang-btn");
+  if (langBtn) {
+    const cur = getUILang();
+    langBtn.innerHTML = `<strong>${cur.toUpperCase()}</strong>`;
+    langBtn.setAttribute("aria-label", t("language"));
+    langBtn.setAttribute("title", cur === "fr" ? "Français → Español" : "Español → Français");
+  }
+}
+
+// Bascule la langue de l'interface
+function toggleUILang() {
+  setUILang(getUILang() === "fr" ? "es" : "fr");
 }
 
 function navTo(page) {
@@ -56,14 +82,16 @@ function toggleSidebar() {
 // ── Rendu principal ───────────────────────────────────
 function renderPage() {
   const pageMeta = {
-    inventaire:  { label: "Inventaire",          icon: "package" },
-    historique:  { label: "Historique",          icon: "history" },
-    taches:      { label: "Tâches",              icon: "clipboard" },
-    employes:    { label: "Employés & Horaires", icon: "users" },
-    depenses:    { label: "Dépenses",            icon: "wallet" },
-    menu:        { label: "Menu",                icon: "utensils" },
-    fournisseurs:{ label: "Fournisseurs",        icon: "store" },
-    rapport:     { label: "À commander",         icon: "cart" }
+    inventaire:  { label: t("nav_inventaire"),  icon: "package" },
+    historique:  { label: t("nav_history"),     icon: "history" },
+    taches:      { label: t("nav_tasks"),       icon: "clipboard" },
+    employes:    { label: t("nav_employees"),   icon: "users" },
+    depenses:    { label: t("nav_expenses"),    icon: "wallet" },
+    menu:        { label: t("nav_menu"),        icon: "utensils" },
+    ingredients: { label: t("nav_ingredients"), icon: "tag" },
+    recettes:    { label: t("nav_recipes"),     icon: "file-text" },
+    fournisseurs:{ label: t("nav_suppliers"),   icon: "store" },
+    rapport:     { label: t("nav_to_order"),    icon: "cart" }
   };
   const meta = pageMeta[activePage] || { label: activePage, icon: "file-text" };
   const titleEl = document.getElementById("topbar-title");
@@ -72,12 +100,13 @@ function renderPage() {
   const lowCount = products.filter(p => !p.archived && ["red", "yellow"].includes(getStatus(p))).length;
   const al = document.getElementById("topbar-alert");
   if (al) {
+    const ariaLabel = `${lowCount} ${t("stock_products").toLowerCase()} ${t("nav_to_order").toLowerCase()}`;
     if (lowCount > 0 && isAdmin) {
       // Admin : alerte cliquable qui ouvre la page À commander
-      al.innerHTML = `<button class="alert-pill alert-pill-btn" onclick="navTo('rapport')" aria-label="Voir les ${lowCount} produit${lowCount > 1 ? "s" : ""} à commander" title="Voir la liste à commander">${icon("alert", 14)} ${lowCount}</button>`;
+      al.innerHTML = `<button class="alert-pill alert-pill-btn" onclick="navTo('rapport')" aria-label="${ariaLabel}" title="${t("nav_to_order")}">${icon("alert", 14)} ${lowCount}</button>`;
     } else if (lowCount > 0) {
       // Employé : juste l'indicateur (pas d'accès à la page rapport)
-      al.innerHTML = `<div class="alert-pill" aria-label="${lowCount} produit${lowCount > 1 ? "s" : ""} à commander">${icon("alert", 14)} ${lowCount}</div>`;
+      al.innerHTML = `<div class="alert-pill" aria-label="${ariaLabel}">${icon("alert", 14)} ${lowCount}</div>`;
     } else {
       al.innerHTML = "";
     }
@@ -94,6 +123,8 @@ function renderPage() {
     setTimeout(() => { if (typeof initExpenseCharts === "function") initExpenseCharts(); }, 50);
   }
   else if (activePage === "menu" && isAdmin) pc.innerHTML = renderMenu();
+  else if (activePage === "ingredients" && isAdmin) pc.innerHTML = renderIngredients();
+  else if (activePage === "recettes" && isAdmin) pc.innerHTML = renderRecettes();
   else if (activePage === "fournisseurs") pc.innerHTML = renderFournisseurs();
   else pc.innerHTML = `<div class="page"><div class="empty">Accès non autorisé.</div></div>`;
 }

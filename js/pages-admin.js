@@ -7,14 +7,14 @@ function renderEmployes() {
   return `<div class="page">
     <div class="toolbar">
       <h2 style="font-size:18px">Employés & Horaires</h2>
-      <button class="btn btn-primary" onclick="openEmployeeModal()">${icon("plus", 16)} Employé</button>
+      <button class="btn btn-primary" onclick="openEmployeeModal()">${icon("plus", 16)} ${t("emp_add")}</button>
     </div>
     ${employees.length === 0
       ? `<div class="empty"><div style="font-size:36px;margin-bottom:8px">👥</div>Aucun employé enregistré.</div>`
       : `<div class="card" style="margin-bottom:20px;overflow-x:auto">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
           <h3 style="font-size:15px">Horaire — Semaine du ${weekDays[0].toLocaleDateString("fr-CA", { month: "short", day: "numeric" })}</h3>
-          <div style="display:flex;gap:6px">${SHIFT_TYPES.map(s => `<span style="background:${s.color};color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">${s.label}</span>`).join("")}</div>
+          <div style="display:flex;gap:6px">${SHIFT_TYPES.map(s => `<span style="background:${s.color};color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">${tShift(s.label)}</span>`).join("")}</div>
         </div>
         <div class="schedule-grid">
           <div></div>${DAYS_FR.map((d, i) => `<div class="sch-header">${d}<div style="font-size:10px;font-weight:400;color:var(--text3)">${weekDays[i].getDate()}</div></div>`).join("")}
@@ -26,7 +26,7 @@ function renderEmployes() {
               const s = shifts[dk];
               return `<div class="sch-cell ${s ? "has-shift" : ""}" onclick="openShiftModal('${emp.id}','${dk}')">
                 ${s
-                  ? `<div class="shift-tag" style="background:${s.color || "var(--blue)"}">${s.label || ""}
+                  ? `<div class="shift-tag" style="background:${s.color || "var(--blue)"}">${tShift(s.label) || ""}
                       <span onclick="event.stopPropagation();removeShift('${emp.id}','${dk}')" style="cursor:pointer;opacity:.7;margin-left:4px">${icon("x", 18)}</span>
                     </div>`
                   : `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px">+</div>`}
@@ -83,10 +83,10 @@ function openEmployeeModal(id) {
     <label>Code PIN employé<input id="e-pin" type="text" maxlength="4" value="${esc(emp?.pin || "")}" placeholder="4 chiffres (optionnel)"/>
       <span class="field-hint">Pour la connexion à l'application</span>
     </label>
-    <label>Notes<textarea id="e-notes" style="height:60px">${emp?.notes || ""}</textarea></label>
+    <label>${t("exp_table_notes")}<textarea id="e-notes" style="height:60px">${emp?.notes || ""}</textarea></label>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveEmployee('${id || ""}')">Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveEmployee('${id || ""}')">${t("save")}</button>
     </div>
   </div>`);
 }
@@ -113,10 +113,10 @@ function openShiftModal(empId, dayKey) {
     <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Sélectionnez le type de quart :</p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
       ${SHIFT_TYPES.map(s => `<button onclick="assignShift('${empId}','${dayKey}','${s.label}','${s.color}')"
-        style="background:${s.color};color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer">${s.label}</button>`).join("")}
+        style="background:${s.color};color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer">${tShift(s.label)}</button>`).join("")}
     </div>
     <div class="modal-actions" style="margin-top:12px">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
     </div>
   </div>`);
 }
@@ -149,7 +149,7 @@ async function autoApplyFixedExpenses() {
   if (!templates.length) return;
 
   const batch = db.batch();
-  templates.forEach(t => {
+  templates.forEach(tpl => {
     const nid = genId();
     const ref = db.collection("expenses").doc(nid);
     batch.set(ref, {
@@ -266,18 +266,18 @@ function renderDepenses() {
 
   return `<div class="page">
     <div class="toolbar">
-      <h2 style="font-size:18px">Dépenses & Revenus</h2>
+      <h2 style="font-size:18px">${t("exp_title")}</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-primary" onclick="openRevenueModal()">${icon("plus", 16)} Revenu</button>
-        <button class="btn btn-primary" onclick="openExpenseModal()">${icon("plus", 16)} Dépense</button>
-        ${isAdmin ? `<button class="btn btn-secondary" onclick="openCustomReportModal()">${icon("file-spreadsheet", 14)} Rapport</button>` : ""}
-        ${isAdmin ? `<button class="btn btn-secondary" onclick="openExpenseCatModal()">${icon("settings", 14)} Catégories</button>` : ""}
-        ${isAdmin ? `<button class="btn btn-secondary" onclick="openFixedTemplatesModal()">${icon("shield-check", 14)} Frais fixes</button>` : ""}
+        <button class="btn btn-primary" onclick="openExpenseModal()">${icon("plus", 16)} ${t("exp_add_expense")}</button>
+        ${isAdmin ? `<button class="btn btn-secondary" onclick="openCustomReportModal()">${icon("file-spreadsheet", 14)} ${t("exp_report")}</button>` : ""}
+        ${isAdmin ? `<button class="btn btn-secondary" onclick="openExpenseCatModal()">${icon("settings", 14)} ${t("exp_categories")}</button>` : ""}
+        ${isAdmin ? `<button class="btn btn-secondary" onclick="openFixedTemplatesModal()">${icon("shield-check", 14)} ${t("exp_fixed_templates")}</button>` : ""}
       </div>
     </div>
 
     <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      ${["semaine","mois","année"].map(p => `<button class="sec-btn ${activeExpensePeriod===p?"active":""}" onclick="setExpensePeriod('${p}')">${p.charAt(0).toUpperCase()+p.slice(1)}</button>`).join("")}
+      ${["semaine","mois","année"].map(p => `<button class="sec-btn ${activeExpensePeriod===p?"active":""}" onclick="setExpensePeriod('${p}')">${({"semaine":t("exp_period_week"),"mois":t("exp_period_month"),"année":t("exp_period_year")})[p]||p}</button>`).join("")}
     </div>
 
     ${monthPicker}
@@ -286,27 +286,27 @@ function renderDepenses() {
     <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:20px">
       <div class="stat-card" style="border-left:4px solid var(--status-green)">
         <div class="stat-num" style="color:var(--status-green)">${fmtMoney(totalRev)}</div>
-        <div class="stat-label">${icon("wallet", 14)} Revenus</div>
+        <div class="stat-label">${icon("wallet", 14)} ${t("exp_revenues")}</div>
       </div>
       <div class="stat-card" style="border-left:4px solid var(--status-red)">
         <div class="stat-num" style="color:var(--status-red)">${fmtMoney(totalExp)}</div>
-        <div class="stat-label">💸 Dépenses (avant taxes)</div>
+        <div class="stat-label">💸 ${t("exp_expenses_pre_tax")}</div>
       </div>
       <div class="stat-card" style="border-left:4px solid var(--status-yellow)">
         <div class="stat-num" style="color:var(--status-yellow);font-size:20px">${fmtMoney(totalTPS+totalTVQ)}</div>
-        <div class="stat-label">🧾 Taxes (TPS+TVQ)</div>
+        <div class="stat-label">🧾 ${t("exp_taxes")}</div>
       </div>
       <div class="stat-card" style="border-left:4px solid ${isProfit?"var(--status-green)":"var(--status-red)"}">
         <div class="stat-num" style="color:${isProfit?"var(--status-green)":"var(--status-red)"}">${fmtMoney(Math.abs(profit))}</div>
-        <div class="stat-label">${isProfit?"📈 Profit":"📉 Déficit"}</div>
+        <div class="stat-label">${isProfit?t("exp_profit"):t("exp_deficit")}</div>
       </div>
       <div class="stat-card" style="border-left:4px solid var(--accent-soft)">
         <div class="stat-num" style="font-size:20px;color:var(--accent-soft)">${fmtMoney(totalFixed)}</div>
-        <div class="stat-label">🔒 Frais fixes</div>
+        <div class="stat-label">🔒 ${t("exp_fixed")}</div>
       </div>
       <div class="stat-card" style="border-left:4px solid var(--text3)">
         <div class="stat-num" style="font-size:20px;color:var(--text3)">${fmtMoney(totalVar)}</div>
-        <div class="stat-label">${icon("bar-chart", 14)} Frais variables</div>
+        <div class="stat-label">${icon("bar-chart", 14)} ${t("exp_variable")}</div>
       </div>
     </div>
 
@@ -315,8 +315,8 @@ function renderDepenses() {
       <!-- Combo bars + line : Revenus vs Dépenses + Profit (6 mois) -->
       <div class="card chart-card chart-card--wide">
         <div class="chart-card__header">
-          <div class="chart-card__title">${icon("trending-up", 16)} Revenus, Dépenses & Profit — 6 derniers mois</div>
-          <div class="chart-card__sub">Survolez les barres pour voir les détails</div>
+          <div class="chart-card__title">${icon("trending-up", 16)} ${t("chart_combo_title")}</div>
+          <div class="chart-card__sub">${t("chart_combo_sub")}</div>
         </div>
         <div class="chart-canvas-wrap"><canvas id="chart-revenue-expense"></canvas></div>
       </div>
@@ -324,11 +324,11 @@ function renderDepenses() {
       <!-- Doughnut : Dépenses par catégorie -->
       <div class="card chart-card">
         <div class="chart-card__header">
-          <div class="chart-card__title">${icon("pie-chart", 16)} Répartition des dépenses</div>
-          <div class="chart-card__sub">${catTotals.length === 0 ? "Aucune dépense" : `${catTotals.length} catégorie${catTotals.length > 1 ? "s" : ""}`}</div>
+          <div class="chart-card__title">${icon("pie-chart", 16)} ${t("chart_pie_title")}</div>
+          <div class="chart-card__sub">${catTotals.length === 0 ? t("chart_pie_no_data") : `${catTotals.length} ${catTotals.length > 1 ? t("chart_categories_pl") : t("chart_categories")}`}</div>
         </div>
         ${catTotals.length === 0
-          ? `<div class="empty" style="margin-top:20px">${icon("pie-chart", 48)}<br/>Aucune dépense pour cette période</div>`
+          ? `<div class="empty" style="margin-top:20px">${icon("pie-chart", 48)}<br/>${t("chart_pie_no_data")}</div>`
           : `<div class="chart-canvas-wrap"><canvas id="chart-categories"></canvas></div>`}
       </div>
     </div>
@@ -347,7 +347,7 @@ function renderDepenses() {
     ${filteredRev.length > 0 ? `
     <h3 style="font-size:15px;margin-bottom:10px">${icon("wallet", 14)} Revenus</h3>
     <div class="table-wrap overflow" style="margin-bottom:20px">
-      <table><thead><tr><th>Période</th><th>Description</th><th>Montant</th><th>TPS</th><th>TVQ</th><th></th></tr></thead>
+      <table><thead><tr><th>${t("exp_table_period")}</th><th>${t("exp_table_desc")}</th><th>${t("exp_table_amount")}</th><th>TPS</th><th>TVQ</th><th></th></tr></thead>
       <tbody>${filteredRev.map(r => `<tr>
         <td style="white-space:nowrap;font-size:12px;color:var(--text2)">${fmtRevenuePeriod(r) || r.date || ""}</td>
         <td><strong>${r.description||""}</strong></td>
@@ -366,9 +366,9 @@ function renderDepenses() {
     <!-- Dépenses -->
     <h3 style="font-size:15px;margin-bottom:10px">💸 Dépenses</h3>
     <div class="table-wrap overflow">
-      <table><thead><tr><th>Date</th><th>Fournisseur</th><th>Catégorie</th><th>Type</th><th>Avant taxes</th><th>TPS</th><th>TVQ</th><th>Total</th><th></th></tr></thead>
+      <table><thead><tr><th>${t("exp_table_date")}</th><th>${t("exp_table_supplier")}</th><th>${t("exp_table_category")}</th><th>Type</th><th>Avant taxes</th><th>TPS</th><th>TVQ</th><th>Total</th><th></th></tr></thead>
       <tbody>${filteredExp.length === 0
-        ? `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px">Aucune dépense pour cette période.</td></tr>`
+        ? `<tr><td colspan="9" style="text-align:center;color:var(--text3);padding:24px">${t("chart_pie_no_data")}.</td></tr>`
         : filteredExp.map(e => {
             const total = Number(e.amount||0) + Number(e.tps||0) + Number(e.tvq||0);
             const type = getExpenseCatType(e.category);
@@ -412,54 +412,54 @@ function openExpenseModal(id) {
   const currentType = e?.type || getExpenseCatType(currentCat);
 
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>${e ? "Modifier" : "Ajouter"} une dépense</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
+    <div class="modal-header"><h3>${e ? t("exp_modal_edit") : t("exp_modal_add")}</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
 
-    <label>Description
+    <label>${t("exp_table_desc")}
       <input id="ex-desc" value="${esc(e?.description||"")}"/>
     </label>
-    <label>Fournisseur (optionnel)
-      <input id="ex-sup" list="ex-sup-list" value="${esc(e?.supplier||"")}" placeholder="Tapez un nom (création auto si nouveau)" autocomplete="off"/>
+    <label>${t("exp_field_supplier")}
+      <input id="ex-sup" list="ex-sup-list" value="${esc(e?.supplier||"")}" placeholder="${t(`exp_field_supplier_ph`)}" autocomplete="off"/>
       <datalist id="ex-sup-list">
         ${suppliers.map(s => `<option value="${esc(s.name)}"></option>`).join("")}
       </datalist>
-      <small class="field-hint">${icon("info", 11)} Si le fournisseur n'existe pas, il sera créé automatiquement à l'enregistrement.</small>
+      <small class="field-hint">${icon("info", 11)} ${t("exp_field_supplier_hint")}</small>
     </label>
 
     <div class="form-row">
-      <label>Catégorie
+      <label>${t("exp_field_category")}
         <select id="ex-cat" onchange="updateExpenseType()">
           ${cats.map(c => `<option value="${c}" ${currentCat===c?"selected":""}>${c}</option>`).join("")}
         </select>
       </label>
-      <label>Type de frais
+      <label>${t("exp_field_type")}
         <select id="ex-type">
-          <option value="variable" ${currentType==="variable"?"selected":""}>${icon("bar-chart", 14)} Variable</option>
-          <option value="fixe" ${currentType==="fixe"?"selected":""}>🔒 Fixe</option>
+          <option value="variable" ${currentType==="variable"?"selected":""}>${icon("bar-chart", 14)} ${t("exp_type_variable")}</option>
+          <option value="fixe" ${currentType==="fixe"?"selected":""}>🔒 ${t("exp_type_fixed")}</option>
         </select>
       </label>
     </div>
 
-    <label>Date<input id="ex-date" type="date" value="${e?.date||today}"/></label>
+    <label>${t("exp_table_date")}<input id="ex-date" type="date" value="${e?.date||today}"/></label>
 
-    <label>Montant avant taxes ($)
+    <label>${t("exp_field_amount_pre")}
       <input id="ex-amt" type="number" step="0.01" value="${e?.amount||""}" oninput="calcExpenseTaxes()"/>
     </label>
 
     <div class="form-row">
-      <label>TPS (5%)
+      <label>${t("exp_field_tps")}
         <input id="ex-tps" type="number" step="0.01" value="${e?.tps||""}"/>
       </label>
-      <label>TVQ (9.975%)
+      <label>${t("exp_field_tvq")}
         <input id="ex-tvq" type="number" step="0.01" value="${e?.tvq||""}"/>
       </label>
     </div>
     <div id="ex-total-preview" style="font-size:13px;color:var(--text2);margin-bottom:10px;text-align:right"></div>
 
-    <label>Notes<textarea id="ex-notes" style="height:60px">${e?.notes||""}</textarea></label>
+    <label>${t("exp_table_notes")}<textarea id="ex-notes" style="height:60px">${e?.notes||""}</textarea></label>
 
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveExpense('${id||""}')">Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveExpense('${id||""}')">${t("save")}</button>
     </div>
   </div>`);
   setTimeout(calcExpenseTaxes, 50);
@@ -481,14 +481,14 @@ function calcExpenseTaxes() {
   if (tvqEl && !tvqEl.dataset.manual) tvqEl.value = amt > 0 ? (amt * TVQ_RATE).toFixed(2) : "";
   const tps = Number(tpsEl?.value) || 0;
   const tvq = Number(tvqEl?.value) || 0;
-  if (prev && amt > 0) prev.innerHTML = `Total avec taxes : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
+  if (prev && amt > 0) prev.innerHTML = `${t("exp_total_with_tax")} : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
 }
 async function saveExpense(id) {
   const sup = document.getElementById("ex-sup").value.trim();
   const desc = document.getElementById("ex-desc").value.trim();
   const amt = Number(document.getElementById("ex-amt").value) || 0;
-  if (!desc) return alert("Entrez une description.");
-  if (!amt) return alert("Entrez un montant.");
+  if (!desc) return alert(t("err_enter_desc"));
+  if (!amt) return alert(t("err_enter_amount"));
 
   // Auto-création du fournisseur si saisi mais non existant
   if (sup) {
@@ -535,35 +535,35 @@ function openRevenueModal(id) {
   const startDate = r?.dateStart || r?.date || today;
   const endDate = r?.dateEnd || "";
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>${r ? "Modifier" : "Ajouter"} un revenu</h3><button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button></div>
+    <div class="modal-header"><h3>${r ? t("rev_modal_edit") : t("rev_modal_add")}</h3><button class="close-btn" onclick="closeModal()" aria-label="${t(`close`)}">${icon("x", 18)}</button></div>
     <label>Description<input id="rv-desc" value="${esc(r?.description||"")}"/></label>
 
     <div class="form-row">
-      <label>Date de début
+      <label>${t("rev_date_start")}
         <input id="rv-date-start" type="date" value="${startDate}" required/>
       </label>
-      <label>Date de fin <span style="font-weight:400;color:var(--text3);font-size:11px">(optionnel)</span>
+      <label>${t("rev_date_end")} <span style="font-weight:400;color:var(--text3);font-size:11px">(optionnel)</span>
         <input id="rv-date-end" type="date" value="${endDate}" min="${startDate}"/>
       </label>
     </div>
-    <small class="field-hint" style="margin-top:-6px;margin-bottom:10px;display:block">${icon("info", 11)} Laissez la date de fin vide pour un revenu ponctuel. Sinon, le revenu couvrira toute la période (utile pour une semaine, un mois, etc.).</small>
+    <small class="field-hint" style="margin-top:-6px;margin-bottom:10px;display:block">${icon("info", 11)} ${t("rev_date_end_hint")}</small>
 
-    <label>Montant ($)
+    <label>${t("exp_field_amount")}
       <input id="rv-amt" type="number" step="0.01" value="${r?.amount||""}" oninput="calcRevenueTaxes()"/>
     </label>
     <div class="form-row">
-      <label>TPS perçue (5%)
+      <label>${t("exp_field_tps_recv")}
         <input id="rv-tps" type="number" step="0.01" value="${r?.tps||""}"/>
       </label>
-      <label>TVQ perçue (9.975%)
+      <label>${t("exp_field_tvq_recv")}
         <input id="rv-tvq" type="number" step="0.01" value="${r?.tvq||""}"/>
       </label>
     </div>
     <div id="rv-total-preview" style="font-size:13px;color:var(--text2);margin-bottom:10px;text-align:right"></div>
-    <label>Notes<textarea id="rv-notes" style="height:60px">${r?.notes||""}</textarea></label>
+    <label>${t("exp_table_notes")}<textarea id="rv-notes" style="height:60px">${r?.notes||""}</textarea></label>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveRevenue('${id||""}')">Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveRevenue('${id||""}')">${t("save")}</button>
     </div>
   </div>`);
   setTimeout(calcRevenueTaxes, 50);
@@ -589,18 +589,18 @@ function calcRevenueTaxes() {
   if (tvqEl) tvqEl.value = amt > 0 ? (amt * TVQ_RATE).toFixed(2) : "";
   const tps = Number(tpsEl?.value) || 0;
   const tvq = Number(tvqEl?.value) || 0;
-  if (prev && amt > 0) prev.innerHTML = `Total avec taxes : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
+  if (prev && amt > 0) prev.innerHTML = `${t("exp_total_with_tax")} : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
 }
 
 async function saveRevenue(id) {
   const desc = document.getElementById("rv-desc").value.trim();
   const amt = Number(document.getElementById("rv-amt").value) || 0;
-  if (!desc) return alert("Entrez une description.");
-  if (!amt) return alert("Entrez un montant.");
+  if (!desc) return alert(t("err_enter_desc"));
+  if (!amt) return alert(t("err_enter_amount"));
   const dateStart = document.getElementById("rv-date-start").value;
   const dateEnd = document.getElementById("rv-date-end").value || null;
-  if (!dateStart) return alert("Entrez une date de début.");
-  if (dateEnd && dateEnd < dateStart) return alert("La date de fin doit être après la date de début.");
+  if (!dateStart) return alert(t("err_enter_start_date"));
+  if (dateEnd && dateEnd < dateStart) return alert(t("err_end_after_start"));
   const data = {
     description: desc,
     amount: amt,
@@ -645,7 +645,7 @@ function openQuickSupplier() {
     <label>Téléphone<input id="qs-phone"/></label>
     <label>Courriel<input id="qs-email"/></label>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="openExpenseModal()">Annuler</button>
+      <button class="btn-cancel" onclick="openExpenseModal()">${t("cancel")}</button>
       <button class="btn btn-primary" onclick="saveQuickSupplier()">Créer</button>
     </div>
   </div>`);
@@ -682,8 +682,8 @@ function openExpenseCatModal() {
     <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
       <input id="new-cat-name" placeholder="Nom de la catégorie" style="flex:2"/>
       <select id="new-cat-type" style="flex:1">
-        <option value="variable">${icon("bar-chart", 14)} Variable</option>
-        <option value="fixe">🔒 Fixe</option>
+        <option value="variable">${icon("bar-chart", 14)} ${t("exp_type_variable")}</option>
+        <option value="fixe">🔒 ${t("exp_type_fixed")}</option>
       </select>
       <button class="btn btn-primary" onclick="addExpenseCat()">Ajouter</button>
     </div>
@@ -715,10 +715,10 @@ function openFixedTemplatesModal() {
         ? `<p style="color:var(--text3);font-size:13px;text-align:center;padding:16px">Aucun modèle de frais fixe.</p>`
         : templates.map(t => `<div class="cat-item" style="justify-content:space-between">
             <div style="flex:1">
-              <div style="font-weight:600;font-size:13px">${t.supplier||t.description||"—"}</div>
-              <div style="font-size:11px;color:var(--text3)">${t.category||""} · ${fmtMoney(t.amount)}</div>
+              <div style="font-weight:600;font-size:13px">${tpl.supplier||t.description||"—"}</div>
+              <div style="font-size:11px;color:var(--text3)">${tpl.category||""} · ${fmtMoney(t.amount)}</div>
             </div>
-            <button class="btn-danger-sm" onclick="deleteFixedTemplate('${t.id}')">🗑️</button>
+            <button class="btn-danger-sm" onclick="deleteFixedTemplate('${tpl.id}')">🗑️</button>
           </div>`).join("")}
     </div>
     <div style="border-top:1px solid var(--border);padding-top:12px">
@@ -730,7 +730,7 @@ function openFixedTemplatesModal() {
             ${suppliers.map(s => `<option value="${s.name}">${s.name}</option>`).join("")}
           </select>
         </label>
-        <label>Catégorie
+        <label>${t("exp_field_category")}
           <select id="ft-cat">
             ${getAllExpenseCats().map(c => `<option value="${c}">${c}</option>`).join("")}
           </select>
@@ -756,7 +756,7 @@ function calcFtTaxes() {
 
 async function saveFixedTemplate() {
   const amt = Number(document.getElementById("ft-amt").value) || 0;
-  if (!amt) return alert("Entrez un montant.");
+  if (!amt) return alert(t("err_enter_amount"));
   const nid = genId();
   await db.collection("fixedExpenseTemplates").doc(nid).set({
     id: nid,
@@ -781,33 +781,48 @@ function renderMenu() {
   const available = menuItems.filter(m => m.available !== false).length;
   return `<div class="page">
     <div class="toolbar">
-      <div><h2 style="font-size:18px">Menu</h2>
+      <div><h2 style="font-size:18px">${t("menu_title")}</h2>
       <p style="font-size:13px;color:var(--text3);margin-top:2px">${available} item${available > 1 ? "s" : ""} disponible${available > 1 ? "s" : ""}</p></div>
-      <button class="btn btn-primary" onclick="openMenuModal()">${icon("plus", 16)} Item</button>
+      <button class="btn btn-primary" onclick="openMenuModal()">${icon("plus", 16)} ${t("menu_add")}</button>
     </div>
     <div class="sec-tabs">${cats.map(c => `<button class="sec-btn ${activeMenuCat === c ? "active" : ""}" onclick="setMenuCat('${c}')">${c}</button>`).join("")}</div>
     ${filtered.length === 0
-      ? `<div class="empty"><div style="font-size:36px;margin-bottom:8px">🍽️</div>Aucun item dans cette catégorie.</div>`
-      : `<div class="card-grid">${filtered.map(m => `<div class="menu-item-card ${m.available === false ? "unavailable" : ""}">
-          <div style="flex:1">
-            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      ? `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("utensils", 36)}</div>Aucun item dans cette catégorie.</div>`
+      : `<div class="card-grid">${filtered.map(m => {
+          const fc = computeRecipeFoodCost(m.recipe || []);
+          const hasRec = Array.isArray(m.recipe) && m.recipe.length > 0;
+          const margin = (m.price || 0) - fc;
+          const marginPct = (m.price || 0) > 0 ? (margin / m.price) * 100 : 0;
+          let marginColor = "var(--text3)";
+          if (hasRec && m.price > 0) {
+            if (marginPct >= 70) marginColor = "var(--status-green)";
+            else if (marginPct >= 50) marginColor = "var(--status-yellow)";
+            else marginColor = "var(--status-red)";
+          }
+          return `<div class="menu-item-card ${m.available === false ? "unavailable" : ""}">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
               <span style="font-weight:700;font-size:15px">${m.name || ""}</span>
-              ${m.available === false ? `<span class="badge-pill" style="background:#f1f5f9;border:1px solid var(--border);color:var(--text3);font-size:10px">Indisponible</span>` : ""}
+              ${m.available === false ? `<span class="badge-pill" style="background:var(--surface2);border:1px solid var(--border);color:var(--text3);font-size:10px">${t("menu_unavailable")}</span>` : ""}
             </div>
             ${m.description ? `<div style="font-size:12px;color:var(--text2);margin-bottom:6px">${m.description}</div>` : ""}
-            <span class="badge-pill blue" style="font-size:11px">${m.category || ""}</span>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+              <span class="badge-pill blue" style="font-size:11px">${m.category || ""}</span>
+              ${hasRec ? `<span class="icon-inline" style="font-size:11px;color:var(--text3)">${icon("utensils", 11)} ${fmtMoney(fc)} · <strong style="color:${marginColor}">${marginPct.toFixed(0)}% ${t("rec_margin").toLowerCase()}</strong></span>` : ""}
+            </div>
           </div>
           <div style="text-align:right;flex-shrink:0;margin-left:12px">
             <div class="price-tag">${fmtMoney(m.price)}</div>
-            <div class="menu-wrap" style="margin-top:6px"><button class="dots-btn" onclick="toggleDrop('mn${m.id}')">${icon("more-vertical", 16)}</button>
+            <div class="menu-wrap" style="margin-top:6px"><button class="dots-btn" onclick="toggleDrop('mn${m.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
             <div class="dropdown" id="drop-mn${m.id}">
-              <button onclick="openMenuModal('${m.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
-              <button onclick="toggleMenuAvailable('${m.id}',${m.available !== false});closeAllDrops()">${m.available === false ? "✅ Marquer disponible" : "⛔ Marquer indisponible"}</button>
+              <button onclick="openMenuModal('${m.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+              <button onclick="toggleMenuAvailable('${m.id}',${m.available !== false});closeAllDrops()">${icon(m.available === false ? "check" : "x", 14)} ${m.available === false ? t("menu_available") : t("menu_unavailable")}</button>
               <div class="sep"></div>
-              <button style="color:var(--status-red)" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
+              <button style="color:var(--status-red)" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
             </div></div>
           </div>
-        </div>`).join("")}</div>`}
+        </div>`;
+        }).join("")}</div>`}
   </div>`;
 }
 
@@ -815,35 +830,168 @@ async function toggleMenuAvailable(id, current) {
   await db.collection("menu").doc(id).update({ available: !current });
 }
 
+// ── Modal Item Menu (avec composition / recette) ──
+let menuRecipeRows = []; // état temporaire pour la composition en cours d'édition
+
 function openMenuModal(id) {
   const m = id ? menuItems.find(x => x.id === id) : null;
-  showModal(`<div class="modal">
-    <div class="modal-header"><h3>${m ? "Modifier" : "Ajouter"} un item au menu</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
-    <label>Nom<input id="mn-name" value="${esc(m?.name || "")}"/></label>
-    <label>Description<textarea id="mn-desc" style="height:70px">${m?.description || ""}</textarea></label>
-    <div class="form-row">
-      <label>Prix ($)<input id="mn-price" type="number" step="0.01" value="${m?.price || ""}"/></label>
-      <label>Catégorie<select id="mn-cat">${MENU_CATS.map(c => `<option value="${c}" ${(m?.category || "Plats principaux") === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+  // Initialiser la composition (recipe) depuis l'item ou vide
+  menuRecipeRows = (m?.recipe && Array.isArray(m.recipe)) ? [...m.recipe] : [];
+
+  showModal(`<div class="modal" style="max-width:580px">
+    <div class="modal-header">
+      <h3>${m ? t("menu_modal_edit") : t("menu_modal_add")}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
     </div>
+
+    <label>${t("menu_field_name")}<input id="mn-name" value="${esc(m?.name || "")}"/></label>
+    <label>${t("menu_field_desc")}<textarea id="mn-desc" style="height:60px">${m?.description || ""}</textarea></label>
+    <div class="form-row">
+      <label>${t("menu_field_price")}<input id="mn-price" type="number" step="0.01" value="${m?.price || ""}" oninput="updateRecipeSummary()"/></label>
+      <label>${t("menu_field_category")}<select id="mn-cat">${MENU_CATS.map(c => `<option value="${c}" ${(m?.category || "Plats principaux") === c ? "selected" : ""}>${c}</option>`).join("")}</select></label>
+    </div>
+
+    <!-- ═══ COMPOSITION (recette) ═══ -->
+    <div style="margin-top:14px">
+      <label style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span class="icon-inline">${icon("utensils", 14)} ${t("menu_composition")}</span>
+        <button type="button" class="btn-icon-only" onclick="addRecipeRow()" aria-label="${t("menu_add_ingredient")}" style="width:32px;height:32px">${icon("plus", 14)}</button>
+      </label>
+      <small class="field-hint" style="margin-bottom:8px;display:block">${t("menu_composition_hint")}</small>
+
+      <div class="composition-box" id="composition-box">
+        <div id="composition-rows"></div>
+        <div id="composition-totals"></div>
+      </div>
+    </div>
+
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveMenuItem('${id || ""}')">Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveMenuItem('${id || ""}')">${t("save")}</button>
     </div>
   </div>`);
+
+  // Render initial des lignes de composition
+  renderCompositionRows();
+}
+
+// Génère le HTML des lignes de composition
+function renderCompositionRows() {
+  const container = document.getElementById("composition-rows");
+  if (!container) return;
+
+  if (ingredients.length === 0) {
+    container.innerHTML = `<div class="composition-empty">${t("ing_no_ingredients")}</div>`;
+    updateRecipeSummary();
+    return;
+  }
+
+  if (menuRecipeRows.length === 0) {
+    container.innerHTML = `<div class="composition-empty">${t("menu_no_ingredients")}</div>`;
+    updateRecipeSummary();
+    return;
+  }
+
+  container.innerHTML = menuRecipeRows.map((row, idx) => {
+    const ing = ingredients.find(i => i.id === row.ingredientId);
+    const cost = ing ? Number(ing.costPerUnit || 0) * Number(row.qty || 0) : 0;
+    return `<div class="composition-row" data-idx="${idx}">
+      <select onchange="updateRecipeRow(${idx}, 'ingredientId', this.value)" aria-label="${t("menu_select_ingredient")}">
+        <option value="">${t("menu_select_ingredient")}</option>
+        ${ingredients.map(i => `<option value="${i.id}" ${i.id === row.ingredientId ? "selected" : ""}>${esc(i.name)} (${fmtMoney(i.costPerUnit || 0)}/${i.unit || "—"})</option>`).join("")}
+      </select>
+      <input type="number" step="0.01" min="0" placeholder="${t("menu_quantity")}" value="${row.qty || ""}" oninput="updateRecipeRow(${idx}, 'qty', this.value)" aria-label="${t("menu_quantity")}"/>
+      <span class="composition-cost">${fmtMoney(cost)}</span>
+      <button type="button" class="composition-remove" onclick="removeRecipeRow(${idx})" aria-label="${t("delete")}">${icon("trash", 16)}</button>
+    </div>`;
+  }).join("");
+
+  updateRecipeSummary();
+}
+
+function addRecipeRow() {
+  menuRecipeRows.push({ ingredientId: "", qty: 1 });
+  renderCompositionRows();
+}
+
+function updateRecipeRow(idx, field, value) {
+  if (!menuRecipeRows[idx]) return;
+  if (field === "qty") menuRecipeRows[idx][field] = Number(value) || 0;
+  else menuRecipeRows[idx][field] = value;
+  // Update juste la ligne et le sommaire (pas tout le rendu pour préserver focus)
+  const row = document.querySelector(`.composition-row[data-idx="${idx}"]`);
+  if (row && field === "ingredientId") {
+    // Re-render complet pour mettre à jour le coût affiché
+    renderCompositionRows();
+  } else if (row) {
+    const costSpan = row.querySelector(".composition-cost");
+    const ing = ingredients.find(i => i.id === menuRecipeRows[idx].ingredientId);
+    const cost = ing ? Number(ing.costPerUnit || 0) * Number(menuRecipeRows[idx].qty || 0) : 0;
+    if (costSpan) costSpan.textContent = fmtMoney(cost);
+    updateRecipeSummary();
+  }
+}
+
+function removeRecipeRow(idx) {
+  menuRecipeRows.splice(idx, 1);
+  renderCompositionRows();
+}
+
+// Met à jour le résumé : food cost total + marge calculée
+function updateRecipeSummary() {
+  const totals = document.getElementById("composition-totals");
+  if (!totals) return;
+
+  const foodCost = computeRecipeFoodCost(menuRecipeRows);
+  const priceEl = document.getElementById("mn-price");
+  const price = priceEl ? Number(priceEl.value) || 0 : 0;
+  const margin = price - foodCost;
+  const marginPct = price > 0 ? (margin / price) * 100 : 0;
+
+  let marginClass = "composition-margin--bad";
+  if (marginPct >= 70) marginClass = "composition-margin--good";
+  else if (marginPct >= 50) marginClass = "composition-margin--ok";
+
+  totals.innerHTML = `
+    <div class="composition-summary">
+      <span class="composition-summary__label">${t("menu_food_cost_total")}</span>
+      <span class="composition-summary__value">${fmtMoney(foodCost)}</span>
+    </div>
+    ${price > 0 && foodCost > 0 ? `
+      <div class="composition-margin ${marginClass}">
+        <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">${t("menu_calculated_margin")}</span>
+        <span style="font-family:var(--font-heading);font-weight:700;font-size:16px;font-style:italic">${fmtMoney(margin)} (${marginPct.toFixed(1)}%)</span>
+      </div>
+    ` : ""}
+  `;
+}
+
+// Calcule le food cost total d'une recette (array d'objets {ingredientId, qty})
+function computeRecipeFoodCost(recipe) {
+  if (!Array.isArray(recipe)) return 0;
+  return recipe.reduce((total, row) => {
+    const ing = ingredients.find(i => i.id === row.ingredientId);
+    if (!ing) return total;
+    return total + (Number(ing.costPerUnit || 0) * Number(row.qty || 0));
+  }, 0);
 }
 
 async function saveMenuItem(id) {
   const name = document.getElementById("mn-name").value.trim();
-  if (!name) return alert("Entrez un nom.");
+  if (!name) return alert(t("err_enter_name"));
+  // Filtrer les lignes vides (pas d'ingrédient sélectionné)
+  const cleanRecipe = menuRecipeRows.filter(r => r.ingredientId && Number(r.qty) > 0);
   const data = {
     name,
     description: document.getElementById("mn-desc").value,
     price: Number(document.getElementById("mn-price").value) || 0,
     category: document.getElementById("mn-cat").value,
-    available: true
+    available: true,
+    recipe: cleanRecipe
   };
   if (id) await db.collection("menu").doc(id).update(data);
   else { const nid = genId(); await db.collection("menu").doc(nid).set({ ...data, id: nid }); }
+  menuRecipeRows = []; // Reset
   closeModal();
 }
 
@@ -852,8 +1000,8 @@ function renderFournisseurs() {
   const activeProducts = products.filter(p => !p.archived);
   return `<div class="page">
     <div class="toolbar">
-      <h2 style="font-size:18px">Fournisseurs</h2>
-      ${isAdmin ? `<button class="btn btn-primary" onclick="openSupplierModal()">${icon("plus", 16)} Fournisseur</button>` : ""}
+      <h2 style="font-size:18px">${t("sup_title")}</h2>
+      ${isAdmin ? `<button class="btn btn-primary" onclick="openSupplierModal()">${icon("plus", 16)} ${t("sup_add")}</button>` : ""}
     </div>
     ${suppliers.length === 0
       ? `<div class="empty"><div style="font-size:40px;margin-bottom:8px">🏪</div>Aucun fournisseur.</div>`
@@ -890,10 +1038,10 @@ function openSupplierModal(id) {
     <label>Nom<input id="s-name" value="${esc(s?.name || "")}"/></label>
     <label>Téléphone<input id="s-contact" value="${esc(s?.contact || "")}"/></label>
     <label>Courriel<input id="s-email" value="${esc(s?.email || "")}"/></label>
-    <label>Notes<textarea id="s-notes" style="height:70px">${s?.notes || ""}</textarea></label>
+    <label>${t("exp_table_notes")}<textarea id="s-notes" style="height:70px">${s?.notes || ""}</textarea></label>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveSupplier('${id || ""}')">Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveSupplier('${id || ""}')">${t("save")}</button>
     </div>
   </div>`);
 }
@@ -925,40 +1073,40 @@ function openCustomReportModal() {
 
   showModal(`<div class="modal" style="max-width:520px">
     <div class="modal-header">
-      <h3>${icon("file-spreadsheet", 18)} Rapport personnalisé</h3>
-      <button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button>
+      <h3>${icon("file-spreadsheet", 18)} ${t("report_title")}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t(`close`)}">${icon("x", 18)}</button>
     </div>
     <p style="color:var(--text2);font-size:13px;margin-bottom:16px;line-height:1.5">
-      Choisissez la période et le contenu, puis exportez en Excel ou PDF.
+      ${t("report_intro")}
     </p>
 
     <div class="form-row">
-      <label>Date de début
+      <label>${t("rev_date_start")}
         <input id="rep-start" type="date" value="${defaultStart}"/>
       </label>
-      <label>Date de fin
+      <label>${t("report_date_end")}
         <input id="rep-end" type="date" value="${today}"/>
       </label>
     </div>
 
-    <label style="margin-top:8px">Contenu du rapport</label>
+    <label style="margin-top:8px">${t("report_content")}</label>
     <div style="display:flex;flex-direction:column;gap:8px;background:var(--surface2);padding:12px 14px;border-radius:8px;margin-bottom:14px">
       <label style="display:flex;align-items:center;gap:8px;font-weight:500;font-size:14px;color:var(--text);margin:0;cursor:pointer">
         <input type="checkbox" id="rep-include-rev" checked style="width:auto;margin:0;cursor:pointer"/>
-        ${icon("trending-up", 14)} Inclure les revenus
+        ${icon("trending-up", 14)} ${t("report_include_rev")}
       </label>
       <label style="display:flex;align-items:center;gap:8px;font-weight:500;font-size:14px;color:var(--text);margin:0;cursor:pointer">
         <input type="checkbox" id="rep-include-exp" checked style="width:auto;margin:0;cursor:pointer"/>
-        ${icon("trending-down", 14)} Inclure les dépenses
+        ${icon("trending-down", 14)} ${t("report_include_exp")}
       </label>
     </div>
 
     <div id="rep-preview" style="background:var(--surface2);padding:10px 14px;border-radius:8px;font-size:13px;color:var(--text2);margin-bottom:14px"></div>
 
     <div class="modal-actions" style="flex-wrap:wrap;gap:8px">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-secondary" onclick="exportReport('pdf')">${icon("file-text", 14)} Exporter PDF</button>
-      <button class="btn btn-primary" onclick="exportReport('xlsx')">${icon("file-spreadsheet", 14)} Exporter Excel</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-secondary" onclick="exportReport('pdf')">${icon("file-text", 14)} ${t("report_export_pdf")}</button>
+      <button class="btn btn-primary" onclick="exportReport('xlsx')">${icon("file-spreadsheet", 14)} ${t("report_export_excel")}</button>
     </div>
   </div>`);
   // Mettre à jour le preview en live
@@ -989,7 +1137,7 @@ function updateReportPreview() {
   const totalExp = filteredExp.reduce((s, e) => s + Number(e.amount || 0), 0);
   const profit = totalRev - totalExp;
 
-  let html = `<strong>Aperçu :</strong> `;
+  let html = `<strong>${t("report_preview")} :</strong> `;
   const parts = [];
   if (incRev) parts.push(`${filteredRev.length} revenu${filteredRev.length > 1 ? "s" : ""} (${fmtMoney(totalRev)})`);
   if (incExp) parts.push(`${filteredExp.length} dépense${filteredExp.length > 1 ? "s" : ""} (${fmtMoney(totalExp)})`);
@@ -1005,9 +1153,9 @@ function getReportData() {
   const end = document.getElementById("rep-end").value;
   const incRev = document.getElementById("rep-include-rev").checked;
   const incExp = document.getElementById("rep-include-exp").checked;
-  if (!start || !end) { alert("Choisissez une période."); return null; }
-  if (start > end) { alert("La date de fin doit être après la date de début."); return null; }
-  if (!incRev && !incExp) { alert("Sélectionnez au moins une catégorie (revenus ou dépenses)."); return null; }
+  if (!start || !end) { alert(t("report_choose_period")); return null; }
+  if (start > end) { alert(t("err_end_after_start")); return null; }
+  if (!incRev && !incExp) { alert(t("report_select_one")); return null; }
 
   const filteredRev = incRev ? revenues.filter(r => {
     const d = r.dateStart || r.date;
@@ -1029,13 +1177,13 @@ async function exportReport(format) {
 
   if (format === "xlsx") {
     if (typeof XLSX === "undefined") {
-      alert("La bibliothèque Excel n'est pas chargée. Vérifiez votre connexion internet et rechargez.");
+      alert(t("report_lib_excel_err"));
       return;
     }
     exportReportExcel(filteredRev, filteredExp, filename, start, end, incRev, incExp);
   } else if (format === "pdf") {
     if (typeof window.jspdf === "undefined") {
-      alert("La bibliothèque PDF n'est pas chargée. Vérifiez votre connexion internet et rechargez.");
+      alert(t("report_lib_pdf_err"));
       return;
     }
     exportReportPDF(filteredRev, filteredExp, filename, start, end, incRev, incExp);
@@ -1431,4 +1579,344 @@ function initExpenseCharts() {
       }
     });
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// INGRÉDIENTS — Items transformés utilisés dans les recettes
+// ═══════════════════════════════════════════════════════════════
+
+let activeIngredientCat = "Toutes";
+
+const INGREDIENT_CATEGORIES = ["base", "protein", "garnish", "sauce", "vegetable", "drink", "dessert", "other"];
+
+function tIngCat(key) {
+  const map = {
+    base: t("ing_cat_base"),
+    protein: t("ing_cat_protein"),
+    garnish: t("ing_cat_garnish"),
+    sauce: t("ing_cat_sauce"),
+    vegetable: t("ing_cat_vegetable"),
+    drink: t("ing_cat_drink"),
+    dessert: t("ing_cat_dessert"),
+    other: t("ing_cat_other"),
+  };
+  return map[key] || key;
+}
+
+function setIngredientCat(cat) {
+  activeIngredientCat = cat;
+  renderPage();
+}
+
+function renderIngredients() {
+  const filtered = activeIngredientCat === "Toutes"
+    ? ingredients
+    : ingredients.filter(i => i.category === activeIngredientCat);
+
+  const totalIngredients = ingredients.length;
+  const avgCost = totalIngredients > 0
+    ? ingredients.reduce((s, i) => s + Number(i.costPerUnit || 0), 0) / totalIngredients
+    : 0;
+
+  let h = `<div class="page">
+    <div class="toolbar">
+      <div>
+        <h2 style="font-size:18px">${t("ing_title")}</h2>
+        <p style="font-size:13px;color:var(--text3);margin-top:2px">${t("ing_subtitle")}</p>
+      </div>
+      ${isAdmin ? `<button class="btn btn-primary" onclick="openIngredientModal()">${icon("plus", 16)} ${t("ing_add")}</button>` : ""}
+    </div>
+
+    ${totalIngredients > 0 ? `
+      <div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(160px,1fr));margin-bottom:16px">
+        <div class="stat-card">
+          <div class="stat-num" style="color:var(--accent)">${totalIngredients}</div>
+          <div class="stat-label">${icon("package", 14)} ${t("ing_title")}</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-num" style="color:var(--text);font-size:20px">${fmtMoney(avgCost)}</div>
+          <div class="stat-label">${t("rec_avg_margin").replace("Marge", "Coût")}</div>
+        </div>
+      </div>
+    ` : ""}
+
+    <!-- Filtres par catégorie -->
+    <div class="section-tabs section-tabs--scroll" role="tablist" aria-label="${t("filter_by_category")}">
+      <button class="sec-btn ${activeIngredientCat === "Toutes" ? "active" : ""}" onclick="setIngredientCat('Toutes')">${t("ing_filter_all")}<span class="badge-count">${totalIngredients}</span></button>
+      ${INGREDIENT_CATEGORIES.map(cat => {
+        const cnt = ingredients.filter(i => i.category === cat).length;
+        if (cnt === 0) return "";
+        return `<button class="sec-btn ${activeIngredientCat === cat ? "active" : ""}" onclick="setIngredientCat('${cat}')">${tIngCat(cat)}<span class="badge-count">${cnt}</span></button>`;
+      }).join("")}
+    </div>`;
+
+  if (!filtered.length) {
+    h += `<div class="empty">
+      <div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("utensils", 48)}</div>
+      ${t("ing_no_ingredients")}
+    </div>`;
+  } else {
+    // Grille de cartes ingrédients
+    h += `<div class="ing-grid">`;
+    filtered.forEach(ing => {
+      h += `<div class="ing-card">
+        <div class="ing-card__head">
+          <div class="ing-card__name">${ing.name || "?"}</div>
+          ${isAdmin ? `<div class="menu-wrap">
+            <button class="dots-btn" onclick="toggleDrop('ing${ing.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
+            <div class="dropdown" id="drop-ing${ing.id}">
+              <button onclick="openIngredientModal('${ing.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+              <div class="sep"></div>
+              <button style="color:var(--status-red)" onclick="askDelete('ingredients','${ing.id}','${esc(ing.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
+            </div>
+          </div>` : ""}
+        </div>
+        <div class="ing-card__price">${fmtMoney(ing.costPerUnit || 0)}<span class="ing-card__unit">/ ${ing.unit || "—"}</span></div>
+        ${ing.category ? `<div class="ing-card__cat">${tIngCat(ing.category)}</div>` : ""}
+        ${ing.notes ? `<div class="ing-card__notes">${ing.notes}</div>` : ""}
+      </div>`;
+    });
+    h += `</div>`;
+  }
+  return h + `</div>`;
+}
+
+// ── Modal Ingrédient (ajout / édition) ─────────────
+function openIngredientModal(id) {
+  const ing = id ? ingredients.find(x => x.id === id) : null;
+  showModal(`<div class="modal">
+    <div class="modal-header">
+      <h3>${ing ? t("ing_modal_edit") : t("ing_modal_add")}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
+    </div>
+
+    <label>${t("ing_field_name")}<input id="ing-name" value="${esc(ing?.name || "")}"/></label>
+
+    <div class="form-row">
+      <label>${t("ing_field_unit")}
+        <input id="ing-unit" value="${esc(ing?.unit || "unité")}"/>
+        <small class="field-hint">${t("ing_field_unit_hint")}</small>
+      </label>
+      <label>${t("ing_field_cost")}
+        <input id="ing-cost" type="number" step="0.01" min="0" value="${ing?.costPerUnit || ""}"/>
+      </label>
+    </div>
+
+    <label>${t("ing_field_category")}
+      <select id="ing-cat">
+        ${INGREDIENT_CATEGORIES.map(c => `<option value="${c}" ${(ing?.category || "other") === c ? "selected" : ""}>${tIngCat(c)}</option>`).join("")}
+      </select>
+    </label>
+
+    <label>${t("ing_field_notes")}<textarea id="ing-notes" style="height:60px">${ing?.notes || ""}</textarea></label>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveIngredient('${id || ""}')">${t("save")}</button>
+    </div>
+  </div>`);
+}
+
+async function saveIngredient(id) {
+  const name = document.getElementById("ing-name").value.trim();
+  if (!name) return alert(t("err_enter_name"));
+  const cost = Number(document.getElementById("ing-cost").value) || 0;
+  const data = {
+    name,
+    unit: document.getElementById("ing-unit").value.trim() || "unité",
+    costPerUnit: cost,
+    category: document.getElementById("ing-cat").value,
+    notes: document.getElementById("ing-notes").value.trim()
+  };
+  if (id) await db.collection("ingredients").doc(id).update(data);
+  else { const nid = genId(); await db.collection("ingredients").doc(nid).set({ ...data, id: nid }); }
+  closeModal();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE RECETTES — Analyse rentabilité des items du menu
+// ═══════════════════════════════════════════════════════════════
+
+let recipesFilter = "with"; // 'all', 'with', 'without'
+let recipesSort = "margin"; // 'margin', 'price', 'name'
+
+function setRecipesFilter(f) { recipesFilter = f; renderPage(); }
+function setRecipesSort(s) { recipesSort = s; renderPage(); }
+
+function renderRecettes() {
+  // Calcul pour chaque item du menu
+  const enriched = menuItems.map(m => {
+    const foodCost = computeRecipeFoodCost(m.recipe || []);
+    const price = Number(m.price || 0);
+    const margin = price - foodCost;
+    const marginPct = price > 0 ? (margin / price) * 100 : 0;
+    const hasRecipe = Array.isArray(m.recipe) && m.recipe.length > 0;
+    return { ...m, foodCost, margin, marginPct, hasRecipe };
+  });
+
+  // Filtrage
+  let filtered = enriched;
+  if (recipesFilter === "with") filtered = enriched.filter(e => e.hasRecipe);
+  else if (recipesFilter === "without") filtered = enriched.filter(e => !e.hasRecipe);
+
+  // Tri
+  if (recipesSort === "margin") {
+    filtered.sort((a, b) => {
+      // Items avec recette en premier, puis par marge décroissante
+      if (a.hasRecipe !== b.hasRecipe) return a.hasRecipe ? -1 : 1;
+      return b.marginPct - a.marginPct;
+    });
+  } else if (recipesSort === "price") {
+    filtered.sort((a, b) => b.price - a.price);
+  } else if (recipesSort === "name") {
+    filtered.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+  }
+
+  // Stats globales (sur items avec recette uniquement)
+  const itemsWithRecipe = enriched.filter(e => e.hasRecipe);
+  const totalItems = enriched.length;
+  const itemsWithoutRecipe = totalItems - itemsWithRecipe.length;
+  const avgMarginPct = itemsWithRecipe.length > 0
+    ? itemsWithRecipe.reduce((s, e) => s + e.marginPct, 0) / itemsWithRecipe.length
+    : 0;
+  const avgFoodCost = itemsWithRecipe.length > 0
+    ? itemsWithRecipe.reduce((s, e) => s + e.foodCost, 0) / itemsWithRecipe.length
+    : 0;
+
+  // Top 3 plus / moins rentables
+  const topProfitable = [...itemsWithRecipe].sort((a, b) => b.marginPct - a.marginPct).slice(0, 3);
+  const topExpensive = [...itemsWithRecipe].sort((a, b) => b.foodCost - a.foodCost).slice(0, 3);
+
+  let h = `<div class="page">
+    <div class="toolbar">
+      <div>
+        <h2 style="font-size:18px">${t("rec_title")}</h2>
+        <p style="font-size:13px;color:var(--text3);margin-top:2px">${t("rec_subtitle")}</p>
+      </div>
+    </div>`;
+
+  // Stats globales
+  if (totalItems > 0) {
+    h += `<div class="stat-grid" style="grid-template-columns:repeat(auto-fill,minmax(170px,1fr));margin-bottom:16px">
+      <div class="stat-card">
+        <div class="stat-num" style="color:var(--accent)">${totalItems}</div>
+        <div class="stat-label">${icon("utensils", 14)} ${t("rec_total_items")}</div>
+      </div>
+      <div class="stat-card" style="border-left:4px solid var(--status-green)">
+        <div class="stat-num" style="color:var(--status-green)">${itemsWithRecipe.length}</div>
+        <div class="stat-label">${t("rec_filter_with_recipe")}</div>
+      </div>
+      ${itemsWithoutRecipe > 0 ? `
+        <div class="stat-card" style="border-left:4px solid var(--status-yellow-vivid)">
+          <div class="stat-num" style="color:var(--status-yellow)">${itemsWithoutRecipe}</div>
+          <div class="stat-label">${t("rec_filter_without")}</div>
+        </div>
+      ` : ""}
+      ${itemsWithRecipe.length > 0 ? `
+        <div class="stat-card" style="border-left:4px solid var(--accent)">
+          <div class="stat-num" style="color:var(--accent);font-size:20px">${avgMarginPct.toFixed(1)}%</div>
+          <div class="stat-label">${t("rec_avg_margin")}</div>
+        </div>
+      ` : ""}
+    </div>`;
+  }
+
+  // Top 3 plus rentables / plus chers (côte à côte)
+  if (itemsWithRecipe.length >= 2) {
+    h += `<div class="charts-wrap" style="margin-bottom:20px">
+      <div class="card">
+        <div class="chart-card__header">
+          <div class="chart-card__title">${icon("trending-up", 16)} ${t("rec_top_profitable")}</div>
+        </div>
+        <ol style="padding-left:20px;margin-top:10px">${topProfitable.map(e => `
+          <li style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span style="font-weight:600;flex:1;min-width:0;word-break:break-word">${e.name || ""}</span>
+            <strong style="color:var(--status-green);font-family:var(--font-heading);font-style:italic">${e.marginPct.toFixed(1)}%</strong>
+          </li>
+        `).join("")}</ol>
+      </div>
+      <div class="card">
+        <div class="chart-card__header">
+          <div class="chart-card__title">${icon("trending-down", 16)} ${t("rec_top_expensive")}</div>
+        </div>
+        <ol style="padding-left:20px;margin-top:10px">${topExpensive.map(e => `
+          <li style="padding:6px 0;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:8px">
+            <span style="font-weight:600;flex:1;min-width:0;word-break:break-word">${e.name || ""}</span>
+            <strong style="color:var(--status-red);font-family:var(--font-heading);font-style:italic">${fmtMoney(e.foodCost)}</strong>
+          </li>
+        `).join("")}</ol>
+      </div>
+    </div>`;
+  }
+
+  // Filtres
+  h += `<div class="section-tabs section-tabs--scroll" style="margin-bottom:16px">
+    <button class="sec-btn ${recipesFilter === "all" ? "active" : ""}" onclick="setRecipesFilter('all')">${t("rec_filter_all")} <span class="badge-count">${totalItems}</span></button>
+    <button class="sec-btn ${recipesFilter === "with" ? "active" : ""}" onclick="setRecipesFilter('with')">${t("rec_filter_with_recipe")} <span class="badge-count">${itemsWithRecipe.length}</span></button>
+    ${itemsWithoutRecipe > 0 ? `<button class="sec-btn ${recipesFilter === "without" ? "active" : ""}" onclick="setRecipesFilter('without')">${t("rec_filter_without")} <span class="badge-count">${itemsWithoutRecipe}</span></button>` : ""}
+  </div>`;
+
+  // Liste des recettes
+  if (filtered.length === 0) {
+    h += `<div class="empty">
+      <div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("utensils", 48)}</div>
+      ${t("rec_no_recipes")}
+    </div>`;
+  } else {
+    h += `<div class="recipes-grid">`;
+    filtered.forEach(e => {
+      let cardClass = "recipe-card--no-recipe";
+      if (e.hasRecipe) {
+        if (e.marginPct >= 70) cardClass = "recipe-card--good";
+        else if (e.marginPct >= 50) cardClass = "recipe-card--ok";
+        else cardClass = "recipe-card--bad";
+      }
+      // Liste compacte des ingrédients (max 5 affichés)
+      const ingList = (e.recipe || []).map(r => {
+        const ing = ingredients.find(i => i.id === r.ingredientId);
+        return ing ? `${r.qty} ${ing.unit} <strong>${ing.name}</strong>` : null;
+      }).filter(Boolean);
+      const visibleIng = ingList.slice(0, 4);
+      const extraCount = ingList.length - visibleIng.length;
+
+      h += `<div class="recipe-card ${cardClass}">
+        <div class="recipe-card__head">
+          <div style="flex:1;min-width:0">
+            <h3 class="recipe-card__name">${e.name || "?"}</h3>
+            <div class="recipe-card__cat">${e.category || ""}</div>
+          </div>
+          <button class="dots-btn" onclick="openMenuModal('${e.id}')" aria-label="${t("dropdown_edit")}" title="${t("dropdown_edit")}">${icon("pencil", 16)}</button>
+        </div>
+
+        ${e.hasRecipe ? `
+          <div class="recipe-card__metrics">
+            <div class="recipe-card__metric">
+              <div class="recipe-card__metric-label">${t("rec_food_cost")}</div>
+              <div class="recipe-card__metric-value" style="color:var(--text2)">${fmtMoney(e.foodCost)}</div>
+            </div>
+            <div class="recipe-card__metric">
+              <div class="recipe-card__metric-label">${t("rec_selling_price")}</div>
+              <div class="recipe-card__metric-value">${e.price > 0 ? fmtMoney(e.price) : "—"}</div>
+            </div>
+            <div class="recipe-card__metric">
+              <div class="recipe-card__metric-label">${t("rec_margin")}</div>
+              <div class="recipe-card__margin-pct">${e.price > 0 ? e.marginPct.toFixed(0) + "%" : "—"}</div>
+            </div>
+          </div>
+
+          <div class="recipe-card__ingredients">
+            ${visibleIng.join(" · ")}${extraCount > 0 ? ` <span style="color:var(--text3)">+${extraCount}</span>` : ""}
+          </div>
+        ` : `
+          <div class="recipe-card__no-recipe">
+            ${icon("plus", 14)} ${t("rec_no_composition")}
+            <br/><small style="color:var(--text3);font-size:11px;margin-top:6px;display:inline-block">${t("rec_no_recipes").split(".")[1] || ""}</small>
+          </div>
+        `}
+      </div>`;
+    });
+    h += `</div>`;
+  }
+
+  return h + `</div>`;
 }

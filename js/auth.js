@@ -20,10 +20,12 @@ function restoreSession() {
 // ── Login ─────────────────────────────────────────────
 function showLogin() {
   document.getElementById("login-screen").innerHTML = `
-  <div style="min-height:100vh;background:linear-gradient(135deg,var(--header-from),var(--accent-soft));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+  <div style="min-height:100vh;background:linear-gradient(135deg,var(--header-from),var(--accent-soft));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative">
+    <!-- Bouton de langue en haut à droite -->
+    <button onclick="toggleUILang()" style="position:absolute;top:18px;right:18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#faf6f0;padding:8px 14px;border-radius:var(--radius-pill);font-family:var(--font-body);font-weight:700;cursor:pointer;font-size:13px;letter-spacing:1px;backdrop-filter:blur(6px)">${getUILang().toUpperCase()} → ${getUILang() === "fr" ? "ES" : "FR"}</button>
     <div style="margin-bottom:28px;text-align:center">
       <div style="font-family:var(--font-heading);font-weight:800;font-size:34px;letter-spacing:6px;color:#faf6f0">BOCHI<span style="color:var(--yellow);font-style:italic">CA</span></div>
-      <div style="font-family:var(--font-body);font-size:11px;color:rgba(250,246,240,0.6);letter-spacing:2.5px;margin-top:6px;text-transform:uppercase;font-weight:500">Gestion interne</div>
+      <div style="font-family:var(--font-body);font-size:11px;color:rgba(250,246,240,0.6);letter-spacing:2.5px;margin-top:6px;text-transform:uppercase;font-weight:500">${t("login_subtitle")}</div>
       <div style="display:flex;height:3px;width:170px;margin:12px auto 0" aria-hidden="true">
         <div style="flex:1;background:var(--yellow)"></div>
         <div style="flex:1;background:var(--blue)"></div>
@@ -31,10 +33,10 @@ function showLogin() {
       </div>
     </div>
     <div style="background:var(--surface);border-radius:var(--radius-xl);padding:28px;width:100%;max-width:320px;box-shadow:var(--shadow-modal)">
-      <h2 style="font-family:var(--font-heading);text-align:center;color:var(--text);font-size:20px;margin-bottom:4px;font-weight:700;letter-spacing:-.3px">Connexion</h2>
-      <p style="text-align:center;color:var(--text3);font-size:12px;margin-bottom:20px;font-family:var(--font-body)">Entrez votre code PIN à 4 chiffres</p>
-      <form class="pin-pad" onsubmit="event.preventDefault()" aria-label="Saisie du code PIN">
-        <div class="pin-display" role="status" aria-live="polite" aria-label="Chiffres saisis">
+      <h2 style="font-family:var(--font-heading);text-align:center;color:var(--text);font-size:20px;margin-bottom:4px;font-weight:700;letter-spacing:-.3px">${t("login_title")}</h2>
+      <p style="text-align:center;color:var(--text3);font-size:12px;margin-bottom:20px;font-family:var(--font-body)">${t("login_pin_prompt")}</p>
+      <form class="pin-pad" onsubmit="event.preventDefault()" aria-label="${t("login_pin_label")}">
+        <div class="pin-display" role="status" aria-live="polite" aria-label="${t("login_pin_dots_label")}">
           <div class="pin-dot" id="dot0"></div>
           <div class="pin-dot" id="dot1"></div>
           <div class="pin-dot" id="dot2"></div>
@@ -42,12 +44,12 @@ function showLogin() {
         </div>
         <div class="pin-error" id="pin-error" role="alert" aria-live="assertive"></div>
         <div class="pin-grid">
-          ${[1,2,3,4,5,6,7,8,9].map(n => `<button type="button" class="pin-btn" onclick="pinPress('${n}')" aria-label="Chiffre ${n}">${n}</button>`).join("")}
-          <button type="button" class="pin-btn" onclick="pinClear()" style="font-size:11px" aria-label="Effacer le code">Effacer</button>
-          <button type="button" class="pin-btn" onclick="pinPress('0')" aria-label="Chiffre 0">0</button>
-          <button type="button" class="pin-btn" onclick="pinBackspace()" style="font-size:16px" aria-label="Supprimer le dernier chiffre">⌫</button>
+          ${[1,2,3,4,5,6,7,8,9].map(n => `<button type="button" class="pin-btn" onclick="pinPress('${n}')" aria-label="${t("digit")} ${n}">${n}</button>`).join("")}
+          <button type="button" class="pin-btn" onclick="pinClear()" style="font-size:11px" aria-label="${t("login_clear")}">${t("login_clear")}</button>
+          <button type="button" class="pin-btn" onclick="pinPress('0')" aria-label="${t("digit")} 0">0</button>
+          <button type="button" class="pin-btn" onclick="pinBackspace()" style="font-size:16px" aria-label="Backspace">⌫</button>
         </div>
-        <p style="text-align:center;color:var(--text3);font-size:11px;margin-top:14px;font-family:var(--font-body)">💡 Vous pouvez aussi taper sur le clavier</p>
+        <p style="text-align:center;color:var(--text3);font-size:11px;margin-top:14px;font-family:var(--font-body)">${t("login_keyboard_hint")}</p>
       </form>
     </div>
   </div>`;
@@ -114,7 +116,7 @@ function checkPin() {
     buildSidebar(); renderPage(); autoApplyFixedExpenses();
   } else {
     const e = document.getElementById("pin-error");
-    if (e) e.textContent = "❌ Code PIN incorrect";
+    if (e) e.textContent = t("login_wrong_pin");
     pinBuffer = ""; updatePinDots();
   }
 }
