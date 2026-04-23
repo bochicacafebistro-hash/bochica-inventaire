@@ -1956,25 +1956,21 @@ function openRecipeViewModal(id) {
     <div class="recipe-view__body">
       <section class="recipe-view__section">
         <h3 class="recipe-view__section-title">${icon("tag", 16)} ${t("rec_field_ingredients")}</h3>
-        <div class="recipe-view__ingredients">
-          ${r.ingredients ? r.ingredients.split(/\n/).filter(l => l.trim()).map(line =>
-            `<div class="recipe-view__ing-line">• ${esc(line.trim())}</div>`
-          ).join("") : `<div style="color:var(--text3);font-style:italic">${t("rec_no_ingredients")}</div>`}
+        <div class="recipe-view__ingredients md-content">
+          ${r.ingredients ? renderMarkdown(autoMarkdownList(r.ingredients, "bullet")) : `<div class="md-empty">${t("rec_no_ingredients")}</div>`}
         </div>
       </section>
 
       <section class="recipe-view__section">
         <h3 class="recipe-view__section-title">${icon("file-text", 16)} ${t("rec_field_steps")}</h3>
-        <ol class="recipe-view__steps">
-          ${r.steps ? r.steps.split(/\n/).filter(l => l.trim()).map(line =>
-            `<li>${esc(line.trim())}</li>`
-          ).join("") : `<div style="color:var(--text3);font-style:italic">${t("rec_no_steps")}</div>`}
-        </ol>
+        <div class="recipe-view__steps md-content">
+          ${r.steps ? renderMarkdown(autoMarkdownList(r.steps, "numbered")) : `<div class="md-empty">${t("rec_no_steps")}</div>`}
+        </div>
       </section>
 
       ${r.tips ? `<section class="recipe-view__tips">
         <h3 class="recipe-view__section-title">${icon("lightbulb", 16)} ${t("rec_field_tips")}</h3>
-        <p>${esc(r.tips)}</p>
+        <div class="md-content">${renderMarkdown(r.tips)}</div>
       </section>` : ""}
     </div>
   </div>`);
@@ -2007,22 +2003,33 @@ function openRecipeModal(id) {
     </div>
 
     <label>${t("rec_field_ingredients")}
-      <textarea id="rec-ingredients" style="height:120px;font-family:var(--font-body)">${esc(r?.ingredients || "")}</textarea>
-      <small class="field-hint">${t("rec_field_ingredients_hint")}</small>
+      ${mdToolbar("rec-ingredients")}
+      <textarea id="rec-ingredients" class="md-input" style="height:140px;font-family:var(--font-body)">${esc(r?.ingredients || "")}</textarea>
+      <small class="field-hint">${t("rec_field_ingredients_hint")} · Formatage : <strong>**gras**</strong>, <em>*italique*</em>, - puces, 1. numéro</small>
     </label>
 
     <label>${t("rec_field_steps")}
-      <textarea id="rec-steps" style="height:160px;font-family:var(--font-body)">${esc(r?.steps || "")}</textarea>
-      <small class="field-hint">${t("rec_field_steps_hint")}</small>
+      ${mdToolbar("rec-steps")}
+      <textarea id="rec-steps" class="md-input" style="height:200px;font-family:var(--font-body)">${esc(r?.steps || "")}</textarea>
+      <small class="field-hint">${t("rec_field_steps_hint")} · Formatage : <strong>**gras**</strong>, <em>*italique*</em>, 1. numéros</small>
     </label>
 
-    <label>${t("rec_field_tips")}<textarea id="rec-tips" style="height:60px">${esc(r?.tips || "")}</textarea></label>
+    <label>${t("rec_field_tips")}
+      ${mdToolbar("rec-tips")}
+      <textarea id="rec-tips" class="md-input" style="height:100px">${esc(r?.tips || "")}</textarea>
+    </label>
 
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
       <button class="btn btn-primary" onclick="saveRecipe('${id || ""}')">${t("save")}</button>
     </div>
   </div>`);
+  // Raccourcis clavier Ctrl/Cmd+B et Ctrl/Cmd+I sur les textareas markdown
+  setTimeout(() => {
+    mdAttachShortcuts("rec-ingredients");
+    mdAttachShortcuts("rec-steps");
+    mdAttachShortcuts("rec-tips");
+  }, 50);
 }
 
 async function saveRecipe(id) {

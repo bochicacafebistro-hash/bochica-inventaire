@@ -41,6 +41,149 @@ function fmtMoney(n) { return `${Number(n || 0).toFixed(2)} $`; }
 
 function esc(s) { return (s || "").replace(/'/g, "\\'").replace(/"/g, "&quot;"); }
 
+// ── Markdown léger : gras, italique, barré, liens, listes, paragraphes ──
+// Sécurisé : on échappe d'abord tout le HTML, puis on injecte nos tags.
+// Usage : renderMarkdown("**Salut** *toi*\n- puce 1\n- puce 2")
+function renderMarkdown(text) {
+  if (!text) return "";
+  // 1. Échapper tout le HTML pour bloquer les injections
+  let s = String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+  // 2. Inline : gras, italique, barré (l'ordre compte)
+  // Gras : **texte** (doit être traité avant l'italique pour pas matcher **)
+  s = s.replace(/\*\*([^*\n][^*\n]*?)\*\*/g, "<strong>$1</strong>");
+  // Italique : *texte* (un seul astérisque)
+  s = s.replace(/(^|[^*<\w])\*([^*\n]+?)\*(?!\*)/g, "$1<em>$2</em>");
+  // Barré : ~~texte~~
+  s = s.replace(/~~([^~\n]+?)~~/g, "<del>$1</del>");
+
+  // 3. Bloc : listes + paragraphes (traitement ligne par ligne)
+  const lines = s.split("\n");
+  const out = [];
+  let inUl = false, inOl = false, paraBuf = [];
+  const flushPara = () => {
+    if (paraBuf.length) {
+      out.push(`<p>${paraBuf.join("<br>")}</p>`);
+      paraBuf = [];
+    }
+  };
+  const closeLists = () => {
+    if (inUl) { out.push("</ul>"); inUl = false; }
+    if (inOl) { out.push("</ol>"); inOl = false; }
+  };
+  lines.forEach(raw => {
+    const line = raw.replace(/\s+$/, ""); // trim droite
+    const ul = line.match(/^\s*[-*•]\s+(.*)$/);
+    const ol = line.match(/^\s*\d+\.\s+(.*)$/);
+    if (ul) {
+      flushPara();
+      if (inOl) { out.push("</ol>"); inOl = false; }
+      if (!inUl) { out.push("<ul>"); inUl = true; }
+      out.push(`<li>${ul[1]}</li>`);
+    } else if (ol) {
+      flushPara();
+      if (inUl) { out.push("</ul>"); inUl = false; }
+      if (!inOl) { out.push("<ol>"); inOl = true; }
+      out.push(`<li>${ol[1]}</li>`);
+    } else if (line.trim() === "") {
+      flushPara();
+      closeLists();
+    } else {
+      closeLists();
+      paraBuf.push(line);
+    }
+  });
+  flushPara();
+  closeLists();
+  return out.join("");
+}
+
+// Rétrocompat : si un texte legacy n'a AUCUN marker markdown et plusieurs lignes,
+// on le considère comme une liste implicite et on préfixe chaque ligne.
+// type = "bullet" | "numbered"
+function autoMarkdownList(text, type) {
+  if (!text) return "";
+  const lines = String(text).split("\n").filter(l => l.trim());
+  if (!lines.length) return "";
+  // A-t-on déjà des markers ? (`- `, `* `, `• `, `1. `, `**`, etc.)
+  const hasMarkdown = lines.some(l => /^\s*([-*•]|\d+\.)\s+/.test(l) || /\*\*|~~|(^|\s)\*[^*]/.test(l));
+  if (hasMarkdown) return text;
+  // Préfixer chaque ligne non-vide selon le type
+  const prefix = type === "numbered" ? "1. " : "- ";
+  return lines.map(l => prefix + l).join("\n");
+}
+
+// ── Toolbar markdown pour textareas ───────────────────
+// Génère une barre d'outils avec boutons gras/italique/listes qui agit sur un textarea
+function mdToolbar(textareaId) {
+  return `<div class="md-toolbar" role="toolbar" aria-label="Mise en forme">
+    <button type="button" class="md-btn" onclick="mdWrap('${textareaId}','**','**')" title="Gras (Ctrl+B)" aria-label="Gras">${icon("bold", 14)}</button>
+    <button type="button" class="md-btn" onclick="mdWrap('${textareaId}','*','*')" title="Italique (Ctrl+I)" aria-label="Italique">${icon("italic", 14)}</button>
+    <button type="button" class="md-btn" onclick="mdWrap('${textareaId}','~~','~~')" title="Barré" aria-label="Barré">${icon("strikethrough", 14)}</button>
+    <span class="md-toolbar__sep" aria-hidden="true"></span>
+    <button type="button" class="md-btn" onclick="mdPrefixLines('${textareaId}','- ')" title="Liste à puces" aria-label="Liste à puces">${icon("list", 14)}</button>
+    <button type="button" class="md-btn" onclick="mdPrefixLines('${textareaId}','1. ')" title="Liste numérotée" aria-label="Liste numérotée">${icon("list-ordered", 14)}</button>
+  </div>`;
+}
+
+function mdWrap(id, before, after) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = el.selectionStart, end = el.selectionEnd;
+  const selected = el.value.substring(start, end);
+  const placeholder = selected || "texte";
+  const replacement = before + placeholder + after;
+  el.value = el.value.substring(0, start) + replacement + el.value.substring(end);
+  el.focus();
+  // Si rien n'était sélectionné, on sélectionne le placeholder pour remplacement facile
+  if (selected) {
+    const pos = start + replacement.length;
+    el.setSelectionRange(pos, pos);
+  } else {
+    el.setSelectionRange(start + before.length, start + before.length + placeholder.length);
+  }
+}
+
+function mdPrefixLines(id, prefix) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const start = el.selectionStart, end = el.selectionEnd;
+  const full = el.value;
+  // Étendre la sélection aux bornes des lignes
+  const lineStart = full.lastIndexOf("\n", start - 1) + 1;
+  let lineEnd = full.indexOf("\n", end);
+  if (lineEnd === -1) lineEnd = full.length;
+  const before = full.substring(0, lineStart);
+  const selected = full.substring(lineStart, lineEnd) || "texte";
+  const after = full.substring(lineEnd);
+  // Si toutes les lignes ont déjà le préfixe → on le retire (toggle)
+  const lines = selected.split("\n");
+  const allHave = lines.every(l => l.startsWith(prefix));
+  const newLines = allHave
+    ? lines.map(l => l.substring(prefix.length))
+    : lines.map(l => l.startsWith(prefix) ? l : prefix + l);
+  const joined = newLines.join("\n");
+  el.value = before + joined + after;
+  el.focus();
+  el.setSelectionRange(lineStart, lineStart + joined.length);
+}
+
+// Raccourcis clavier sur un textarea markdown (Ctrl/Cmd + B/I)
+function mdAttachShortcuts(textareaId) {
+  const el = document.getElementById(textareaId);
+  if (!el) return;
+  el.addEventListener("keydown", (e) => {
+    if (!(e.ctrlKey || e.metaKey)) return;
+    const k = e.key.toLowerCase();
+    if (k === "b") { e.preventDefault(); mdWrap(textareaId, "**", "**"); }
+    else if (k === "i") { e.preventDefault(); mdWrap(textareaId, "*", "*"); }
+  });
+}
+
 async function addLog(productName, action, detail) {
   const userName = loggedInUser?.name || (isAdmin ? "Admin" : "Employé");
   await db.collection("logs").add({

@@ -175,6 +175,7 @@ body{
 #page-content{min-width:0;max-width:100%}
 
 /* Titres : Bebas Neue (display) — un seul poids, letter-spacing pour respirer */
+/* Bebas étant condensé, on majore les tailles ~25% pour un rendu équilibré */
 h1,h2,h3,h4,h5,h6{
   font-family:var(--font-heading);
   font-weight:400; /* Bebas Neue n'a qu'un poids (regular) */
@@ -182,12 +183,12 @@ h1,h2,h3,h4,h5,h6{
   line-height:1.1;
   color:var(--text);
 }
-h1{font-size:var(--fs-3xl);letter-spacing:.03em}
-h2{font-size:var(--fs-2xl);letter-spacing:.03em}
-h3{font-size:var(--fs-xl)}
-h4{font-size:var(--fs-lg)}
-h5{font-size:var(--fs-md)}
-h6{font-size:var(--fs-base);letter-spacing:.08em;text-transform:uppercase}
+h1{font-size:48px;letter-spacing:.03em}
+h2{font-size:38px;letter-spacing:.03em}
+h3{font-size:28px}
+h4{font-size:22px}
+h5{font-size:18px}
+h6{font-size:15px;letter-spacing:.1em;text-transform:uppercase}
 
 /* Classe utilitaire pour éléments "kicker" (petits titres techniques en mono) */
 .kicker{
@@ -367,10 +368,10 @@ svg{flex-shrink:0;vertical-align:middle}
 }
 .topbar-title{
   font-family:var(--font-heading);
-  font-weight:700;
-  font-size:var(--fs-lg);
+  font-weight:400;
+  font-size:26px;
   color:var(--text);
-  letter-spacing:-.3px;
+  letter-spacing:.04em;
 }
 .topbar-right{display:flex;align-items:center;gap:var(--sp-2)}
 
@@ -2265,17 +2266,17 @@ tr.drag-over td{border-top:2px solid var(--accent)}
 }
 .recipe-view__title{
   font-family:var(--font-heading);
-  font-size:var(--fs-2xl);
-  font-weight:700;
+  font-size:42px;
+  font-weight:400;
   margin:0;
-  letter-spacing:-.5px;
-  line-height:1.2;
-  color:#f5f1e8;
+  letter-spacing:.02em;
+  line-height:1.1;
+  color:var(--accent-text);
 }
 .recipe-view__desc{
-  font-family:var(--font-heading);
-  font-size:var(--fs-sm);
-  color:rgba(245,241,232,.85);
+  font-family:var(--font-body);
+  font-size:var(--fs-base);
+  color:rgba(14,13,12,.78);
   font-style:italic;
   margin:6px 0 0;
   line-height:1.5;
@@ -2344,40 +2345,19 @@ tr.drag-over td{border-top:2px solid var(--accent)}
   border-radius:var(--radius-md);
   padding:var(--sp-3) var(--sp-4);
 }
-.recipe-view__ing-line{
-  font-size:var(--fs-base);
-  color:var(--text);
-  line-height:1.8;
-  font-family:var(--font-body);
-}
 .recipe-view__steps{
-  padding-left:var(--sp-5);
-  margin:0;
-  list-style:decimal;
-}
-.recipe-view__steps li{
-  font-size:var(--fs-base);
-  color:var(--text);
-  line-height:1.7;
-  margin-bottom:var(--sp-3);
-  font-family:var(--font-body);
-  padding-left:var(--sp-2);
-}
-.recipe-view__steps li::marker{
-  color:var(--accent);
-  font-weight:700;
-  font-family:var(--font-heading);
+  background:transparent;
 }
 .recipe-view__tips{
-  background:var(--yellow-soft);
-  border-left:4px solid var(--yellow);
+  background:var(--accent-soft);
+  border-left:4px solid var(--accent);
   border-radius:var(--radius-md);
   padding:var(--sp-3) var(--sp-4);
-  color:var(--yellow-text);
+  color:var(--text);
 }
 .dark .recipe-view__tips{
   background:rgba(247,179,44,.12);
-  color:var(--yellow);
+  color:var(--text);
 }
 .recipe-view__tips .recipe-view__section-title{
   border-bottom:none;
@@ -2385,12 +2365,109 @@ tr.drag-over td{border-top:2px solid var(--accent)}
   margin-bottom:var(--sp-2);
   padding-bottom:0;
 }
-.recipe-view__tips p{
-  font-size:var(--fs-sm);
+
+/* ═══════════════════════════════════════════════════════════════
+   MARKDOWN — Rendu du contenu formaté (recettes, tips, etc.)
+   ═══════════════════════════════════════════════════════════════ */
+.md-content{
+  font-family:var(--font-body);
+  font-size:var(--fs-base);
+  color:var(--text);
+  line-height:1.7;
+}
+.md-content p{
+  margin:0 0 var(--sp-3);
+}
+.md-content p:last-child{margin-bottom:0}
+.md-content strong{
+  font-weight:700;
+  color:var(--text);
+}
+.md-content em{
   font-style:italic;
-  margin:0;
-  line-height:1.6;
+}
+.md-content del{
+  opacity:.6;
+  text-decoration:line-through;
+}
+.md-content ul,
+.md-content ol{
+  margin:0 0 var(--sp-3);
+  padding-left:var(--sp-6);
+}
+.md-content ul:last-child,
+.md-content ol:last-child{margin-bottom:0}
+.md-content li{
+  margin-bottom:var(--sp-2);
+  padding-left:var(--sp-1);
+  line-height:1.7;
+}
+.md-content li:last-child{margin-bottom:0}
+.md-content ul li::marker{
+  color:var(--accent);
+  font-size:1.1em;
+}
+.md-content ol li::marker{
+  color:var(--accent);
+  font-weight:700;
   font-family:var(--font-heading);
+  font-size:1.1em;
+}
+.md-empty{
+  color:var(--text3);
+  font-style:italic;
+  font-size:var(--fs-sm);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MARKDOWN — Toolbar au-dessus des textareas
+   ═══════════════════════════════════════════════════════════════ */
+.md-toolbar{
+  display:flex;
+  align-items:center;
+  gap:2px;
+  padding:6px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-bottom:none;
+  border-radius:var(--radius-md) var(--radius-md) 0 0;
+  flex-wrap:wrap;
+}
+.md-toolbar__sep{
+  width:1px;
+  height:20px;
+  background:var(--border-strong);
+  margin:0 4px;
+}
+.md-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:30px;
+  height:30px;
+  padding:0;
+  background:transparent;
+  border:1px solid transparent;
+  border-radius:var(--radius-sm);
+  color:var(--text2);
+  cursor:pointer;
+  transition:var(--transition-fast);
+  font-family:var(--font-body);
+}
+.md-btn:hover{
+  background:var(--surface);
+  color:var(--text);
+  border-color:var(--border-strong);
+}
+.md-btn:active{
+  background:var(--accent);
+  color:var(--accent-text);
+  border-color:var(--accent);
+}
+textarea.md-input{
+  border-top-left-radius:0;
+  border-top-right-radius:0;
+  margin-top:0;
 }
 
 /* Mode print pour la recette */
