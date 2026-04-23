@@ -79,22 +79,30 @@ bochica-inventaire/
   - `logs` — historique des actions
   - `settings/sections` — catégories personnalisées d'inventaire
 
-## 🎨 Design System Bochica (aligné sur le site web)
+## 🎨 Design System Bochica (aligné sur le site web — palette Crème Papier)
 
 ### Palette
-- **Accent principal** : bordeaux `--accent: #6b1a1f` (au lieu de l'ancien violet)
-- **Fonds clair** : crème `--bg: #faf6f0`, `--surface: #ffffff`, `--surface2: #f3ede3`
-- **Texte** : `--text: #1a1010`, `--text2: #5a4a45`, `--text3: #5e524f`
-- **Tricolore Colombie** : `--yellow: #f5a623`, `--blue: #4a90e2`, `--red: #e74c3c` (sidebar, accents)
-- **États stock** : rouge `#c0392b`, jaune `#92400e`, vert `#27ae60` (sémantiques universels)
+- **Accent principal** : jaune impact `--accent: #F7B32C` (CTA, prix, actif)
+- **Accent hover** : ambre `--accent-hover: #E09E1E`
+- **Accent soft** : crème-jaune tint `--accent-soft: #fef2d4`
+- **Accent warm** : jaune brûlé `--accent-warm: #8a6a1a` (petits eyebrows)
+- **Accent text** : noir chaud `--accent-text: #0e0d0c` (contraste AA sur jaune)
+- **Fonds clair** : crème papier `--bg: #f5f1e8`, `--surface: #ffffff`, `--surface2: #ede3d2`, `--surface3: #e5d9c4`
+- **Texte** : noir chaud `--text: #0e0d0c`, `--text2: rgba(14,13,12,.72)`, `--text3: rgba(14,13,12,.5)`
+- **Tricolore Colombie** : jaune `#F7B32C`, bleu `#4a90e2`, rouge `#e74c3c`
+- **États stock** : rouge `#d9534f`, jaune-ambré `#b45309`, vert `#7dbf66`
+- **Bordures** : `rgba(14,13,12,.1)` (subtile) / `rgba(14,13,12,.25)` (marquée)
 
 ### Dark mode adapté on-brand
-- Fonds : `#13100f`, `#1c1815` (chaleureux, pas gris bleuté)
-- Accent : bordeaux clairci `#c44b51` (visible sur fond foncé)
+- Fonds : `#14110f`, `#1c1815` (chaleureux, pas gris bleuté)
+- Accent : jaune `#F7B32C` (identique au clair — le jaune reste visible sur fond sombre)
+- Accent hover dark : jaune clairci `#ffc94a`
 
-### Typographie
-- **Titres** : `Fraunces` (serif élégant) — h1, h2, h3, prix, badges importants
-- **Corps** : `Inter` (sans-serif moderne) — UI, formulaires, boutons
+### Typographie (aligné site web)
+- **Display / titres** : `Bebas Neue` — h1-h6, stats numériques, prix, logo, eyebrows
+- **Corps** : `Inter` (300-800) — UI, formulaires, body, boutons
+- **Mono** : `JetBrains Mono` (400, 500, 600) — kickers techniques, tags, classe `.kicker`
+- **Note** : `font-synthesis: none` sur body — évite les faux bold/italic sur Bebas qui n'a qu'un poids
 - **Échelle** : `--fs-xs` (11) → `--fs-sm` (13) → `--fs-base` (14) → `--fs-md` (16) → `--fs-lg` (18) → `--fs-xl` (22) → `--fs-2xl` (28) → `--fs-3xl` (36)
 
 ### Espacement
@@ -188,6 +196,17 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 23 avril 2026 — Alignement design avec le site web (palette Crème Papier)
+- **Palette complètement refondue** : bordeaux → jaune impact `#F7B32C`, crème `#f5f1e8`, texte noir chaud `#0e0d0c`
+- **Typographie** : Fraunces → **Bebas Neue** pour tous les titres, stats et displays
+- **Nouvelle police mono** : JetBrains Mono pour les kickers techniques (classe `.kicker`)
+- **Login screen** : gradient noir → ambre (au lieu de noir → bordeaux), logo Bebas Neue 52px
+- **Graphiques** : profit line en jaune accent, palette doughnut revue (jaune Bochica en tête)
+- **PWA** : `theme_color` → jaune `#F7B32C`, `background_color` → crème `#f5f1e8`
+- **Ombres** : passage à `rgba(var(--accent-rgb),...)` pour être dynamiques au dark mode
+- **`font-synthesis: none`** globalement — évite les faux bold/italic sur Bebas Neue
+- Service Worker `v1.2.0` (force rafraîchissement du cache)
 
 ### 18 avril 2026 — Refactoring design + PWA (branche `refactor/design-system`)
 - **Design system unifié** avec le site web (bordeaux + crème + tricolore Colombie)

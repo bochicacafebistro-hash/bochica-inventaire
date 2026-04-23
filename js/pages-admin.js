@@ -1465,18 +1465,18 @@ function initExpenseCharts() {
   if (_bochicaCharts.rev) { _bochicaCharts.rev.destroy(); _bochicaCharts.rev = null; }
   if (_bochicaCharts.cat) { _bochicaCharts.cat.destroy(); _bochicaCharts.cat = null; }
 
-  // Couleurs adaptées au mode (dark/light)
+  // Couleurs adaptées au mode (dark/light) — palette Crème Papier
   const isDark = data.darkMode;
-  const textColor = isDark ? "#c9c0b8" : "#5a4a45";
-  const gridColor = isDark ? "rgba(250,246,240,.08)" : "rgba(26,16,16,.08)";
+  const textColor = isDark ? "rgba(245,241,232,.72)" : "rgba(14,13,12,.72)";
+  const gridColor = isDark ? "rgba(245,241,232,.08)" : "rgba(14,13,12,.08)";
   const tooltipBg = isDark ? "#25201d" : "#ffffff";
-  const tooltipText = isDark ? "#faf6f0" : "#1a1010";
-  const tooltipBorder = isDark ? "rgba(250,246,240,.18)" : "rgba(26,16,16,.18)";
+  const tooltipText = isDark ? "#f5f1e8" : "#0e0d0c";
+  const tooltipBorder = isDark ? "rgba(245,241,232,.22)" : "rgba(14,13,12,.18)";
 
-  // Couleurs Bochica
-  const revColor = "#27ae60";
-  const expColor = "#c0392b";
-  const profitColor = isDark ? "#c44b51" : "#6b1a1f";
+  // Couleurs Bochica (aligné site web)
+  const revColor = "#7dbf66";            // vert (status-open)
+  const expColor = "#d9534f";            // rouge (status-closed)
+  const profitColor = "#F7B32C";         // jaune accent (identique en dark/light)
 
   // Profit par mois (revenus - dépenses)
   const profits = data.revenues.map((r, i) => r - data.expenses[i]);
@@ -1578,13 +1578,13 @@ function initExpenseCharts() {
   // ── 2. CHART CATÉGORIES (doughnut) ──
   const ctx2 = document.getElementById("chart-categories");
   if (ctx2 && data.categories.length > 0) {
-    // Palette tricolore Colombie + extensions
+    // Palette Bochica (aligné site web) + extensions
     const palette = [
-      "#6b1a1f", // bordeaux Bochica
-      "#f5a623", // jaune Colombie
+      "#F7B32C", // jaune accent Bochica
       "#4a90e2", // bleu Colombie
       "#e74c3c", // rouge Colombie
-      "#27ae60", // vert
+      "#7dbf66", // vert (status-open)
+      "#8a6a1a", // jaune brûlé (accent-warm)
       "#8b5cf6", // violet
       "#ec4899", // rose
       "#14b8a6", // teal

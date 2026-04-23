@@ -43,12 +43,12 @@ function restoreSession() {
 // ── Login ─────────────────────────────────────────────
 function showLogin() {
   document.getElementById("login-screen").innerHTML = `
-  <div style="min-height:100vh;background:linear-gradient(135deg,var(--header-from),var(--accent-soft));display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative">
+  <div style="min-height:100vh;background:linear-gradient(135deg,#0a0907 0%,#14110f 60%,#2a1f0a 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;position:relative">
     <!-- Bouton de langue en haut à droite -->
-    <button onclick="toggleUILang()" style="position:absolute;top:18px;right:18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#faf6f0;padding:8px 14px;border-radius:var(--radius-pill);font-family:var(--font-body);font-weight:700;cursor:pointer;font-size:13px;letter-spacing:1px;backdrop-filter:blur(6px)">${getUILang().toUpperCase()} → ${getUILang() === "fr" ? "ES" : "FR"}</button>
+    <button onclick="toggleUILang()" style="position:absolute;top:18px;right:18px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);color:#f5f1e8;padding:8px 14px;border-radius:var(--radius-pill);font-family:var(--font-body);font-weight:700;cursor:pointer;font-size:13px;letter-spacing:1px;backdrop-filter:blur(6px)">${getUILang().toUpperCase()} → ${getUILang() === "fr" ? "ES" : "FR"}</button>
     <div style="margin-bottom:28px;text-align:center">
-      <div style="font-family:var(--font-heading);font-weight:800;font-size:34px;letter-spacing:6px;color:#faf6f0">BOCHI<span style="color:var(--yellow);font-style:italic">CA</span></div>
-      <div style="font-family:var(--font-body);font-size:11px;color:rgba(250,246,240,0.6);letter-spacing:2.5px;margin-top:6px;text-transform:uppercase;font-weight:500">${t("login_subtitle")}</div>
+      <div style="font-family:var(--font-heading);font-weight:400;font-size:52px;letter-spacing:4px;color:#f5f1e8;line-height:1">BOCHI<span style="color:var(--yellow)">CA</span></div>
+      <div style="font-family:var(--font-mono);font-size:11px;color:rgba(245,241,232,0.6);letter-spacing:2.5px;margin-top:8px;text-transform:uppercase;font-weight:500">${t("login_subtitle")}</div>
       <div style="display:flex;height:3px;width:170px;margin:12px auto 0" aria-hidden="true">
         <div style="flex:1;background:var(--yellow)"></div>
         <div style="flex:1;background:var(--blue)"></div>

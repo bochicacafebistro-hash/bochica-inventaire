@@ -50,7 +50,7 @@ function printReport() {
     <style>body{font-family:system-ui,sans-serif;padding:32px}table{width:100%;border-collapse:collapse;font-size:13px}th{padding:10px;background:#f1f5f9;text-align:left;font-size:11px;text-transform:uppercase}td{padding:10px;border-bottom:1px solid #e2e8f0}@media print{button{display:none}}</style>
     </head><body>
     <div style="font-size:26px;font-weight:900;letter-spacing:4px">BOCHICA</div>
-    <div style="display:flex;height:3px;width:200px;margin:6px 0 14px"><div style="flex:1;background:#f5a623"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
+    <div style="display:flex;height:3px;width:200px;margin:6px 0 14px"><div style="flex:1;background:#F7B32C"></div><div style="flex:1;background:#4a90e2"></div><div style="flex:1;background:#e74c3c"></div></div>
     <h2>Rapport de commande</h2>
     <p style="color:var(--text3);font-size:13px;margin-bottom:16px">${new Date().toLocaleDateString("fr-CA", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}</p>
     <table><thead><tr><th>Produit</th><th>Section</th><th>Stock</th><th>Min</th><th>À commander</th><th>Fournisseur</th><th>Contact</th><th>${t("task_field_status")}</th></tr></thead>
