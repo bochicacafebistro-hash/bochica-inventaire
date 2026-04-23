@@ -1,6 +1,11 @@
 // ── Utilitaires ───────────────────────────────────────
 function genId() { return Math.random().toString(36).slice(2, 10); }
-function getAllSections() { return ["Toutes", ...DEFAULT_SECTIONS, ...customSections]; }
+function getAllSections() {
+  // Utilise la liste unifiée `allSections` (par défaut + personnalisées, gérée via Firestore).
+  // Fallback pour tout premier chargement avant que le listener n'ait répondu.
+  const base = (allSections && allSections.length) ? allSections : [...DEFAULT_SECTIONS, ...customSections];
+  return ["Toutes", ...base];
+}
 function getCurrentStock(p) { return Number(p.currentStock ?? 0); }
 
 function getStatus(p) {

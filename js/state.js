@@ -1,5 +1,8 @@
 // ── État global de l'application ──────────────────────
 let products = [], suppliers = [], customSections = [], logs = [];
+// allSections : liste complète (par défaut + personnalisées) gérée via Firestore.
+// Si vide/absente en BD, fallback sur [...DEFAULT_SECTIONS, ...customSections].
+let allSections = [];
 let employees = [], tasks = [], menuItems = [], expenses = [];
 let ingredients = []; // Ingrédients de menu (avec coûts, séparés des produits d'inventaire)
 let recipes = [];    // Livre de cuisine — recettes pour préparation (sans coûts)

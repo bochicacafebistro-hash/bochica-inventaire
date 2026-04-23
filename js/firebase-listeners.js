@@ -11,7 +11,14 @@ db.collection("suppliers").onSnapshot(snap => {
 });
 
 db.collection("settings").doc("sections").onSnapshot(snap => {
-  customSections = snap.exists ? snap.data().custom || [] : [];
+  const data = snap.exists ? snap.data() : {};
+  customSections = data.custom || [];
+  // `all` = liste unifiée (nouveau modèle). Si absent → rétrocompatibilité.
+  if (Array.isArray(data.all) && data.all.length) {
+    allSections = data.all.slice();
+  } else {
+    allSections = [...DEFAULT_SECTIONS, ...customSections];
+  }
   if (isLoggedIn) renderPage();
 });
 

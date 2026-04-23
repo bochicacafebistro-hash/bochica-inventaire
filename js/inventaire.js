@@ -46,12 +46,22 @@ function renderInventaire() {
   }
 
   if (!showArchived) {
-    h += `<div class="section-tabs section-tabs--scroll" role="tablist" aria-label="${t("filter_by_category")}">`;
+    const tabsClass = sectionsExpanded ? "section-tabs section-tabs--wrap" : "section-tabs section-tabs--scroll";
+    h += `<div class="section-tabs-wrap">`;
+    h += `<div class="${tabsClass}" role="tablist" aria-label="${t("filter_by_category")}">`;
     visibleSecs.forEach(s => {
       const cnt = s === "Toutes" ? lowCount : activeProducts.filter(p => p.section === s && ["red", "yellow"].includes(getStatus(p))).length;
-      h += `<button class="sec-btn ${s === activeSection ? "active" : ""}" role="tab" aria-selected="${s === activeSection}" onclick="setSection('${s}')">${tSection(s)}${cnt > 0 ? `<span class="badge-count">${cnt}</span>` : ""}</button>`;
+      h += `<button class="sec-btn ${s === activeSection ? "active" : ""}" role="tab" aria-selected="${s === activeSection}" onclick="setSection('${esc(s)}')">${tSection(s)}${cnt > 0 ? `<span class="badge-count">${cnt}</span>` : ""}</button>`;
     });
-    if (isAdmin) h += `<button class="sec-btn sec-btn--manage" onclick="openCategoryModal()" aria-label="${t("manage_categories")}">${icon("settings", 14)}</button>`;
+    h += `</div>`;
+    // Actions à droite : voir toutes / gérer
+    h += `<div class="section-tabs-actions">
+      <button class="sec-toggle" onclick="toggleSections()" aria-pressed="${sectionsExpanded}" aria-label="${sectionsExpanded ? "Afficher en barre" : "Voir toutes les catégories"}" title="${sectionsExpanded ? "Afficher en barre" : "Voir toutes les catégories"}">
+        ${icon(sectionsExpanded ? "chevron-up" : "chevron-down", 14)}
+        <span class="sec-toggle__label">${sectionsExpanded ? "Réduire" : "Voir toutes"}</span>
+      </button>
+      ${isAdmin ? `<button class="sec-btn sec-btn--manage" onclick="openCategoryModal()" aria-label="${t("manage_categories")}" title="Gérer les catégories">${icon("settings", 14)}</button>` : ""}
+    </div>`;
     h += `</div>`;
   }
 

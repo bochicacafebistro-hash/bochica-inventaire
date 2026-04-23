@@ -143,41 +143,143 @@ async function confirmReceive() {
 }
 
 // ── Modal Catégories ──────────────────────────────────
+// Liste unifiée : toutes les catégories (par défaut + personnalisées)
+// sont modifiables, supprimables et réordonnables.
+
+function _currentCats() {
+  // Retourne la liste courante (sans "Toutes"), en utilisant le fallback si besoin.
+  return (allSections && allSections.length) ? allSections.slice() : [...DEFAULT_SECTIONS, ...customSections];
+}
+
+async function _saveCats(list) {
+  // Écrit la liste unifiée dans Firestore (champ `all`), en préservant `custom` pour rétrocompat.
+  await db.collection("settings").doc("sections").set({
+    all: list,
+    custom: customSections // préservé pour rétrocompat (anciens clients)
+  }, { merge: true });
+}
+
 function openCategoryModal() {
-  const renderCats = () => !customSections.length
-    ? `<p style="color:var(--text3);font-size:13px;text-align:center;margin-bottom:12px">Aucune catégorie personnalisée</p>`
-    : customSections.map((s, i) => `<div class="cat-item">
-        <input value="${s}" onblur="renameCategory(${i},this.value)"/>
-        <button class="btn-danger-sm" onclick="askDeleteCategory(${i},'${esc(s)}')">🗑️</button>
-      </div>`).join("");
+  const cats = _currentCats();
+  const renderCats = () => !cats.length
+    ? `<p class="cat-empty">Aucune catégorie. Ajoutez-en une ci-dessous.</p>`
+    : cats.map((s, i) => {
+        const count = products.filter(p => !p.archived && p.section === s).length;
+        const isDefault = DEFAULT_SECTIONS.includes(s);
+        return `<div class="cat-item" data-idx="${i}">
+          <div class="cat-item__reorder">
+            <button class="cat-move-btn" onclick="moveCategory(${i},-1)" ${i === 0 ? "disabled" : ""} aria-label="Monter">${icon("chevron-up", 14)}</button>
+            <button class="cat-move-btn" onclick="moveCategory(${i},1)" ${i === cats.length - 1 ? "disabled" : ""} aria-label="Descendre">${icon("chevron-down", 14)}</button>
+          </div>
+          <input class="cat-item__input" value="${esc(s)}" data-original="${esc(s)}" onblur="renameCategory(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()"/>
+          <span class="cat-item__count" title="${count} produit${count > 1 ? "s" : ""} dans cette catégorie">${count}</span>
+          ${isDefault ? `<span class="cat-item__badge" title="Catégorie par défaut">défaut</span>` : ""}
+          <button class="btn-danger-sm" onclick="askDeleteCategory(${i},'${esc(s)}')" aria-label="Supprimer ${esc(s)}">${icon("trash", 14)}</button>
+        </div>`;
+      }).join("");
   showModal(`<div class="modal">
-    <div class="modal-header"><h3>⚙️ Catégories</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
-    <div id="cat-list">${renderCats()}</div>
-    <div style="display:flex;gap:8px;margin-top:8px">
-      <input id="cat-new" placeholder="Nouvelle catégorie..."/>
-      <button class="btn btn-primary" onclick="addCategory()">Ajouter</button>
+    <div class="modal-header">
+      <h3>${icon("folder", 18)} Gérer les catégories</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button>
+    </div>
+    <p class="cat-help">Toutes les catégories de l'inventaire. Renommer met à jour les produits automatiquement. Supprimer déplace les produits vers « Autre ».</p>
+    <div id="cat-list" class="cat-list">${renderCats()}</div>
+    <div class="cat-add-row">
+      <input id="cat-new" placeholder="Nouvelle catégorie..." onkeydown="if(event.key==='Enter')addCategory()"/>
+      <button class="btn btn-primary" onclick="addCategory()">${icon("plus", 14)} Ajouter</button>
     </div>
   </div>`);
+  // Focus sur l'input d'ajout pour ergonomie clavier
+  setTimeout(() => { const el = document.getElementById("cat-new"); if (el) el.focus(); }, 50);
 }
 
 async function addCategory() {
-  const name = document.getElementById("cat-new").value.trim();
+  const input = document.getElementById("cat-new");
+  if (!input) return;
+  const name = input.value.trim();
   if (!name) return;
-  if (DEFAULT_SECTIONS.includes(name) || customSections.includes(name)) return alert("Déjà existante.");
-  await db.collection("settings").doc("sections").set({ custom: [...customSections, name] });
-  closeModal();
+  const cats = _currentCats();
+  if (cats.some(c => c.toLowerCase() === name.toLowerCase())) {
+    alert("Cette catégorie existe déjà.");
+    return;
+  }
+  await _saveCats([...cats, name]);
+  // Ne ferme pas la modale pour enchaîner les ajouts
+  input.value = "";
+  // Ré-ouverture pour voir la nouvelle catégorie
+  openCategoryModal();
 }
 
 async function renameCategory(i, v) {
-  const t = v.trim(); if (!t || t === customSections[i]) return;
-  const u = [...customSections]; u[i] = t;
-  await db.collection("settings").doc("sections").set({ custom: u });
+  const cats = _currentCats();
+  const oldName = cats[i];
+  const newName = (v || "").trim();
+  if (!newName || newName === oldName) return;
+  // Vérifier doublon
+  if (cats.some((c, j) => j !== i && c.toLowerCase() === newName.toLowerCase())) {
+    alert(`La catégorie "${newName}" existe déjà.`);
+    // Remettre l'ancien nom dans l'input
+    const inp = document.querySelector(`.cat-item[data-idx="${i}"] input`);
+    if (inp) inp.value = oldName;
+    return;
+  }
+  // Mettre à jour la liste
+  const updated = [...cats];
+  updated[i] = newName;
+  // Batch : renommer la catégorie dans les produits qui l'utilisent
+  const affected = products.filter(p => p.section === oldName);
+  if (affected.length) {
+    const batch = db.batch();
+    affected.forEach(p => batch.update(db.collection("products").doc(p.id), { section: newName }));
+    await batch.commit();
+  }
+  await _saveCats(updated);
+  // Si la section active était celle renommée, suivre le renommage
+  if (activeSection === oldName) activeSection = newName;
+  await addLog("—", "Catégorie renommée", `${oldName} → ${newName} (${affected.length} produit${affected.length > 1 ? "s" : ""})`);
 }
 
 function askDeleteCategory(i, name) {
-  openConfirm("🗑️ Supprimer catégorie", `Supprimer "${name}" ?`, async () => {
-    await db.collection("settings").doc("sections").set({ custom: customSections.filter((_, j) => j !== i) });
+  const cats = _currentCats();
+  const count = products.filter(p => p.section === name).length;
+  const remaining = cats.filter((_, j) => j !== i);
+  // Destination : "Autre" si présent, sinon première restante
+  const fallback = remaining.includes("Autre") ? "Autre" : (remaining[0] || "Autre");
+  if (remaining.length === 0) {
+    alert("Impossible de supprimer la dernière catégorie. Ajoutez-en une autre d'abord.");
+    return;
+  }
+  const msg = count > 0
+    ? `Supprimer la catégorie "${name}" ?<br><br><strong>${count} produit${count > 1 ? "s" : ""}</strong> ${count > 1 ? "seront déplacés" : "sera déplacé"} vers "<strong>${fallback}</strong>".`
+    : `Supprimer la catégorie "${name}" ?`;
+  openConfirm("Supprimer la catégorie", msg, async () => {
+    // Si "Autre" n'existe pas dans les restantes, on l'ajoute pour garantir une destination
+    let newList = remaining.slice();
+    if (!newList.includes(fallback)) newList = [...newList, fallback];
+    // Déplacer les produits de cette catégorie vers fallback
+    const affected = products.filter(p => p.section === name);
+    if (affected.length) {
+      const batch = db.batch();
+      affected.forEach(p => batch.update(db.collection("products").doc(p.id), { section: fallback }));
+      await batch.commit();
+    }
+    await _saveCats(newList);
+    if (activeSection === name) activeSection = "Toutes";
+    await addLog("—", "Catégorie supprimée", `${name} (${affected.length} produit${affected.length > 1 ? "s" : ""} → ${fallback})`);
+    // Ré-ouvrir la modale pour refléter le changement
+    setTimeout(() => openCategoryModal(), 100);
   }, true);
+}
+
+async function moveCategory(i, dir) {
+  const cats = _currentCats();
+  const j = i + dir;
+  if (j < 0 || j >= cats.length) return;
+  const updated = [...cats];
+  [updated[i], updated[j]] = [updated[j], updated[i]];
+  await _saveCats(updated);
+  // Ré-ouvrir la modale pour refléter le nouvel ordre
+  setTimeout(() => openCategoryModal(), 50);
 }
 
 // ── Suppression générique ─────────────────────────────
