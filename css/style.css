@@ -1319,28 +1319,46 @@ tr.drag-over td{border-top:2px solid var(--accent)}
   margin-bottom:var(--sp-3);
   padding-right:4px;
 }
-.cat-item__reorder{
-  display:flex;
-  flex-direction:column;
-  gap:2px;
-  flex-shrink:0;
-}
-.cat-move-btn{
-  background:var(--surface);
-  border:1px solid var(--border);
-  border-radius:var(--radius-sm);
-  width:22px;
-  height:16px;
+/* Handle de drag (remplace les flèches ↑↓) */
+.cat-grip{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  cursor:pointer;
-  color:var(--text2);
-  padding:0;
-  transition:var(--transition-fast);
+  color:var(--text3);
+  cursor:grab;
+  flex-shrink:0;
+  padding:4px 2px;
+  border-radius:var(--radius-sm);
+  transition:color var(--transition-fast),background var(--transition-fast);
+  -webkit-user-select:none;
+          user-select:none;
+  touch-action:none;
 }
-.cat-move-btn:hover:not(:disabled){background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
-.cat-move-btn:disabled{opacity:.3;cursor:not-allowed}
+.cat-grip:hover{color:var(--text);background:var(--surface)}
+.cat-item[draggable="true"]{cursor:default}
+.cat-item[draggable="true"]:active .cat-grip,
+.cat-item.cat-item--dragging .cat-grip{cursor:grabbing}
+
+/* États visuels du drag & drop */
+.cat-item--dragging{
+  opacity:.4;
+  box-shadow:var(--shadow-md);
+}
+.cat-item--drag-over{position:relative}
+.cat-item--drag-over.cat-item--drop-before::before,
+.cat-item--drag-over.cat-item--drop-after::after{
+  content:"";
+  position:absolute;
+  left:4px;
+  right:4px;
+  height:3px;
+  background:var(--accent);
+  border-radius:2px;
+  pointer-events:none;
+  box-shadow:0 0 6px rgba(var(--accent-rgb),.5);
+}
+.cat-item--drag-over.cat-item--drop-before::before{top:-4px}
+.cat-item--drag-over.cat-item--drop-after::after{bottom:-4px}
 .cat-item__input{
   flex:1;
   min-width:0;
@@ -1384,9 +1402,9 @@ tr.drag-over td{border-top:2px solid var(--accent)}
 .cat-add-row{
   display:flex;
   gap:var(--sp-2);
-  margin-top:var(--sp-3);
-  padding-top:var(--sp-3);
-  border-top:1px solid var(--border);
+  margin-bottom:var(--sp-3);
+  padding-bottom:var(--sp-3);
+  border-bottom:1px solid var(--border);
 }
 .cat-add-row input{
   flex:1;

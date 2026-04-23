@@ -162,16 +162,19 @@ async function _saveCats(list) {
 function openCategoryModal() {
   const cats = _currentCats();
   const renderCats = () => !cats.length
-    ? `<p class="cat-empty">Aucune catégorie. Ajoutez-en une ci-dessous.</p>`
+    ? `<p class="cat-empty">Aucune catégorie. Ajoutez-en une ci-dessus.</p>`
     : cats.map((s, i) => {
         const count = products.filter(p => !p.archived && p.section === s).length;
         const isDefault = DEFAULT_SECTIONS.includes(s);
-        return `<div class="cat-item" data-idx="${i}">
-          <div class="cat-item__reorder">
-            <button class="cat-move-btn" onclick="moveCategory(${i},-1)" ${i === 0 ? "disabled" : ""} aria-label="Monter">${icon("chevron-up", 14)}</button>
-            <button class="cat-move-btn" onclick="moveCategory(${i},1)" ${i === cats.length - 1 ? "disabled" : ""} aria-label="Descendre">${icon("chevron-down", 14)}</button>
-          </div>
-          <input class="cat-item__input" value="${esc(s)}" data-original="${esc(s)}" onblur="renameCategory(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()"/>
+        return `<div class="cat-item" data-idx="${i}"
+          draggable="true"
+          ondragstart="catDragStart(event,${i})"
+          ondragover="catDragOver(event,${i})"
+          ondragleave="catDragLeave(event)"
+          ondrop="catDrop(event,${i})"
+          ondragend="catDragEnd(event)">
+          <span class="cat-grip" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 16)}</span>
+          <input class="cat-item__input" value="${esc(s)}" data-original="${esc(s)}" onblur="renameCategory(${i},this.value)" onkeydown="if(event.key==='Enter')this.blur()" ondragstart="event.stopPropagation();event.preventDefault()"/>
           <span class="cat-item__count" title="${count} produit${count > 1 ? "s" : ""} dans cette catégorie">${count}</span>
           ${isDefault ? `<span class="cat-item__badge" title="Catégorie par défaut">défaut</span>` : ""}
           <button class="btn-danger-sm" onclick="askDeleteCategory(${i},'${esc(s)}')" aria-label="Supprimer ${esc(s)}">${icon("trash", 14)}</button>
@@ -182,12 +185,12 @@ function openCategoryModal() {
       <h3>${icon("folder", 18)} Gérer les catégories</h3>
       <button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button>
     </div>
-    <p class="cat-help">Toutes les catégories de l'inventaire. Renommer met à jour les produits automatiquement. Supprimer déplace les produits vers « Autre ».</p>
-    <div id="cat-list" class="cat-list">${renderCats()}</div>
+    <p class="cat-help">Glisser une catégorie pour la réordonner. Renommer met à jour les produits automatiquement. Supprimer déplace les produits vers « Autre ».</p>
     <div class="cat-add-row">
       <input id="cat-new" placeholder="Nouvelle catégorie..." onkeydown="if(event.key==='Enter')addCategory()"/>
       <button class="btn btn-primary" onclick="addCategory()">${icon("plus", 14)} Ajouter</button>
     </div>
+    <div id="cat-list" class="cat-list">${renderCats()}</div>
   </div>`);
   // Focus sur l'input d'ajout pour ergonomie clavier
   setTimeout(() => { const el = document.getElementById("cat-new"); if (el) el.focus(); }, 50);
@@ -271,13 +274,67 @@ function askDeleteCategory(i, name) {
   }, true);
 }
 
-async function moveCategory(i, dir) {
+// ── Drag & drop pour réordonner les catégories ───────
+let _catDragIdx = null;
+
+function catDragStart(e, idx) {
+  _catDragIdx = idx;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move";
+    // Nécessaire pour Firefox
+    try { e.dataTransfer.setData("text/plain", String(idx)); } catch (_) {}
+  }
+  const el = e.currentTarget;
+  // setTimeout pour que le "ghost" du navigateur capture l'élément avant qu'il soit stylé
+  setTimeout(() => el && el.classList.add("cat-item--dragging"), 0);
+}
+
+function catDragOver(e, idx) {
+  if (_catDragIdx === null || idx === _catDragIdx) return;
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  const el = document.querySelector(`.cat-item[data-idx="${idx}"]`);
+  if (!el) return;
+  // Indicateur de drop : trait au-dessus ou en-dessous selon la direction
+  el.classList.add("cat-item--drag-over");
+  const rect = el.getBoundingClientRect();
+  const before = (e.clientY - rect.top) < rect.height / 2;
+  el.classList.toggle("cat-item--drop-before", before);
+  el.classList.toggle("cat-item--drop-after", !before);
+}
+
+function catDragLeave(e) {
+  const el = e.currentTarget;
+  if (!el) return;
+  // Seulement retirer si on quitte vraiment (pas si on entre dans un enfant)
+  const related = e.relatedTarget;
+  if (related && el.contains(related)) return;
+  el.classList.remove("cat-item--drag-over", "cat-item--drop-before", "cat-item--drop-after");
+}
+
+function catDragEnd() {
+  document.querySelectorAll(".cat-item").forEach(el =>
+    el.classList.remove("cat-item--dragging", "cat-item--drag-over", "cat-item--drop-before", "cat-item--drop-after")
+  );
+  _catDragIdx = null;
+}
+
+async function catDrop(e, targetIdx) {
+  e.preventDefault();
+  const srcIdx = _catDragIdx;
+  const el = document.querySelector(`.cat-item[data-idx="${targetIdx}"]`);
+  const dropBefore = el && el.classList.contains("cat-item--drop-before");
+  catDragEnd();
+  if (srcIdx === null || srcIdx === targetIdx) return;
   const cats = _currentCats();
-  const j = i + dir;
-  if (j < 0 || j >= cats.length) return;
-  const updated = [...cats];
-  [updated[i], updated[j]] = [updated[j], updated[i]];
-  await _saveCats(updated);
+  const [moved] = cats.splice(srcIdx, 1);
+  // Ajuster l'index cible après le retrait
+  let insertAt = targetIdx;
+  if (srcIdx < targetIdx) insertAt -= 1;
+  if (!dropBefore) insertAt += 1;
+  insertAt = Math.max(0, Math.min(insertAt, cats.length));
+  cats.splice(insertAt, 0, moved);
+  await _saveCats(cats);
   // Ré-ouvrir la modale pour refléter le nouvel ordre
   setTimeout(() => openCategoryModal(), 50);
 }
