@@ -90,7 +90,20 @@ function confirmAction() { if (pendingConfirm) pendingConfirm(); closeModal(); }
 
 // ── Helpers divers ────────────────────────────────────
 function setSection(s) { activeSection = s; searchQuery = ""; renderPage(); }
-function setSearch(v) { searchQuery = v; renderPage(); }
+function setSearch(v) {
+  searchQuery = v;
+  renderPage();
+  // Restaurer le focus + position du curseur (perdu par le re-render complet).
+  // Sans ça, seul le 1er caractère tapé est capté car l'input est recréé à chaque frappe.
+  requestAnimationFrame(() => {
+    const el = document.getElementById("inv-search");
+    if (el) {
+      el.focus();
+      const len = el.value.length;
+      try { el.setSelectionRange(len, len); } catch (_) {}
+    }
+  });
+}
 function toggleSections() { sectionsExpanded = !sectionsExpanded; renderPage(); }
 function toggleShowArchived() { showArchived = !showArchived; renderPage(); }
 function setLogFilter(v) { logFilter = v; renderPage(); }

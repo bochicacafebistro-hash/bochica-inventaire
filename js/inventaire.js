@@ -56,9 +56,8 @@ function renderInventaire() {
     h += `</div>`;
     // Actions à droite : voir toutes / gérer
     h += `<div class="section-tabs-actions">
-      <button class="sec-toggle" onclick="toggleSections()" aria-pressed="${sectionsExpanded}" aria-label="${sectionsExpanded ? "Afficher en barre" : "Voir toutes les catégories"}" title="${sectionsExpanded ? "Afficher en barre" : "Voir toutes les catégories"}">
-        ${icon(sectionsExpanded ? "chevron-up" : "chevron-down", 14)}
-        <span class="sec-toggle__label">${sectionsExpanded ? "Réduire" : "Voir toutes"}</span>
+      <button class="sec-toggle" onclick="toggleSections()" aria-pressed="${sectionsExpanded}" aria-label="${sectionsExpanded ? "Réduire les catégories" : "Voir toutes les catégories"}" title="${sectionsExpanded ? "Réduire" : "Voir toutes"}">
+        ${icon(sectionsExpanded ? "chevron-up" : "chevron-down", 16)}
       </button>
       ${isAdmin ? `<button class="sec-btn sec-btn--manage" onclick="openCategoryModal()" aria-label="${t("manage_categories")}" title="Gérer les catégories">${icon("settings", 14)}</button>` : ""}
     </div>`;
@@ -66,7 +65,7 @@ function renderInventaire() {
   }
 
   h += `<div class="toolbar">
-    <div class="search-box"><span style="color:var(--text3);display:flex">${icon("search", 16)}</span><input type="text" placeholder="${t("search")}" value="${searchQuery}" oninput="setSearch(this.value)"/></div>
+    <div class="search-box"><span style="color:var(--text3);display:flex">${icon("search", 16)}</span><input type="text" id="inv-search" placeholder="${t("search")}" value="${searchQuery}" oninput="setSearch(this.value)"/></div>
     ${isAdmin && !showArchived ? `<button class="btn btn-primary" onclick="openProductModal()">${icon("plus", 16)} ${t("add_product")}</button>` : ""}
   </div>`;
 
