@@ -262,37 +262,44 @@ svg{flex-shrink:0;vertical-align:middle}
 }
 .sidebar.hidden{transform:translateX(-220px)}
 
+/* Logo cliquable : bouton qui ramène au dashboard/inventaire */
 .sidebar-logo{
-  padding:var(--sp-5) var(--sp-4) var(--sp-4);
+  display:block;
+  width:100%;
+  padding:var(--sp-6) var(--sp-4) var(--sp-5);
+  border:none;
+  background:transparent;
   border-bottom:1px solid rgba(255,255,255,.08);
+  text-align:left;
+  cursor:pointer;
+  font-family:inherit;
+  color:inherit;
+  transition:background var(--transition-fast);
+}
+.sidebar-logo:hover{background:rgba(255,255,255,.04)}
+.sidebar-logo:active{background:rgba(255,255,255,.08)}
+.sidebar-logo:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:-2px;
 }
 .sidebar-logo .logo-name{
   font-family:var(--font-heading);
-  font-weight:800;
-  font-size:var(--fs-lg);
+  font-weight:400; /* Bebas Neue — un seul poids */
+  font-size:36px;
   letter-spacing:3px;
   color:#f5f1e8;
   line-height:1;
 }
-.sidebar-logo .logo-name span{color:var(--yellow);font-style:italic}
+.sidebar-logo .logo-name span{color:var(--yellow)}
 .sidebar-logo .logo-sub{
   font-family:var(--font-body);
   font-size:10px;
   color:rgba(245,241,232,.5);
   letter-spacing:1.5px;
   text-transform:uppercase;
-  margin-top:var(--sp-1);
+  margin-top:6px;
   font-weight:500;
 }
-.sidebar-logo .logo-bar{
-  display:flex;
-  height:2px;
-  width:80px;
-  margin-top:var(--sp-2);
-}
-.sidebar-logo .logo-bar div:nth-child(1){flex:1;background:var(--yellow)}
-.sidebar-logo .logo-bar div:nth-child(2){flex:1;background:var(--blue)}
-.sidebar-logo .logo-bar div:nth-child(3){flex:1;background:var(--red)}
 
 .sidebar-nav{flex:1;padding:var(--sp-3) 0;overflow-y:auto}
 .nav-section{

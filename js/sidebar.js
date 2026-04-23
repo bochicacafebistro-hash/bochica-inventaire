@@ -75,6 +75,11 @@ function navTo(page) {
   }
 }
 
+// Retour à l'accueil : dashboard (admin) ou inventaire (employé)
+function goHome() {
+  navTo(isAdmin ? "dashboard" : "inventaire");
+}
+
 function toggleSidebar() {
   if (window.innerWidth <= 768) {
     document.getElementById("sidebar").classList.toggle("mobile-open");

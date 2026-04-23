@@ -53,15 +53,10 @@
 
     <!-- ═══ SIDEBAR ═══ -->
     <aside class="sidebar" id="sidebar" aria-label="Navigation principale">
-      <div class="sidebar-logo">
+      <button type="button" class="sidebar-logo" onclick="goHome()" aria-label="Retour au tableau de bord" title="Tableau de bord">
         <div class="logo-name">BOCHI<span>CA</span></div>
         <div class="logo-sub">Gestion interne</div>
-        <div class="logo-bar" aria-hidden="true">
-          <div></div>
-          <div></div>
-          <div></div>
-        </div>
-      </div>
+      </button>
       <nav class="sidebar-nav" id="sidebar-nav" aria-label="Sections de l'application"></nav>
       <div class="sidebar-bottom">
         <button class="btn-icon-sm" onclick="toggleDark()" id="dark-btn"></button>
