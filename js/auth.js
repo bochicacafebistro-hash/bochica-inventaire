@@ -117,6 +117,14 @@ function showLogin() {
         ${icon("log-out", 14, "")} <span>Se connecter</span>
       </button>
     </form>
+
+    <!-- Bouton temporaire de setup initial (à retirer après usage) -->
+    <div class="login-setup-link">
+      <button type="button" onclick="runInitSetup()" id="login-setup-btn" title="À utiliser une seule fois pour créer les 3 comptes Firebase">
+        Première installation : configurer les 3 comptes
+      </button>
+      <div id="login-setup-result" style="margin-top:10px;font-size:12px;color:rgba(245,241,232,.85);max-width:380px;text-align:center;line-height:1.5;white-space:pre-wrap"></div>
+    </div>
   </div>`;
   document.getElementById("login-screen").style.display = "block";
   document.getElementById("app-shell").style.display = "none";
@@ -206,4 +214,72 @@ function restoreSession() {
   // Nettoyer l'ancien format localStorage (legacy SHA-256) si présent
   try { localStorage.removeItem("bochica-session"); } catch (_) {}
   return false;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SETUP INITIAL — crée les 3 comptes Firebase + docs /users/{uid}
+// À exécuter UNE SEULE FOIS via le bouton sur l'écran de login.
+// Peut être relancé sans risque (détecte les comptes existants).
+// ═══════════════════════════════════════════════════════════════
+let _setupInProgress = false;
+
+async function runInitSetup() {
+  if (_setupInProgress) return;
+  _setupInProgress = true;
+
+  const accounts = [
+    { email: "bochica@bochica.app", password: "Bochica11309130!", role: "global_admin", displayName: "Admin Bochica" },
+    { email: "chef@bochica.app",    password: "Bochica2024!",     role: "chef",         displayName: "Chef de cuisine" },
+    { email: "employe@bochica.app", password: "Bochica2024!",     role: "employee",     displayName: "Employé" }
+  ];
+
+  const btn = document.getElementById("login-setup-btn");
+  const out = document.getElementById("login-setup-result");
+  if (btn) { btn.disabled = true; btn.textContent = "Configuration en cours..."; }
+  if (out) out.textContent = "";
+
+  // Suppress les alertes de initAuth pendant les connexions/déconnexions en cascade
+  const origAlert = window.alert;
+  window.alert = () => {};
+
+  const lines = [];
+  let ok = 0, skipped = 0, errors = 0;
+
+  for (const acc of accounts) {
+    try {
+      const cred = await firebase.auth().createUserWithEmailAndPassword(acc.email, acc.password);
+      await firebase.firestore().collection("users").doc(cred.user.uid).set({
+        email: acc.email,
+        role: acc.role,
+        displayName: acc.displayName,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+      lines.push(`✓ ${acc.email}  →  rôle "${acc.role}"`);
+      ok++;
+      await firebase.auth().signOut();
+    } catch (err) {
+      if (err.code === "auth/email-already-in-use") {
+        lines.push(`⊙ ${acc.email} déjà existant`);
+        skipped++;
+      } else {
+        lines.push(`✗ ${acc.email} — ${err.code || "erreur"}`);
+        console.error("Setup error:", acc.email, err);
+        errors++;
+      }
+    }
+  }
+
+  window.alert = origAlert;
+  _setupInProgress = false;
+
+  if (out) {
+    out.textContent = lines.join("\n") + `\n\n${ok} créés · ${skipped} ignorés · ${errors} erreurs`;
+    if (errors === 0) {
+      out.textContent += `\n\nPrêt ! Connecte-toi avec "Bochica" ou ton mot de passe.`;
+    }
+  }
+  if (btn) {
+    btn.disabled = false;
+    btn.textContent = errors === 0 ? "Terminé — reclique pour relancer si besoin" : "Relancer la configuration";
+  }
 }
