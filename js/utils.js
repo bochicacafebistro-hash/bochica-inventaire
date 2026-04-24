@@ -209,14 +209,71 @@ function applyDark() {
 }
 
 // ── Dropdown ──────────────────────────────────────────
+// Le dropdown est en position:fixed pour échapper aux overflow:hidden des parents
+// (ex: .table-wrap). On calcule les coordonnées left/top au moment de l'ouverture.
 function toggleDrop(id) {
-  // Si le même dropdown est déjà ouvert, on le ferme (toggle)
   if (openDropId === id) { closeAllDrops(); return; }
   closeAllDrops();
   const el = document.getElementById("drop-" + id);
-  if (el) { el.classList.add("open"); openDropId = id; }
+  if (!el) return;
+  // Trouver le bouton déclencheur (.dots-btn) dans le même .menu-wrap
+  const wrap = el.closest(".menu-wrap");
+  const btn = wrap ? wrap.querySelector(".dots-btn") : null;
+  if (btn) positionDropdown(el, btn);
+  el.classList.add("open");
+  openDropId = id;
 }
-function closeAllDrops() { document.querySelectorAll(".dropdown.open").forEach(el => el.classList.remove("open")); openDropId = null; }
+
+function positionDropdown(el, btn) {
+  // Mesurer la taille réelle du dropdown (hidden mais layouté)
+  const prevVisibility = el.style.visibility;
+  const prevDisplay = el.style.display;
+  el.style.visibility = "hidden";
+  el.style.display = "block";
+  el.style.left = "0";
+  el.style.top = "0";
+  const dropW = el.offsetWidth;
+  const dropH = el.offsetHeight;
+  el.style.visibility = prevVisibility;
+  el.style.display = prevDisplay;
+
+  const btnRect = btn.getBoundingClientRect();
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const m = 8; // marge de sécurité par rapport aux bords
+
+  // Horizontal : aligner le bord droit du dropdown avec le bord droit du bouton.
+  // Si ça déborde à gauche → aligner à gauche. Si ça déborde à droite → coller à droite.
+  let left = btnRect.right - dropW;
+  if (left < m) left = Math.max(m, btnRect.left); // aligner à gauche du bouton
+  if (left + dropW > vw - m) left = vw - dropW - m;
+
+  // Vertical : en-dessous du bouton par défaut. Si pas la place → au-dessus.
+  const spaceBelow = vh - btnRect.bottom - m;
+  const spaceAbove = btnRect.top - m;
+  let top;
+  if (dropH + 4 <= spaceBelow || spaceBelow >= spaceAbove) {
+    top = btnRect.bottom + 4;
+  } else {
+    top = btnRect.top - dropH - 4;
+  }
+  // Cap si vraiment pas la place nulle part
+  if (top < m) top = m;
+  if (top + dropH > vh - m) top = Math.max(m, vh - dropH - m);
+
+  el.style.left = Math.round(left) + "px";
+  el.style.top = Math.round(top) + "px";
+}
+
+function closeAllDrops() {
+  document.querySelectorAll(".dropdown.open").forEach(el => {
+    el.classList.remove("open");
+    // Reset les coordonnées inline pour pas polluer le prochain affichage
+    el.style.left = "";
+    el.style.top = "";
+  });
+  openDropId = null;
+}
 
 // Fermer les dropdowns lors d'un clic extérieur (n'importe où dans la page)
 document.addEventListener("click", (e) => {
@@ -227,16 +284,52 @@ document.addEventListener("click", (e) => {
   if (t.closest(".dots-btn") || t.closest(".dropdown")) return;
   closeAllDrops();
 });
-// Fermer aussi avec Escape
+// Fermer avec Escape
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape" && openDropId) closeAllDrops();
 });
+// Fermer au scroll / resize (le position:fixed ne suit pas le scroll)
+window.addEventListener("scroll", () => { if (openDropId) closeAllDrops(); }, true);
+window.addEventListener("resize", () => { if (openDropId) closeAllDrops(); });
 
 // ── Duplication générique d'un document Firestore ─────
 // Clone un document en ajoutant " (Copie)" au nom et en générant un nouvel ID.
+// Après duplication, ouvre AUTOMATIQUEMENT la modale d'édition du nouvel item
+// pour permettre de changer le nom rapidement.
 // collection : nom de la collection Firestore (products, recipes, menu, etc.)
 // id : ID du document à dupliquer
 // nameField : champ qui contient le nom (default "name", "title" pour tasks, "description" pour expenses/revenues)
+
+// Mapping collection → fonction d'édition (window.*) + accesseur au state local
+// + ID du champ "nom" à focuser automatiquement dans la modale d'édition
+const DUPLICATE_CONFIG = {
+  products:    { editor: "openProductModal",    getState: () => products,    nameInput: "p-name" },
+  recipes:     { editor: "openRecipeModal",     getState: () => recipes,     nameInput: "rec-name" },
+  menu:        { editor: "openMenuModal",       getState: () => menuItems,   nameInput: "mn-name" },
+  suppliers:   { editor: "openSupplierModal",   getState: () => suppliers,   nameInput: "s-name" },
+  ingredients: { editor: "openIngredientModal", getState: () => ingredients, nameInput: "ing-name" },
+  employees:   { editor: "openEmployeeModal",   getState: () => employees,   nameInput: "e-name" },
+  tasks:       { editor: "openTaskModal",       getState: () => tasks,       nameInput: "t-title" },
+  expenses:    { editor: "openExpenseModal",    getState: () => expenses,    nameInput: "ex-desc" },
+  revenues:    { editor: "openRevenueModal",    getState: () => revenues,    nameInput: "rv-desc" }
+};
+
+// Attend que le listener Firestore ait propagé le nouvel item dans le state local
+function waitForItem(collection, id, maxMs = 2500) {
+  return new Promise((resolve) => {
+    const cfg = DUPLICATE_CONFIG[collection];
+    if (!cfg) return resolve(false);
+    const start = Date.now();
+    const tick = () => {
+      const arr = cfg.getState();
+      if (arr && arr.find(x => x.id === id)) return resolve(true);
+      if (Date.now() - start > maxMs) return resolve(false);
+      setTimeout(tick, 40);
+    };
+    tick();
+  });
+}
+
 async function duplicateItem(collection, id, nameField = "name") {
   try {
     const snap = await db.collection(collection).doc(id).get();
@@ -265,6 +358,22 @@ async function duplicateItem(collection, id, nameField = "name") {
     const nid = genId();
     await db.collection(collection).doc(nid).set({ ...copy, id: nid });
     await addLog(copy[nameField] || "—", "Dupliqué", `Depuis « ${orig} »`);
+
+    // Ouvrir la modale d'édition du nouvel item pour renommage rapide
+    const cfg = DUPLICATE_CONFIG[collection];
+    if (cfg && typeof window[cfg.editor] === "function") {
+      // Attendre que le listener Firestore ait mis à jour le state local
+      await waitForItem(collection, nid);
+      window[cfg.editor](nid);
+      // Focus + sélection du nom pour permettre l'édition immédiate
+      setTimeout(() => {
+        const input = document.getElementById(cfg.nameInput);
+        if (input) {
+          input.focus();
+          if (typeof input.select === "function") input.select();
+        }
+      }, 120);
+    }
   } catch (err) {
     console.error("duplicateItem:", err);
     alert("Erreur lors de la duplication : " + (err.message || err));

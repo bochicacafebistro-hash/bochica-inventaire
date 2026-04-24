@@ -1,6 +1,6 @@
 # 📋 CONTEXTE — Projet Bochica Inventaire
 
-> ⚠️ **Mise à jour majeure : 18 avril 2026** — refactoring design system pour s'aligner sur le site web bochicacafebistro.ca + PWA installable.
+> ⚠️ **Dernière mise à jour : 23 avril 2026** — alignement complet avec le site web (palette Crème Papier + Bebas Neue), gestion avancée des catégories, éditeur markdown pour les recettes, duplication universelle, logo cliquable.
 
 ## 🏠 Description
 Application web de **gestion interne** pour le restaurant colombien Bochica.
@@ -29,16 +29,18 @@ bochica-inventaire/
 ├── CONTEXTE.md             ← ce fichier
 ├── README.md
 ├── css/
-│   └── style.css           ← Design system complet (700+ lignes)
+│   └── style.css           ← Design system complet (2400+ lignes)
 ├── js/
 │   ├── config.js           ← Config Firebase + constantes globales
-│   ├── state.js            ← Variables globales
-│   ├── utils.js            ← Fonctions utilitaires
-│   ├── inventaire.js       ← Page inventaire, stock, drag & drop
-│   ├── modals-produits.js  ← Modals produit, note, catégorie, réception
+│   ├── state.js            ← Variables globales (products, allSections, etc.)
+│   ├── icons.js            ← Bibliothèque d'icônes Lucide SVG inline
+│   ├── i18n.js             ← Traductions FR/ES
+│   ├── utils.js            ← Utils, markdown parser, toolbar, duplicateItem, dropdowns
+│   ├── inventaire.js       ← Page inventaire, stock, drag & drop produits
+│   ├── modals-produits.js  ← Modals produit, note, catégorie (drag & drop), réception
 │   ├── pages-secondaires.js ← Pages rapport, historique, tâches
-│   ├── pages-admin.js      ← Pages employés, dépenses, revenus, menu, fournisseurs
-│   ├── sidebar.js          ← Navigation, sidebar, renderPage()
+│   ├── pages-admin.js      ← Dashboard, employés, dépenses, revenus, menu, fournisseurs, ingrédients, recettes
+│   ├── sidebar.js          ← Navigation, sidebar, renderPage(), goHome()
 │   ├── auth.js             ← Connexion PIN, logout, session, support clavier
 │   └── firebase-listeners.js ← Listeners Firestore temps réel
 └── images/
@@ -54,6 +56,8 @@ bochica-inventaire/
 ```html
 <script src="js/config.js"></script>
 <script src="js/state.js"></script>
+<script src="js/icons.js"></script>
+<script src="js/i18n.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/inventaire.js"></script>
 <script src="js/modals-produits.js"></script>
@@ -67,17 +71,22 @@ bochica-inventaire/
 ## 🔥 Firebase
 - **Projet** : bochica-inventaire
 - **Collections Firestore** :
-  - `products` — inventaire (nom, stock, minimum, section, supplierId, orderQty, orderUnit, unitsPerBox, sortOrder, archived, note)
-  - `suppliers` — fournisseurs (nom, contact, email, notes)
-  - `employees` — employés (nom, rôle, phone, email, pin, shifts)
-  - `tasks` — tâches (titre, description, statut, priorité, assigné, date limite)
-  - `menu` — items du menu (nom, description, prix, catégorie, disponible)
+  - `products` — inventaire (name, currentStock, minimum, section, supplierId, orderQty, orderUnit, unitsPerBox, sortOrder, archived, note)
+  - `suppliers` — fournisseurs (name, contact, email, notes)
+  - `employees` — employés (name, role, phone, email, pin, shifts)
+  - `tasks` — tâches (title, description, status, priority, assignee, dueDate)
+  - `menu` — items du menu (name, description, price, category, available, recipe[])
+  - `ingredients` — ingrédients pour food cost (name, costPerUnit, unit, category)
+  - `recipes` — livre de cuisine (name, description, category, servings, prepTime, cookTime, ingredients, steps, tips — **markdown**)
   - `expenses` — dépenses (description, supplier, amount, tps, tvq, date, category, type, notes, isFixedAuto)
   - `revenues` — revenus (description, amount, tps, tvq, date, notes)
   - `expenseCategories` — catégories personnalisées de dépenses (name, type)
   - `fixedExpenseTemplates` — modèles frais fixes auto (supplier, category, amount, tps, tvq)
   - `logs` — historique des actions
-  - `settings/sections` — catégories personnalisées d'inventaire
+  - `settings/sections` — catégories d'inventaire :
+    - **Nouveau champ `all`** (array) : liste unifiée ordonnée (par défaut + personnalisées), modifiable entièrement
+    - **Champ `custom`** (array) : préservé pour rétrocompatibilité avec anciens clients
+    - Fallback : si `all` absent → `[...DEFAULT_SECTIONS, ...custom]`
 
 ## 🎨 Design System Bochica (aligné sur le site web — palette Crème Papier)
 
@@ -87,11 +96,13 @@ bochica-inventaire/
 - **Accent soft** : crème-jaune tint `--accent-soft: #fef2d4`
 - **Accent warm** : jaune brûlé `--accent-warm: #8a6a1a` (petits eyebrows)
 - **Accent text** : noir chaud `--accent-text: #0e0d0c` (contraste AA sur jaune)
+- **Accent RGB** : `--accent-rgb: 247,179,44` (pour `rgba()` dans shadows/focus)
 - **Fonds clair** : crème papier `--bg: #f5f1e8`, `--surface: #ffffff`, `--surface2: #ede3d2`, `--surface3: #e5d9c4`
 - **Texte** : noir chaud `--text: #0e0d0c`, `--text2: rgba(14,13,12,.72)`, `--text3: rgba(14,13,12,.5)`
 - **Tricolore Colombie** : jaune `#F7B32C`, bleu `#4a90e2`, rouge `#e74c3c`
-- **États stock** : rouge `#d9534f`, jaune-ambré `#b45309`, vert `#7dbf66`
+- **États stock** : rouge `#d9534f`, jaune-ambré `#b45309` (distinct de l'accent vif), vert `#7dbf66`
 - **Bordures** : `rgba(14,13,12,.1)` (subtile) / `rgba(14,13,12,.25)` (marquée)
+- **Sidebar** : toujours sombre (`--header-from: #0a0907` → `--header-to: #14110f`) avec texte `--on-dark: #f5f1e8`
 
 ### Dark mode adapté on-brand
 - Fonds : `#14110f`, `#1c1815` (chaleureux, pas gris bleuté)
@@ -99,11 +110,15 @@ bochica-inventaire/
 - Accent hover dark : jaune clairci `#ffc94a`
 
 ### Typographie (aligné site web)
-- **Display / titres** : `Bebas Neue` — h1-h6, stats numériques, prix, logo, eyebrows
+- **Display / titres** : `Bebas Neue` — h1-h6, stats numériques, prix, logo, topbar
 - **Corps** : `Inter` (300-800) — UI, formulaires, body, boutons
 - **Mono** : `JetBrains Mono` (400, 500, 600) — kickers techniques, tags, classe `.kicker`
-- **Note** : `font-synthesis: none` sur body — évite les faux bold/italic sur Bebas qui n'a qu'un poids
-- **Échelle** : `--fs-xs` (11) → `--fs-sm` (13) → `--fs-base` (14) → `--fs-md` (16) → `--fs-lg` (18) → `--fs-xl` (22) → `--fs-2xl` (28) → `--fs-3xl` (36)
+- **`font-synthesis: none`** sur body — évite les faux bold/italic sur Bebas qui n'a qu'un poids
+- **Tailles fixes des titres** (Bebas étant condensé, on majore ~25% pour équilibrer) :
+  - `h1` : 48px · `h2` : 38px · `h3` : 28px · `h4` : 22px · `h5` : 18px · `h6` : 15px (uppercase + letter-spacing)
+  - `.topbar-title` : 26px
+  - `.recipe-view__title` : 42px
+- **Échelle générale** (pour UI et body) : `--fs-xs` (11) → `--fs-sm` (13) → `--fs-base` (14) → `--fs-md` (16) → `--fs-lg` (18) → `--fs-xl` (22) → `--fs-2xl` (28) → `--fs-3xl` (36)
 
 ### Espacement
 Échelle 4/8 : `--sp-1` (4) → `--sp-2` (8) → `--sp-3` (12) → `--sp-4` (16) → `--sp-5` (20) → `--sp-6` (24) → `--sp-7` (32) → `--sp-8` (48)
@@ -113,6 +128,7 @@ bochica-inventaire/
 
 ### Ombres et transitions
 - `--shadow-sm/md/lg/modal`
+- Ombres accent : `rgba(var(--accent-rgb), …)` — dynamiques (jaune en clair ET en dark)
 - `--transition-fast/base`
 
 ## 📱 PWA (Progressive Web App)
@@ -126,53 +142,107 @@ bochica-inventaire/
 - `name` : "Bochica — Gestion"
 - `short_name` : "Bochica"
 - `display` : "standalone" (sans barre d'adresse)
-- `theme_color` : `#6b1a1f` (bordeaux)
-- `background_color` : `#faf6f0` (crème)
+- `theme_color` : `#F7B32C` (jaune impact)
+- `background_color` : `#f5f1e8` (crème papier)
 - **Shortcuts** : raccourcis vers Inventaire, Tâches, Dépenses
 
 ### Service Worker (`sw.js`)
 - **Stratégie cache** : cache-first pour app shell (HTML, CSS, JS, fonts)
 - **Stratégie réseau** : network-only pour Firebase (données toujours fraîches)
+- **App shell** : inclut `icons.js` et `i18n.js` (ajoutés au cache)
 - **Mise à jour** : incrémenter `CACHE_VERSION` dans sw.js après un déploiement majeur
+- **Version actuelle** : `v1.4.0`
 
-## ✅ Fonctionnalités existantes (inchangées)
+## ✅ Fonctionnalités
 
 ### 📦 Inventaire
-- Stats desktop : total produits, à commander, en stock (3 cartes en haut)
-- Stock, statuts (rouge/jaune/vert), drag & drop, archivage, notes, sections
-- Sections par défaut : Cuisine, Emballage, Bar, Autre + sections personnalisées
+- Stats desktop : total produits, à commander, bientôt bas, en stock (4 cartes en haut)
+- Stock, statuts (rouge/jaune/vert), drag & drop pour réordonner, archivage, notes
+- **Gestion avancée des catégories** (via engrenage ⚙️) :
+  - Liste unifiée : toutes les catégories (par défaut + personnalisées) sont modifiables, supprimables, réordonnables
+  - Le champ « Nouvelle catégorie » est **en haut** de la modale
+  - **Drag & drop** (grip `⋮⋮`) pour réordonner
+  - Renommer → **batch update Firestore** : tous les produits sont automatiquement mis à jour
+  - Supprimer → les produits sont déplacés vers « Autre » (ou la première catégorie restante)
+  - Compteur de produits par catégorie + badge « défaut »
+- **Onglets catégories** : scroll horizontal avec fondu aux extrémités + bouton `⌄` « Voir toutes » (wrap multi-lignes)
+- **Recherche fluide** : focus restauré après chaque frappe (plus de bug de saisie mot par mot)
 - Vue tableau desktop, vue cartes mobile
 
 ### 📋 Rapport / Historique / Tâches
-- Rapport imprimable, log d'actions, Kanban 3 colonnes
+- Rapport imprimable, log d'actions, Kanban 3 colonnes (drag & drop)
 
 ### 👥 Employés & Horaires
-- Fiche employé + grille horaire semaine
+- Fiche employé + grille horaire semaine (Matin/Soir/Journée/Congé)
 
 ### 💰 Dépenses & Revenus
 - Calcul TPS/TVQ auto, catégories personnalisables, frais fixes auto
 - Stats : revenus, dépenses, taxes, profit/déficit
-- Graphiques : barres 6 mois + camembert par catégorie
+- Graphiques : barres 6 mois (revenus/dépenses/profit) + doughnut par catégorie
 
 ### 🍽️ Menu / 🏪 Fournisseurs
 - Items par catégorie avec toggle disponible
 - Fiches fournisseurs avec produits liés
 
+### 🧂 Ingrédients (food cost)
+- Séparés des produits d'inventaire
+- Coût par unité utilisé pour calculer le food cost des items du menu
+
+### 📖 Recettes (livre de cuisine)
+- Recettes complètes avec ingrédients, étapes, conseils
+- **Éditeur markdown** intégré avec toolbar (gras, italique, barré, listes à puces, numérotées)
+- Raccourcis clavier : **Ctrl/⌘+B** (gras), **Ctrl/⌘+I** (italique)
+- Parser markdown sécurisé (pas d'XSS — échappement HTML puis injection de tags contrôlés)
+- Rétrocompat auto : les vieilles recettes en texte brut s'affichent comme listes
+- Impression : header jaune avec texte noir (contraste AA)
+
+### 🔁 Duplication universelle
+- Option **Dupliquer** dans tous les dropdowns ⋯ : produits, recettes, menu, fournisseurs, ingrédients, employés, dépenses, revenus, tâches
+- Ajoute « (Copie) » au nom, génère un nouvel ID, réinitialise `createdAt`/`updatedAt`
+- Ajustements par collection : `products` → sortOrder à la fin, stock 0, désarchivé · `menu` → disponible par défaut
+- Logue l'action dans l'historique
+
 ### 🌙 Général
+- **Logo BOCHICA cliquable** (sidebar) → ramène au dashboard (admin) ou inventaire (employé). 36px, sans les barres tricolore
+- **Dropdowns ⋯** : ferment au clic extérieur + Escape (avant, ils restaient ouverts)
 - Dark mode (toggle, localStorage)
 - Mobile responsive
 - Session persistante
-- **PWA installable** (nouveau!)
-- **Saisie clavier PIN** (nouveau!)
+- PWA installable
+- Recherche globale Cmd/Ctrl+K
+- Bilingue FR/ES (toggle sidebar)
 
-## ♿ Accessibilité (post-refactoring)
+## 📝 Markdown dans les recettes
+
+### Syntaxe supportée
+- `**gras**` → **gras**
+- `*italique*` → *italique*
+- `~~barré~~` → ~~barré~~
+- `- puce` (ou `* `, `• `) au début de ligne → liste à puces
+- `1. étape` au début de ligne → liste numérotée (le numéro réel est automatique)
+- Ligne vide → nouveau paragraphe
+
+### Fonctions clés (dans `utils.js`)
+- `renderMarkdown(text)` — parser sécurisé : échappe le HTML puis injecte nos tags contrôlés
+- `autoMarkdownList(text, type)` — rétrocompat : préfixe les lignes d'un texte legacy sans markers
+- `mdToolbar(textareaId)` — génère la toolbar HTML
+- `mdWrap(id, before, after)` — enveloppe la sélection (gras, italique, barré)
+- `mdPrefixLines(id, prefix)` — préfixe les lignes (toggle — supprime si déjà présent)
+- `mdAttachShortcuts(textareaId)` — attache Ctrl/Cmd+B et +I
+
+## ♿ Accessibilité
 
 - **`<html lang="fr-CA">`** au lieu de `fr` (cohérence régionale)
 - **Landmarks ARIA** : `<aside>` sidebar, `<main>`, `<header>` topbar, `<nav>` sidebar-nav
 - **PIN-pad accessible** : `aria-label` sur chaque bouton, `role="alert"` sur l'erreur, `aria-live` sur affichage chiffres saisis
 - **Navigation clavier** : Tab partout + chiffres/Backspace/Escape sur PIN
-- **Focus visible** : outline 2px bordeaux global via `:focus-visible`
+- **Focus visible** : outline 2px jaune (`var(--accent)`) global via `:focus-visible`
+- **Dropdowns** : Escape pour fermer, clic extérieur pour fermer
+- **Logo sidebar** : `aria-label="Retour au tableau de bord"` + focus visible
+- **Modale catégories** : drag avec `aria-label="Glisser pour réordonner"` sur le handle
+- **Toolbar markdown** : `role="toolbar"` + `aria-label` sur chaque bouton
 - **`prefers-reduced-motion`** respecté
+- **Contraste AA** : accent jaune avec texte noir (pas texte blanc sur jaune)
 - **Topbar** : `aria-live="polite"` sur badge alerte
 
 ## 🔧 Constantes importantes (config.js)
@@ -180,7 +250,7 @@ bochica-inventaire/
 - `EMPLOYEE_PIN` = "1111"
 - `TPS_RATE` = 0.05
 - `TVQ_RATE` = 0.09975
-- `DEFAULT_SECTIONS` = ["Cuisine", "Emballage", "Bar", "Autre"]
+- `DEFAULT_SECTIONS` = ["Cuisine", "Emballage", "Bar", "Autre"] (servent de fallback + de référence pour le badge « défaut »)
 - `SHIFT_TYPES` = Matin (#3b82f6), Soir (#8b5cf6), Journée (#22c55e), Congé (#94a3b8)
 - `TASK_COLS` = ["À faire", "En cours", "Complété"]
 - `MENU_CATS` = ["Entrées", "Plats principaux", "Desserts", "Boissons", "Autres"]
@@ -192,41 +262,66 @@ bochica-inventaire/
 - **CSS externalisé** dans `css/style.css` (utiliser les tokens, ne pas hardcoder les couleurs)
 - Pour les couleurs dans les `style="..."` inline JS : utiliser `var(--token)` plutôt que `#hex`
 - Chaque fichier JS = une section de l'app
-- L'ordre des scripts dans index.html est critique
+- L'ordre des scripts dans index.html est critique (icons.js et i18n.js avant utils.js)
+- **Bumper `CACHE_VERSION`** dans `sw.js` après un déploiement pour forcer la mise à jour chez les utilisateurs PWA
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
 
-### 23 avril 2026 — Alignement design avec le site web (palette Crème Papier)
-- **Palette complètement refondue** : bordeaux → jaune impact `#F7B32C`, crème `#f5f1e8`, texte noir chaud `#0e0d0c`
-- **Typographie** : Fraunces → **Bebas Neue** pour tous les titres, stats et displays
-- **Nouvelle police mono** : JetBrains Mono pour les kickers techniques (classe `.kicker`)
-- **Login screen** : gradient noir → ambre (au lieu de noir → bordeaux), logo Bebas Neue 52px
-- **Graphiques** : profit line en jaune accent, palette doughnut revue (jaune Bochica en tête)
-- **PWA** : `theme_color` → jaune `#F7B32C`, `background_color` → crème `#f5f1e8`
-- **Ombres** : passage à `rgba(var(--accent-rgb),...)` pour être dynamiques au dark mode
-- **`font-synthesis: none`** globalement — évite les faux bold/italic sur Bebas Neue
-- Service Worker `v1.2.0` (force rafraîchissement du cache)
+### 23 avril 2026 — Séance d'améliorations (v1.2.0 → v1.4.0)
+- **v1.4.0 — Duplication universelle + fermeture dropdowns**
+  - Option « Dupliquer » ajoutée dans 11 dropdowns (produits desktop/mobile, recettes, menu, fournisseurs, ingrédients desktop/mobile, employés, dépenses, revenus, tâches)
+  - Fonction générique `duplicateItem(collection, id, nameField)` — ajoute « (Copie) », réinitialise timestamps, ajustements par collection
+  - Dropdowns ⋯ ferment au clic extérieur + touche Escape (bug corrigé)
+  - Nouvelle icône `copy`
+- **v1.3.1 — Logo cliquable**
+  - Le « BOCHICA » en haut à gauche devient un bouton qui ramène au dashboard (admin) ou inventaire (employé)
+  - Logo agrandi : 18px → 36px
+  - Suppression des 3 barres tricolore (jaune/bleu/rouge) sous le logo
+- **v1.3.0 — Titres agrandis + éditeur markdown recettes**
+  - Tailles de titres majorées de ~25% (Bebas étant condensé paraissait trop petit) : h1 48px, h2 38px, h3 28px, topbar 26px, recipe-view title 42px
+  - **Éditeur markdown** pour ingrédients, étapes, conseils de recettes : toolbar (gras, italique, barré, listes puces/numérotées) + raccourcis Ctrl/⌘+B et +I
+  - Parser markdown sécurisé (anti-XSS) avec rétrocompat auto pour anciennes recettes
+  - Nouvelles icônes : bold, italic, list, list-ordered, strikethrough
+- **v1.2.1 — Drag & drop catégories**
+  - Remplacement des flèches ↑↓ par du drag & drop HTML5 natif
+  - Handle `⋮⋮` (grip-vertical) + barre d'insertion jaune lumineuse au-dessus/en-dessous selon la position
+  - Champ d'ajout déplacé en haut de la modale
+- **v1.2.0 — Alignement design avec le site web (palette Crème Papier)**
+  - Palette complètement refondue : bordeaux → jaune impact `#F7B32C`, crème `#f5f1e8`, texte noir chaud `#0e0d0c`
+  - Typographie : Fraunces → Bebas Neue pour tous les titres
+  - Nouvelle police mono : JetBrains Mono (classe `.kicker`)
+  - Login screen : gradient noir → ambre, logo Bebas Neue 52px
+  - Graphiques : profit line en jaune, palette doughnut revue
+  - PWA : `theme_color` → jaune, `background_color` → crème
+  - Ombres dynamiques via `rgba(var(--accent-rgb),...)`
+  - `font-synthesis: none` globalement (évite faux bold/italic sur Bebas)
+- **v1.1.1 — Recherche corrigée**
+  - Bug du champ recherche qui ne prenait qu'un caractère à la fois → focus restauré après chaque renderPage via `requestAnimationFrame`
+- **v1.1.0 — Gestion complète des catégories + onglets**
+  - Modale « Gérer les catégories » refondue : toutes les catégories (défaut + custom) modifiables, supprimables, réordonnables
+  - Schéma Firestore `settings/sections` étendu avec champ `all` (liste unifiée) + rétrocompat avec `custom`
+  - Renommage → batch update de tous les produits concernés
+  - Suppression → migration auto des produits vers « Autre »
+  - Bouton « Voir toutes » sur la barre d'onglets (mode wrap multi-lignes)
+  - Fondu aux extrémités du scroll horizontal (indicateur visuel)
+  - Ajout de `icons.js` et `i18n.js` dans l'APP_SHELL du service worker
 
-### 18 avril 2026 — Refactoring design + PWA (branche `refactor/design-system`)
-- **Design system unifié** avec le site web (bordeaux + crème + tricolore Colombie)
-- **Typographie** : Fraunces (titres) + Inter (corps), au lieu de system-ui
-- **CSS externalisé** dans `css/style.css` (700+ lignes structurées avec tokens)
-- **Dark mode** revu pour rester on-brand (chaleureux, pas gris bleuté)
-- **80 couleurs hardcodées** migrées vers tokens CSS dans les modules JS
-- **PWA installable** : manifest.json + sw.js + icônes 192/512
-  - Cache app shell offline, données Firebase toujours fraîches
-  - Shortcuts : Inventaire, Tâches, Dépenses
-- **Login refait** : couleurs Bochica (gradient noir → bordeaux), logo Fraunces avec accent jaune sur "CA"
-- **Accessibilité** :
-  - PIN-pad avec aria-label, aria-live, support clavier complet (chiffres + Backspace + Escape)
-  - Landmarks ARIA (`<aside>`, `<main>`, `<header>`, `<nav>`)
-  - `<html lang="fr-CA">`, focus visible global, prefers-reduced-motion respecté
-- **Animations** modale : fadeIn + slideUp pour transitions plus fluides
+### 18 avril 2026 — Refactoring design + PWA (v1.0.0)
+- Design system unifié avec le site web (première version bordeaux + Fraunces)
+- CSS externalisé dans `css/style.css` (700+ lignes structurées avec tokens)
+- Dark mode on-brand (chaleureux, pas gris bleuté)
+- 80 couleurs hardcodées migrées vers tokens CSS dans les modules JS
+- PWA installable : manifest.json + sw.js + icônes 192/512
+- Login refait avec couleurs Bochica
+- Accessibilité : PIN-pad ARIA, landmarks, focus visible, prefers-reduced-motion
+- Animations modale : fadeIn + slideUp
 
-## 📝 Reste à faire (post-refactoring)
-- [ ] Optimiser icon-maskable-512.png (actuellement copie de icon-512.png — devrait avoir un padding pour le "safe zone" Android)
+## 📝 Reste à faire
+- [ ] Optimiser `icon-maskable-512.png` (actuellement copie de icon-512.png — devrait avoir un padding pour la "safe zone" Android)
 - [ ] Tester l'installation PWA sur iOS et Android
-- [ ] Ajouter une page "À propos" / "Versions" pour suivre les mises à jour
-- [ ] Considérer un mode hors ligne avec indication visuelle (badge "offline")
+- [ ] Ajouter une page « À propos » / « Versions » pour suivre les mises à jour
+- [ ] Considérer un mode hors ligne avec indication visuelle (badge « offline »)
 - [ ] Notifications push (anniversaires employés, frais fixes du mois, etc.)
+- [ ] Drag & drop tactile (mobile) pour les catégories — actuellement desktop-only (HTML5 native drag)
+- [ ] Migration optionnelle des anciennes recettes (ajout auto des `- ` en base) au lieu du fallback à l'affichage
