@@ -139,7 +139,10 @@ function renderEmployes() {
         <div class="schedule-actions">
           <button class="btn-secondary btn-sm" onclick="openOpenDaysModal()" title="Choisir les jours d'ouverture">${icon("calendar", 14)} Jours ouverts</button>
           <button class="btn-secondary btn-sm" onclick="duplicateScheduleToNextWeek()" title="Copier cet horaire vers la semaine suivante">${icon("copy", 14)} Copier → Semaine ${weekNum + 1}</button>
-          ${userRole === "global_admin" ? `<button class="btn-secondary btn-sm" onclick="seedScheduleFromTemplate()" title="Importer l'horaire type Bochica dans la semaine affichée">${icon("download", 14)} Importer horaire type</button>` : ""}
+          ${userRole === "global_admin" ? `
+            <button class="btn-secondary btn-sm" onclick="applyPayrollConfigs()" title="Configurer les salariés (Alvaro = 35h × 23$) sans toucher aux shifts">${icon("dollar-sign", 14)} Appliquer salaires fixes</button>
+            <button class="btn-secondary btn-sm" onclick="seedScheduleFromTemplate()" title="Importer l'horaire type Bochica dans la semaine affichée">${icon("download", 14)} Importer horaire type</button>
+          ` : ""}
           <div class="schedule-ratio">
             <label for="sched-ratio">Ratio salaires / ventes</label>
             <div class="schedule-ratio-input">
@@ -861,6 +864,34 @@ const BOCHICA_SCHEDULE_TEMPLATE = [
   { name: "Vincent", wed: null,     thu: null,     fri: null,     sat: null,     sun: null },
   { name: "Samia",   wed: null,     thu: null,     fri: [12, 15], sat: [12, 16], sun: null }
 ];
+
+// Applique uniquement les configs de paie (isSalaried, fixedWeeklyHours, hourlyRate)
+// pour les employés qui ont un champ `config` dans le template.
+// Ne touche PAS aux shifts — safe à cliquer à tout moment.
+async function applyPayrollConfigs() {
+  const toApply = BOCHICA_SCHEDULE_TEMPLATE.filter(r => r.config);
+  if (toApply.length === 0) {
+    alert("Aucune config de paie à appliquer.");
+    return;
+  }
+  const batch = db.batch();
+  const applied = [], notFound = [];
+  for (const row of toApply) {
+    const emp = employees.find(e => (e.name || "").trim().toLowerCase() === row.name.toLowerCase());
+    if (!emp) { notFound.push(row.name); continue; }
+    batch.update(db.collection("employees").doc(emp.id), row.config);
+    applied.push(`${row.name} (${row.config.fixedWeeklyHours}h × ${row.config.hourlyRate}$ = ${row.config.fixedWeeklyHours * row.config.hourlyRate}$/sem)`);
+  }
+  if (applied.length === 0) {
+    alert(`Aucun employé trouvé.\nManquent : ${notFound.join(", ")}`);
+    return;
+  }
+  await batch.commit();
+  await addLog("—", "Salaires fixes configurés", applied.join(" · "));
+  let msg = `✓ Salaires fixes appliqués à ${applied.length} employé(s) :\n\n${applied.join("\n")}`;
+  if (notFound.length) msg += `\n\n⚠ Non trouvés : ${notFound.join(", ")}`;
+  alert(msg);
+}
 
 function seedScheduleFromTemplate() {
   const weekStart = getWeekStart(scheduleWeekOffset || 0);
