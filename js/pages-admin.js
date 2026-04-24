@@ -382,7 +382,7 @@ async function updateSalesRatio(percentStr) {
     await db.collection("settings").doc("schedule").set({ salesRatio: newRatio }, { merge: true });
   } catch (err) {
     console.error("updateSalesRatio:", err);
-    alert("Erreur sauvegarde ratio : " + (err.message || err));
+    toast("Erreur sauvegarde ratio : " + (err.message || err), "error");
   }
 }
 
@@ -460,7 +460,7 @@ async function toggleOpenDay(dayIndex, checked) {
   }
   // Garde-fou : ne pas tout décocher
   if (next.length === 0) {
-    alert("Au moins un jour doit rester ouvert.");
+    toast("Au moins un jour doit rester ouvert.", "warning");
     const cb = document.querySelector(`.open-days-grid input[data-day="${dayIndex}"]`);
     if (cb) cb.checked = true;
     return;
@@ -484,7 +484,7 @@ async function duplicateScheduleToNextWeek() {
     return curDates.some(dk => shifts[dk] && shifts[dk].start);
   });
   if (!hasSource) {
-    alert("La semaine actuelle est vide. Remplissez au moins un horaire avant de copier.");
+    toast("La semaine actuelle est vide. Remplissez au moins un horaire avant de copier.", "warning");
     return;
   }
 
@@ -655,19 +655,19 @@ function openEmployeeModal(id) {
 
 async function saveEmployee(id) {
   const name = document.getElementById("e-name").value.trim();
-  if (!name) return alert(t("err_enter_name"));
+  if (!name) return toast(t("err_enter_name"), "error");
   const pin = document.getElementById("e-pin").value.trim();
   // Validation PIN : 4 chiffres si fourni
   if (pin && !/^\d{4}$/.test(pin)) {
-    return alert(getUILang() === "es" ? "El PIN debe ser de 4 dígitos." : "Le PIN doit être 4 chiffres.");
+    return toast(getUILang() === "es" ? "El PIN debe ser de 4 dígitos." : "Le PIN doit être 4 chiffres.", "error");
   }
   // Vérifier unicité du PIN (sauf pour cet employé)
   if (pin) {
     const conflict = employees.find(e => e.id !== id && e.pin && String(e.pin).trim() === pin);
     if (conflict) {
-      return alert(getUILang() === "es"
+      return toast(getUILang() === "es"
         ? `Este PIN ya está usado por ${conflict.name}.`
-        : `Ce PIN est déjà utilisé par ${conflict.name}.`);
+        : `Ce PIN est déjà utilisé par ${conflict.name}.`, "error");
     }
   }
   const data = {
@@ -915,7 +915,7 @@ const BOCHICA_SCHEDULE_TEMPLATE = [
 async function applyPayrollConfigs() {
   const toApply = BOCHICA_SCHEDULE_TEMPLATE.filter(r => r.config);
   if (toApply.length === 0) {
-    alert("Aucune config de paie à appliquer.");
+    toast("Aucune config de paie à appliquer.", "info");
     return;
   }
   const batch = db.batch();
@@ -927,14 +927,14 @@ async function applyPayrollConfigs() {
     applied.push(`${row.name} (${row.config.fixedWeeklyHours}h × ${row.config.hourlyRate}$ = ${row.config.fixedWeeklyHours * row.config.hourlyRate}$/sem)`);
   }
   if (applied.length === 0) {
-    alert(`Aucun employé trouvé.\nManquent : ${notFound.join(", ")}`);
+    toast(`Aucun employé trouvé. Manquent : ${notFound.join(", ")}`, "warning", 5000);
     return;
   }
   await batch.commit();
   await addLog("—", "Salaires fixes configurés", applied.join(" · "));
-  let msg = `✓ Salaires fixes appliqués à ${applied.length} employé(s) :\n\n${applied.join("\n")}`;
-  if (notFound.length) msg += `\n\n⚠ Non trouvés : ${notFound.join(", ")}`;
-  alert(msg);
+  let msg = `Salaires fixes appliqués à ${applied.length} employé(s).`;
+  if (notFound.length) msg += ` Non trouvés : ${notFound.join(", ")}`;
+  toast(msg, notFound.length ? "warning" : "success", 5000);
 }
 
 function seedScheduleFromTemplate() {
@@ -1007,9 +1007,9 @@ async function doSeedScheduleFromTemplate() {
 
   await addLog("—", "Horaire importé", `Semaine ${weekNum} · ${updated} maj · ${created} créés`);
 
-  let result = `✓ Horaire de la semaine ${weekNum} importé\n\n${updated} employé(s) mis à jour`;
-  if (created > 0) result += `\n${created} employé(s) créé(s) : ${notFound.join(", ")}`;
-  alert(result);
+  let result = `Horaire de la semaine ${weekNum} importé · ${updated} mis à jour`;
+  if (created > 0) result += ` · ${created} créé(s)`;
+  toast(result, "success", 5000);
 }
 
 // ══════════════════════════════════════════════════════
@@ -1373,8 +1373,8 @@ async function saveExpense(id) {
   const sup = document.getElementById("ex-sup").value.trim();
   const desc = document.getElementById("ex-desc").value.trim();
   const amt = Number(document.getElementById("ex-amt").value) || 0;
-  if (!desc) return alert(t("err_enter_desc"));
-  if (!amt) return alert(t("err_enter_amount"));
+  if (!desc) return toast(t("err_enter_desc"), "error");
+  if (!amt) return toast(t("err_enter_amount"), "error");
 
   // Auto-création du fournisseur si saisi mais non existant
   if (sup) {
@@ -1481,12 +1481,12 @@ function calcRevenueTaxes() {
 async function saveRevenue(id) {
   const desc = document.getElementById("rv-desc").value.trim();
   const amt = Number(document.getElementById("rv-amt").value) || 0;
-  if (!desc) return alert(t("err_enter_desc"));
-  if (!amt) return alert(t("err_enter_amount"));
+  if (!desc) return toast(t("err_enter_desc"), "error");
+  if (!amt) return toast(t("err_enter_amount"), "error");
   const dateStart = document.getElementById("rv-date-start").value;
   const dateEnd = document.getElementById("rv-date-end").value || null;
-  if (!dateStart) return alert(t("err_enter_start_date"));
-  if (dateEnd && dateEnd < dateStart) return alert(t("err_end_after_start"));
+  if (!dateStart) return toast(t("err_enter_start_date"), "error");
+  if (dateEnd && dateEnd < dateStart) return toast(t("err_end_after_start"), "error");
   const data = {
     description: desc,
     amount: amt,
@@ -1539,7 +1539,7 @@ function openQuickSupplier() {
 
 async function saveQuickSupplier() {
   const name = document.getElementById("qs-name").value.trim();
-  if (!name) return alert("Entrez un nom.");
+  if (!name) return toast("Entrez un nom.", "error");
   const nid = genId();
   await db.collection("suppliers").doc(nid).set({ id: nid, name, contact: document.getElementById("qs-phone").value, email: document.getElementById("qs-email").value, notes: "" });
   closeModal();
@@ -1579,7 +1579,7 @@ function openExpenseCatModal() {
 async function addExpenseCat() {
   const name = document.getElementById("new-cat-name").value.trim();
   const type = document.getElementById("new-cat-type").value;
-  if (!name) return alert("Entrez un nom.");
+  if (!name) return toast("Entrez un nom.", "error");
   const nid = genId();
   await db.collection("expenseCategories").doc(nid).set({ id: nid, name, type });
   openExpenseCatModal();
@@ -1642,7 +1642,7 @@ function calcFtTaxes() {
 
 async function saveFixedTemplate() {
   const amt = Number(document.getElementById("ft-amt").value) || 0;
-  if (!amt) return alert(t("err_enter_amount"));
+  if (!amt) return toast(t("err_enter_amount"), "error");
   const nid = genId();
   await db.collection("fixedExpenseTemplates").doc(nid).set({
     id: nid,
@@ -1898,7 +1898,7 @@ function computeRecipeFoodCost(recipe) {
 
 async function saveMenuItem(id) {
   const name = document.getElementById("mn-name").value.trim();
-  if (!name) return alert(t("err_enter_name"));
+  if (!name) return toast(t("err_enter_name"), "error");
   // Filtrer les lignes vides (pas d'ingrédient sélectionné)
   const cleanRecipe = menuRecipeRows.filter(r => r.ingredientId && Number(r.qty) > 0);
   const data = {
@@ -1969,7 +1969,7 @@ function openSupplierModal(id) {
 
 async function saveSupplier(id) {
   const name = document.getElementById("s-name").value.trim();
-  if (!name) return alert("Entrez un nom.");
+  if (!name) return toast("Entrez un nom.", "error");
   const data = {
     name,
     contact: document.getElementById("s-contact").value,
@@ -2074,9 +2074,9 @@ function getReportData() {
   const end = document.getElementById("rep-end").value;
   const incRev = document.getElementById("rep-include-rev").checked;
   const incExp = document.getElementById("rep-include-exp").checked;
-  if (!start || !end) { alert(t("report_choose_period")); return null; }
-  if (start > end) { alert(t("err_end_after_start")); return null; }
-  if (!incRev && !incExp) { alert(t("report_select_one")); return null; }
+  if (!start || !end) { toast(t("report_choose_period"), "error"); return null; }
+  if (start > end) { toast(t("err_end_after_start"), "error"); return null; }
+  if (!incRev && !incExp) { toast(t("report_select_one"), "error"); return null; }
 
   const filteredRev = incRev ? revenues.filter(r => {
     const d = r.dateStart || r.date;
@@ -2098,13 +2098,13 @@ async function exportReport(format) {
 
   if (format === "xlsx") {
     if (typeof XLSX === "undefined") {
-      alert(t("report_lib_excel_err"));
+      toast(t("report_lib_excel_err"), "error");
       return;
     }
     exportReportExcel(filteredRev, filteredExp, filename, start, end, incRev, incExp);
   } else if (format === "pdf") {
     if (typeof window.jspdf === "undefined") {
-      alert(t("report_lib_pdf_err"));
+      toast(t("report_lib_pdf_err"), "error");
       return;
     }
     exportReportPDF(filteredRev, filteredExp, filename, start, end, incRev, incExp);
@@ -2680,7 +2680,7 @@ function openIngredientModal(id) {
 
 async function saveIngredient(id) {
   const name = document.getElementById("ing-name").value.trim();
-  if (!name) return alert(t("err_enter_name"));
+  if (!name) return toast(t("err_enter_name"), "error");
   const cost = Number(document.getElementById("ing-cost").value) || 0;
   const data = {
     name,
@@ -2896,7 +2896,7 @@ function openRecipeModal(id) {
 
 async function saveRecipe(id) {
   const name = document.getElementById("rec-name").value.trim();
-  if (!name) return alert(t("err_enter_name"));
+  if (!name) return toast(t("err_enter_name"), "error");
   const data = {
     name,
     description: document.getElementById("rec-desc").value.trim(),
@@ -3566,5 +3566,5 @@ async function markTaxRemitted(periodKey, amount) {
     paidAt: new Date().toISOString().slice(0, 10),
     by: loggedInUser?.name || "Admin"
   });
-  alert(getUILang() === "es" ? "✅ Taxes marcadas como pagadas." : "✅ Taxes marquées comme remises.");
+  toast(getUILang() === "es" ? "Taxes marcadas como pagadas." : "Taxes marquées comme remises.", "success");
 }

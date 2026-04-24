@@ -42,7 +42,7 @@ function toggleBoxFields() {
 
 async function saveProduct(id) {
   const name = document.getElementById("p-name").value.trim();
-  if (!name) return alert(t("err_enter_name"));
+  if (!name) return toast(t("err_enter_name"), "error");
   const orderUnit = document.getElementById("p-orderunit").value;
   const isBox = orderUnit === "boîte";
   const orderQty = isBox ? Number(document.getElementById("p-oqty").value) : Number(document.getElementById("p-oqty-u").value);
@@ -203,7 +203,7 @@ async function addCategory() {
   if (!name) return;
   const cats = _currentCats();
   if (cats.some(c => c.toLowerCase() === name.toLowerCase())) {
-    alert("Cette catégorie existe déjà.");
+    toast("Cette catégorie existe déjà.", "warning");
     return;
   }
   await _saveCats([...cats, name]);
@@ -220,7 +220,7 @@ async function renameCategory(i, v) {
   if (!newName || newName === oldName) return;
   // Vérifier doublon
   if (cats.some((c, j) => j !== i && c.toLowerCase() === newName.toLowerCase())) {
-    alert(`La catégorie "${newName}" existe déjà.`);
+    toast(`La catégorie "${newName}" existe déjà.`, "warning");
     // Remettre l'ancien nom dans l'input
     const inp = document.querySelector(`.cat-item[data-idx="${i}"] input`);
     if (inp) inp.value = oldName;
@@ -249,7 +249,7 @@ function askDeleteCategory(i, name) {
   // Destination : "Autre" si présent, sinon première restante
   const fallback = remaining.includes("Autre") ? "Autre" : (remaining[0] || "Autre");
   if (remaining.length === 0) {
-    alert("Impossible de supprimer la dernière catégorie. Ajoutez-en une autre d'abord.");
+    toast("Impossible de supprimer la dernière catégorie. Ajoutez-en une autre d'abord.", "warning");
     return;
   }
   const msg = count > 0

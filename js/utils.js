@@ -372,7 +372,7 @@ function waitForItem(collection, id, maxMs = 2500) {
 async function duplicateItem(collection, id, nameField = "name") {
   try {
     const snap = await db.collection(collection).doc(id).get();
-    if (!snap.exists) { alert("Document introuvable."); return; }
+    if (!snap.exists) { toast("Document introuvable.", "error"); return; }
     const data = snap.data();
     const copy = { ...data };
     delete copy.id;
@@ -415,13 +415,59 @@ async function duplicateItem(collection, id, nameField = "name") {
     }
   } catch (err) {
     console.error("duplicateItem:", err);
-    alert("Erreur lors de la duplication : " + (err.message || err));
+    toast("Erreur lors de la duplication : " + (err.message || err), "error");
   }
 }
 
 // ── Modal ─────────────────────────────────────────────
 function showModal(html) { document.getElementById("modals").innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()">${html}</div>`; }
 function closeModal() { document.getElementById("modals").innerHTML = ""; }
+
+// ── Toasts (remplacent les alert() natifs) ────────────
+// Usage :
+//   toast("Produit enregistré")              → info (défaut)
+//   toast("Stock mis à jour", "success")     → vert
+//   toast("Champ requis", "error")           → rouge
+//   toast("Attention...", "warning")         → jaune
+//   toast("Longue explication", "info", 6000) → durée custom (ms)
+let _toastCounter = 0;
+function toast(message, type = "info", duration = 3500) {
+  const container = document.getElementById("toasts");
+  if (!container) { console.warn("toast: #toasts container missing"); return; }
+  const id = "toast-" + (++_toastCounter);
+  const iconMap = {
+    success: "check-circle",
+    error:   "alert",
+    warning: "alert",
+    info:    "info"
+  };
+  const iconName = iconMap[type] || "info";
+  const el = document.createElement("div");
+  el.className = `toast toast--${type}`;
+  el.id = id;
+  el.setAttribute("role", type === "error" || type === "warning" ? "alert" : "status");
+  el.innerHTML = `
+    <span class="toast__icon">${icon(iconName, 18)}</span>
+    <span class="toast__msg">${String(message).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\n/g, "<br>")}</span>
+    <button class="toast__close" onclick="dismissToast('${id}')" aria-label="Fermer">${icon("x", 14)}</button>
+  `;
+  container.appendChild(el);
+  // Animation slide-in
+  requestAnimationFrame(() => el.classList.add("toast--visible"));
+  // Auto-dismiss (sauf si duration = 0 = permanent)
+  if (duration > 0) {
+    setTimeout(() => dismissToast(id), duration);
+  }
+  return id;
+}
+
+function dismissToast(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.remove("toast--visible");
+  el.classList.add("toast--leaving");
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 220);
+}
 
 function openConfirm(title, msg, action, isDanger = false) {
   pendingConfirm = action;

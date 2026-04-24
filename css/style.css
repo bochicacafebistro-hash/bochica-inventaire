@@ -190,6 +190,99 @@ h4{font-size:22px}
 h5{font-size:18px}
 h6{font-size:15px;letter-spacing:.1em;text-transform:uppercase}
 
+/* ═══════════════════════════════════════════════════════════════
+   TOASTS — remplace les alert() natifs
+   ═══════════════════════════════════════════════════════════════ */
+.toast-container{
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  z-index:9999;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  pointer-events:none; /* les toasts individuels re-activent pointer-events */
+  max-width:calc(100vw - 40px);
+}
+.toast{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:12px 14px 12px 14px;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-left:4px solid var(--text2);
+  border-radius:var(--radius-md);
+  box-shadow:var(--shadow-lg);
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  color:var(--text);
+  min-width:260px;
+  max-width:420px;
+  pointer-events:auto;
+  transform:translateX(120%);
+  opacity:0;
+  transition:transform .22s ease, opacity .22s ease;
+}
+.toast--visible{transform:translateX(0);opacity:1}
+.toast--leaving{transform:translateX(120%);opacity:0}
+.toast__icon{
+  display:inline-flex;
+  align-items:center;
+  flex-shrink:0;
+  margin-top:1px;
+}
+.toast__msg{
+  flex:1;
+  line-height:1.4;
+  word-break:break-word;
+}
+.toast__close{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:22px;
+  height:22px;
+  padding:0;
+  background:transparent;
+  border:none;
+  color:var(--text3);
+  cursor:pointer;
+  border-radius:var(--radius-sm);
+  flex-shrink:0;
+  margin-top:-2px;
+  transition:var(--transition-fast);
+}
+.toast__close:hover{background:var(--surface2);color:var(--text)}
+
+/* Variantes par type : bordure + icône colorées */
+.toast--success{border-left-color:var(--status-green)}
+.toast--success .toast__icon{color:var(--status-green)}
+.toast--error{border-left-color:var(--status-red)}
+.toast--error .toast__icon{color:var(--status-red)}
+.toast--warning{border-left-color:var(--status-yellow-vivid)}
+.toast--warning .toast__icon{color:var(--status-yellow-vivid)}
+.toast--info{border-left-color:var(--blue)}
+.toast--info .toast__icon{color:var(--blue)}
+
+/* Mobile : toasts en haut, pleine largeur */
+@media(max-width:640px){
+  .toast-container{
+    bottom:auto;
+    top:12px;
+    right:12px;
+    left:12px;
+    max-width:none;
+  }
+  .toast{
+    min-width:0;
+    max-width:none;
+    transform:translateY(-120%);
+  }
+  .toast--visible{transform:translateY(0)}
+  .toast--leaving{transform:translateY(-120%)}
+}
+
 /* Titres génériques pour pages (cohérence avec échelle Bebas) */
 .page-title{
   font-family:var(--font-heading);

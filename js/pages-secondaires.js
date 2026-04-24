@@ -166,7 +166,7 @@ function openTaskModal(id, defaultCol) {
 
 async function saveTask(id) {
   const title = document.getElementById("t-title").value.trim();
-  if (!title) return alert(t("task_enter_title"));
+  if (!title) return toast(t("task_enter_title"), "error");
   const data = {
     title,
     description: document.getElementById("t-desc").value,

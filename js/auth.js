@@ -36,13 +36,13 @@ function initAuth() {
     try {
       const doc = await db.collection("users").doc(fbUser.uid).get();
       if (!doc.exists) {
-        alert("Ton compte Firebase Auth existe mais n'a pas de rôle attribué dans Firestore.\nContacte l'administrateur.");
+        toast("Ton compte existe mais n'a pas de rôle attribué. Contacte l'administrateur.", "error", 6000);
         await auth.signOut();
         return;
       }
       const role = doc.data().role;
       if (!ROLE_PERMISSIONS[role]) {
-        alert(`Rôle inconnu ou invalide : "${role}". Déconnexion.`);
+        toast(`Rôle inconnu ou invalide : "${role}". Déconnexion.`, "error", 6000);
         await auth.signOut();
         return;
       }
@@ -55,7 +55,7 @@ function initAuth() {
       });
     } catch (err) {
       console.error("Lecture /users/{uid} échouée :", err);
-      alert("Impossible de charger ton profil. Vérifie ta connexion.\n\n" + (err.message || err));
+      toast("Impossible de charger ton profil. Vérifie ta connexion.", "error", 6000);
       try { await auth.signOut(); } catch (_) {}
     }
   });
