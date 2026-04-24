@@ -35,9 +35,9 @@ function getStatus(p) {
 }
 
 function statusLabel(st) {
-  if (st === "red") return `<span class="icon-inline" style="color:var(--status-red)">${icon("alert", 13)} ${t("status_commander")}</span>`;
-  if (st === "yellow") return `<span class="icon-inline" style="color:var(--status-yellow)">${icon("clock", 13)} ${t("status_bientot_bas")}</span>`;
-  return `<span class="icon-inline" style="color:var(--status-green)">${icon("check", 13)} ${t("status_ok")}</span>`;
+  if (st === "red") return `<span class="icon-inline text-danger">${icon("alert", 13)} ${t("status_commander")}</span>`;
+  if (st === "yellow") return `<span class="icon-inline text-warning">${icon("clock", 13)} ${t("status_bientot_bas")}</span>`;
+  return `<span class="icon-inline text-success">${icon("check", 13)} ${t("status_ok")}</span>`;
 }
 
 function orderLabel(p) {

@@ -251,7 +251,7 @@ function dashStatCard({ icon: iconName, label, value, delta, deltaLabel, color, 
       ${icon(arrowIcon, 12)} ${isUp ? "+" : ""}${delta.toFixed(1)}% <span style="color:var(--text3);font-weight:400">${deltaLabel}</span>
     </div>`;
   } else if (deltaLabel) {
-    deltaHtml = `<div class="dash-stat__delta" style="color:var(--text3)">${deltaLabel}</div>`;
+    deltaHtml = `<div class="dash-stat__delta text-muted">${deltaLabel}</div>`;
   }
 
   return `<div class="dash-stat-card" style="border-left-color:${color}">
@@ -272,13 +272,13 @@ function renderDashTaxCard(q, taxes, daysToDeadline) {
   if (daysToDeadline < 0) {
     urgencyClass = "dash-card--danger";
     urgencyIcon = "alert";
-    dueLabel = `<strong style="color:var(--status-red)">${t("dash_overdue")} (${Math.abs(daysToDeadline)} ${t("rec_minutes") === "min" ? "j" : "d"})</strong>`;
+    dueLabel = `<strong class="text-danger">${t("dash_overdue")} (${Math.abs(daysToDeadline)} ${t("rec_minutes") === "min" ? "j" : "d"})</strong>`;
   } else if (daysToDeadline <= 15) {
     urgencyClass = "dash-card--warn";
     urgencyIcon = "alert";
-    dueLabel = `<strong style="color:var(--status-yellow)">${t("dash_due_in", { n: daysToDeadline })}</strong>`;
+    dueLabel = `<strong class="text-warning">${t("dash_due_in", { n: daysToDeadline })}</strong>`;
   } else {
-    dueLabel = `<span style="color:var(--text3)">${t("dash_due_in", { n: daysToDeadline })}</span>`;
+    dueLabel = `<span class="text-muted">${t("dash_due_in", { n: daysToDeadline })}</span>`;
   }
 
   return `<div class="dash-card ${urgencyClass}">
@@ -289,13 +289,13 @@ function renderDashTaxCard(q, taxes, daysToDeadline) {
     <div class="dash-tax-info">
       <div class="dash-tax-period">
         ${t("tax_quarter")} ${q.quarter} · ${q.year}<br/>
-        <small style="color:var(--text3)">${t("tax_due_date")} ${q.dueDate}</small><br/>
+        <small class="text-muted">${t("tax_due_date")} ${q.dueDate}</small><br/>
         ${dueLabel}
       </div>
       <div class="dash-tax-amount">
         <div class="dash-tax-label">${t("tax_to_remit")}</div>
         <div class="dash-tax-value" style="color:${totalToRemit > 0 ? 'var(--accent)' : 'var(--status-green)'}">${fmtMoney(Math.abs(totalToRemit))}</div>
-        ${totalToRemit < 0 ? `<small style="color:var(--status-green)">${t("tax_credit_to_recover")}</small>` : ""}
+        ${totalToRemit < 0 ? `<small class="text-success">${t("tax_credit_to_recover")}</small>` : ""}
       </div>
     </div>
     <div class="dash-tax-breakdown">
@@ -431,21 +431,21 @@ function renderTaxes() {
       <table style="margin-bottom:14px">
         <thead><tr>
           <th></th>
-          <th style="text-align:right">${t("tax_collected")}</th>
-          <th style="text-align:right">${t("tax_paid")}</th>
-          <th style="text-align:right">${t("tax_to_remit")}</th>
+          <th class="text-right">${t("tax_collected")}</th>
+          <th class="text-right">${t("tax_paid")}</th>
+          <th class="text-right">${t("tax_to_remit")}</th>
         </tr></thead>
         <tbody>
           <tr>
             <td><strong>TPS (5%)</strong></td>
-            <td style="text-align:right;color:var(--status-green)">${fmtMoney(taxes.tpsCollected)}</td>
-            <td style="text-align:right;color:var(--status-red)">${fmtMoney(taxes.tpsPaid)}</td>
+            <td class="text-right text-success">${fmtMoney(taxes.tpsCollected)}</td>
+            <td class="text-right text-danger">${fmtMoney(taxes.tpsPaid)}</td>
             <td style="text-align:right;font-family:var(--font-heading);font-weight:700;font-style:italic;color:var(--accent)">${fmtMoney(taxes.tpsToRemit)}</td>
           </tr>
           <tr>
             <td><strong>TVQ (9.975%)</strong></td>
-            <td style="text-align:right;color:var(--status-green)">${fmtMoney(taxes.tvqCollected)}</td>
-            <td style="text-align:right;color:var(--status-red)">${fmtMoney(taxes.tvqPaid)}</td>
+            <td class="text-right text-success">${fmtMoney(taxes.tvqCollected)}</td>
+            <td class="text-right text-danger">${fmtMoney(taxes.tvqPaid)}</td>
             <td style="text-align:right;font-family:var(--font-heading);font-weight:700;font-style:italic;color:var(--accent)">${fmtMoney(taxes.tvqToRemit)}</td>
           </tr>
           <tr style="background:var(--surface2)">

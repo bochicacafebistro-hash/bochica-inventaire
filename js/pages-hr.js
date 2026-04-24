@@ -128,7 +128,7 @@ function renderEmployes() {
     </div>
 
     ${employees.length === 0
-      ? `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("users", 36)}</div>Aucun employé enregistré. Ajoutez-en un pour commencer.</div>`
+      ? `<div class="empty"><div class="empty-state-icon">${icon("users", 36)}</div>Aucun employé enregistré. Ajoutez-en un pour commencer.</div>`
       : `
       <!-- ══ Sélecteur de semaine + ratio + boutons ══ -->
       <div class="schedule-header">
@@ -340,7 +340,7 @@ function renderEmployes() {
               <button onclick="openEmployeeModal('${emp.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
               <button onclick="duplicateItem('employees','${emp.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
               <div class="sep"></div>
-              <button style="color:var(--status-red)" onclick="askDelete('employees','${emp.id}','${esc(emp.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
+              <button class="text-danger" onclick="askDelete('employees','${emp.id}','${esc(emp.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
             </div></div>
           </div>
         </div>`).join("")}
@@ -787,7 +787,7 @@ function initCoverageChart() {
   if (!anyShift) {
     const wrap = canvas.parentNode;
     wrap.innerHTML = `<div class="empty coverage-empty">
-      <div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("bar-chart", 36)}</div>
+      <div class="empty-state-icon">${icon("bar-chart", 36)}</div>
       Aucun quart saisi pour cette semaine ${daySection !== "all" ? `(section ${daySection})` : ""}.<br>
       <span style="font-size:13px;color:var(--text3)">Ajoutez des horaires ci-dessus pour voir le graphique.</span>
     </div>`;

@@ -18,22 +18,22 @@ function renderInventaire() {
     const okCount = activeProducts.filter(p => getStatus(p) === "green").length;
     const redCount = activeProducts.filter(p => getStatus(p) === "red").length;
     const yellowCount = activeProducts.filter(p => getStatus(p) === "yellow").length;
-    h += `<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
-      <div style="background:var(--surface);border:0.5px solid var(--border);border-radius:10px;padding:14px 16px">
-        <div style="font-size:22px;font-weight:700;color:var(--accent)">${activeProducts.length}</div>
-        <div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px">${t("stock_products")}</div>
+    h += `<div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-card__value">${activeProducts.length}</div>
+        <div class="stat-card__label">${t("stock_products")}</div>
       </div>
-      <div style="background:var(--status-red-bg);border:0.5px solid var(--status-red-border);border-radius:10px;padding:14px 16px">
-        <div style="font-size:22px;font-weight:700;color:var(--status-red)">${redCount}</div>
-        <div style="font-size:10px;color:var(--status-red);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">${t("stock_to_order")}</div>
+      <div class="stat-card stat-card--red">
+        <div class="stat-card__value">${redCount}</div>
+        <div class="stat-card__label">${t("stock_to_order")}</div>
       </div>
-      <div style="background:var(--status-yellow-bg);border:0.5px solid var(--status-yellow-border);border-radius:10px;padding:14px 16px">
-        <div style="font-size:22px;font-weight:700;color:var(--status-yellow)">${yellowCount}</div>
-        <div style="font-size:10px;color:var(--status-yellow);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">${t("stock_low")}</div>
+      <div class="stat-card stat-card--yellow">
+        <div class="stat-card__value">${yellowCount}</div>
+        <div class="stat-card__label">${t("stock_low")}</div>
       </div>
-      <div style="background:var(--status-green-bg);border:0.5px solid var(--status-green-border);border-radius:10px;padding:14px 16px">
-        <div style="font-size:22px;font-weight:700;color:var(--status-green)">${okCount}</div>
-        <div style="font-size:10px;color:var(--status-green);opacity:.7;text-transform:uppercase;letter-spacing:.5px;margin-top:3px">${t("stock_in_stock")}</div>
+      <div class="stat-card stat-card--green">
+        <div class="stat-card__value">${okCount}</div>
+        <div class="stat-card__label">${t("stock_in_stock")}</div>
       </div>
     </div>`;
   }
@@ -71,7 +71,7 @@ function renderInventaire() {
 
   if (!filtered.length) {
     const emptyMsg = searchQuery ? t("no_results") : showArchived ? t("no_archived") : t("no_products_section");
-    h += `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon(searchQuery ? "search" : "package", 36)}</div>${emptyMsg}</div>`;
+    h += `<div class="empty"><div class="empty-state-icon">${icon(searchQuery ? "search" : "package", 36)}</div>${emptyMsg}</div>`;
   } else if (isMobile) {
     filtered.forEach(p => { h += buildInvCard(p, true, false); });
   } else {
@@ -93,7 +93,7 @@ function renderInventaire() {
         </td>
         <td><span style="font-weight:700;color:${borderColor}">${stock}</span></td>
         <td>${!showArchived ? `<input class="stock-input" type="number" placeholder="${t(`qty_remaining_ph`)}" id="si_${p.id}" style="width:100px" onkeydown="if(event.key==='Enter')commitStock('${p.id}','si_${p.id}')" onblur="commitStock('${p.id}','si_${p.id}')"/>` : "—"}</td>
-        <td style="text-align:center">${p.minimum || 0}</td>
+        <td class="text-center">${p.minimum || 0}</td>
         <td style="font-size:13px;color:var(--text2)">${sup ? sup.name : "—"}</td>
         <td><span class="badge-pill ${st}">${statusLabel(st)}</span></td>
         <td style="font-weight:600;color:var(--accent)">${orderLabel(p)}${p.orderUnit === "boîte" ? `<div style="font-size:11px;color:var(--text3)">${(p.orderQty || 0) * (p.unitsPerBox || 1)} ${t("unit_units")}</div>` : ""}</td>
@@ -104,7 +104,7 @@ function renderInventaire() {
           <button onclick="openMoveModal('${p.id}');closeAllDrops()">${icon("folder", 14)} ${t("dropdown_change_cat")}</button>
           <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${icon(p.archived ? "upload" : "archive", 14)} ${p.archived ? t("dropdown_restore") : t("dropdown_archive")}</button>
           <div class="sep"></div>
-          <button style="color:var(--status-red)" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
+          <button class="text-danger" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
         </div></div></td>` : ""}
       </tr>`;
     });
@@ -144,7 +144,7 @@ function buildInvCard(p, showInput, showOrderBtn) {
             <button onclick="openMoveModal('${p.id}');closeAllDrops()">${icon("folder", 14)} ${t("dropdown_change_cat")}</button>
             <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${icon(p.archived ? "upload" : "archive", 14)} ${p.archived ? t("dropdown_restore") : t("dropdown_archive")}</button>
             <div class="sep"></div>
-            <button style="color:var(--status-red)" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
+            <button class="text-danger" onclick="askDelete('products','${p.id}','${esc(p.name)}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
           </div>
         </div>
       ` : ""}

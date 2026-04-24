@@ -86,16 +86,16 @@ function renderDepenses() {
   // Month picker
   let monthPicker = "";
   if (activeExpensePeriod === "mois") {
-    monthPicker = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap">
-      <button onclick="changeExpenseMonth(-1)" style="border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text)">${icon("chevron-left", 14)}</button>
-      <select onchange="setExpenseMonthYear(this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;background:var(--surface);color:var(--text);font-size:14px">
+    monthPicker = `<div class="month-picker">
+      <button class="month-picker__btn" onclick="changeExpenseMonth(-1)">${icon("chevron-left", 14)}</button>
+      <select onchange="setExpenseMonthYear(this.value)">
         ${Array.from({length:12},(_,i)=>`<option value="${i}" ${i===selectedExpenseMonth?"selected":""}>${MONTHS_FR[i]}</option>`).join("")}
       </select>
-      <select onchange="setExpenseYear(this.value)" style="border:1px solid var(--border);border-radius:6px;padding:4px 10px;background:var(--surface);color:var(--text);font-size:14px">
+      <select onchange="setExpenseYear(this.value)">
         ${[now.getFullYear()-1, now.getFullYear(), now.getFullYear()+1].map(y=>`<option value="${y}" ${y===selectedExpenseYear?"selected":""}>${y}</option>`).join("")}
       </select>
-      <button onclick="changeExpenseMonth(1)" style="border:1px solid var(--border);background:var(--surface);border-radius:6px;padding:4px 10px;cursor:pointer;color:var(--text)">${icon("chevron-right", 14)}</button>
-      <span style="font-size:13px;color:var(--text3)">${MONTHS_FR[selectedExpenseMonth]} ${selectedExpenseYear}</span>
+      <button class="month-picker__btn" onclick="changeExpenseMonth(1)">${icon("chevron-right", 14)}</button>
+      <span class="month-picker__label">${MONTHS_FR[selectedExpenseMonth]} ${selectedExpenseYear}</span>
     </div>`;
   }
 
@@ -187,14 +187,14 @@ function renderDepenses() {
         <td style="white-space:nowrap;font-size:12px;color:var(--text2)">${fmtRevenuePeriod(r) || r.date || ""}</td>
         <td><strong>${r.description||""}</strong></td>
         <td style="font-weight:700;color:var(--status-green)">${fmtMoney(r.amount)}</td>
-        <td style="color:var(--text3)">${r.tps?fmtMoney(r.tps):"—"}</td>
-        <td style="color:var(--text3)">${r.tvq?fmtMoney(r.tvq):"—"}</td>
+        <td class="text-muted">${r.tps?fmtMoney(r.tps):"—"}</td>
+        <td class="text-muted">${r.tvq?fmtMoney(r.tvq):"—"}</td>
         <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('rev${r.id}')">${icon("more-vertical", 16)}</button>
           <div class="dropdown" id="drop-rev${r.id}">
             <button onclick="openRevenueModal('${r.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
             <button onclick="duplicateItem('revenues','${r.id}','description');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
             <div class="sep"></div>
-            <button style="color:var(--status-red)" onclick="askDelete('revenues','${r.id}','${esc(r.description||"")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
+            <button class="text-danger" onclick="askDelete('revenues','${r.id}','${esc(r.description||"")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
           </div></div></td>
       </tr>`).join("")}</tbody></table>
     </div>` : ""}
@@ -214,15 +214,15 @@ function renderDepenses() {
               <td><span class="badge-pill blue">${e.category||""}</span></td>
               <td><span class="badge-pill ${type==="fixe"?"green":"yellow"}">${type==="fixe"?"🔒 Fixe":"📊 Variable"}</span></td>
               <td style="font-weight:700;color:var(--accent)">${fmtMoney(e.amount)}</td>
-              <td style="color:var(--text3)">${e.tps?fmtMoney(e.tps):"—"}</td>
-              <td style="color:var(--text3)">${e.tvq?fmtMoney(e.tvq):"—"}</td>
+              <td class="text-muted">${e.tps?fmtMoney(e.tps):"—"}</td>
+              <td class="text-muted">${e.tvq?fmtMoney(e.tvq):"—"}</td>
               <td style="font-weight:700">${fmtMoney(total)}</td>
               <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('exp${e.id}')">${icon("more-vertical", 16)}</button>
                 <div class="dropdown" id="drop-exp${e.id}">
                   <button onclick="openExpenseModal('${e.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
                   <button onclick="duplicateItem('expenses','${e.id}','description');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
                   <div class="sep"></div>
-                  <button style="color:var(--status-red)" onclick="askDelete('expenses','${e.id}','${esc(e.supplier||e.description||"")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
+                  <button class="text-danger" onclick="askDelete('expenses','${e.id}','${esc(e.supplier||e.description||"")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
                 </div></div></td>
             </tr>`;
           }).join("")}

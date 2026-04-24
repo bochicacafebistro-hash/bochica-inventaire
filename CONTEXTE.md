@@ -288,6 +288,19 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 24 avril 2026 — Cohérence design + fix bugs (v3.2.1 → v3.3.0) 🎨
+- **2 bugs pré-existants corrigés** (v3.2.1) :
+  - `autoApplyFixedExpenses` : `t.xxx` → `tpl.xxx` (les frais fixes mensuels s'appliquent maintenant correctement)
+  - `openFixedTemplatesModal` : même fix sur la boucle `.map(tpl => …)`
+- **Phase 2 du plan d'audit — migration inline styles** (v3.3.0) :
+  - 25 nouvelles classes CSS utilitaires : `.text-muted`, `.text-secondary`, `.text-accent`, `.text-danger`, `.text-warning`, `.text-success`, `.text-left/center/right`, `.flex-1`, `.flex-row/col/center/between`, `.items-start/center`, `.gap-1..4`, `.mt-1..4`, `.mb-1..4`, `.fs-xs..lg`, `.font-*`, `.fw-*`, `.w-full`, `.empty-state-icon`, `.item-meta`
+  - 6 nouvelles classes spécifiques : `.stats-grid`, `.stat-card` (+ variantes `--red/yellow/green`), `.month-picker`, `.month-picker__btn`, `.month-picker__label`
+  - **67 inline styles migrés** vers des classes (282 → 215 restants)
+  - Les 215 restants contiennent des valeurs dynamiques (couleurs interpolées, displays toggle, dimensions très spécifiques) — conservés en inline intentionnellement
+  - Stats cards inventaire refactorées complètement
+  - Sélecteur mois/année des dépenses refactor en `.month-picker`
+  - Empty states unifiés via `.empty-state-icon`
+
 ### 24 avril 2026 — Refactor code (v3.2.0) 🧱
 - **Découpage de `pages-admin.js`** (3570 lignes) en 4 modules par domaine métier :
   - `pages-hr.js` (1018 L) : Employés, Horaires, Coverage chart, imports, salaires fixes

@@ -129,7 +129,7 @@ function updateRecvPreview() {
   const diff = units - expected;
   const el = document.getElementById("recv-preview");
   if (el) el.innerHTML = `Ajouter <strong>${units} unité${units !== 1 ? "s" : ""}</strong> → Nouveau stock : <strong>${newStock}</strong>
-    ${diff < 0 ? `<br><span style="color:var(--status-red)">▼ ${Math.abs(diff)} unités de moins que prévu</span>` : diff > 0 ? `<br><span style="color:var(--status-green)">▲ ${diff} unités de plus que prévu</span>` : ""}`;
+    ${diff < 0 ? `<br><span class="text-danger">▼ ${Math.abs(diff)} unités de moins que prévu</span>` : diff > 0 ? `<br><span class="text-success">▲ ${diff} unités de plus que prévu</span>` : ""}`;
 }
 
 async function confirmReceive() {

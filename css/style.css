@@ -283,6 +283,164 @@ h6{font-size:15px;letter-spacing:.1em;text-transform:uppercase}
   .toast--leaving{transform:translateY(-120%)}
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   CLASSES UTILITAIRES — pour remplacer les inline styles communs
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Couleurs de texte */
+.text-muted    { color: var(--text3) !important; }
+.text-secondary{ color: var(--text2) !important; }
+.text-accent   { color: var(--accent) !important; }
+.text-danger   { color: var(--status-red) !important; }
+.text-warning  { color: var(--status-yellow) !important; }
+.text-success  { color: var(--status-green) !important; }
+
+/* Alignements */
+.text-left   { text-align: left; }
+.text-center { text-align: center; }
+.text-right  { text-align: right; }
+
+/* Flex helpers */
+.flex-1      { flex: 1; min-width: 0; }
+.flex-row    { display: flex; flex-direction: row; }
+.flex-col    { display: flex; flex-direction: column; }
+.flex-center { display: flex; align-items: center; justify-content: center; }
+.flex-between{ display: flex; align-items: center; justify-content: space-between; }
+.items-start { align-items: flex-start; }
+.items-center{ align-items: center; }
+.gap-1 { gap: var(--sp-1); }
+.gap-2 { gap: var(--sp-2); }
+.gap-3 { gap: var(--sp-3); }
+.gap-4 { gap: var(--sp-4); }
+
+/* Marges pour les cas fréquents */
+.mt-1 { margin-top: var(--sp-1); }
+.mt-2 { margin-top: var(--sp-2); }
+.mt-3 { margin-top: var(--sp-3); }
+.mt-4 { margin-top: var(--sp-4); }
+.mb-1 { margin-bottom: var(--sp-1); }
+.mb-2 { margin-bottom: var(--sp-2); }
+.mb-3 { margin-bottom: var(--sp-3); }
+.mb-4 { margin-bottom: var(--sp-4); }
+
+/* Tailles de police (rare — privilégier les tokens globaux) */
+.fs-xs   { font-size: var(--fs-xs); }
+.fs-sm   { font-size: var(--fs-sm); }
+.fs-base { font-size: var(--fs-base); }
+.fs-md   { font-size: var(--fs-md); }
+.fs-lg   { font-size: var(--fs-lg); }
+
+/* Fontes */
+.font-body    { font-family: var(--font-body); }
+.font-heading { font-family: var(--font-heading); }
+.font-mono    { font-family: var(--font-mono); }
+.fw-500 { font-weight: 500; }
+.fw-600 { font-weight: 600; }
+.fw-700 { font-weight: 700; }
+
+/* Largeur / hauteur */
+.w-full { width: 100%; }
+
+/* Empty state avec icône centrée (utilisé sur plusieurs pages) */
+.empty-state-icon {
+  margin-bottom: var(--sp-3);
+  color: var(--text3);
+  display: flex;
+  justify-content: center;
+}
+
+/* Grille de 4 stat cards (inventaire, dashboard) */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  margin-bottom: 18px;
+}
+@media (max-width: 768px) {
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Carte statistique (compteur + label) */
+.stat-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+.stat-card__value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.stat-card__label {
+  font-size: 10px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin-top: 3px;
+}
+/* Variantes par statut */
+.stat-card--red    { background: var(--status-red-bg);    border-color: var(--status-red-border); }
+.stat-card--red    .stat-card__value { color: var(--status-red); }
+.stat-card--red    .stat-card__label { color: var(--status-red); opacity: .7; }
+.stat-card--yellow { background: var(--status-yellow-bg); border-color: var(--status-yellow-border); }
+.stat-card--yellow .stat-card__value { color: var(--status-yellow); }
+.stat-card--yellow .stat-card__label { color: var(--status-yellow); opacity: .7; }
+.stat-card--green  { background: var(--status-green-bg);  border-color: var(--status-green-border); }
+.stat-card--green  .stat-card__value { color: var(--status-green); }
+.stat-card--green  .stat-card__label { color: var(--status-green); opacity: .7; }
+
+/* Sélecteur de mois/année (Dépenses, Revenus) */
+.month-picker {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  margin-bottom: var(--sp-4);
+  flex-wrap: wrap;
+}
+.month-picker__btn {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  cursor: pointer;
+  color: var(--text);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-body);
+  transition: var(--transition-fast);
+}
+.month-picker__btn:hover { background: var(--surface2); border-color: var(--text3); }
+.month-picker__label {
+  font-family: var(--font-heading);
+  font-size: 22px;
+  color: var(--text);
+  min-width: 140px;
+  text-align: center;
+  letter-spacing: .02em;
+}
+.month-picker select {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-md);
+  padding: 4px 10px;
+  color: var(--text);
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+/* Petite meta-info sous un titre (rôle, catégorie, etc.) */
+.item-meta {
+  font-size: var(--fs-sm);
+  color: var(--text3);
+  margin-top: 2px;
+}
+.item-meta--compact {
+  font-size: var(--fs-xs);
+}
+
 /* Titres génériques pour pages (cohérence avec échelle Bebas) */
 .page-title{
   font-family:var(--font-heading);

@@ -15,7 +15,7 @@ function renderMenu() {
     </div>
     <div class="sec-tabs">${cats.map(c => `<button class="sec-btn ${activeMenuCat === c ? "active" : ""}" onclick="setMenuCat('${c}')">${c}</button>`).join("")}</div>
     ${filtered.length === 0
-      ? `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("utensils", 36)}</div>Aucun item dans cette catégorie.</div>`
+      ? `<div class="empty"><div class="empty-state-icon">${icon("utensils", 36)}</div>Aucun item dans cette catégorie.</div>`
       : `<div class="recipes-grid">${filtered.map(m => {
           const fc = computeRecipeFoodCost(m.recipe || []);
           const hasRec = Array.isArray(m.recipe) && m.recipe.length > 0;
@@ -38,11 +38,11 @@ function renderMenu() {
 
           return `<div class="recipe-card ${cardClass}">
             <div class="recipe-card__head">
-              <div style="flex:1;min-width:0">
+              <div class="flex-1">
                 <h3 class="recipe-card__name">${m.name || "?"}</h3>
                 <div class="recipe-card__cat">
                   ${m.category || ""}
-                  ${m.available === false ? ` · <span style="color:var(--status-yellow)">${t("menu_unavailable_short")}</span>` : ""}
+                  ${m.available === false ? ` · <span class="text-warning">${t("menu_unavailable_short")}</span>` : ""}
                 </div>
               </div>
               <div class="menu-wrap">
@@ -52,7 +52,7 @@ function renderMenu() {
                   <button onclick="duplicateItem('menu','${m.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
                   <button onclick="toggleMenuAvailable('${m.id}',${m.available !== false});closeAllDrops()">${icon(m.available === false ? "check" : "x", 14)} ${m.available === false ? t("menu_available") : t("menu_unavailable")}</button>
                   <div class="sep"></div>
-                  <button style="color:var(--status-red)" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
+                  <button class="text-danger" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
                 </div>
               </div>
             </div>
@@ -62,7 +62,7 @@ function renderMenu() {
             <div class="recipe-card__metrics">
               <div class="recipe-card__metric">
                 <div class="recipe-card__metric-label">${t("menu_food_cost")}</div>
-                <div class="recipe-card__metric-value" style="color:var(--text2)">${hasRec ? fmtMoney(fc) : "—"}</div>
+                <div class="recipe-card__metric-value text-secondary">${hasRec ? fmtMoney(fc) : "—"}</div>
               </div>
               <div class="recipe-card__metric">
                 <div class="recipe-card__metric-label">${t("menu_price")}</div>
@@ -76,7 +76,7 @@ function renderMenu() {
 
             ${hasRec ? `
               <div class="recipe-card__ingredients">
-                ${visibleIng.join(" · ")}${extraCount > 0 ? ` <span style="color:var(--text3)">+${extraCount}</span>` : ""}
+                ${visibleIng.join(" · ")}${extraCount > 0 ? ` <span class="text-muted">+${extraCount}</span>` : ""}
               </div>
             ` : `
               <div class="recipe-card__no-recipe">
@@ -282,7 +282,7 @@ function renderFournisseurs() {
                   <button onclick="openSupplierModal('${s.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
                   <button onclick="duplicateItem('suppliers','${s.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
                   <div class="sep"></div>
-                  <button style="color:var(--status-red)" onclick="askDelete('suppliers','${s.id}','${esc(s.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
+                  <button class="text-danger" onclick="askDelete('suppliers','${s.id}','${esc(s.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
                 </div></div>` : ""}
             </div>
             ${linked.length ? `<div style="margin-top:12px;border-top:1px solid var(--border);padding-top:10px">
@@ -377,7 +377,7 @@ function renderIngredients() {
 
   if (totalIngredients === 0) {
     h += `<div class="empty">
-      <div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("utensils", 48)}</div>
+      <div class="empty-state-icon">${icon("utensils", 48)}</div>
       ${t("ing_no_ingredients")}
     </div>`;
     return h + `</div>`;
@@ -416,7 +416,7 @@ function renderIngredients() {
               <button onclick="openIngredientModal('${ing.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
               <button onclick="duplicateItem('ingredients','${ing.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
               <div class="sep"></div>
-              <button style="color:var(--status-red)" onclick="askDelete('ingredients','${ing.id}','${esc(ing.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
+              <button class="text-danger" onclick="askDelete('ingredients','${ing.id}','${esc(ing.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
             </div>
           </div>` : ""}
         </div>`;
@@ -437,7 +437,7 @@ function renderIngredients() {
       items.forEach(ing => {
         h += `<tr>
           <td><strong>${esc(ing.name || "?")}</strong></td>
-          <td style="color:var(--text2)">${esc(ing.unit || "—")}</td>
+          <td class="text-secondary">${esc(ing.unit || "—")}</td>
           <td style="text-align:right;font-family:var(--font-heading);font-weight:700;font-style:italic;color:var(--accent)">${fmtMoney(ing.costPerUnit || 0)}</td>
           <td style="color:var(--text3);font-size:12px;font-style:italic">${esc(ing.notes || "")}</td>
           ${isAdmin ? `<td><div class="menu-wrap">
@@ -446,7 +446,7 @@ function renderIngredients() {
               <button onclick="openIngredientModal('${ing.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
               <button onclick="duplicateItem('ingredients','${ing.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
               <div class="sep"></div>
-              <button style="color:var(--status-red)" onclick="askDelete('ingredients','${ing.id}','${esc(ing.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
+              <button class="text-danger" onclick="askDelete('ingredients','${ing.id}','${esc(ing.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
             </div>
           </div></td>` : ""}
         </tr>`;
@@ -562,7 +562,7 @@ function renderRecettes() {
 
   if (filtered.length === 0) {
     h += `<div class="empty">
-      <div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("file-text", 48)}</div>
+      <div class="empty-state-icon">${icon("file-text", 48)}</div>
       ${t("rec_no_recipes")}
     </div>`;
   } else {
@@ -573,7 +573,7 @@ function renderRecettes() {
 
       h += `<div class="recipe-book-card" onclick="openRecipeViewModal('${r.id}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();openRecipeViewModal('${r.id}')}">
         <div class="recipe-book-card__head">
-          <div style="flex:1;min-width:0">
+          <div class="flex-1">
             <h3 class="recipe-book-card__name">${esc(r.name || "?")}</h3>
             ${r.category ? `<div class="recipe-book-card__cat">${tRecipeCat(r.category)}</div>` : ""}
           </div>
@@ -583,7 +583,7 @@ function renderRecettes() {
               <button onclick="openRecipeModal('${r.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
               <button onclick="duplicateItem('recipes','${r.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
               <div class="sep"></div>
-              <button style="color:var(--status-red)" onclick="askDelete('recipes','${r.id}','${esc(r.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
+              <button class="text-danger" onclick="askDelete('recipes','${r.id}','${esc(r.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
             </div>
           </div>` : ""}
         </div>
@@ -612,7 +612,7 @@ function openRecipeViewModal(id) {
   showModal(`<div class="modal" style="max-width:640px;padding:0">
     <div class="recipe-view__header">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">
-        <div style="flex:1;min-width:0">
+        <div class="flex-1">
           <h2 class="recipe-view__title">${esc(r.name || "?")}</h2>
           ${r.description ? `<p class="recipe-view__desc">${esc(r.description)}</p>` : ""}
           ${r.category ? `<span class="recipe-view__cat">${tRecipeCat(r.category)}</span>` : ""}

@@ -69,7 +69,7 @@ function renderHistorique() {
       <input type="text" placeholder="${t(`history_filter`)}" value="${logFilter}" oninput="setLogFilter(this.value)"/>
     </div></div>
     ${filtered.length === 0
-      ? `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("history", 36)}</div>${t("history_empty")}</div>`
+      ? `<div class="empty"><div class="empty-state-icon">${icon("history", 36)}</div>${t("history_empty")}</div>`
       : `<div class="table-wrap"><div style="padding:4px 0">${filtered.map(l => `
         <div class="log-item" style="padding:10px 16px">
           <div style="display:flex;justify-content:space-between;gap:8px">
@@ -117,7 +117,7 @@ function renderTaches() {
                 <button onclick="openTaskModal('${tk.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
                 <button onclick="duplicateItem('tasks','${tk.id}','title');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
                 <div class="sep"></div>
-                <button style="color:var(--status-red)" onclick="askDelete('tasks','${tk.id}','${esc(tk.title || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
+                <button class="text-danger" onclick="askDelete('tasks','${tk.id}','${esc(tk.title || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
               </div></div>` : ""}
           </div>
         </div>`).join("")}

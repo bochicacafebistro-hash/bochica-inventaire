@@ -157,7 +157,7 @@ function renderPage() {
   // Blocage final : si rôle sans accès à la page courante, message d'erreur
   if (!canAccess(activePage)) {
     pc.innerHTML = `<div class="page"><div class="empty">
-      <div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("alert", 36)}</div>
+      <div class="empty-state-icon">${icon("alert", 36)}</div>
       Accès non autorisé pour votre rôle. <br/>
       <button class="btn btn-primary" style="margin-top:16px" onclick="goHome()">Retour à l'accueil</button>
     </div></div>`;
