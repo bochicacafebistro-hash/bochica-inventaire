@@ -115,6 +115,7 @@ function renderTaches() {
               <button class="dots-btn" onclick="toggleDrop('tk${tk.id}')" aria-label="${t(`actions`)}">${icon("more-vertical", 16)}</button>
               <div class="dropdown" id="drop-tk${tk.id}">
                 <button onclick="openTaskModal('${tk.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
+                <button onclick="duplicateItem('tasks','${tk.id}','title');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
                 <div class="sep"></div>
                 <button style="color:var(--status-red)" onclick="askDelete('tasks','${tk.id}','${esc(tk.title || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
               </div></div>` : ""}

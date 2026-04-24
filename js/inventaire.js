@@ -99,6 +99,7 @@ function renderInventaire() {
         <td style="font-weight:600;color:var(--accent)">${orderLabel(p)}${p.orderUnit === "boîte" ? `<div style="font-size:11px;color:var(--text3)">${(p.orderQty || 0) * (p.unitsPerBox || 1)} ${t("unit_units")}</div>` : ""}</td>
         ${isAdmin ? `<td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('${p.id}')" aria-label="${t(`actions`)}">${icon("more-vertical", 16)}</button><div class="dropdown" id="drop-${p.id}">
           <button onclick="openProductModal('${p.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+          <button onclick="duplicateItem('products','${p.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
           <button onclick="openNoteModal('${p.id}');closeAllDrops()">${icon("file-text", 14)} ${t("dropdown_note")}</button>
           <button onclick="openMoveModal('${p.id}');closeAllDrops()">${icon("folder", 14)} ${t("dropdown_change_cat")}</button>
           <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${icon(p.archived ? "upload" : "archive", 14)} ${p.archived ? t("dropdown_restore") : t("dropdown_archive")}</button>
@@ -138,6 +139,7 @@ function buildInvCard(p, showInput, showOrderBtn) {
           <button class="dots-btn" onclick="toggleDrop('m${p.id}')" aria-label="${t(`actions`)}">${icon("more-vertical", 18)}</button>
           <div class="dropdown" id="drop-m${p.id}">
             <button onclick="openProductModal('${p.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+            <button onclick="duplicateItem('products','${p.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
             <button onclick="openNoteModal('${p.id}');closeAllDrops()">${icon("file-text", 14)} ${t("dropdown_note")}</button>
             <button onclick="openMoveModal('${p.id}');closeAllDrops()">${icon("folder", 14)} ${t("dropdown_change_cat")}</button>
             <button onclick="doToggleArchive('${p.id}','${esc(p.name)}',${!!p.archived});closeAllDrops()">${icon(p.archived ? "upload" : "archive", 14)} ${p.archived ? t("dropdown_restore") : t("dropdown_archive")}</button>

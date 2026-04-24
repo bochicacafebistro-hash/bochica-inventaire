@@ -49,6 +49,7 @@ function renderEmployes() {
             <div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('emp${emp.id}')">${icon("more-vertical", 16)}</button>
             <div class="dropdown" id="drop-emp${emp.id}">
               <button onclick="openEmployeeModal('${emp.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
+              <button onclick="duplicateItem('employees','${emp.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
               <div class="sep"></div>
               <button style="color:var(--status-red)" onclick="askDelete('employees','${emp.id}','${esc(emp.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
             </div></div>
@@ -386,6 +387,7 @@ function renderDepenses() {
         <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('rev${r.id}')">${icon("more-vertical", 16)}</button>
           <div class="dropdown" id="drop-rev${r.id}">
             <button onclick="openRevenueModal('${r.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
+            <button onclick="duplicateItem('revenues','${r.id}','description');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
             <div class="sep"></div>
             <button style="color:var(--status-red)" onclick="askDelete('revenues','${r.id}','${esc(r.description||"")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
           </div></div></td>
@@ -413,6 +415,7 @@ function renderDepenses() {
               <td><div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('exp${e.id}')">${icon("more-vertical", 16)}</button>
                 <div class="dropdown" id="drop-exp${e.id}">
                   <button onclick="openExpenseModal('${e.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
+                  <button onclick="duplicateItem('expenses','${e.id}','description');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
                   <div class="sep"></div>
                   <button style="color:var(--status-red)" onclick="askDelete('expenses','${e.id}','${esc(e.supplier||e.description||"")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
                 </div></div></td>
@@ -850,6 +853,7 @@ function renderMenu() {
                 <button class="dots-btn" onclick="toggleDrop('mn${m.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
                 <div class="dropdown" id="drop-mn${m.id}">
                   <button onclick="openMenuModal('${m.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+                  <button onclick="duplicateItem('menu','${m.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
                   <button onclick="toggleMenuAvailable('${m.id}',${m.available !== false});closeAllDrops()">${icon(m.available === false ? "check" : "x", 14)} ${m.available === false ? t("menu_available") : t("menu_unavailable")}</button>
                   <div class="sep"></div>
                   <button style="color:var(--status-red)" onclick="askDelete('menu','${m.id}','${esc(m.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
@@ -1080,6 +1084,7 @@ function renderFournisseurs() {
               ${isAdmin ? `<div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('sup${s.id}')">${icon("more-vertical", 16)}</button>
                 <div class="dropdown" id="drop-sup${s.id}">
                   <button onclick="openSupplierModal('${s.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
+                  <button onclick="duplicateItem('suppliers','${s.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
                   <div class="sep"></div>
                   <button style="color:var(--status-red)" onclick="askDelete('suppliers','${s.id}','${esc(s.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
                 </div></div>` : ""}
@@ -1738,6 +1743,7 @@ function renderIngredients() {
             <button class="dots-btn" onclick="toggleDrop('ing${ing.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
             <div class="dropdown" id="drop-ing${ing.id}">
               <button onclick="openIngredientModal('${ing.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+              <button onclick="duplicateItem('ingredients','${ing.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
               <div class="sep"></div>
               <button style="color:var(--status-red)" onclick="askDelete('ingredients','${ing.id}','${esc(ing.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
             </div>
@@ -1767,6 +1773,7 @@ function renderIngredients() {
             <button class="dots-btn" onclick="toggleDrop('ing${ing.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
             <div class="dropdown" id="drop-ing${ing.id}">
               <button onclick="openIngredientModal('${ing.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+              <button onclick="duplicateItem('ingredients','${ing.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
               <div class="sep"></div>
               <button style="color:var(--status-red)" onclick="askDelete('ingredients','${ing.id}','${esc(ing.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
             </div>
@@ -1903,6 +1910,7 @@ function renderRecettes() {
             <button class="dots-btn" onclick="toggleDrop('rec${r.id}')" aria-label="${t("actions")}">${icon("more-vertical", 16)}</button>
             <div class="dropdown" id="drop-rec${r.id}">
               <button onclick="openRecipeModal('${r.id}');closeAllDrops()">${icon("pencil", 14)} ${t("dropdown_edit")}</button>
+              <button onclick="duplicateItem('recipes','${r.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
               <div class="sep"></div>
               <button style="color:var(--status-red)" onclick="askDelete('recipes','${r.id}','${esc(r.name || "")}');closeAllDrops()">${icon("trash", 14)} ${t("delete")}</button>
             </div>

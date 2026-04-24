@@ -209,8 +209,67 @@ function applyDark() {
 }
 
 // ── Dropdown ──────────────────────────────────────────
-function toggleDrop(id) { closeAllDrops(); if (openDropId === id) { openDropId = null; return; } const el = document.getElementById("drop-" + id); if (el) { el.classList.add("open"); openDropId = id; } }
+function toggleDrop(id) {
+  // Si le même dropdown est déjà ouvert, on le ferme (toggle)
+  if (openDropId === id) { closeAllDrops(); return; }
+  closeAllDrops();
+  const el = document.getElementById("drop-" + id);
+  if (el) { el.classList.add("open"); openDropId = id; }
+}
 function closeAllDrops() { document.querySelectorAll(".dropdown.open").forEach(el => el.classList.remove("open")); openDropId = null; }
+
+// Fermer les dropdowns lors d'un clic extérieur (n'importe où dans la page)
+document.addEventListener("click", (e) => {
+  if (!openDropId) return;
+  const t = e.target;
+  if (!t || !t.closest) return;
+  // Si le clic est sur le bouton déclencheur (.dots-btn) ou dans un dropdown ouvert, ne rien faire
+  if (t.closest(".dots-btn") || t.closest(".dropdown")) return;
+  closeAllDrops();
+});
+// Fermer aussi avec Escape
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && openDropId) closeAllDrops();
+});
+
+// ── Duplication générique d'un document Firestore ─────
+// Clone un document en ajoutant " (Copie)" au nom et en générant un nouvel ID.
+// collection : nom de la collection Firestore (products, recipes, menu, etc.)
+// id : ID du document à dupliquer
+// nameField : champ qui contient le nom (default "name", "title" pour tasks, "description" pour expenses/revenues)
+async function duplicateItem(collection, id, nameField = "name") {
+  try {
+    const snap = await db.collection(collection).doc(id).get();
+    if (!snap.exists) { alert("Document introuvable."); return; }
+    const data = snap.data();
+    const copy = { ...data };
+    delete copy.id;
+    delete copy.createdAt;
+    delete copy.updatedAt;
+    const orig = copy[nameField] || "";
+    copy[nameField] = orig + " (Copie)";
+    copy.createdAt = firebase.firestore.FieldValue.serverTimestamp();
+    copy.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+    // Ajustements par collection
+    if (collection === "products") {
+      // Placer la copie à la fin + désarchiver
+      const maxSort = products.reduce((m, p) => Math.max(m, p.sortOrder || 0), 0);
+      copy.sortOrder = maxSort + 1;
+      copy.archived = false;
+      copy.currentStock = 0; // on ne duplique pas le stock
+    }
+    if (collection === "menu") {
+      // Par défaut, la copie est disponible
+      copy.available = copy.available !== false;
+    }
+    const nid = genId();
+    await db.collection(collection).doc(nid).set({ ...copy, id: nid });
+    await addLog(copy[nameField] || "—", "Dupliqué", `Depuis « ${orig} »`);
+  } catch (err) {
+    console.error("duplicateItem:", err);
+    alert("Erreur lors de la duplication : " + (err.message || err));
+  }
+}
 
 // ── Modal ─────────────────────────────────────────────
 function showModal(html) { document.getElementById("modals").innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()">${html}</div>`; }
