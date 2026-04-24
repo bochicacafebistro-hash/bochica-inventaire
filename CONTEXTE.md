@@ -45,17 +45,20 @@ bochica-inventaire/
 ├── css/
 │   └── style.css           ← Design system complet (2400+ lignes)
 ├── js/
-│   ├── config.js           ← Config Firebase + constantes globales
+│   ├── config.js           ← Config Firebase + AUTH_USER_EMAILS + ROLE_PERMISSIONS
 │   ├── state.js            ← Variables globales (products, allSections, etc.)
 │   ├── icons.js            ← Bibliothèque d'icônes Lucide SVG inline
 │   ├── i18n.js             ← Traductions FR/ES
-│   ├── utils.js            ← Utils, markdown parser, toolbar, duplicateItem, dropdowns
+│   ├── utils.js            ← Utils, markdown parser, toolbar, duplicateItem, dropdowns, toast()
 │   ├── inventaire.js       ← Page inventaire, stock, drag & drop produits
 │   ├── modals-produits.js  ← Modals produit, note, catégorie (drag & drop), réception
 │   ├── pages-secondaires.js ← Pages rapport, historique, tâches
-│   ├── pages-admin.js      ← Dashboard, employés, dépenses, revenus, menu, fournisseurs, ingrédients, recettes
+│   ├── pages-hr.js         ← Employés, horaires, coverage chart, salaires fixes
+│   ├── pages-finance.js    ← Dépenses, revenus, catégories, frais fixes, rapports, charts dépenses
+│   ├── pages-kitchen.js    ← Menu, fournisseurs, ingrédients, recettes
+│   ├── pages-dashboard.js  ← Dashboard, taxes, helpers taxes, autoApplyFixedExpenses
 │   ├── sidebar.js          ← Navigation, sidebar, renderPage(), goHome()
-│   ├── auth.js             ← Connexion PIN, logout, session, support clavier
+│   ├── auth.js             ← Firebase Auth, login/logout, session, rôles
 │   └── firebase-listeners.js ← Listeners Firestore temps réel
 └── images/
     ├── favicon-16x16.png
@@ -76,7 +79,10 @@ bochica-inventaire/
 <script src="js/inventaire.js"></script>
 <script src="js/modals-produits.js"></script>
 <script src="js/pages-secondaires.js"></script>
-<script src="js/pages-admin.js"></script>
+<script src="js/pages-hr.js"></script>
+<script src="js/pages-finance.js"></script>
+<script src="js/pages-kitchen.js"></script>
+<script src="js/pages-dashboard.js"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/firebase-listeners.js"></script>
@@ -281,6 +287,25 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 24 avril 2026 — Refactor code (v3.2.0) 🧱
+- **Découpage de `pages-admin.js`** (3570 lignes) en 4 modules par domaine métier :
+  - `pages-hr.js` (1018 L) : Employés, Horaires, Coverage chart, imports, salaires fixes
+  - `pages-finance.js` (1138 L) : Dépenses, Revenus, Catégories, Frais fixes, Rapports, Charts dépenses
+  - `pages-kitchen.js` (737 L) : Menu, Fournisseurs, Ingrédients, Recettes
+  - `pages-dashboard.js` (516 L) : Dashboard, Taxes, helpers taxes, autoApplyFixedExpenses
+- **Suppression** de `renderMenuAnalysisLEGACY` (~183 lignes de code mort)
+- Pas de changement fonctionnel, uniquement réorganisation
+- 2 bugs pré-existants détectés (non corrigés, à traiter séparément) :
+  - Dans `autoApplyFixedExpenses` : référence `t.supplier` au lieu de `tpl.supplier`
+  - Dans `openFixedTemplatesModal` : même confusion `t` (i18n) vs `tpl` (variable)
+
+### 24 avril 2026 — Système de toasts (v3.1.0) 💬
+- Nouvelle fonction globale `toast(message, type, duration)` dans `utils.js`
+- 35+ appels `alert()` natifs remplacés par des toasts (success/error/warning/info)
+- Nouveau conteneur `#toasts` dans `index.html`, styles `.toast*` dans `style.css`
+- Animation slide-in/out, auto-dismiss, accessible (`aria-live`, `role="alert"`)
+- Position bottom-right desktop, top-full mobile
 
 ### 24 avril 2026 — Migration Firebase Auth + règles Firestore (v3.0.0) 🔐
 - **Retrait du système SHA-256 côté client** (AUTH_ACCOUNTS, AUTH_SALT, hashPassword, verifyLogin supprimés)
