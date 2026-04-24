@@ -247,16 +247,24 @@ function applyDark() {
 }
 
 // ── Dropdown ──────────────────────────────────────────
-// Le dropdown est en position:fixed pour échapper aux overflow:hidden des parents
-// (ex: .table-wrap). On calcule les coordonnées left/top au moment de l'ouverture.
+// Le dropdown est en position:fixed ET "portaillé" dans <body> à l'ouverture.
+// Raisons :
+//  1) overflow:hidden sur un parent (ex: .table-wrap) → fixed règle ça
+//  2) transform/filter sur un parent (ex: .recipe-card:hover translateY)
+//     crée un nouveau containing block qui CASSE position:fixed.
+//     Seule solution : sortir physiquement l'élément du DOM parent.
 function toggleDrop(id) {
   if (openDropId === id) { closeAllDrops(); return; }
   closeAllDrops();
   const el = document.getElementById("drop-" + id);
   if (!el) return;
-  // Trouver le bouton déclencheur (.dots-btn) dans le même .menu-wrap
+  // Trouver le bouton déclencheur dans le même .menu-wrap AVANT de déplacer
   const wrap = el.closest(".menu-wrap");
   const btn = wrap ? wrap.querySelector(".dots-btn") : null;
+  // Portal : mémoriser la position originale puis déplacer dans body
+  el._portalParent = el.parentNode;
+  el._portalNextSibling = el.nextSibling;
+  document.body.appendChild(el);
   if (btn) positionDropdown(el, btn);
   el.classList.add("open");
   openDropId = id;
@@ -309,6 +317,18 @@ function closeAllDrops() {
     // Reset les coordonnées inline pour pas polluer le prochain affichage
     el.style.left = "";
     el.style.top = "";
+    // Remettre l'élément à sa place originale (portal reverse)
+    const parent = el._portalParent;
+    const next = el._portalNextSibling;
+    if (parent && parent.isConnected) {
+      // Parent toujours dans le DOM → on remet dedans
+      parent.insertBefore(el, next);
+    } else {
+      // Parent détruit (ex: renderPage a re-rendu) → on retire carrément
+      if (el.parentNode) el.parentNode.removeChild(el);
+    }
+    el._portalParent = null;
+    el._portalNextSibling = null;
   });
   openDropId = null;
 }

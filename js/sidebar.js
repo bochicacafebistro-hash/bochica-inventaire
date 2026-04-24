@@ -118,6 +118,9 @@ function toggleSidebar() {
 
 // ── Rendu principal ───────────────────────────────────
 function renderPage() {
+  // Fermer tout dropdown ouvert avant de re-render (sinon l'élément portaillé
+  // dans body deviendrait orphelin quand son parent est remplacé par innerHTML=...)
+  if (typeof closeAllDrops === "function" && openDropId) closeAllDrops();
   const pageMeta = {
     dashboard:   { label: t("nav_dashboard"),   icon: "bar-chart" },
     inventaire:  { label: t("nav_inventaire"),  icon: "package" },
