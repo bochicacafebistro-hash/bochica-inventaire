@@ -947,7 +947,36 @@ tr:last-child td{border-bottom:none}
   left:0;
   z-index:1;
   border-right:1px solid var(--border-strong);
+  /* Bande colorée à gauche, unique par employé (var --emp-color sur le tr) */
+  border-left:4px solid var(--emp-color, transparent);
   vertical-align:middle;
+}
+
+/* Zebra striping : alterner les lignes pour les séparer visuellement */
+.schedule-emp-row:nth-child(even) .schedule-td--emp,
+.schedule-emp-row:nth-child(even) .schedule-td--summary{
+  background:var(--surface2);
+}
+.schedule-emp-row:nth-child(even) .schedule-td--summary.schedule-td--total{
+  background:rgba(var(--accent-rgb),.16);
+}
+/* Les cellules de shifts ont leur propre couleur (rouge/vert selon rempli),
+   mais on les teinte légèrement plus sur les lignes paires pour la séparation */
+.schedule-emp-row:nth-child(even) .schedule-td--cell{
+  background:rgba(217,83,79,.12);
+}
+.schedule-emp-row:nth-child(even) .schedule-td--cell.is-filled{
+  background:rgba(125,191,102,.25);
+}
+.dark .schedule-emp-row:nth-child(even) .schedule-td--cell{background:rgba(217,83,79,.16)}
+.dark .schedule-emp-row:nth-child(even) .schedule-td--cell.is-filled{background:rgba(125,191,102,.25)}
+
+/* Hover row subtil pour meilleure scan visuelle */
+.schedule-emp-row:hover .schedule-td--emp{
+  background:var(--surface3);
+}
+.schedule-emp-row:hover:nth-child(even) .schedule-td--emp{
+  background:var(--surface3);
 }
 .schedule-emp-cell{
   display:flex;
@@ -1028,6 +1057,54 @@ tr:last-child td{border-bottom:none}
 .schedule-emp-section--other{
   background:var(--surface2);
   color:var(--text3);
+}
+
+/* Badge "FIXE" pour un employé salarié */
+.schedule-badge-fixed{
+  display:inline-block;
+  font-family:var(--font-body);
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.1em;
+  background:var(--accent);
+  color:var(--accent-text);
+  padding:1px 5px;
+  border-radius:var(--radius-sm);
+  margin-left:4px;
+  vertical-align:middle;
+}
+.schedule-fixed-hint{
+  font-family:var(--font-body);
+  font-size:10px;
+  color:var(--text3);
+  font-weight:500;
+  margin-top:2px;
+  font-style:italic;
+}
+
+/* Toggle "Employé salarié" dans la fiche */
+.emp-salaried-toggle{
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center;
+  gap:var(--sp-2);
+  cursor:pointer;
+  padding:8px 0;
+  margin-top:4px;
+}
+.emp-salaried-toggle input[type="checkbox"]{
+  width:18px;
+  height:18px;
+  accent-color:var(--accent);
+  cursor:pointer;
+  flex-shrink:0;
+  margin:0;
+}
+.emp-salaried-toggle span{
+  font-family:var(--font-body);
+  font-size:var(--fs-base);
+  color:var(--text);
+  font-weight:600;
 }
 
 /* ═══════════════════════════════════════════════════════════════

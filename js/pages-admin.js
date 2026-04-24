@@ -87,22 +87,30 @@ function renderEmployes() {
   const nCols = visibleIdx.length;
 
   // Calculs par employé sur les jours ouverts uniquement
+  // Les employés "salariés" ont un coût fixe hebdo réparti à parts égales sur les jours ouverts.
+  // Les heures réelles (shifts) sont toujours calculées pour traçabilité.
   const dayTotalsHours = new Array(nCols).fill(0);
   const dayTotalsCost = new Array(nCols).fill(0);
+  const nbOpenDays = nCols || 1;
   const empRows = employees.map(emp => {
     const shifts = emp.shifts || {};
     const rate = Number(emp.hourlyRate) || 0;
+    const isSal = !!emp.isSalaried;
+    const fixedHours = Number(emp.fixedWeeklyHours) || 0;
+    const weeklyFixedPay = isSal ? fixedHours * rate : null;
+    const dailyFixedCost = isSal ? weeklyFixedPay / nbOpenDays : null;
+
     const daily = weekDays.map((d, col) => {
       const s = shifts[dayKey(d)];
       const hours = hoursFromShift(s);
-      const cost = hours * rate;
+      const cost = isSal ? dailyFixedCost : hours * rate;
       dayTotalsHours[col] += hours;
       dayTotalsCost[col] += cost;
       return { shift: s, hours, cost };
     });
     const totalHours = daily.reduce((sum, d) => sum + d.hours, 0);
-    const totalPay = totalHours * rate;
-    return { emp, rate, daily, totalHours, totalPay };
+    const totalPay = isSal ? weeklyFixedPay : totalHours * rate;
+    return { emp, rate, isSal, fixedHours, daily, totalHours, totalPay };
   });
 
   const weekTotalHours = dayTotalsHours.reduce((a, b) => a + b, 0);
@@ -163,7 +171,16 @@ function renderEmployes() {
             </tr>
           </thead>
           <tbody>
-            ${empRows.map(row => `<tr data-emp-id="${row.emp.id}"
+            ${empRows.map((row, rowIdx) => {
+              // Couleur unique par employé — palette de 8 couleurs cyclique via sortOrder (ou index)
+              const EMP_COLORS = ["#4a90e2","#F7B32C","#e74c3c","#7dbf66","#8b5cf6","#f97316","#14b8a6","#ec4899"];
+              const colorIdx = ((row.emp.sortOrder ?? rowIdx) % EMP_COLORS.length + EMP_COLORS.length) % EMP_COLORS.length;
+              const empColor = EMP_COLORS[colorIdx];
+              // Section : fallback sur "service" si pas encore définie (compat employés existants)
+              const empSection = row.emp.section || "service";
+              const sectionIcon = empSection === "cuisine" ? icon("utensils", 10) : empSection === "service" ? icon("users", 10) : "";
+              const sectionLabel = empSection === "cuisine" ? "Cuisine" : empSection === "service" ? "Service" : "Autre";
+              return `<tr class="schedule-emp-row" data-emp-id="${row.emp.id}" style="--emp-color:${empColor}"
                 ondragover="empRowDragOver(event,'${row.emp.id}')"
                 ondragleave="empRowDragLeave(event)"
                 ondrop="empRowDrop(event,'${row.emp.id}')"
@@ -174,7 +191,7 @@ function renderEmployes() {
                   <div class="schedule-emp-info">
                     <div class="schedule-emp-name">${esc(row.emp.name || "")}</div>
                     <div class="schedule-emp-meta">
-                      ${row.emp.section ? `<span class="schedule-emp-section schedule-emp-section--${row.emp.section}">${row.emp.section === "cuisine" ? icon("utensils", 10) : row.emp.section === "service" ? icon("users", 10) : ""}${row.emp.section === "cuisine" ? "Cuisine" : row.emp.section === "service" ? "Service" : "Autre"}</span>` : ""}
+                      <span class="schedule-emp-section schedule-emp-section--${empSection}">${sectionIcon}${sectionLabel}</span>
                       ${row.emp.role ? `<span class="schedule-emp-role">${esc(row.emp.role)}</span>` : ""}
                     </div>
                   </div>
@@ -193,10 +210,17 @@ function renderEmployes() {
                   <select class="schedule-time" onchange="updateShift('${row.emp.id}','${dk}','end',this.value)" aria-label="Sortie ${DAYS_FR[visibleIdx[k]]}">${buildTimeOptions(endVal)}</select>
                 </td>`;
               }).join("")}
-              <td class="schedule-td--summary">${row.totalHours ? fmtHours(row.totalHours) : ""}</td>
-              <td class="schedule-td--summary">${row.rate ? row.rate : "—"}</td>
+              <td class="schedule-td--summary">
+                ${row.totalHours ? fmtHours(row.totalHours) : ""}
+                ${row.isSal ? `<div class="schedule-fixed-hint" title="Heures fixes payées">${fmtHours(row.fixedHours)}h fixes</div>` : ""}
+              </td>
+              <td class="schedule-td--summary">
+                ${row.rate ? row.rate : "—"}
+                ${row.isSal ? `<span class="schedule-badge-fixed" title="Salaire fixe">FIXE</span>` : ""}
+              </td>
               <td class="schedule-td--summary schedule-td--total">${row.totalPay ? fmtMoney(row.totalPay) : ""}</td>
-            </tr>`).join("")}
+            </tr>`;
+            }).join("")}
           </tbody>
           <tfoot>
             <!-- Ligne Heures / jour -->
@@ -560,6 +584,16 @@ function openEmployeeModal(id) {
       <input id="e-hourly-rate" type="number" min="0" step="0.25" value="${emp?.hourlyRate || ""}" placeholder="ex: 17.50"/>
       <span class="field-hint">${icon("info", 11)} Utilisé pour calculer les coûts dans l'horaire de la semaine.</span>
     </label>
+    <label class="emp-salaried-toggle">
+      <input type="checkbox" id="e-is-salaried" ${emp?.isSalaried ? "checked" : ""} onchange="document.getElementById('e-salaried-fields').style.display = this.checked ? 'block' : 'none'"/>
+      <span>Employé salarié (montant fixe hebdomadaire)</span>
+    </label>
+    <div id="e-salaried-fields" style="display:${emp?.isSalaried ? "block" : "none"}">
+      <label>Heures hebdo fixes
+        <input id="e-fixed-hours" type="number" min="0" step="0.5" value="${emp?.fixedWeeklyHours || ""}" placeholder="ex: 35"/>
+        <span class="field-hint">${icon("info", 11)} Salaire hebdo = heures fixes × taux horaire. Réparti automatiquement sur les jours d'ouverture. Les shifts saisis ne modifient plus le coût (les heures réelles restent affichées pour traçabilité).</span>
+      </label>
+    </div>
     <label>${t("emp_field_pin")} (4 chiffres)
       <input id="e-pin" type="text" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" value="${esc(emp?.pin || "")}" placeholder="${t("optional")}"/>
       <span class="field-hint">${icon("info", 11)} L'employé pourra se connecter avec ce PIN. Doit être unique. Si rôle "Admin", aura accès à tout.</span>
@@ -596,6 +630,8 @@ async function saveEmployee(id) {
     phone: document.getElementById("e-phone").value,
     email: document.getElementById("e-email").value,
     hourlyRate: Number(document.getElementById("e-hourly-rate").value) || 0,
+    isSalaried: document.getElementById("e-is-salaried").checked,
+    fixedWeeklyHours: Number(document.getElementById("e-fixed-hours").value) || 0,
     pin,
     notes: document.getElementById("e-notes").value
   };
