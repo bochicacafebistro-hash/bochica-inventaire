@@ -75,3 +75,13 @@ db.collection("fixedExpenseTemplates").onSnapshot(snap => {
   fixedExpenseTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (isLoggedIn && activePage === "depenses") renderPage();
 });
+
+// Paramètres horaire : ratio salaires/ventes + ventes réelles par jour
+db.collection("settings").doc("schedule").onSnapshot(snap => {
+  const data = snap.exists ? snap.data() : {};
+  scheduleSettings = {
+    salesRatio: typeof data.salesRatio === "number" ? data.salesRatio : 0.32,
+    actualSales: data.actualSales || {}
+  };
+  if (isLoggedIn && activePage === "employes") renderPage();
+});

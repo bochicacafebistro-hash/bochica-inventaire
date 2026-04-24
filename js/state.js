@@ -25,3 +25,7 @@ let shiftModal = { emp: null, day: null };
 let revenues = [];
 let expenseCategories = [];
 let fixedExpenseTemplates = [];
+
+// Horaires — navigation de semaine + paramètres (ratio + ventes réelles)
+let scheduleWeekOffset = 0; // 0 = semaine courante, -1 = précédente, +1 = suivante
+let scheduleSettings = { salesRatio: 0.32, actualSales: {} }; // chargé depuis settings/schedule

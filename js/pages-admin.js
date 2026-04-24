@@ -1,47 +1,218 @@
 // ── Page Employés & Horaires ──────────────────────────
+// Feuille de calcul : entrée/sortie par jour + taux horaire → coûts + ventes
+// prévues (salaires / ratio) + ventes réelles + écart
+
+// ═ Helpers ══════════════════════════════════════════════
+function getWeekStart(offsetWeeks = 0) {
+  const d = new Date();
+  d.setDate(d.getDate() + offsetWeeks * 7);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // lundi
+  d.setDate(diff); d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+// Heures travaillées d'un quart { start: "HH:MM", end: "HH:MM" }
+// Retourne un nombre décimal (10.5 = 10h30). Gère les quarts qui chevauchent minuit.
+function hoursFromShift(s) {
+  if (!s || !s.start || !s.end) return 0;
+  const [sh, sm] = String(s.start).split(":").map(Number);
+  const [eh, em] = String(s.end).split(":").map(Number);
+  if (isNaN(sh) || isNaN(eh)) return 0;
+  let diff = (eh * 60 + (em || 0)) - (sh * 60 + (sm || 0));
+  if (diff < 0) diff += 24 * 60; // quart qui passe minuit
+  return diff / 60;
+}
+
+// Formate un nombre d'heures : 4.5 → "4.5", 8 → "8"
+function fmtHours(h) {
+  if (!h) return "";
+  return Number.isInteger(h) ? String(h) : h.toFixed(1);
+}
+
+function dayKey(date) { return date.toISOString().slice(0, 10); }
+
+// Navigation semaine
+function changeScheduleWeek(delta) {
+  scheduleWeekOffset += delta;
+  renderPage();
+}
+function resetScheduleWeek() {
+  scheduleWeekOffset = 0;
+  renderPage();
+}
+
+// ═ Rendu principal ══════════════════════════════════════
 function renderEmployes() {
-  const weekStart = getWeekStart();
+  const weekStart = getWeekStart(scheduleWeekOffset);
   const weekDays = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
   });
+  const weekEnd = weekDays[6];
+  const weekLabel = `${weekDays[0].toLocaleDateString("fr-CA", { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString("fr-CA", { month: "short", day: "numeric", year: "numeric" })}`;
+
+  const ratio = Number(scheduleSettings.salesRatio) || 0.32;
+
+  // Calculs par employé et totaux par jour
+  const dayTotalsHours = new Array(7).fill(0);
+  const dayTotalsCost = new Array(7).fill(0);
+  const empRows = employees.map(emp => {
+    const shifts = emp.shifts || {};
+    const rate = Number(emp.hourlyRate) || 0;
+    const daily = weekDays.map((d, i) => {
+      const s = shifts[dayKey(d)];
+      const hours = hoursFromShift(s);
+      const cost = hours * rate;
+      dayTotalsHours[i] += hours;
+      dayTotalsCost[i] += cost;
+      return { shift: s, hours, cost };
+    });
+    const totalHours = daily.reduce((sum, d) => sum + d.hours, 0);
+    const totalPay = totalHours * rate;
+    return { emp, rate, daily, totalHours, totalPay };
+  });
+
+  const weekTotalHours = dayTotalsHours.reduce((a, b) => a + b, 0);
+  const weekTotalCost = dayTotalsCost.reduce((a, b) => a + b, 0);
+
   return `<div class="page">
     <div class="toolbar">
-      <h2 style="font-size:18px">Employés & Horaires</h2>
+      <h2 style="font-size:22px;margin:0">Employés & Horaires</h2>
       <button class="btn btn-primary" onclick="openEmployeeModal()">${icon("plus", 16)} ${t("emp_add")}</button>
     </div>
+
     ${employees.length === 0
-      ? `<div class="empty"><div style="font-size:36px;margin-bottom:8px">👥</div>Aucun employé enregistré.</div>`
-      : `<div class="card" style="margin-bottom:20px;overflow-x:auto">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
-          <h3 style="font-size:15px">Horaire — Semaine du ${weekDays[0].toLocaleDateString("fr-CA", { month: "short", day: "numeric" })}</h3>
-          <div style="display:flex;gap:6px">${SHIFT_TYPES.map(s => `<span style="background:${s.color};color:#fff;border-radius:4px;padding:2px 8px;font-size:11px;font-weight:600">${tShift(s.label)}</span>`).join("")}</div>
+      ? `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("users", 36)}</div>Aucun employé enregistré. Ajoutez-en un pour commencer.</div>`
+      : `
+      <!-- ══ Sélecteur de semaine + ratio ══ -->
+      <div class="schedule-header">
+        <div class="schedule-nav">
+          <button class="btn-icon-only" onclick="changeScheduleWeek(-1)" aria-label="Semaine précédente">${icon("chevron-left", 16)}</button>
+          <div class="schedule-week-label">
+            <div class="schedule-week-dates">${weekLabel}</div>
+            ${scheduleWeekOffset !== 0 ? `<button class="schedule-today-btn" onclick="resetScheduleWeek()">Aujourd'hui</button>` : `<div class="schedule-today-tag">Cette semaine</div>`}
+          </div>
+          <button class="btn-icon-only" onclick="changeScheduleWeek(1)" aria-label="Semaine suivante">${icon("chevron-right", 16)}</button>
         </div>
-        <div class="schedule-grid">
-          <div></div>${DAYS_FR.map((d, i) => `<div class="sch-header">${d}<div style="font-size:10px;font-weight:400;color:var(--text3)">${weekDays[i].getDate()}</div></div>`).join("")}
-          ${employees.map(emp => {
-            const shifts = emp.shifts || {};
-            return `<div class="sch-name">${emp.name || ""}</div>
-            ${weekDays.map(day => {
-              const dk = day.toISOString().slice(0, 10);
-              const s = shifts[dk];
-              return `<div class="sch-cell ${s ? "has-shift" : ""}" onclick="openShiftModal('${emp.id}','${dk}')">
-                ${s
-                  ? `<div class="shift-tag" style="background:${s.color || "var(--blue)"}">${tShift(s.label) || ""}
-                      <span onclick="event.stopPropagation();removeShift('${emp.id}','${dk}')" style="cursor:pointer;opacity:.7;margin-left:4px">${icon("x", 18)}</span>
-                    </div>`
-                  : `<div style="font-size:10px;color:var(--text3);text-align:center;margin-top:6px">+</div>`}
-              </div>`;
-            }).join("")}`;
-          }).join("")}
+        <div class="schedule-ratio">
+          <label for="sched-ratio">Ratio salaires / ventes</label>
+          <div class="schedule-ratio-input">
+            <input id="sched-ratio" type="number" min="1" max="100" step="0.5" value="${(ratio * 100).toFixed(1)}" onchange="updateSalesRatio(this.value)"/>
+            <span>%</span>
+          </div>
         </div>
       </div>
-      <h3 style="font-size:15px;margin-bottom:12px">Équipe</h3>
+
+      <!-- ══ Grille horaire complète ══ -->
+      <div class="schedule-wrap card" style="padding:0;overflow-x:auto">
+        <table class="schedule-table">
+          <thead>
+            <tr>
+              <th class="schedule-th--emp">Employé</th>
+              ${weekDays.map((d, i) => `<th class="schedule-th--day" colspan="2">
+                <div class="schedule-day-name">${DAYS_FR[i]}</div>
+                <div class="schedule-day-date">${d.getDate()}/${d.getMonth() + 1}</div>
+              </th>`).join("")}
+              <th class="schedule-th--summary">Heures</th>
+              <th class="schedule-th--summary">Taux</th>
+              <th class="schedule-th--summary">Total</th>
+            </tr>
+            <tr class="schedule-subheader">
+              <th></th>
+              ${weekDays.map(() => `<th class="schedule-th--entry">Entr</th><th class="schedule-th--exit">Sort</th>`).join("")}
+              <th></th><th></th><th></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${empRows.map(row => `<tr>
+              <td class="schedule-td--emp">${esc(row.emp.name || "")}</td>
+              ${row.daily.map((d, i) => {
+                const s = d.shift;
+                const filled = s && s.start && s.end;
+                const startVal = s?.start || "";
+                const endVal = s?.end || "";
+                const dk = dayKey(weekDays[i]);
+                return `<td class="schedule-td--cell ${filled ? "is-filled" : ""}">
+                  <input type="time" class="schedule-time" value="${startVal}" onchange="updateShift('${row.emp.id}','${dk}','start',this.value)" aria-label="Entrée ${DAYS_FR[i]}"/>
+                </td>
+                <td class="schedule-td--cell ${filled ? "is-filled" : ""}">
+                  <input type="time" class="schedule-time" value="${endVal}" onchange="updateShift('${row.emp.id}','${dk}','end',this.value)" aria-label="Sortie ${DAYS_FR[i]}"/>
+                </td>`;
+              }).join("")}
+              <td class="schedule-td--summary">${row.totalHours ? fmtHours(row.totalHours) : ""}</td>
+              <td class="schedule-td--summary">${row.rate ? row.rate : "—"}</td>
+              <td class="schedule-td--summary schedule-td--total">${row.totalPay ? fmtMoney(row.totalPay) : ""}</td>
+            </tr>`).join("")}
+          </tbody>
+          <tfoot>
+            <!-- Ligne Heures / jour -->
+            <tr class="schedule-tfoot-row">
+              <td class="schedule-tfoot-label">Heures / jour</td>
+              ${dayTotalsHours.map(h => `<td colspan="2" class="schedule-tfoot-val">${h ? fmtHours(h) : ""}</td>`).join("")}
+              <td class="schedule-tfoot-val schedule-td--total" colspan="3">${fmtHours(weekTotalHours)} h</td>
+            </tr>
+            <!-- Ligne Mt / jour -->
+            <tr class="schedule-tfoot-row">
+              <td class="schedule-tfoot-label">Mt / jour</td>
+              ${dayTotalsCost.map(c => `<td colspan="2" class="schedule-tfoot-val">${c ? fmtMoney(c) : ""}</td>`).join("")}
+              <td class="schedule-tfoot-val schedule-td--total" colspan="3">${fmtMoney(weekTotalCost)}</td>
+            </tr>
+            <!-- Ligne Ventes prévues -->
+            <tr class="schedule-tfoot-row schedule-tfoot-row--predicted">
+              <td class="schedule-tfoot-label">Ventes prévues</td>
+              ${dayTotalsCost.map(c => {
+                const predicted = ratio > 0 ? c / ratio : 0;
+                return `<td colspan="2" class="schedule-tfoot-val">${predicted ? fmtMoney(predicted) : ""}</td>`;
+              }).join("")}
+              <td class="schedule-tfoot-val schedule-td--total" colspan="3">${fmtMoney(ratio > 0 ? weekTotalCost / ratio : 0)}</td>
+            </tr>
+            <!-- Ligne Ventes réelles (input) -->
+            <tr class="schedule-tfoot-row schedule-tfoot-row--actual">
+              <td class="schedule-tfoot-label">Ventes réelles</td>
+              ${weekDays.map(d => {
+                const dk = dayKey(d);
+                const val = Number(scheduleSettings.actualSales?.[dk] || 0);
+                return `<td colspan="2" class="schedule-tfoot-val">
+                  <input type="number" step="0.01" min="0" class="schedule-sales-input" placeholder="—" value="${val || ""}" onchange="updateActualSales('${dk}',this.value)"/>
+                </td>`;
+              }).join("")}
+              <td class="schedule-tfoot-val schedule-td--total" colspan="3">${(() => {
+                const total = weekDays.reduce((sum, d) => sum + (Number(scheduleSettings.actualSales?.[dayKey(d)] || 0)), 0);
+                return total ? fmtMoney(total) : "";
+              })()}</td>
+            </tr>
+            <!-- Ligne Écart -->
+            <tr class="schedule-tfoot-row schedule-tfoot-row--gap">
+              <td class="schedule-tfoot-label">Écart</td>
+              ${weekDays.map((d, i) => {
+                const dk = dayKey(d);
+                const actual = Number(scheduleSettings.actualSales?.[dk] || 0);
+                const predicted = ratio > 0 ? dayTotalsCost[i] / ratio : 0;
+                const gap = actual - predicted;
+                const cls = gap > 0 ? "is-positive" : gap < 0 ? "is-negative" : "";
+                return `<td colspan="2" class="schedule-tfoot-val ${cls}">${(actual || predicted) ? fmtMoney(gap) : ""}</td>`;
+              }).join("")}
+              <td class="schedule-tfoot-val schedule-td--total" colspan="3">${(() => {
+                const totalActual = weekDays.reduce((sum, d) => sum + (Number(scheduleSettings.actualSales?.[dayKey(d)] || 0)), 0);
+                const totalPredicted = ratio > 0 ? weekTotalCost / ratio : 0;
+                const gap = totalActual - totalPredicted;
+                const cls = gap > 0 ? "is-positive" : gap < 0 ? "is-negative" : "";
+                return `<span class="${cls}">${(totalActual || totalPredicted) ? fmtMoney(gap) : ""}</span>`;
+              })()}</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <!-- ══ Cartes équipe (inchangées) ══ -->
+      <h3 style="font-size:20px;margin:24px 0 12px">Équipe</h3>
       <div class="card-grid">
         ${employees.map(emp => `<div class="card">
           <div style="display:flex;justify-content:space-between;align-items:flex-start">
             <div>
               <div style="font-weight:700;font-size:15px">👤 ${emp.name || ""}</div>
               ${emp.role ? `<div style="font-size:13px;color:var(--text3);margin-top:2px">${emp.role}</div>` : ""}
+              ${emp.hourlyRate ? `<div style="font-size:13px;color:var(--accent);font-weight:700;margin-top:4px">${icon("dollar-sign", 12)} ${emp.hourlyRate} $/h</div>` : ""}
               ${emp.phone ? `<div style="font-size:13px;color:var(--text2);margin-top:4px">${icon("phone", 12)} ${emp.phone}</div>` : ""}
               ${emp.email ? `<div style="font-size:13px;color:var(--text2)">✉️ ${emp.email}</div>` : ""}
               ${emp.pin ? `<div style="font-size:12px;color:var(--text3);margin-top:4px">🔑 PIN : ${emp.pin}</div>` : ""}
@@ -59,16 +230,51 @@ function renderEmployes() {
   </div>`;
 }
 
-function getWeekStart() {
-  const d = new Date(), day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  d.setDate(diff); d.setHours(0, 0, 0, 0); return d;
+// ═ Actions sur la grille ═══════════════════════════════
+
+// Met à jour un champ (start ou end) d'un quart.
+// Si les deux sont vides → supprime l'entrée.
+async function updateShift(empId, dk, field, value) {
+  const emp = employees.find(e => e.id === empId); if (!emp) return;
+  const shifts = { ...(emp.shifts || {}) };
+  const current = shifts[dk] || {};
+  const next = { ...current, [field]: value || "" };
+  if (!next.start && !next.end) {
+    delete shifts[dk];
+  } else {
+    shifts[dk] = next;
+  }
+  await db.collection("employees").doc(empId).update({ shifts });
 }
 
-async function removeShift(empId, dayKey) {
+async function removeShift(empId, dk) {
   const emp = employees.find(e => e.id === empId); if (!emp) return;
-  const shifts = { ...emp.shifts || {} }; delete shifts[dayKey];
+  const shifts = { ...(emp.shifts || {}) };
+  delete shifts[dk];
   await db.collection("employees").doc(empId).update({ shifts });
+}
+
+// Met à jour le ratio salaires/ventes (en pourcentage, ex: 32)
+async function updateSalesRatio(percentStr) {
+  const pct = Number(percentStr);
+  if (isNaN(pct) || pct <= 0 || pct > 100) return;
+  await db.collection("settings").doc("schedule").set({
+    salesRatio: pct / 100
+  }, { merge: true });
+}
+
+// Met à jour les ventes réelles pour un jour donné (clé YYYY-MM-DD)
+async function updateActualSales(dk, value) {
+  const v = Number(value);
+  const actualSales = { ...(scheduleSettings.actualSales || {}) };
+  if (!v || isNaN(v) || v <= 0) {
+    delete actualSales[dk];
+  } else {
+    actualSales[dk] = v;
+  }
+  await db.collection("settings").doc("schedule").set({
+    actualSales
+  }, { merge: true });
 }
 
 function openEmployeeModal(id) {
@@ -89,6 +295,10 @@ function openEmployeeModal(id) {
       <label>${t("emp_field_phone")}<input id="e-phone" value="${esc(emp?.phone || "")}"/></label>
       <label>${t("emp_field_email")}<input id="e-email" value="${esc(emp?.email || "")}"/></label>
     </div>
+    <label>Taux horaire ($/h)
+      <input id="e-hourly-rate" type="number" min="0" step="0.25" value="${emp?.hourlyRate || ""}" placeholder="ex: 17.50"/>
+      <span class="field-hint">${icon("info", 11)} Utilisé pour calculer les coûts dans l'horaire de la semaine.</span>
+    </label>
     <label>${t("emp_field_pin")} (4 chiffres)
       <input id="e-pin" type="text" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" value="${esc(emp?.pin || "")}" placeholder="${t("optional")}"/>
       <span class="field-hint">${icon("info", 11)} L'employé pourra se connecter avec ce PIN. Doit être unique. Si rôle "Admin", aura accès à tout.</span>
@@ -129,32 +339,12 @@ async function saveEmployee(id) {
     role: document.getElementById("e-role").value,
     phone: document.getElementById("e-phone").value,
     email: document.getElementById("e-email").value,
+    hourlyRate: Number(document.getElementById("e-hourly-rate").value) || 0,
     pin,
     notes: document.getElementById("e-notes").value
   };
   if (id) await db.collection("employees").doc(id).update(data);
   else { const nid = genId(); await db.collection("employees").doc(nid).set({ ...data, id: nid, shifts: {} }); }
-  closeModal();
-}
-
-function openShiftModal(empId, dayKey) {
-  showModal(`<div class="modal" style="max-width:320px">
-    <div class="modal-header"><h3>🕐 Quart de travail</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
-    <p style="color:var(--text2);font-size:13px;margin-bottom:14px">Sélectionnez le type de quart :</p>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-      ${SHIFT_TYPES.map(s => `<button onclick="assignShift('${empId}','${dayKey}','${s.label}','${s.color}')"
-        style="background:${s.color};color:#fff;border:none;border-radius:8px;padding:12px;font-size:14px;font-weight:600;cursor:pointer">${tShift(s.label)}</button>`).join("")}
-    </div>
-    <div class="modal-actions" style="margin-top:12px">
-      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
-    </div>
-  </div>`);
-}
-
-async function assignShift(empId, dayKey, label, color) {
-  const emp = employees.find(e => e.id === empId); if (!emp) return;
-  const shifts = { ...emp.shifts || {}, [dayKey]: { label, color } };
-  await db.collection("employees").doc(empId).update({ shifts });
   closeModal();
 }
 
