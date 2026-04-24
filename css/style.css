@@ -1389,9 +1389,13 @@ select.schedule-time{
   color:var(--text) !important;
   font-weight:700 !important;
   font-size:var(--fs-sm) !important;
+  /* display:flex sur un td casse la layout de tableau — on le met sur un wrapper interne */
+}
+.schedule-tfoot-row--gap .gap-label-inner{
   display:inline-flex;
   align-items:center;
   gap:6px;
+  white-space:nowrap;
 }
 .schedule-tfoot-row--gap .schedule-tfoot-val{
   font-family:var(--font-heading);

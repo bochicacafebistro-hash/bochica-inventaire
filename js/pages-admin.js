@@ -273,7 +273,7 @@ function renderEmployes() {
             </tr>
             <!-- Ligne Écart (mise en valeur — KPI critique) -->
             <tr class="schedule-tfoot-row schedule-tfoot-row--gap">
-              <td class="schedule-tfoot-label">${icon("trending-up", 14)} Écart</td>
+              <td class="schedule-tfoot-label"><span class="gap-label-inner">${icon("trending-up", 14)} Écart</span></td>
               ${weekDays.map((d, k) => {
                 const dk = dayKey(d);
                 const actual = Number(scheduleSettings.actualSales?.[dk] || 0);
