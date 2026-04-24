@@ -131,6 +131,7 @@ function renderEmployes() {
         <div class="schedule-actions">
           <button class="btn-secondary btn-sm" onclick="openOpenDaysModal()" title="Choisir les jours d'ouverture">${icon("calendar", 14)} Jours ouverts</button>
           <button class="btn-secondary btn-sm" onclick="duplicateScheduleToNextWeek()" title="Copier cet horaire vers la semaine suivante">${icon("copy", 14)} Copier → Semaine ${weekNum + 1}</button>
+          ${userRole === "global_admin" ? `<button class="btn-secondary btn-sm" onclick="seedScheduleFromTemplate()" title="Importer l'horaire type Bochica dans la semaine affichée">${icon("download", 14)} Importer horaire type</button>` : ""}
           <div class="schedule-ratio">
             <label for="sched-ratio">Ratio salaires / ventes</label>
             <div class="schedule-ratio-input">
@@ -577,6 +578,95 @@ async function saveEmployee(id) {
     });
   }
   closeModal();
+}
+
+// ══════════════════════════════════════════════════════
+// IMPORT HORAIRE TYPE — remplit la semaine affichée avec un modèle fixe
+// (utilisé pour éviter la saisie manuelle initiale)
+// ══════════════════════════════════════════════════════
+
+const BOCHICA_SCHEDULE_TEMPLATE = [
+  { name: "Manu",    wed: [10, 21], thu: [15, 21], fri: [10, 19], sat: [11, 19], sun: null },
+  { name: "Sergio",  wed: [11, 15], thu: null,     fri: [17, 22], sat: [14, 23], sun: [11, 21] },
+  { name: "Nancy",   wed: null,     thu: null,     fri: null,     sat: null,     sun: [13, 18] },
+  { name: "Martha",  wed: null,     thu: null,     fri: null,     sat: [13, 23], sun: [13, 21] },
+  { name: "Paula",   wed: null,     thu: null,     fri: [17, 22], sat: [13, 22], sun: [13, 20] },
+  { name: "Samanta", wed: [12, 21], thu: [17, 21], fri: [13, 21], sat: [13, 23], sun: [12, 21] },
+  { name: "Daniel",  wed: null,     thu: null,     fri: null,     sat: null,     sun: null },
+  { name: "Alvaro",  wed: [17, 21], thu: [17, 21], fri: [12, 20], sat: [12, 15], sun: null },
+  { name: "Junior",  wed: [12, 15], thu: null,     fri: null,     sat: null,     sun: null },
+  { name: "Vincent", wed: null,     thu: null,     fri: null,     sat: null,     sun: null },
+  { name: "Samia",   wed: null,     thu: null,     fri: [12, 15], sat: [12, 16], sun: null }
+];
+
+function seedScheduleFromTemplate() {
+  const weekStart = getWeekStart(scheduleWeekOffset || 0);
+  const weekNum = getISOWeek(new Date(weekStart.getTime() + 3 * 86400000));
+  const msg = `Cette action va <strong>remplir l'horaire de la semaine ${weekNum}</strong> avec le modèle Bochica (11 employés, Mer→Dim).<br><br>Les shifts existants sur les jours Mer-Dim de cette semaine seront <strong>écrasés</strong>. Continuer ?`;
+  openConfirm("Importer l'horaire type ?", msg, doSeedScheduleFromTemplate, false);
+}
+
+async function doSeedScheduleFromTemplate() {
+  const weekStart = getWeekStart(scheduleWeekOffset || 0);
+  const dk = off => {
+    const d = new Date(weekStart);
+    d.setDate(d.getDate() + off);
+    return d.toISOString().slice(0, 10);
+  };
+  const dayOffset = { wed: 2, thu: 3, fri: 4, sat: 5, sun: 6 };
+  const fmtTime = h => h == null ? null : `${String(h).padStart(2, "0")}:00`;
+
+  // Garantir que Mer-Dim soient marqués ouverts
+  await db.collection("settings").doc("schedule").set(
+    { openDays: [2, 3, 4, 5, 6] },
+    { merge: true }
+  );
+
+  let updated = 0, skipped = 0, created = 0;
+  let maxSort = employees.reduce((m, e) => Math.max(m, e.sortOrder || 0), 0);
+  const notFound = [];
+
+  for (const row of BOCHICA_SCHEDULE_TEMPLATE) {
+    let emp = employees.find(e => (e.name || "").trim().toLowerCase() === row.name.toLowerCase());
+    const baseShifts = emp ? { ...(emp.shifts || {}) } : {};
+    for (const day of ["wed", "thu", "fri", "sat", "sun"]) {
+      const key = dk(dayOffset[day]);
+      const val = row[day];
+      if (val && val[0] != null && val[1] != null) {
+        baseShifts[key] = { start: fmtTime(val[0]), end: fmtTime(val[1]) };
+      } else {
+        delete baseShifts[key];
+      }
+    }
+    if (emp) {
+      await db.collection("employees").doc(emp.id).update({ shifts: baseShifts });
+      updated++;
+    } else {
+      // Employé absent : créer automatiquement (taux à 0, à ajuster après)
+      maxSort++;
+      const nid = genId();
+      await db.collection("employees").doc(nid).set({
+        id: nid,
+        name: row.name,
+        role: "",
+        phone: "",
+        email: "",
+        hourlyRate: 0,
+        pin: "",
+        notes: "",
+        shifts: baseShifts,
+        sortOrder: maxSort
+      });
+      notFound.push(row.name);
+      created++;
+    }
+  }
+
+  await addLog("—", "Horaire importé", `Semaine ${weekNum} · ${updated} maj · ${created} créés`);
+
+  let result = `✓ Horaire de la semaine ${weekNum} importé\n\n${updated} employé(s) mis à jour`;
+  if (created > 0) result += `\n${created} employé(s) créé(s) : ${notFound.join(", ")}`;
+  alert(result);
 }
 
 // ══════════════════════════════════════════════════════
