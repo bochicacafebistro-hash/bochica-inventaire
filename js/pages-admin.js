@@ -143,12 +143,10 @@ function renderEmployes() {
             <button class="btn-secondary btn-sm" onclick="applyPayrollConfigs()" title="Configurer les salariés (Alvaro = 35h × 23$) sans toucher aux shifts">${icon("dollar-sign", 14)} Appliquer salaires fixes</button>
             <button class="btn-secondary btn-sm" onclick="seedScheduleFromTemplate()" title="Importer l'horaire type Bochica dans la semaine affichée">${icon("download", 14)} Importer horaire type</button>
           ` : ""}
-          <div class="schedule-ratio">
-            <label for="sched-ratio">Ratio salaires / ventes</label>
-            <div class="schedule-ratio-input">
-              <input id="sched-ratio" type="number" min="1" max="100" step="0.5" value="${(ratio * 100).toFixed(1)}" onchange="updateSalesRatio(this.value)"/>
-              <span>%</span>
-            </div>
+          <div class="schedule-ratio-pill" title="Ratio salaires / ventes : quand tu changes la valeur, les Ventes prévues sont recalculées">
+            <span class="schedule-ratio-pill__label">${icon("trending-up", 14)} Ratio</span>
+            <input id="sched-ratio" type="number" min="1" max="100" step="0.5" value="${(ratio * 100).toFixed(1)}" onchange="updateSalesRatio(this.value)" oninput="updateSalesRatioLive(this.value)" aria-label="Ratio salaires sur ventes"/>
+            <span class="schedule-ratio-pill__unit">%</span>
           </div>
         </div>
       </div>
@@ -355,12 +353,43 @@ async function removeShift(empId, dk) {
 }
 
 // Met à jour le ratio salaires/ventes (en pourcentage, ex: 32)
+// Optimistic update : on applique d'abord en local (instantané), puis on persiste.
 async function updateSalesRatio(percentStr) {
   const pct = Number(percentStr);
   if (isNaN(pct) || pct <= 0 || pct > 100) return;
-  await db.collection("settings").doc("schedule").set({
-    salesRatio: pct / 100
-  }, { merge: true });
+  const newRatio = pct / 100;
+  // 1. Update locale immédiate → re-render instantané des ventes prévues + écart
+  scheduleSettings = { ...scheduleSettings, salesRatio: newRatio };
+  renderPage();
+  // 2. Persistance Firestore en arrière-plan (le listener déclenchera un 2e render confirmatif,
+  // idempotent car la valeur locale est déjà à jour)
+  try {
+    await db.collection("settings").doc("schedule").set({ salesRatio: newRatio }, { merge: true });
+  } catch (err) {
+    console.error("updateSalesRatio:", err);
+    alert("Erreur sauvegarde ratio : " + (err.message || err));
+  }
+}
+
+// Rafraîchissement live pendant la saisie (oninput) — sans persister.
+// Permet de voir instantanément l'impact sur les calculs sans attendre le blur/change.
+// On ne re-render pas pour éviter de perdre le focus à chaque frappe : on met juste à jour
+// les cellules de ventes prévues et écart en place.
+function updateSalesRatioLive(percentStr) {
+  const pct = Number(percentStr);
+  if (isNaN(pct) || pct <= 0 || pct > 100) return;
+  const newRatio = pct / 100;
+  scheduleSettings.salesRatio = newRatio;
+  // Mise à jour en place des cellules concernées (sans render complet pour garder le focus)
+  const rows = document.querySelectorAll(".schedule-tfoot-row--predicted .schedule-tfoot-val, .schedule-tfoot-row--gap .schedule-tfoot-val");
+  // On se contente ici d'un renderPage léger car il est rare que l'utilisateur tape rapidement.
+  // renderPage re-crée l'input — on garde le focus manuellement :
+  const activeId = document.activeElement?.id;
+  renderPage();
+  if (activeId) {
+    const el = document.getElementById(activeId);
+    if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch (_) {} }
+  }
 }
 
 // Met à jour les ventes réelles pour un jour donné (clé YYYY-MM-DD)

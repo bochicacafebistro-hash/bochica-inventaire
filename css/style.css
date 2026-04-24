@@ -763,29 +763,34 @@ tr:last-child td{border-bottom:none}
   letter-spacing:.08em;
 }
 .schedule-today-btn:hover{background:var(--accent-hover)}
-.schedule-ratio{
-  display:flex;
-  flex-direction:column;
-  gap:4px;
+/* Ratio salaires/ventes : pill compacte alignée avec les btn-sm du bloc actions */
+.schedule-ratio-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-md);
+  padding:0 8px 0 10px;
+  height:34px;
+  font-family:var(--font-body);
+  transition:var(--transition-fast);
+  white-space:nowrap;
 }
-.schedule-ratio label{
-  font-size:var(--fs-xs);
-  color:var(--text3);
-  text-transform:uppercase;
-  letter-spacing:.08em;
-  font-weight:600;
+.schedule-ratio-pill:hover,
+.schedule-ratio-pill:focus-within{
+  border-color:var(--accent);
 }
-.schedule-ratio-input{
+.schedule-ratio-pill__label{
   display:inline-flex;
   align-items:center;
   gap:4px;
-  background:var(--surface2);
-  border:1px solid var(--border);
-  border-radius:var(--radius-md);
-  padding:4px 10px;
+  color:var(--text2);
+  font-size:var(--fs-sm);
+  font-weight:600;
 }
-.schedule-ratio-input input{
-  width:58px;
+.schedule-ratio-pill input{
+  width:46px;
   border:none;
   background:transparent;
   font-family:var(--font-heading);
@@ -794,8 +799,15 @@ tr:last-child td{border-bottom:none}
   text-align:right;
   padding:0;
   outline:none;
+  -moz-appearance:textfield;
 }
-.schedule-ratio-input span{color:var(--text2);font-weight:600}
+.schedule-ratio-pill input::-webkit-outer-spin-button,
+.schedule-ratio-pill input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.schedule-ratio-pill__unit{
+  color:var(--text2);
+  font-weight:700;
+  font-size:var(--fs-sm);
+}
 
 /* Bloc d'actions : Jours ouverts + Copier + Ratio */
 .schedule-actions{
@@ -806,6 +818,7 @@ tr:last-child td{border-bottom:none}
 }
 .btn-sm{
   padding:6px 12px;
+  min-height:34px;
   font-size:var(--fs-sm);
   border-radius:var(--radius-md);
   display:inline-flex;
