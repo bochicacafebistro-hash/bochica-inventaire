@@ -844,6 +844,8 @@ function initCoverageChart() {
 // (utilisé pour éviter la saisie manuelle initiale)
 // ══════════════════════════════════════════════════════
 
+// Configuration des employés (optionnel : champs à jour sur la fiche en plus des shifts)
+// Utilisée par seedScheduleFromTemplate pour appliquer salaire fixe, taux, etc.
 const BOCHICA_SCHEDULE_TEMPLATE = [
   { name: "Manu",    wed: [10, 21], thu: [15, 21], fri: [10, 19], sat: [11, 19], sun: null },
   { name: "Sergio",  wed: [11, 15], thu: null,     fri: [17, 22], sat: [14, 23], sun: [11, 21] },
@@ -852,7 +854,9 @@ const BOCHICA_SCHEDULE_TEMPLATE = [
   { name: "Paula",   wed: null,     thu: null,     fri: [17, 22], sat: [13, 22], sun: [13, 20] },
   { name: "Samanta", wed: [12, 21], thu: [17, 21], fri: [13, 21], sat: [13, 23], sun: [12, 21] },
   { name: "Daniel",  wed: null,     thu: null,     fri: null,     sat: null,     sun: null },
-  { name: "Alvaro",  wed: [17, 21], thu: [17, 21], fri: [12, 20], sat: [12, 15], sun: null },
+  { name: "Alvaro",  wed: [17, 21], thu: [17, 21], fri: [12, 20], sat: [12, 15], sun: null,
+    // Alvaro est salarié : 35h fixes × 23$ = 805$/semaine, soit 161$/jour sur 5 jours
+    config: { isSalaried: true, fixedWeeklyHours: 35, hourlyRate: 23 } },
   { name: "Junior",  wed: [12, 15], thu: null,     fri: null,     sat: null,     sun: null },
   { name: "Vincent", wed: null,     thu: null,     fri: null,     sat: null,     sun: null },
   { name: "Samia",   wed: null,     thu: null,     fri: [12, 15], sat: [12, 16], sun: null }
@@ -897,11 +901,15 @@ async function doSeedScheduleFromTemplate() {
         delete baseShifts[key];
       }
     }
+    // Champs additionnels du template (salaire fixe, taux, etc.)
+    const extraConfig = row.config || {};
+
     if (emp) {
-      await db.collection("employees").doc(emp.id).update({ shifts: baseShifts });
+      const updatePayload = { shifts: baseShifts, ...extraConfig };
+      await db.collection("employees").doc(emp.id).update(updatePayload);
       updated++;
     } else {
-      // Employé absent : créer automatiquement (taux à 0, à ajuster après)
+      // Employé absent : créer automatiquement
       maxSort++;
       const nid = genId();
       await db.collection("employees").doc(nid).set({
@@ -914,7 +922,8 @@ async function doSeedScheduleFromTemplate() {
         pin: "",
         notes: "",
         shifts: baseShifts,
-        sortOrder: maxSort
+        sortOrder: maxSort,
+        ...extraConfig // applique isSalaried, fixedWeeklyHours, hourlyRate si spécifiés
       });
       notFound.push(row.name);
       created++;
