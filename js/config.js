@@ -1,6 +1,6 @@
 // ── Configuration Firebase ────────────────────────────
 firebase.initializeApp({
-  apiKey: "AIzaSyC27HzALz_DoIN5huqGwVBsKTLHg37rUuc",
+  apiKey: "AIzaSyC27HzALz_DolN5huqGwVBsKTLHg37rUuc",
   authDomain: "bochica-inventaire.firebaseapp.com",
   projectId: "bochica-inventaire",
   storageBucket: "bochica-inventaire.firebasestorage.app",
