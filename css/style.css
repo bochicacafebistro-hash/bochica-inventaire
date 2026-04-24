@@ -1236,31 +1236,63 @@ tr:last-child td{border-bottom:none}
   vertical-align:middle;
 }
 
-/* Zebra striping : alterner les lignes pour les séparer visuellement */
-.schedule-emp-row:nth-child(even) .schedule-td--emp,
-.schedule-emp-row:nth-child(even) .schedule-td--summary{
-  background:var(--surface2);
-}
-.schedule-emp-row:nth-child(even) .schedule-td--summary.schedule-td--total{
-  background:rgba(var(--accent-rgb),.16);
-}
-/* Les cellules de shifts ont leur propre couleur (rouge/vert selon rempli),
-   mais on les teinte légèrement plus sur les lignes paires pour la séparation */
-.schedule-emp-row:nth-child(even) .schedule-td--cell{
-  background:rgba(217,83,79,.12);
-}
-.schedule-emp-row:nth-child(even) .schedule-td--cell.is-filled{
-  background:rgba(125,191,102,.25);
-}
-.dark .schedule-emp-row:nth-child(even) .schedule-td--cell{background:rgba(217,83,79,.16)}
-.dark .schedule-emp-row:nth-child(even) .schedule-td--cell.is-filled{background:rgba(125,191,102,.25)}
+/* ═══════════════════════════════════════════════════════════════
+   COLORATION DE LIGNE PAR EMPLOYÉ — état normal + hover marqué
+   Chaque ligne utilise `--emp-rgb` (triplet R,G,B) défini inline
+   pour colorer son fond avec une opacité variable.
+   ═══════════════════════════════════════════════════════════════ */
 
-/* Hover row subtil pour meilleure scan visuelle */
-.schedule-emp-row:hover .schedule-td--emp{
-  background:var(--surface3);
+/* Fond des cellules (nom, résumé, shifts) basé sur la couleur de l'employé.
+   Opacité très faible par défaut → la ligne est visible mais discrète. */
+.schedule-emp-row .schedule-td--emp,
+.schedule-emp-row .schedule-td--summary{
+  background:rgba(var(--emp-rgb, 14,13,12), .05);
 }
-.schedule-emp-row:hover:nth-child(even) .schedule-td--emp{
-  background:var(--surface3);
+.schedule-emp-row .schedule-td--summary.schedule-td--total{
+  background:rgba(var(--accent-rgb), .14);
+}
+.schedule-emp-row .schedule-td--cell{
+  background:rgba(var(--emp-rgb, 14,13,12), .04);
+}
+.schedule-emp-row .schedule-td--cell.is-filled{
+  background:rgba(var(--emp-rgb, 14,13,12), .18);
+}
+
+/* ── Hover : toute la ligne s'illumine dans la couleur de l'employé ── */
+.schedule-emp-row:hover .schedule-td--emp,
+.schedule-emp-row:hover .schedule-td--summary{
+  background:rgba(var(--emp-rgb, 14,13,12), .14);
+}
+.schedule-emp-row:hover .schedule-td--summary.schedule-td--total{
+  background:rgba(var(--accent-rgb), .24);
+}
+.schedule-emp-row:hover .schedule-td--cell{
+  background:rgba(var(--emp-rgb, 14,13,12), .1);
+}
+.schedule-emp-row:hover .schedule-td--cell.is-filled{
+  background:rgba(var(--emp-rgb, 14,13,12), .3);
+}
+
+/* Dark mode : garder l'approche RGB, juste opacités légèrement plus hautes pour compenser le fond sombre */
+.dark .schedule-emp-row .schedule-td--emp,
+.dark .schedule-emp-row .schedule-td--summary{
+  background:rgba(var(--emp-rgb, 245,241,232), .08);
+}
+.dark .schedule-emp-row .schedule-td--cell{
+  background:rgba(var(--emp-rgb, 245,241,232), .06);
+}
+.dark .schedule-emp-row .schedule-td--cell.is-filled{
+  background:rgba(var(--emp-rgb, 245,241,232), .22);
+}
+.dark .schedule-emp-row:hover .schedule-td--emp,
+.dark .schedule-emp-row:hover .schedule-td--summary{
+  background:rgba(var(--emp-rgb, 245,241,232), .2);
+}
+.dark .schedule-emp-row:hover .schedule-td--cell{
+  background:rgba(var(--emp-rgb, 245,241,232), .14);
+}
+.dark .schedule-emp-row:hover .schedule-td--cell.is-filled{
+  background:rgba(var(--emp-rgb, 245,241,232), .36);
 }
 .schedule-emp-cell{
   display:flex;
@@ -1551,15 +1583,11 @@ tr:last-child td{border-bottom:none}
 .schedule-row--drop-before td:first-child::before{top:-2px}
 .schedule-row--drop-after td:first-child::after{bottom:-2px}
 .schedule-td--cell{
-  background:rgba(217,83,79,.08); /* rose très pâle par défaut (pas de shift) */
+  /* Fond géré par .schedule-emp-row (basé sur --emp-rgb de l'employé) */
   padding:2px !important;
   vertical-align:middle;
 }
-.schedule-td--cell.is-filled{
-  background:rgba(125,191,102,.18); /* vert pâle = quart saisi */
-}
-.dark .schedule-td--cell{background:rgba(217,83,79,.12)}
-.dark .schedule-td--cell.is-filled{background:rgba(125,191,102,.18)}
+/* Les règles .is-filled / hover sont dans le bloc "Coloration par employé" plus haut */
 .schedule-time{
   width:100%;
   min-width:56px;

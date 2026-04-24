@@ -185,15 +185,26 @@ function renderEmployes() {
           </thead>
           <tbody>
             ${empRows.map((row, rowIdx) => {
-              // Couleur unique par employé — palette de 8 couleurs cyclique via sortOrder (ou index)
-              const EMP_COLORS = ["#4a90e2","#F7B32C","#e74c3c","#7dbf66","#8b5cf6","#f97316","#14b8a6","#ec4899"];
-              const colorIdx = ((row.emp.sortOrder ?? rowIdx) % EMP_COLORS.length + EMP_COLORS.length) % EMP_COLORS.length;
-              const empColor = EMP_COLORS[colorIdx];
+              // Couleur unique par employé — palette de 8 RGB cycliques (sortOrder ou index)
+              // Stockées en "R,G,B" (triplet sans parenthèses) pour permettre rgba() en CSS
+              // avec opacité variable (discret par défaut, marqué au hover)
+              const EMP_RGB = [
+                "74,144,226",   // bleu
+                "247,179,44",   // jaune
+                "231,76,60",    // rouge
+                "125,191,102",  // vert
+                "139,92,246",   // violet
+                "249,115,22",   // orange
+                "20,184,166",   // teal
+                "236,72,153"    // rose
+              ];
+              const colorIdx = ((row.emp.sortOrder ?? rowIdx) % EMP_RGB.length + EMP_RGB.length) % EMP_RGB.length;
+              const empRgb = EMP_RGB[colorIdx];
               // Section : fallback sur "service" si pas encore définie (compat employés existants)
               const empSection = row.emp.section || "service";
               const sectionIcon = empSection === "cuisine" ? icon("utensils", 10) : empSection === "service" ? icon("users", 10) : "";
               const sectionLabel = empSection === "cuisine" ? "Cuisine" : empSection === "service" ? "Service" : "Autre";
-              return `<tr class="schedule-emp-row" data-emp-id="${row.emp.id}" style="--emp-color:${empColor}"
+              return `<tr class="schedule-emp-row" data-emp-id="${row.emp.id}" style="--emp-rgb:${empRgb};--emp-color:rgb(${empRgb})"
                 ondragover="empRowDragOver(event,'${row.emp.id}')"
                 ondragleave="empRowDragLeave(event)"
                 ondrop="empRowDrop(event,'${row.emp.id}')"
