@@ -28,7 +28,8 @@ db.collection("logs").orderBy("ts", "desc").limit(300).onSnapshot(snap => {
 });
 
 db.collection("employees").onSnapshot(snap => {
-  employees = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  employees = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
   if (isLoggedIn && activePage === "employes") renderPage();
 });
 

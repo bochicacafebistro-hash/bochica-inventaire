@@ -897,7 +897,8 @@ tr:last-child td{border-bottom:none}
   border-bottom:none;
 }
 .schedule-th--emp{
-  width:120px;
+  width:180px;
+  min-width:160px;
   text-align:left !important;
   padding-left:var(--sp-4) !important;
   position:sticky;
@@ -937,18 +938,82 @@ tr:last-child td{border-bottom:none}
 
 /* Cellules employé (corps) */
 .schedule-td--emp{
-  font-family:var(--font-heading);
-  font-size:var(--fs-lg);
   text-align:left !important;
-  padding-left:var(--sp-4) !important;
+  padding-left:var(--sp-2) !important;
+  padding-right:var(--sp-2) !important;
   color:var(--text);
   background:var(--surface);
   position:sticky;
   left:0;
   z-index:1;
-  letter-spacing:.02em;
   border-right:1px solid var(--border-strong);
+  vertical-align:middle;
 }
+.schedule-emp-cell{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.schedule-emp-grip{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--text3);
+  cursor:grab;
+  flex-shrink:0;
+  padding:4px 2px;
+  border-radius:var(--radius-sm);
+  transition:color var(--transition-fast),background var(--transition-fast);
+  -webkit-user-select:none;
+          user-select:none;
+}
+.schedule-emp-grip:hover{color:var(--text);background:var(--surface2)}
+.schedule-emp-grip:active{cursor:grabbing}
+.schedule-emp-info{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  line-height:1.1;
+}
+.schedule-emp-name{
+  font-family:var(--font-heading);
+  font-size:var(--fs-lg);
+  letter-spacing:.02em;
+  color:var(--text);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.schedule-emp-role{
+  font-family:var(--font-body);
+  font-size:var(--fs-xs);
+  color:var(--text3);
+  font-weight:500;
+  margin-top:1px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:160px;
+}
+
+/* États du drag & drop sur une ligne employé */
+.schedule-row--dragging td{opacity:.4}
+.schedule-row--drag-over{position:relative}
+.schedule-row--drop-before td:first-child::before,
+.schedule-row--drop-after td:first-child::after{
+  content:"";
+  position:absolute;
+  left:4px;
+  right:4px;
+  height:3px;
+  background:var(--accent);
+  border-radius:2px;
+  pointer-events:none;
+  box-shadow:0 0 6px rgba(var(--accent-rgb),.5);
+  z-index:3;
+}
+.schedule-row--drop-before td:first-child::before{top:-2px}
+.schedule-row--drop-after td:first-child::after{bottom:-2px}
 .schedule-td--cell{
   background:rgba(217,83,79,.08); /* rose très pâle par défaut (pas de shift) */
   padding:2px !important;

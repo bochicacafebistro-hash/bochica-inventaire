@@ -162,8 +162,20 @@ function renderEmployes() {
             </tr>
           </thead>
           <tbody>
-            ${empRows.map(row => `<tr>
-              <td class="schedule-td--emp">${esc(row.emp.name || "")}</td>
+            ${empRows.map(row => `<tr data-emp-id="${row.emp.id}"
+                ondragover="empRowDragOver(event,'${row.emp.id}')"
+                ondragleave="empRowDragLeave(event)"
+                ondrop="empRowDrop(event,'${row.emp.id}')"
+                ondragend="empRowDragEnd(event)">
+              <td class="schedule-td--emp">
+                <div class="schedule-emp-cell">
+                  <span class="schedule-emp-grip" draggable="true" ondragstart="empRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 14)}</span>
+                  <div class="schedule-emp-info">
+                    <div class="schedule-emp-name">${esc(row.emp.name || "")}</div>
+                    ${row.emp.role ? `<div class="schedule-emp-role">${esc(row.emp.role)}</div>` : ""}
+                  </div>
+                </div>
+              </td>
               ${row.daily.map((d, k) => {
                 const s = d.shift;
                 const filled = s && s.start && s.end;
@@ -428,6 +440,73 @@ async function duplicateScheduleToNextWeek() {
   }
 }
 
+// ═ Réordonner les employés (drag & drop) ═══════════════
+let _empDragId = null;
+
+function empRowDragStart(e, id) {
+  _empDragId = id;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move";
+    try { e.dataTransfer.setData("text/plain", id); } catch (_) {}
+  }
+  const tr = document.querySelector(`tr[data-emp-id="${id}"]`);
+  setTimeout(() => tr && tr.classList.add("schedule-row--dragging"), 0);
+}
+
+function empRowDragOver(e, id) {
+  if (_empDragId === null || id === _empDragId) return;
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  const tr = document.querySelector(`tr[data-emp-id="${id}"]`);
+  if (!tr) return;
+  tr.classList.add("schedule-row--drag-over");
+  const rect = tr.getBoundingClientRect();
+  const before = (e.clientY - rect.top) < rect.height / 2;
+  tr.classList.toggle("schedule-row--drop-before", before);
+  tr.classList.toggle("schedule-row--drop-after", !before);
+}
+
+function empRowDragLeave(e) {
+  const tr = e.currentTarget;
+  if (!tr) return;
+  const related = e.relatedTarget;
+  if (related && tr.contains(related)) return;
+  tr.classList.remove("schedule-row--drag-over", "schedule-row--drop-before", "schedule-row--drop-after");
+}
+
+function empRowDragEnd() {
+  document.querySelectorAll("tr[data-emp-id]").forEach(tr =>
+    tr.classList.remove("schedule-row--dragging", "schedule-row--drag-over", "schedule-row--drop-before", "schedule-row--drop-after")
+  );
+  _empDragId = null;
+}
+
+async function empRowDrop(e, targetId) {
+  e.preventDefault();
+  const srcId = _empDragId;
+  const tr = document.querySelector(`tr[data-emp-id="${targetId}"]`);
+  const dropBefore = tr && tr.classList.contains("schedule-row--drop-before");
+  empRowDragEnd();
+  if (!srcId || srcId === targetId) return;
+
+  // Recomposer l'ordre des IDs
+  const ids = employees.map(emp => emp.id);
+  const srcIdx = ids.indexOf(srcId);
+  const tgtIdx = ids.indexOf(targetId);
+  if (srcIdx < 0 || tgtIdx < 0) return;
+  ids.splice(srcIdx, 1);
+  let insertAt = tgtIdx;
+  if (srcIdx < tgtIdx) insertAt -= 1;
+  if (!dropBefore) insertAt += 1;
+  insertAt = Math.max(0, Math.min(insertAt, ids.length));
+  ids.splice(insertAt, 0, srcId);
+
+  // Batch update Firestore
+  const batch = db.batch();
+  ids.forEach((id, i) => batch.update(db.collection("employees").doc(id), { sortOrder: i }));
+  await batch.commit();
+}
+
 function openEmployeeModal(id) {
   const emp = id ? employees.find(x => x.id === id) : null;
   showModal(`<div class="modal">
@@ -489,7 +568,14 @@ async function saveEmployee(id) {
     notes: document.getElementById("e-notes").value
   };
   if (id) await db.collection("employees").doc(id).update(data);
-  else { const nid = genId(); await db.collection("employees").doc(nid).set({ ...data, id: nid, shifts: {} }); }
+  else {
+    const nid = genId();
+    // sortOrder : placer le nouvel employé à la fin de la liste
+    const maxSort = employees.reduce((m, e) => Math.max(m, e.sortOrder || 0), 0);
+    await db.collection("employees").doc(nid).set({
+      ...data, id: nid, shifts: {}, sortOrder: maxSort + 1
+    });
+  }
   closeModal();
 }
 

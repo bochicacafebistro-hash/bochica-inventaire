@@ -8,7 +8,7 @@
  * Pour invalider le cache après un déploiement : incrémenter CACHE_VERSION.
  */
 
-const CACHE_VERSION = 'v2.0.0';
+const CACHE_VERSION = 'v2.0.1';
 const CACHE_NAME = `bochica-inventaire-${CACHE_VERSION}`;
 
 // Ressources de l'app shell (cachées dès l'installation)
