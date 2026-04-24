@@ -1,5 +1,43 @@
 // ── Utilitaires ───────────────────────────────────────
 function genId() { return Math.random().toString(36).slice(2, 10); }
+
+// ── Authentification : hash SHA-256 + vérification ────
+// Utilise l'API web native crypto.subtle.digest (pas de dépendance externe).
+async function hashPassword(password) {
+  const data = new TextEncoder().encode(String(password) + AUTH_SALT);
+  const buf = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(buf))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+// Vérifie un couple (username, password). Retourne un objet account ou null.
+async function verifyLogin(username, password) {
+  const key = String(username || "").toLowerCase().trim();
+  const account = AUTH_ACCOUNTS[key];
+  if (!account) return null;
+  const hash = await hashPassword(password);
+  if (hash !== account.passwordHash) return null;
+  return { ...account, username: key };
+}
+
+// ── Permissions par rôle ──────────────────────────────
+function canAccess(page) {
+  if (!userRole) return false;
+  const perm = ROLE_PERMISSIONS[userRole];
+  if (!perm) return false;
+  return perm.canAccess.includes(page);
+}
+function canWrite(section) {
+  if (!userRole) return false;
+  const perm = ROLE_PERMISSIONS[userRole];
+  if (!perm) return false;
+  return perm.canWrite.includes(section);
+}
+function getHomePage() {
+  const perm = ROLE_PERMISSIONS[userRole];
+  return (perm && perm.homePage) || "inventaire";
+}
 function getAllSections() {
   // Utilise la liste unifiée `allSections` (par défaut + personnalisées, gérée via Firestore).
   // Fallback pour tout premier chargement avant que le listener n'ait répondu.

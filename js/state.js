@@ -8,7 +8,8 @@ let ingredients = []; // Ingrédients de menu (avec coûts, séparés des produi
 let recipes = [];    // Livre de cuisine — recettes pour préparation (sans coûts)
 let recipeFilter = "all"; // Filtre actif sur page Recettes
 
-let isAdmin = false, isLoggedIn = false, pinBuffer = "", darkMode = false;
+let isAdmin = false, isLoggedIn = false, darkMode = false;
+let userRole = null; // "global_admin" | "chef" | "employee" | null
 let loggedInUser = null; // { id, name, role } pour traçabilité
 let activeSection = "Toutes", searchQuery = "", sectionsExpanded = false;
 let showArchived = false, logFilter = "";

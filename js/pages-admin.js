@@ -478,12 +478,6 @@ async function saveEmployee(id) {
         ? `Este PIN ya está usado por ${conflict.name}.`
         : `Ce PIN est déjà utilisé par ${conflict.name}.`);
     }
-    // Empêcher d'utiliser le PIN admin réservé
-    if (pin === ADMIN_PIN) {
-      return alert(getUILang() === "es"
-        ? "Este PIN está reservado para el super-admin."
-        : "Ce PIN est réservé au super-admin.");
-    }
   }
   const data = {
     name,

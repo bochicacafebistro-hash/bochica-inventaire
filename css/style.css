@@ -1519,34 +1519,177 @@ tr.drag-over td{border-top:2px solid var(--accent)}
    PIN PAD (login)
    ═══════════════════════════════════════════════════════════════ */
 
-.pin-pad{display:flex;flex-direction:column;align-items:center;gap:var(--sp-4)}
-.pin-display{display:flex;gap:var(--sp-3)}
-.pin-dot{
-  width:15px;
-  height:15px;
-  border-radius:var(--radius-full);
-  border:2px solid var(--border-strong);
-  background:var(--surface);
-  transition:var(--transition-base);
+/* ═══════════════════════════════════════════════════════════════
+   LOGIN — username + password (remplace l'ancien PIN-pad)
+   ═══════════════════════════════════════════════════════════════ */
+.login-bg{
+  min-height:100vh;
+  background:linear-gradient(135deg, #0a0907 0%, #14110f 60%, #2a1f0a 100%);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:24px;
+  position:relative;
 }
-.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
-.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--sp-3)}
-.pin-btn{
-  width:62px;
-  height:62px;
-  border-radius:var(--radius-full);
-  border:2px solid var(--border-strong);
-  background:var(--surface);
-  font-size:var(--fs-lg);
+.login-lang-btn{
+  position:absolute;
+  top:18px;
+  right:18px;
+  background:rgba(255,255,255,.12);
+  border:1px solid rgba(255,255,255,.3);
+  color:#f5f1e8;
+  padding:8px 14px;
+  border-radius:var(--radius-pill);
+  font-family:var(--font-body);
   font-weight:700;
   cursor:pointer;
+  font-size:13px;
+  letter-spacing:1px;
+  backdrop-filter:blur(6px);
+}
+.login-brand{
+  margin-bottom:28px;
+  text-align:center;
+}
+.login-logo{
+  font-family:var(--font-heading);
+  font-weight:400;
+  font-size:52px;
+  letter-spacing:4px;
+  color:#f5f1e8;
+  line-height:1;
+}
+.login-logo span{color:var(--accent)}
+.login-tagline{
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:rgba(245,241,232,.6);
+  letter-spacing:2.5px;
+  margin-top:8px;
+  text-transform:uppercase;
+  font-weight:500;
+}
+
+.login-card{
+  background:var(--surface);
+  border-radius:var(--radius-xl);
+  padding:28px;
+  width:100%;
+  max-width:380px;
+  box-shadow:var(--shadow-modal);
+  display:flex;
+  flex-direction:column;
+  gap:16px;
+}
+.login-title{
+  font-family:var(--font-heading);
+  text-align:center;
+  color:var(--text);
+  font-size:32px;
+  margin:0;
+  font-weight:400;
+  letter-spacing:.03em;
+}
+.login-prompt{
+  text-align:center;
+  color:var(--text3);
+  font-size:var(--fs-sm);
+  margin:-8px 0 4px;
+  font-family:var(--font-body);
+}
+.login-field{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+.login-label{
+  font-size:var(--fs-xs);
+  color:var(--text2);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-family:var(--font-body);
+}
+.login-field input{
+  width:100%;
+  padding:12px 14px;
+  border:1.5px solid var(--border-strong);
+  border-radius:var(--radius-md);
+  background:var(--surface);
   color:var(--text);
   font-family:var(--font-body);
+  font-size:var(--fs-md);
   transition:var(--transition-fast);
 }
-.pin-btn:hover{background:var(--surface2);border-color:var(--accent)}
-.pin-btn:active{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
-.pin-error{color:var(--status-red);font-size:var(--fs-sm);font-weight:600;min-height:18px;text-align:center}
+.login-field input:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(var(--accent-rgb),.15);
+}
+.login-password-wrap{position:relative}
+.login-password-wrap input{padding-right:44px}
+.login-toggle-pw{
+  position:absolute;
+  right:8px;
+  top:50%;
+  transform:translateY(-50%);
+  background:transparent;
+  border:none;
+  color:var(--text3);
+  cursor:pointer;
+  padding:6px;
+  border-radius:var(--radius-sm);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transition:var(--transition-fast);
+}
+.login-toggle-pw:hover{background:var(--surface2);color:var(--text)}
+.login-error{
+  color:var(--status-red);
+  font-size:var(--fs-sm);
+  font-weight:600;
+  min-height:20px;
+  text-align:center;
+  font-family:var(--font-body);
+}
+.login-submit{
+  background:var(--accent);
+  color:var(--accent-text);
+  border:none;
+  border-radius:var(--radius-md);
+  padding:14px 20px;
+  font-family:var(--font-body);
+  font-size:var(--fs-md);
+  font-weight:700;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  letter-spacing:.02em;
+  transition:var(--transition-fast);
+  margin-top:4px;
+}
+.login-submit:hover:not(:disabled){
+  background:var(--accent-hover);
+  transform:translateY(-1px);
+  box-shadow:0 4px 12px rgba(var(--accent-rgb),.3);
+}
+.login-submit:disabled{
+  opacity:.6;
+  cursor:wait;
+  transform:none;
+}
+.login-submit svg{flex-shrink:0}
+
+/* Mobile : login prend toute la largeur */
+@media(max-width:480px){
+  .login-card{max-width:100%;padding:20px}
+  .login-logo{font-size:44px}
+  .login-title{font-size:26px}
+}
 
 /* ═══════════════════════════════════════════════════════════════
    ÉLÉMENTS DIVERS
@@ -1863,7 +2006,6 @@ tr.drag-over td{border-top:2px solid var(--accent)}
   .task-cols{grid-template-columns:1fr}
   .page{padding:var(--sp-3)}
   .topbar{padding:var(--sp-3)}
-  .pin-btn{width:58px;height:58px}
 }
 
 /* Mobile : section-tabs scrollables, sticky, boutons touch-friendly */

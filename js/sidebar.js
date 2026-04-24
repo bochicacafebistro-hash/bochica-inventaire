@@ -1,12 +1,9 @@
 // ── Sidebar & Navigation ──────────────────────────────
 function buildSidebar() {
   const nav = document.getElementById("sidebar-nav"); if (!nav) return;
-  const employeeNav = [
-    { icon: "package", label: t("nav_inventaire"), page: "inventaire" },
-    { icon: "file-text", label: t("nav_recipes"), page: "recettes" },
-    { icon: "clipboard", label: t("nav_my_tasks"), page: "taches" }
-  ];
-  const adminNav = [
+
+  // Menu complet avec sections — filtré ensuite selon le rôle via canAccess()
+  const fullNav = [
     { icon: "bar-chart", label: t("nav_dashboard"), page: "dashboard" },
     { section: t("nav_section_inventory") },
     { icon: "package", label: t("nav_inventaire"), page: "inventaire" },
@@ -23,7 +20,28 @@ function buildSidebar() {
     { section: t("nav_section_management") },
     { icon: "store", label: t("nav_suppliers"), page: "fournisseurs" },
   ];
-  const items = isAdmin ? adminNav : employeeNav;
+
+  // Filtrer par permission : on garde les items dont la page est autorisée,
+  // et les sections seulement si au moins un item après elles est autorisé.
+  const filtered = [];
+  fullNav.forEach((item, i) => {
+    if (item.section) {
+      // Ne pas ajouter la section tout de suite, on décidera après avoir vu ses enfants
+      filtered.push({ ...item, _isSection: true });
+    } else if (canAccess(item.page)) {
+      filtered.push(item);
+    }
+  });
+  // Retirer les sections vides (suivies d'une autre section ou de rien)
+  const items = filtered.filter((item, i) => {
+    if (!item._isSection) return true;
+    // Chercher le prochain item non-section
+    for (let j = i + 1; j < filtered.length; j++) {
+      if (!filtered[j]._isSection) return true; // il y a au moins un item après
+      if (filtered[j]._isSection) break; // section suivante → section actuelle vide
+    }
+    return false;
+  });
   nav.innerHTML = items.map(item => {
     if (item.section) return `<div class="nav-section">${item.section}</div>`;
     return `<div class="nav-item ${activePage === item.page ? "active" : ""}" onclick="navTo('${item.page}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navTo('${item.page}')}">
@@ -31,14 +49,18 @@ function buildSidebar() {
       <span>${item.label}</span>
     </div>`;
   }).join("");
-  // Rôle utilisateur avec icône + nom si disponible
+  // Rôle utilisateur avec icône + nom
   const roleEl = document.getElementById("topbar-role");
   if (roleEl) {
-    const roleIcon = isAdmin ? "crown" : "user";
-    const roleLabel = isAdmin ? t("role_admin") : t("role_employee");
-    const userName = (loggedInUser && loggedInUser.name && loggedInUser.id !== "_super_admin" && loggedInUser.id !== "_shared_employee")
-      ? ` · ${esc(loggedInUser.name)}`
-      : "";
+    const roleIconMap = { global_admin: "crown", chef: "utensils", employee: "user" };
+    const roleIcon = roleIconMap[userRole] || "user";
+    const roleLabelMap = {
+      global_admin: t("role_admin") || "Admin",
+      chef: "Chef",
+      employee: t("role_employee") || "Employé"
+    };
+    const roleLabel = roleLabelMap[userRole] || "";
+    const userName = (loggedInUser && loggedInUser.name) ? ` · ${esc(loggedInUser.name)}` : "";
     roleEl.innerHTML = `<span class="icon-inline">${icon(roleIcon, 14)} ${roleLabel}${userName}</span>`;
   }
   // Mettre à jour les boutons sidebar (dark + logout + lang)
@@ -68,6 +90,10 @@ function toggleUILang() {
 }
 
 function navTo(page) {
+  // Garde-fou : si le rôle n'a pas accès à cette page, on redirige à l'accueil
+  if (!canAccess(page)) {
+    page = getHomePage();
+  }
   activePage = page; searchQuery = "";
   buildSidebar(); renderPage();
   if (window.innerWidth <= 768) {
@@ -75,9 +101,9 @@ function navTo(page) {
   }
 }
 
-// Retour à l'accueil : dashboard (admin) ou inventaire (employé)
+// Retour à l'accueil : selon le rôle
 function goHome() {
-  navTo(isAdmin ? "dashboard" : "inventaire");
+  navTo(getHomePage());
 }
 
 function toggleSidebar() {
@@ -125,21 +151,29 @@ function renderPage() {
     }
   }
   const pc = document.getElementById("page-content"); if (!pc) return;
-  if (activePage === "dashboard" && isAdmin) pc.innerHTML = renderDashboard();
+  // Blocage final : si rôle sans accès à la page courante, message d'erreur
+  if (!canAccess(activePage)) {
+    pc.innerHTML = `<div class="page"><div class="empty">
+      <div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("alert", 36)}</div>
+      Accès non autorisé pour votre rôle. <br/>
+      <button class="btn btn-primary" style="margin-top:16px" onclick="goHome()">Retour à l'accueil</button>
+    </div></div>`;
+    return;
+  }
+  if (activePage === "dashboard") pc.innerHTML = renderDashboard();
   else if (activePage === "inventaire") pc.innerHTML = renderInventaire();
   else if (activePage === "rapport") pc.innerHTML = renderRapport();
-  else if (activePage === "historique" && isAdmin) pc.innerHTML = renderHistorique();
+  else if (activePage === "historique") pc.innerHTML = renderHistorique();
   else if (activePage === "taches") pc.innerHTML = renderTaches();
-  else if (activePage === "employes" && isAdmin) pc.innerHTML = renderEmployes();
-  else if (activePage === "depenses" && isAdmin) {
+  else if (activePage === "employes") pc.innerHTML = renderEmployes();
+  else if (activePage === "depenses") {
     pc.innerHTML = renderDepenses();
-    // Initialiser les graphiques Chart.js après le rendu
     setTimeout(() => { if (typeof initExpenseCharts === "function") initExpenseCharts(); }, 50);
   }
-  else if (activePage === "taxes" && isAdmin) pc.innerHTML = renderTaxes();
-  else if (activePage === "menu" && isAdmin) pc.innerHTML = renderMenu();
-  else if (activePage === "ingredients" && isAdmin) pc.innerHTML = renderIngredients();
-  else if (activePage === "recettes") pc.innerHTML = renderRecettes(); // Accessible aux employés
+  else if (activePage === "taxes") pc.innerHTML = renderTaxes();
+  else if (activePage === "menu") pc.innerHTML = renderMenu();
+  else if (activePage === "ingredients") pc.innerHTML = renderIngredients();
+  else if (activePage === "recettes") pc.innerHTML = renderRecettes();
   else if (activePage === "fournisseurs") pc.innerHTML = renderFournisseurs();
-  else pc.innerHTML = `<div class="page"><div class="empty">Accès non autorisé.</div></div>`;
+  else pc.innerHTML = `<div class="page"><div class="empty">Page introuvable.</div></div>`;
 }
