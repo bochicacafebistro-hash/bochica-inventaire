@@ -1,27 +1,8 @@
 // ── Utilitaires ───────────────────────────────────────
 function genId() { return Math.random().toString(36).slice(2, 10); }
 
-// ── Authentification : hash SHA-256 + vérification ────
-// Utilise l'API web native crypto.subtle.digest (pas de dépendance externe).
-async function hashPassword(password) {
-  const data = new TextEncoder().encode(String(password) + AUTH_SALT);
-  const buf = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(buf))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
-}
-
-// Vérifie un couple (username, password). Retourne un objet account ou null.
-async function verifyLogin(username, password) {
-  const key = String(username || "").toLowerCase().trim();
-  const account = AUTH_ACCOUNTS[key];
-  if (!account) return null;
-  const hash = await hashPassword(password);
-  if (hash !== account.passwordHash) return null;
-  return { ...account, username: key };
-}
-
 // ── Permissions par rôle ──────────────────────────────
+// (L'auth est gérée par Firebase Auth — voir auth.js)
 function canAccess(page) {
   if (!userRole) return false;
   const perm = ROLE_PERMISSIONS[userRole];

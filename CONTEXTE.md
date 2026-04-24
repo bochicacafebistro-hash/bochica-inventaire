@@ -1,6 +1,6 @@
 # 📋 CONTEXTE — Projet Bochica Inventaire
 
-> ⚠️ **Dernière mise à jour : 23 avril 2026** — alignement complet avec le site web (palette Crème Papier + Bebas Neue), gestion avancée des catégories, éditeur markdown pour les recettes, duplication universelle, logo cliquable.
+> ⚠️ **Dernière mise à jour : 24 avril 2026** — migration vers **Firebase Authentication** (backend sécurisé) + règles Firestore par rôle. Remplace l'ancien système SHA-256 côté client.
 
 ## 🏠 Description
 Application web de **gestion interne** pour le restaurant colombien Bochica.
@@ -13,11 +13,23 @@ Application web de **gestion interne** pour le restaurant colombien Bochica.
 - GitHub : https://github.com/bochicacafebistro-hash/bochica-inventaire
 - Vercel : https://bochica-inventaire.vercel.app
 
-## 🔑 Connexion PIN
-- Admin : `0000`
-- Employé : `1111`
-- Session sauvegardée dans localStorage (pas de déconnexion au rechargement)
-- **Saisie clavier supportée** : chiffres pour entrer le PIN, Backspace pour effacer un chiffre, Escape/Delete pour effacer tout
+## 🔑 Authentification (Firebase Auth)
+
+Migration v3.0.0 — voir `FIREBASE_AUTH_SETUP.md` pour la procédure de migration initiale.
+
+### Comptes
+| Username | Email interne | Rôle | Accès |
+|---|---|---|---|
+| **Bochica** | bochica@bochica.app | `global_admin` | Tout |
+| **Chef** | chef@bochica.app | `chef` | Inventaire, Menu, Ingrédients, Recettes |
+| **Employe** | employe@bochica.app | `employee` | Inventaire uniquement |
+
+### Sécurité
+- **Firebase Authentication** (backend Google) gère les mots de passe : bcrypt-hashés côté serveur, rate-limiting, tokens JWT signés
+- Le rôle est stocké dans **Firestore `/users/{uid}.role`** — vérifié côté serveur via les règles Firestore
+- **Session persistante** via `firebase.auth.Auth.Persistence.LOCAL` — restauration automatique au rechargement
+- L'utilisateur tape un **username simple** (Bochica) qui est traduit en email interne (bochica@bochica.app) via `AUTH_USER_EMAILS` dans `config.js`
+- **Les règles Firestore** (`firestore.rules` à la racine du repo) protègent l'accès à la BD : vérifient `request.auth != null` + le rôle de l'utilisateur pour chaque collection
 
 ## 🗂️ Structure des fichiers
 ```
@@ -28,6 +40,8 @@ bochica-inventaire/
 ├── favicon.ico
 ├── CONTEXTE.md             ← ce fichier
 ├── README.md
+├── firestore.rules         ← Règles Firestore (à publier dans la console Firebase)
+├── FIREBASE_AUTH_SETUP.md  ← Procédure migration vers Firebase Auth
 ├── css/
 │   └── style.css           ← Design system complet (2400+ lignes)
 ├── js/
@@ -267,6 +281,19 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 24 avril 2026 — Migration Firebase Auth + règles Firestore (v3.0.0) 🔐
+- **Retrait du système SHA-256 côté client** (AUTH_ACCOUNTS, AUTH_SALT, hashPassword, verifyLogin supprimés)
+- **Firebase Authentication** (Email/Password provider) pour la gestion des identifiants
+- Nouveau mapping `AUTH_USER_EMAILS` dans `config.js` : username → email interne
+- **Rôle lu depuis `/users/{uid}.role`** après login (vérifiable côté serveur)
+- Nouveau fichier **`firestore.rules`** : protection complète par rôle (global_admin / chef / employee)
+- Nouveau fichier **`FIREBASE_AUTH_SETUP.md`** : procédure migration initiale
+- `auth.js` refondu : `initAuth()` + `onAuthStateChanged` remplacent `restoreSession()`
+- `logout()` utilise `firebase.auth().signOut()`
+- Messages d'erreur Firebase mappés en français (user-friendly)
+- Anciennes sessions localStorage automatiquement nettoyées au chargement
+- SDK `firebase-auth-compat.js` ajouté dans `index.html`
 
 ### 23 avril 2026 — Séance d'améliorations (v1.2.0 → v1.4.0)
 - **v1.4.0 — Duplication universelle + fermeture dropdowns**

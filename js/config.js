@@ -9,30 +9,21 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
-// ── Authentification ──────────────────────────────────
-// Sécurité : les mots de passe ne sont JAMAIS stockés en clair.
-// On stocke SHA-256(password + AUTH_SALT) et on compare au moment du login.
-// ⚠️ Limitation : comme tout est côté client, un attaquant motivé pourrait lire
-// les hashes et tenter un brute-force. Pour une vraie sécurité, migrer vers
-// Firebase Authentication (backend de Google). Ce système reste un fort
-// compromis entre "mot de passe en clair" (dangereux) et "Firebase Auth" (refonte).
-const AUTH_SALT = "bochica-cafe-bistro-v2";
-const AUTH_ACCOUNTS = {
-  "bochica": {
-    passwordHash: "444193fbe195fa5f68dc365ed84ebcf1c819a37f2d4fbea27fbbaf8c53f9c469",
-    role: "global_admin",
-    displayName: "Admin Bochica"
-  },
-  "chef": {
-    passwordHash: "486eba619a1ba5bc2a2e45d4c62e2f4082951fab912ed30610ea3ccc7e1901bb",
-    role: "chef",
-    displayName: "Chef de cuisine"
-  },
-  "employe": {
-    passwordHash: "2ca6cca899c18ff05aec4e7d087b79ccaf60613abfc30a2141767ca0d99de6cf",
-    role: "employee",
-    displayName: "Employé"
-  }
+// ── Authentification (Firebase Auth) ──────────────────
+// Les mots de passe sont maintenant gérés par Firebase Authentication
+// (backend Google, hashé côté serveur avec bcrypt-like + rate-limiting intégré).
+// Le username saisi par l'utilisateur est traduit en email interne pour Firebase Auth.
+// Les rôles sont lus depuis Firestore /users/{uid}.role après connexion réussie.
+const AUTH_USER_EMAILS = {
+  "bochica": "bochica@bochica.app",
+  "chef":    "chef@bochica.app",
+  "employe": "employe@bochica.app"
+};
+// Noms d'affichage (utilisés à la place du displayName Firebase — on ne s'appuie pas dessus)
+const AUTH_DISPLAY_NAMES = {
+  "bochica@bochica.app": "Admin Bochica",
+  "chef@bochica.app":    "Chef de cuisine",
+  "employe@bochica.app": "Employé"
 };
 
 // Permissions par rôle : pages accessibles + pages modifiables (écriture)

@@ -1,42 +1,73 @@
 // ═══════════════════════════════════════════════════════════════
-// AUTHENTIFICATION — username + password avec hash SHA-256
-// Remplace l'ancien système de PIN à 4 chiffres
+// AUTHENTIFICATION — Firebase Authentication (email+password)
+// ───────────────────────────────────────────────────────────────
+// Le username saisi (ex: "Bochica") est traduit en email interne
+// (ex: bochica@bochica.app) via AUTH_USER_EMAILS puis envoyé à
+// firebase.auth().signInWithEmailAndPassword.
+// Après connexion, le rôle est lu depuis Firestore /users/{uid}.role.
+// Les règles Firestore vérifient request.auth.uid + ce rôle pour
+// autoriser/refuser les écritures côté serveur.
 // ═══════════════════════════════════════════════════════════════
 
-// ── Session persistante ───────────────────────────────
-function restoreSession() {
-  const saved = localStorage.getItem("bochica-session");
-  if (!saved) return false;
-  try {
-    const parsed = JSON.parse(saved);
-    // Nouveau format : { userRole, user: {username, displayName, role} }
-    if (parsed && parsed.userRole && ROLE_PERMISSIONS[parsed.userRole]) {
-      applyLogin(parsed.userRole, parsed.user || null);
-      return true;
+// Instance Auth Firebase (initialisée après firebase.initializeApp de config.js)
+const auth = firebase.auth();
+// Persistance : garder la session au-delà du rechargement (navigateur local)
+auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(err => {
+  console.warn("Auth persistence LOCAL indisponible :", err);
+});
+
+// ── Bootstrap : appelé une fois au chargement de l'app ────────
+// Écoute les changements d'état d'authentification (login/logout,
+// restauration de session automatique, expiration de token, etc.)
+function initAuth() {
+  // Masquer les deux écrans au départ — onAuthStateChanged décidera lequel afficher
+  auth.onAuthStateChanged(async (fbUser) => {
+    if (!fbUser) {
+      // Pas connecté → afficher le login
+      userRole = null;
+      isAdmin = false;
+      isLoggedIn = false;
+      loggedInUser = null;
+      document.getElementById("app-shell").style.display = "none";
+      showLogin();
+      return;
     }
-    // Format legacy { role: "admin" | "employe" } → mappé sur global_admin / employee
-    if (parsed && parsed.role === "admin") {
-      applyLogin("global_admin", parsed.user || { name: "Admin", role: "admin" });
-      return true;
+    // Connecté → récupérer le rôle depuis Firestore /users/{uid}
+    try {
+      const doc = await db.collection("users").doc(fbUser.uid).get();
+      if (!doc.exists) {
+        alert("Ton compte Firebase Auth existe mais n'a pas de rôle attribué dans Firestore.\nContacte l'administrateur.");
+        await auth.signOut();
+        return;
+      }
+      const role = doc.data().role;
+      if (!ROLE_PERMISSIONS[role]) {
+        alert(`Rôle inconnu ou invalide : "${role}". Déconnexion.`);
+        await auth.signOut();
+        return;
+      }
+      const displayName = AUTH_DISPLAY_NAMES[fbUser.email] || fbUser.email;
+      applyLogin(role, {
+        id: fbUser.uid,
+        name: displayName,
+        role,
+        email: fbUser.email
+      });
+    } catch (err) {
+      console.error("Lecture /users/{uid} échouée :", err);
+      alert("Impossible de charger ton profil. Vérifie ta connexion.\n\n" + (err.message || err));
+      try { await auth.signOut(); } catch (_) {}
     }
-    if (parsed && parsed.role === "employe") {
-      applyLogin("employee", parsed.user || { name: "Employé", role: "Employé" });
-      return true;
-    }
-  } catch {
-    // String legacy
-    if (saved === "admin") { applyLogin("global_admin", { name: "Admin" }); return true; }
-    if (saved === "employe") { applyLogin("employee", { name: "Employé" }); return true; }
-  }
-  return false;
+  });
 }
 
+// ── Application du login (fait basculer l'UI en mode connecté) ─
 function applyLogin(role, user) {
   userRole = role;
-  // Rétrocompat : isAdmin = true pour global_admin ET chef (tous deux peuvent modifier dans leurs sections)
+  // Rétrocompat : isAdmin=true pour global_admin ET chef (peuvent modifier)
   isAdmin = (role === "global_admin" || role === "chef");
   isLoggedIn = true;
-  loggedInUser = user || null;
+  loggedInUser = user;
   activePage = getHomePage();
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app-shell").style.display = "block";
@@ -104,9 +135,10 @@ function toggleLoginPasswordVisibility() {
   }
 }
 
+// ── Soumission du formulaire ──────────────────────────
 async function submitLogin(event) {
   if (event && event.preventDefault) event.preventDefault();
-  const username = document.getElementById("login-username").value;
+  const username = (document.getElementById("login-username").value || "").trim().toLowerCase();
   const password = document.getElementById("login-password").value;
   const errEl = document.getElementById("login-error");
   const submitBtn = document.getElementById("login-submit");
@@ -116,7 +148,13 @@ async function submitLogin(event) {
     return;
   }
 
-  // Désactiver le bouton pendant la vérification
+  // Traduire username → email pour Firebase Auth
+  const email = AUTH_USER_EMAILS[username];
+  if (!email) {
+    if (errEl) errEl.textContent = "Nom d'utilisateur ou mot de passe incorrect.";
+    return;
+  }
+
   if (submitBtn) {
     submitBtn.disabled = true;
     submitBtn.innerHTML = `<span>Vérification...</span>`;
@@ -124,28 +162,26 @@ async function submitLogin(event) {
   if (errEl) errEl.textContent = "";
 
   try {
-    const account = await verifyLogin(username, password);
-    if (!account) {
-      if (errEl) errEl.textContent = "Nom d'utilisateur ou mot de passe incorrect.";
-      // Vider le mot de passe, garder le nom d'utilisateur
-      const pwInput = document.getElementById("login-password");
-      if (pwInput) { pwInput.value = ""; pwInput.focus(); }
-      return;
-    }
-    const payload = {
-      userRole: account.role,
-      user: {
-        id: account.username,
-        name: account.displayName,
-        role: account.role,
-        username: account.username
-      }
-    };
-    localStorage.setItem("bochica-session", JSON.stringify(payload));
-    applyLogin(account.role, payload.user);
+    await auth.signInWithEmailAndPassword(email, password);
+    // onAuthStateChanged prend le relais et appelle applyLogin
   } catch (err) {
-    console.error("Login error:", err);
-    if (errEl) errEl.textContent = "Erreur technique. Réessayez.";
+    console.error("Firebase Auth login error:", err);
+    if (errEl) {
+      // Messages user-friendly selon le code d'erreur Firebase
+      const map = {
+        "auth/invalid-credential":   "Nom d'utilisateur ou mot de passe incorrect.",
+        "auth/wrong-password":        "Nom d'utilisateur ou mot de passe incorrect.",
+        "auth/user-not-found":        "Nom d'utilisateur ou mot de passe incorrect.",
+        "auth/invalid-email":         "Nom d'utilisateur invalide.",
+        "auth/user-disabled":         "Ce compte est désactivé. Contacte l'administrateur.",
+        "auth/too-many-requests":     "Trop de tentatives. Réessaie dans quelques minutes.",
+        "auth/network-request-failed": "Problème de connexion. Vérifie ton réseau."
+      };
+      errEl.textContent = map[err.code] || `Erreur : ${err.message || err.code || err}`;
+    }
+    // Vider le mot de passe, garder le nom d'utilisateur
+    const pwInput = document.getElementById("login-password");
+    if (pwInput) { pwInput.value = ""; pwInput.focus(); }
   } finally {
     if (submitBtn) {
       submitBtn.disabled = false;
@@ -155,13 +191,19 @@ async function submitLogin(event) {
 }
 
 // ── Déconnexion ───────────────────────────────────────
-function logout() {
-  userRole = null;
-  isAdmin = false;
-  isLoggedIn = false;
-  loggedInUser = null;
-  localStorage.removeItem("bochica-session");
-  document.getElementById("app-shell").style.display = "none";
-  document.getElementById("login-screen").style.display = "block";
-  showLogin();
+async function logout() {
+  try {
+    await auth.signOut();
+    // onAuthStateChanged va déclencher showLogin() automatiquement
+  } catch (err) {
+    console.error("Logout error:", err);
+  }
+}
+
+// ── restoreSession — conservé pour compatibilité avec l'ancien appel ──
+// Retourne false : laisse initAuth gérer la session via onAuthStateChanged.
+function restoreSession() {
+  // Nettoyer l'ancien format localStorage (legacy SHA-256) si présent
+  try { localStorage.removeItem("bochica-session"); } catch (_) {}
+  return false;
 }

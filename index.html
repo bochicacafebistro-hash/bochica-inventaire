@@ -32,6 +32,7 @@
 
   <!-- ═══ Firebase ═══ -->
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
   <!-- ═══ Bibliothèques externes (chargées en defer pour pas bloquer le rendu) ═══ -->
@@ -110,7 +111,8 @@
   document.getElementById("search-btn").innerHTML = icon("search", 16);
   document.getElementById("logout-btn").innerHTML = icon("log-out", 14) + ' <span>' + t("logout") + '</span>';
   // Le bouton dark est mis à jour par initDark()/toggleDark()
-  if (!restoreSession()) showLogin();
+  // Firebase Auth : onAuthStateChanged gère le login/logout automatiquement
+  initAuth();
 
   // Enregistrer le service worker pour PWA
   if ('serviceWorker' in navigator) {

@@ -1,0 +1,126 @@
+rules_version = '2';
+
+// ═══════════════════════════════════════════════════════════════
+// Règles Firestore — Bochica Inventaire
+// ───────────────────────────────────────────────────────────────
+// Ces règles protègent l'accès aux données par rôle côté serveur
+// (vérifié par Firebase avant toute lecture/écriture).
+//
+// Prérequis : chaque utilisateur authentifié doit avoir un doc
+// /users/{uid} avec un champ `role` ∈ {"global_admin", "chef", "employee"}
+//
+// À appliquer dans la Console Firebase :
+//   Firestore → Règles → Coller ce contenu → Publier
+// ═══════════════════════════════════════════════════════════════
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helpers ───────────────────────────────────────
+    function isAuthed() {
+      return request.auth != null;
+    }
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    function userRole() {
+      return userDoc().role;
+    }
+    function isAdmin()     { return isAuthed() && userRole() == "global_admin"; }
+    function isChef()      { return isAuthed() && userRole() == "chef"; }
+    function isEmployee()  { return isAuthed() && userRole() == "employee"; }
+
+    // Chef a accès à : inventaire, menu, ingrédients, recettes (lecture + écriture)
+    function isChefOrAdmin() { return isAdmin() || isChef(); }
+
+    // Employee a accès à : inventaire uniquement (écriture du stock)
+    function canReadInventory()  { return isAuthed(); } // tous les connectés peuvent lire le stock
+    function canWriteInventory() { return isAuthed(); } // tous peuvent mettre à jour le stock
+
+    // ── /users/{uid} : profils utilisateurs (rôles) ──
+    // Chaque user peut lire son propre profil. Seul l'admin peut modifier les rôles.
+    match /users/{uid} {
+      allow read: if isAuthed() && (request.auth.uid == uid || isAdmin());
+      allow write: if isAdmin();
+    }
+
+    // ── /products : inventaire ────────────────────────
+    match /products/{doc=**} {
+      allow read:  if canReadInventory();
+      allow write: if canWriteInventory();
+    }
+
+    // ── /settings : paramètres globaux (categories, schedule) ──
+    match /settings/{doc=**} {
+      allow read:  if isAuthed();
+      allow write: if isChefOrAdmin();
+    }
+
+    // ── /suppliers : fournisseurs ─────────────────────
+    match /suppliers/{doc=**} {
+      allow read:  if isAuthed();
+      allow write: if isAdmin();
+    }
+
+    // ── /employees : fiches employés + shifts ─────────
+    match /employees/{doc=**} {
+      allow read:  if isAuthed();
+      allow write: if isAdmin();
+    }
+
+    // ── /tasks : Kanban tâches ────────────────────────
+    match /tasks/{doc=**} {
+      allow read:  if isAuthed();
+      // Tous peuvent changer le statut d'une tâche ; admin seul peut créer/supprimer
+      allow create, delete: if isAdmin();
+      allow update: if isAuthed();
+    }
+
+    // ── /menu : items du menu ─────────────────────────
+    match /menu/{doc=**} {
+      allow read:  if isAuthed();
+      allow write: if isChefOrAdmin();
+    }
+
+    // ── /ingredients : ingrédients (food cost) ────────
+    match /ingredients/{doc=**} {
+      allow read:  if isAuthed();
+      allow write: if isChefOrAdmin();
+    }
+
+    // ── /recipes : livre de cuisine ───────────────────
+    match /recipes/{doc=**} {
+      allow read:  if isAuthed();
+      allow write: if isChefOrAdmin();
+    }
+
+    // ── /expenses, /revenues, /expenseCategories,
+    //    /fixedExpenseTemplates : finances (admin seul) ──
+    match /expenses/{doc=**} {
+      allow read, write: if isAdmin();
+    }
+    match /revenues/{doc=**} {
+      allow read, write: if isAdmin();
+    }
+    match /expenseCategories/{doc=**} {
+      allow read:  if isAuthed();
+      allow write: if isAdmin();
+    }
+    match /fixedExpenseTemplates/{doc=**} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── /logs : historique (lecture authentifiée, écriture par app) ──
+    match /logs/{doc=**} {
+      allow read:  if isAuthed();
+      allow create: if isAuthed();  // toutes les actions logguées
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Refus par défaut ──────────────────────────────
+    // Si une collection inconnue est ajoutée par erreur, elle est refusée.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
