@@ -173,7 +173,10 @@ function renderEmployes() {
                   <span class="schedule-emp-grip" draggable="true" ondragstart="empRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 14)}</span>
                   <div class="schedule-emp-info">
                     <div class="schedule-emp-name">${esc(row.emp.name || "")}</div>
-                    ${row.emp.role ? `<div class="schedule-emp-role">${esc(row.emp.role)}</div>` : ""}
+                    <div class="schedule-emp-meta">
+                      ${row.emp.section ? `<span class="schedule-emp-section schedule-emp-section--${row.emp.section}">${row.emp.section === "cuisine" ? icon("utensils", 10) : row.emp.section === "service" ? icon("users", 10) : ""}${row.emp.section === "cuisine" ? "Cuisine" : row.emp.section === "service" ? "Service" : "Autre"}</span>` : ""}
+                      ${row.emp.role ? `<span class="schedule-emp-role">${esc(row.emp.role)}</span>` : ""}
+                    </div>
                   </div>
                 </div>
               </td>
@@ -253,6 +256,25 @@ function renderEmployes() {
             </tr>
           </tfoot>
         </table>
+      </div>
+
+      <!-- ══ Graphique de couverture horaire ══ -->
+      <div class="card coverage-card">
+        <div class="coverage-header">
+          <div>
+            <h3 class="coverage-title">Couverture — employés sur le plancher</h3>
+            <div class="coverage-subtitle">Nombre d'employés présents par heure, pour chaque jour de la semaine</div>
+          </div>
+          <div class="coverage-filter" role="tablist" aria-label="Filtrer par section">
+            <button class="coverage-tab ${scheduleCoverageSection === "all" ? "is-active" : ""}" onclick="setCoverageSection('all')" role="tab" aria-selected="${scheduleCoverageSection === "all"}">Tous</button>
+            <button class="coverage-tab ${scheduleCoverageSection === "service" ? "is-active" : ""}" onclick="setCoverageSection('service')" role="tab" aria-selected="${scheduleCoverageSection === "service"}">${icon("users", 12)} Service</button>
+            <button class="coverage-tab ${scheduleCoverageSection === "cuisine" ? "is-active" : ""}" onclick="setCoverageSection('cuisine')" role="tab" aria-selected="${scheduleCoverageSection === "cuisine"}">${icon("utensils", 12)} Cuisine</button>
+            <button class="coverage-tab ${scheduleCoverageSection === "other" ? "is-active" : ""}" onclick="setCoverageSection('other')" role="tab" aria-selected="${scheduleCoverageSection === "other"}">Autre</button>
+          </div>
+        </div>
+        <div class="coverage-canvas-wrap">
+          <canvas id="coverage-chart" height="280"></canvas>
+        </div>
       </div>
 
       <!-- ══ Cartes équipe (inchangées) ══ -->
@@ -522,6 +544,14 @@ function openEmployeeModal(id) {
     <label>${t("emp_field_role")} <span style="font-weight:400;color:var(--text3);font-size:11px">(détail)</span>
       <input id="e-role" value="${esc(emp?.role || "")}" placeholder="ex: Serveur, Cuisinier, Manager..."/>
     </label>
+    <label>Section
+      <select id="e-section">
+        <option value="service"  ${(emp?.section || "service") === "service"  ? "selected" : ""}>Service à la clientèle</option>
+        <option value="cuisine"  ${emp?.section === "cuisine"  ? "selected" : ""}>Cuisine</option>
+        <option value="other"    ${emp?.section === "other"    ? "selected" : ""}>Autre</option>
+      </select>
+      <span class="field-hint">${icon("info", 11)} Utilisée pour le graphique de couverture horaire.</span>
+    </label>
     <div class="form-row">
       <label>${t("emp_field_phone")}<input id="e-phone" value="${esc(emp?.phone || "")}"/></label>
       <label>${t("emp_field_email")}<input id="e-email" value="${esc(emp?.email || "")}"/></label>
@@ -562,6 +592,7 @@ async function saveEmployee(id) {
   const data = {
     name,
     role: document.getElementById("e-role").value,
+    section: document.getElementById("e-section").value || "service",
     phone: document.getElementById("e-phone").value,
     email: document.getElementById("e-email").value,
     hourlyRate: Number(document.getElementById("e-hourly-rate").value) || 0,
@@ -578,6 +609,198 @@ async function saveEmployee(id) {
     });
   }
   closeModal();
+}
+
+// ══════════════════════════════════════════════════════
+// GRAPHIQUE DE COUVERTURE — nombre d'employés présents par heure/jour
+// ══════════════════════════════════════════════════════
+
+function setCoverageSection(section) {
+  scheduleCoverageSection = section;
+  renderPage();
+}
+
+// Convertit "HH:MM" en float : "10:30" → 10.5
+function parseTimeToFloat(hhmm) {
+  if (!hhmm || typeof hhmm !== "string") return null;
+  const [h, m] = hhmm.split(":").map(Number);
+  if (isNaN(h)) return null;
+  return h + (Number(m) || 0) / 60;
+}
+
+// Calcule le nombre d'employés présents à l'heure H du jour J
+// (H est un entier représentant l'heure. Présence = [start, end) dans cette heure.)
+function countCoverageAtHour(H, dk, sectionFilter) {
+  let count = 0;
+  for (const emp of employees) {
+    if (sectionFilter !== "all") {
+      const empSection = emp.section || "service";
+      if (empSection !== sectionFilter) continue;
+    }
+    const s = (emp.shifts || {})[dk];
+    if (!s || !s.start || !s.end) continue;
+    let start = parseTimeToFloat(s.start);
+    let end = parseTimeToFloat(s.end);
+    if (start == null || end == null) continue;
+    // Quart qui passe minuit → étendre la fin
+    if (end <= start) end += 24;
+    // L'employé est compté pour l'heure H si start ≤ H < end (ou avec passage minuit : H+24)
+    if (H >= start && H < end) count++;
+    else if (H + 24 >= start && H + 24 < end) count++; // cas edge passage minuit
+  }
+  return count;
+}
+
+// Construit et affiche le graphique (appelé après chaque render de la page Horaires)
+function initCoverageChart() {
+  const canvas = document.getElementById("coverage-chart");
+  if (!canvas) return;
+  if (typeof Chart === "undefined") {
+    canvas.parentNode.innerHTML = `<div class="empty" style="padding:var(--sp-5)">Chargement du graphique...</div>`;
+    return;
+  }
+
+  // Détruire l'instance précédente (évite les fuites mémoire + superposition)
+  if (_coverageChartInstance) {
+    try { _coverageChartInstance.destroy(); } catch (_) {}
+    _coverageChartInstance = null;
+  }
+
+  const weekStart = getWeekStart(scheduleWeekOffset || 0);
+  const openDays = Array.isArray(scheduleSettings.openDays) ? scheduleSettings.openDays : [0,1,2,3,4,5,6];
+  const visibleIdx = [0,1,2,3,4,5,6].filter(i => openDays.includes(i));
+
+  // Déterminer la plage X dynamique : min start → max end parmi tous les shifts
+  // (après filtre section) sur les jours ouverts de la semaine.
+  let minH = 24, maxH = 0;
+  const daySection = scheduleCoverageSection;
+  let anyShift = false;
+  visibleIdx.forEach(i => {
+    const d = new Date(weekStart); d.setDate(d.getDate() + i);
+    const dk = d.toISOString().slice(0, 10);
+    for (const emp of employees) {
+      if (daySection !== "all") {
+        const empSection = emp.section || "service";
+        if (empSection !== daySection) continue;
+      }
+      const s = (emp.shifts || {})[dk];
+      if (!s || !s.start || !s.end) continue;
+      const sh = parseTimeToFloat(s.start);
+      let eh = parseTimeToFloat(s.end);
+      if (sh == null || eh == null) continue;
+      if (eh <= sh) eh += 24;
+      minH = Math.min(minH, Math.floor(sh));
+      maxH = Math.max(maxH, Math.ceil(eh));
+      anyShift = true;
+    }
+  });
+
+  // Aucune donnée → placeholder sympa
+  if (!anyShift) {
+    const wrap = canvas.parentNode;
+    wrap.innerHTML = `<div class="empty coverage-empty">
+      <div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("bar-chart", 36)}</div>
+      Aucun quart saisi pour cette semaine ${daySection !== "all" ? `(section ${daySection})` : ""}.<br>
+      <span style="font-size:13px;color:var(--text3)">Ajoutez des horaires ci-dessus pour voir le graphique.</span>
+    </div>`;
+    return;
+  }
+
+  // Labels heures (entiers) de minH à maxH exclus : "12h", "13h"...
+  const labels = [];
+  for (let h = minH; h < maxH; h++) {
+    labels.push((h % 24) + "h");
+  }
+
+  // Datasets : un par jour ouvert
+  const DAY_COLORS = {
+    0: "#8b5cf6", // Lun - violet
+    1: "#14b8a6", // Mar - teal
+    2: "#4a90e2", // Mer - bleu
+    3: "#e74c3c", // Jeu - rouge
+    4: "#F7B32C", // Ven - jaune
+    5: "#7dbf66", // Sam - vert
+    6: "#f97316"  // Dim - orange
+  };
+  const datasets = visibleIdx.map(i => {
+    const d = new Date(weekStart); d.setDate(d.getDate() + i);
+    const dk = d.toISOString().slice(0, 10);
+    const data = [];
+    for (let h = minH; h < maxH; h++) {
+      data.push(countCoverageAtHour(h, dk, daySection));
+    }
+    const color = DAY_COLORS[i];
+    return {
+      label: DAYS_FR[i],
+      data,
+      backgroundColor: color,
+      borderColor: color,
+      borderWidth: 0,
+      borderRadius: 3,
+      barPercentage: 0.85,
+      categoryPercentage: 0.85
+    };
+  });
+
+  // Couleurs du thème (dark / light)
+  const textColor   = darkMode ? "rgba(245,241,232,.72)" : "rgba(14,13,12,.72)";
+  const gridColor   = darkMode ? "rgba(245,241,232,.08)" : "rgba(14,13,12,.08)";
+  const tooltipBg   = darkMode ? "#25201d" : "#ffffff";
+  const tooltipText = darkMode ? "#f5f1e8" : "#0e0d0c";
+
+  _coverageChartInstance = new Chart(canvas, {
+    type: "bar",
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: {
+          position: "top",
+          labels: {
+            color: textColor,
+            font: { family: "Inter, sans-serif", size: 12, weight: 500 },
+            usePointStyle: true,
+            pointStyle: "rectRounded",
+            padding: 14
+          }
+        },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipText,
+          borderColor: gridColor,
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 8,
+          titleFont: { size: 13, weight: 700 },
+          bodyFont: { size: 12 },
+          callbacks: {
+            label: ctx => `${ctx.dataset.label} : ${ctx.parsed.y} employé${ctx.parsed.y > 1 ? "s" : ""}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: "Heure", color: textColor, font: { size: 11, weight: 600 } },
+          grid: { display: false },
+          ticks: { color: textColor, font: { family: "Inter, sans-serif", size: 11 } }
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: "Employés", color: textColor, font: { size: 11, weight: 600 } },
+          grid: { color: gridColor },
+          ticks: {
+            color: textColor,
+            font: { family: "Inter, sans-serif", size: 11 },
+            stepSize: 1,
+            precision: 0
+          }
+        }
+      }
+    }
+  });
 }
 
 // ══════════════════════════════════════════════════════

@@ -32,3 +32,7 @@ let scheduleWeekOffset = 0; // 0 = semaine courante, -1 = précédente, +1 = sui
 // openDays : indices des jours de la semaine où le resto est ouvert (0=Lun ... 6=Dim)
 // Par défaut 7/7. Les jours absents sont cachés de la grille.
 let scheduleSettings = { salesRatio: 0.32, actualSales: {}, openDays: [0, 1, 2, 3, 4, 5, 6] };
+// Filtre du graphique de couverture horaire : "all" | "cuisine" | "service" | "other"
+let scheduleCoverageSection = "all";
+// Instance Chart.js (détruit/recréé à chaque render pour éviter les fuites)
+let _coverageChartInstance = null;

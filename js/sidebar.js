@@ -168,7 +168,11 @@ function renderPage() {
   else if (activePage === "rapport") pc.innerHTML = renderRapport();
   else if (activePage === "historique") pc.innerHTML = renderHistorique();
   else if (activePage === "taches") pc.innerHTML = renderTaches();
-  else if (activePage === "employes") pc.innerHTML = renderEmployes();
+  else if (activePage === "employes") {
+    pc.innerHTML = renderEmployes();
+    // Initialiser le graphique de couverture après l'injection du DOM
+    setTimeout(() => { if (typeof initCoverageChart === "function") initCoverageChart(); }, 50);
+  }
   else if (activePage === "depenses") {
     pc.innerHTML = renderDepenses();
     setTimeout(() => { if (typeof initExpenseCharts === "function") initExpenseCharts(); }, 50);

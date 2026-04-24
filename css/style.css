@@ -984,16 +984,127 @@ tr:last-child td{border-bottom:none}
   overflow:hidden;
   text-overflow:ellipsis;
 }
+.schedule-emp-meta{
+  display:flex;
+  flex-direction:row;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:4px;
+  margin-top:2px;
+  min-width:0;
+}
 .schedule-emp-role{
   font-family:var(--font-body);
   font-size:var(--fs-xs);
   color:var(--text3);
   font-weight:500;
-  margin-top:1px;
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  max-width:160px;
+  max-width:140px;
+}
+.schedule-emp-section{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  font-family:var(--font-body);
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  padding:2px 6px;
+  border-radius:var(--radius-sm);
+  white-space:nowrap;
+  flex-shrink:0;
+}
+.schedule-emp-section--service{
+  background:rgba(74,144,226,.15);
+  color:var(--blue-text);
+}
+.schedule-emp-section--cuisine{
+  background:rgba(247,179,44,.2);
+  color:var(--accent-warm);
+}
+.schedule-emp-section--other{
+  background:var(--surface2);
+  color:var(--text3);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   GRAPHIQUE COUVERTURE HORAIRE
+   ═══════════════════════════════════════════════════════════════ */
+.coverage-card{
+  margin-top:var(--sp-5);
+  padding:var(--sp-5) var(--sp-4);
+}
+.coverage-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  flex-wrap:wrap;
+  gap:var(--sp-3);
+  margin-bottom:var(--sp-4);
+}
+.coverage-title{
+  font-family:var(--font-heading);
+  font-size:26px;
+  margin:0;
+  color:var(--text);
+  letter-spacing:.02em;
+  line-height:1.1;
+}
+.coverage-subtitle{
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  color:var(--text3);
+  margin-top:4px;
+}
+.coverage-filter{
+  display:inline-flex;
+  background:var(--surface2);
+  border-radius:var(--radius-pill);
+  padding:3px;
+  gap:2px;
+  flex-wrap:wrap;
+}
+.coverage-tab{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:6px 12px;
+  border:none;
+  background:transparent;
+  color:var(--text2);
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  font-weight:600;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  transition:var(--transition-fast);
+  white-space:nowrap;
+}
+.coverage-tab:hover{color:var(--text)}
+.coverage-tab.is-active{
+  background:var(--accent);
+  color:var(--accent-text);
+  box-shadow:0 1px 3px rgba(var(--accent-rgb),.25);
+}
+.coverage-canvas-wrap{
+  position:relative;
+  height:320px;
+  width:100%;
+}
+.coverage-empty{
+  min-height:260px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+@media(max-width:640px){
+  .coverage-header{flex-direction:column;align-items:stretch}
+  .coverage-canvas-wrap{height:260px}
+  .coverage-tab{padding:6px 10px;font-size:12px}
 }
 
 /* États du drag & drop sur une ligne employé */
