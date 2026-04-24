@@ -118,7 +118,7 @@ function renderEmployes() {
 
   return `<div class="page">
     <div class="toolbar">
-      <h2 style="font-size:22px;margin:0">Employés & Horaires</h2>
+      <h2 class="page-title">Employés & Horaires</h2>
       <button class="btn btn-primary" onclick="openEmployeeModal()">${icon("plus", 16)} ${t("emp_add")}</button>
     </div>
 
@@ -137,17 +137,24 @@ function renderEmployes() {
           <button class="btn-icon-only" onclick="changeScheduleWeek(1)" aria-label="Semaine suivante" title="Semaine suivante">${icon("chevron-right", 16)}</button>
         </div>
         <div class="schedule-actions">
+          <!-- Actions fréquentes (visibles pour tous les admins) -->
           <button class="btn-secondary btn-sm" onclick="openOpenDaysModal()" title="Choisir les jours d'ouverture">${icon("calendar", 14)} Jours ouverts</button>
-          <button class="btn-secondary btn-sm" onclick="duplicateScheduleToNextWeek()" title="Copier cet horaire vers la semaine suivante">${icon("copy", 14)} Copier → Semaine ${weekNum + 1}</button>
-          ${userRole === "global_admin" ? `
-            <button class="btn-secondary btn-sm" onclick="applyPayrollConfigs()" title="Configurer les salariés (Alvaro = 35h × 23$) sans toucher aux shifts">${icon("dollar-sign", 14)} Appliquer salaires fixes</button>
-            <button class="btn-secondary btn-sm" onclick="seedScheduleFromTemplate()" title="Importer l'horaire type Bochica dans la semaine affichée">${icon("download", 14)} Importer horaire type</button>
-          ` : ""}
-          <div class="schedule-ratio-pill" title="Ratio salaires / ventes : quand tu changes la valeur, les Ventes prévues sont recalculées">
+          <button class="btn-secondary btn-sm" onclick="duplicateScheduleToNextWeek()" title="Copier cet horaire vers la semaine suivante">${icon("copy", 14)} Copier → S${weekNum + 1}</button>
+          <div class="schedule-ratio-pill" title="Ratio salaires / ventes : les Ventes prévues sont recalculées instantanément">
             <span class="schedule-ratio-pill__label">${icon("trending-up", 14)} Ratio</span>
             <input id="sched-ratio" type="number" min="1" max="100" step="0.5" value="${(ratio * 100).toFixed(1)}" onchange="updateSalesRatio(this.value)" oninput="updateSalesRatioLive(this.value)" aria-label="Ratio salaires sur ventes"/>
             <span class="schedule-ratio-pill__unit">%</span>
           </div>
+          ${userRole === "global_admin" ? `
+            <!-- Actions avancées (rares) regroupées dans un menu ⋯ -->
+            <div class="menu-wrap">
+              <button class="btn-secondary btn-sm" onclick="toggleDrop('sched-adv')" aria-label="Actions avancées" title="Actions avancées">${icon("more-horizontal", 14)} Plus</button>
+              <div class="dropdown" id="drop-sched-adv">
+                <button onclick="applyPayrollConfigs();closeAllDrops()">${icon("dollar-sign", 14)} Appliquer salaires fixes</button>
+                <button onclick="seedScheduleFromTemplate();closeAllDrops()">${icon("download", 14)} Importer horaire type</button>
+              </div>
+            </div>
+          ` : ""}
         </div>
       </div>
 
@@ -204,11 +211,13 @@ function renderEmployes() {
                 const startVal = s?.start || "";
                 const endVal = s?.end || "";
                 const dk = dayKey(weekDays[k]);
+                const empName = esc(row.emp.name || "");
+                const dayName = DAYS_FR[visibleIdx[k]];
                 return `<td class="schedule-td--cell ${filled ? "is-filled" : ""}">
-                  <select class="schedule-time" onchange="updateShift('${row.emp.id}','${dk}','start',this.value)" aria-label="Entrée ${DAYS_FR[visibleIdx[k]]}">${buildTimeOptions(startVal)}</select>
+                  <select class="schedule-time" onchange="updateShift('${row.emp.id}','${dk}','start',this.value)" aria-label="${empName}, entrée ${dayName}">${buildTimeOptions(startVal)}</select>
                 </td>
                 <td class="schedule-td--cell ${filled ? "is-filled" : ""}">
-                  <select class="schedule-time" onchange="updateShift('${row.emp.id}','${dk}','end',this.value)" aria-label="Sortie ${DAYS_FR[visibleIdx[k]]}">${buildTimeOptions(endVal)}</select>
+                  <select class="schedule-time" onchange="updateShift('${row.emp.id}','${dk}','end',this.value)" aria-label="${empName}, sortie ${dayName}">${buildTimeOptions(endVal)}</select>
                 </td>`;
               }).join("")}
               <td class="schedule-td--summary">
@@ -248,11 +257,13 @@ function renderEmployes() {
             <!-- Ligne Ventes réelles (input) -->
             <tr class="schedule-tfoot-row schedule-tfoot-row--actual">
               <td class="schedule-tfoot-label">Ventes réelles</td>
-              ${weekDays.map(d => {
+              ${weekDays.map((d, k) => {
                 const dk = dayKey(d);
                 const val = Number(scheduleSettings.actualSales?.[dk] || 0);
+                const dayName = DAYS_FR[visibleIdx[k]];
+                const dateLabel = `${d.getDate()}/${d.getMonth() + 1}`;
                 return `<td colspan="2" class="schedule-tfoot-val">
-                  <input type="number" step="0.01" min="0" class="schedule-sales-input" placeholder="—" value="${val || ""}" onchange="updateActualSales('${dk}',this.value)"/>
+                  <input type="number" step="0.01" min="0" class="schedule-sales-input" placeholder="—" value="${val || ""}" onchange="updateActualSales('${dk}',this.value)" aria-label="Ventes réelles ${dayName} ${dateLabel}"/>
                 </td>`;
               }).join("")}
               <td class="schedule-tfoot-val schedule-td--total" colspan="3">${(() => {
@@ -260,23 +271,27 @@ function renderEmployes() {
                 return total ? fmtMoney(total) : "";
               })()}</td>
             </tr>
-            <!-- Ligne Écart -->
+            <!-- Ligne Écart (mise en valeur — KPI critique) -->
             <tr class="schedule-tfoot-row schedule-tfoot-row--gap">
-              <td class="schedule-tfoot-label">Écart</td>
+              <td class="schedule-tfoot-label">${icon("trending-up", 14)} Écart</td>
               ${weekDays.map((d, k) => {
                 const dk = dayKey(d);
                 const actual = Number(scheduleSettings.actualSales?.[dk] || 0);
                 const predicted = ratio > 0 ? dayTotalsCost[k] / ratio : 0;
                 const gap = actual - predicted;
                 const cls = gap > 0 ? "is-positive" : gap < 0 ? "is-negative" : "";
-                return `<td colspan="2" class="schedule-tfoot-val ${cls}">${(actual || predicted) ? fmtMoney(gap) : ""}</td>`;
+                const arrow = gap > 0 ? "▲" : gap < 0 ? "▼" : "";
+                const content = (actual || predicted) ? `<span class="gap-arrow">${arrow}</span>${fmtMoney(gap)}` : "";
+                return `<td colspan="2" class="schedule-tfoot-val ${cls}">${content}</td>`;
               }).join("")}
               <td class="schedule-tfoot-val schedule-td--total" colspan="3">${(() => {
                 const totalActual = weekDays.reduce((sum, d) => sum + (Number(scheduleSettings.actualSales?.[dayKey(d)] || 0)), 0);
                 const totalPredicted = ratio > 0 ? weekTotalCost / ratio : 0;
                 const gap = totalActual - totalPredicted;
                 const cls = gap > 0 ? "is-positive" : gap < 0 ? "is-negative" : "";
-                return `<span class="${cls}">${(totalActual || totalPredicted) ? fmtMoney(gap) : ""}</span>`;
+                const arrow = gap > 0 ? "▲" : gap < 0 ? "▼" : "";
+                const content = (totalActual || totalPredicted) ? `<span class="gap-arrow">${arrow}</span>${fmtMoney(gap)}` : "";
+                return `<span class="${cls}">${content}</span>`;
               })()}</td>
             </tr>
           </tfoot>
@@ -302,18 +317,18 @@ function renderEmployes() {
         </div>
       </div>
 
-      <!-- ══ Cartes équipe (inchangées) ══ -->
-      <h3 style="font-size:20px;margin:24px 0 12px">Équipe</h3>
+      <!-- ══ Cartes équipe ══ -->
+      <h3 class="section-title">Équipe</h3>
       <div class="card-grid">
-        ${employees.map(emp => `<div class="card">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start">
-            <div>
-              <div style="font-weight:700;font-size:15px">👤 ${emp.name || ""}</div>
-              ${emp.role ? `<div style="font-size:13px;color:var(--text3);margin-top:2px">${emp.role}</div>` : ""}
-              ${emp.hourlyRate ? `<div style="font-size:13px;color:var(--accent);font-weight:700;margin-top:4px">${icon("dollar-sign", 12)} ${emp.hourlyRate} $/h</div>` : ""}
-              ${emp.phone ? `<div style="font-size:13px;color:var(--text2);margin-top:4px">${icon("phone", 12)} ${emp.phone}</div>` : ""}
-              ${emp.email ? `<div style="font-size:13px;color:var(--text2)">✉️ ${emp.email}</div>` : ""}
-              ${emp.pin ? `<div style="font-size:12px;color:var(--text3);margin-top:4px">🔑 PIN : ${emp.pin}</div>` : ""}
+        ${employees.map(emp => `<div class="card team-card">
+          <div class="team-card__head">
+            <div class="team-card__info">
+              <div class="team-card__name">${icon("user", 14)} ${esc(emp.name || "")}</div>
+              ${emp.role ? `<div class="team-card__role">${esc(emp.role)}</div>` : ""}
+              ${emp.hourlyRate ? `<div class="team-card__rate">${icon("dollar-sign", 12)} ${emp.hourlyRate} $/h${emp.isSalaried ? ` · <span class="team-card__fixed">FIXE ${emp.fixedWeeklyHours}h</span>` : ""}</div>` : ""}
+              ${emp.phone ? `<div class="team-card__contact">${icon("phone", 12)} ${esc(emp.phone)}</div>` : ""}
+              ${emp.email ? `<div class="team-card__contact">${icon("mail", 12)} ${esc(emp.email)}</div>` : ""}
+              ${emp.pin ? `<div class="team-card__pin">PIN : ${emp.pin}</div>` : ""}
             </div>
             <div class="menu-wrap"><button class="dots-btn" onclick="toggleDrop('emp${emp.id}')">${icon("more-vertical", 16)}</button>
             <div class="dropdown" id="drop-emp${emp.id}">

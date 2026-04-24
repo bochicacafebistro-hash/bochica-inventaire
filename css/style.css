@@ -190,6 +190,26 @@ h4{font-size:22px}
 h5{font-size:18px}
 h6{font-size:15px;letter-spacing:.1em;text-transform:uppercase}
 
+/* Titres génériques pour pages (cohérence avec échelle Bebas) */
+.page-title{
+  font-family:var(--font-heading);
+  font-weight:400;
+  font-size:38px;
+  letter-spacing:.03em;
+  line-height:1.1;
+  color:var(--text);
+  margin:0;
+}
+.section-title{
+  font-family:var(--font-heading);
+  font-weight:400;
+  font-size:28px;
+  letter-spacing:.02em;
+  line-height:1.1;
+  color:var(--text);
+  margin:24px 0 12px;
+}
+
 /* Classe utilitaire pour éléments "kicker" (petits titres techniques en mono) */
 .kicker{
   font-family:var(--font-mono);
@@ -1048,13 +1068,13 @@ tr:last-child td{border-bottom:none}
 .schedule-emp-section{
   display:inline-flex;
   align-items:center;
-  gap:3px;
+  gap:4px;
   font-family:var(--font-body);
-  font-size:10px;
+  font-size:11px;
   font-weight:700;
   text-transform:uppercase;
-  letter-spacing:.03em;
-  padding:2px 6px;
+  letter-spacing:.04em;
+  padding:3px 8px;
   border-radius:var(--radius-sm);
   white-space:nowrap;
   flex-shrink:0;
@@ -1076,14 +1096,14 @@ tr:last-child td{border-bottom:none}
 .schedule-badge-fixed{
   display:inline-block;
   font-family:var(--font-body);
-  font-size:9px;
+  font-size:11px;
   font-weight:700;
-  letter-spacing:.1em;
+  letter-spacing:.08em;
   background:var(--accent);
   color:var(--accent-text);
-  padding:1px 5px;
+  padding:2px 7px;
   border-radius:var(--radius-sm);
-  margin-left:4px;
+  margin-left:6px;
   vertical-align:middle;
 }
 .schedule-fixed-hint{
@@ -1118,6 +1138,70 @@ tr:last-child td{border-bottom:none}
   font-size:var(--fs-base);
   color:var(--text);
   font-weight:600;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CARTES ÉQUIPE (section Équipe sous l'horaire)
+   ═══════════════════════════════════════════════════════════════ */
+.team-card__head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:var(--sp-3);
+}
+.team-card__info{
+  flex:1;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.team-card__name{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family:var(--font-body);
+  font-size:var(--fs-md);
+  font-weight:700;
+  color:var(--text);
+}
+.team-card__role{
+  font-size:var(--fs-sm);
+  color:var(--text3);
+  font-weight:500;
+}
+.team-card__rate{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:var(--fs-sm);
+  color:var(--accent);
+  font-weight:700;
+  margin-top:2px;
+}
+.team-card__fixed{
+  display:inline-block;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.08em;
+  background:var(--accent);
+  color:var(--accent-text);
+  padding:2px 6px;
+  border-radius:var(--radius-sm);
+  margin-left:4px;
+}
+.team-card__contact{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:var(--fs-sm);
+  color:var(--text2);
+}
+.team-card__pin{
+  font-size:var(--fs-xs);
+  color:var(--text3);
+  margin-top:4px;
+  font-family:var(--font-mono);
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -1294,9 +1378,35 @@ select.schedule-time{
 }
 .schedule-tfoot-row--predicted td{background:rgba(74,144,226,.08) !important;color:var(--blue-text)}
 .schedule-tfoot-row--actual td{background:rgba(125,191,102,.08) !important}
-.schedule-tfoot-row--gap td{background:var(--surface3) !important;font-weight:600}
-.schedule-tfoot-row--gap .is-positive{color:var(--status-green)}
-.schedule-tfoot-row--gap .is-negative{color:var(--status-red)}
+
+/* Ligne Écart — KPI critique, mis en valeur */
+.schedule-tfoot-row--gap td{
+  background:var(--surface3) !important;
+  border-top:2px solid var(--border-strong) !important;
+  padding:10px 4px !important;
+}
+.schedule-tfoot-row--gap .schedule-tfoot-label{
+  color:var(--text) !important;
+  font-weight:700 !important;
+  font-size:var(--fs-sm) !important;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.schedule-tfoot-row--gap .schedule-tfoot-val{
+  font-family:var(--font-heading);
+  font-size:20px;
+  letter-spacing:.02em;
+  font-weight:400;
+}
+.schedule-tfoot-row--gap .is-positive{color:var(--status-green);font-weight:700}
+.schedule-tfoot-row--gap .is-negative{color:var(--status-red);font-weight:700}
+.schedule-tfoot-row--gap .gap-arrow{
+  display:inline-block;
+  font-size:14px;
+  margin-right:4px;
+  vertical-align:middle;
+}
 
 .schedule-sales-input{
   width:100%;
