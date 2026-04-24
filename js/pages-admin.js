@@ -12,6 +12,15 @@ function getWeekStart(offsetWeeks = 0) {
   return d;
 }
 
+// Numéro de semaine ISO 8601 (lundi = début, semaine 1 = première semaine avec un jeudi)
+function getISOWeek(date) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7; // dimanche = 7
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum); // ramène au jeudi de cette semaine ISO
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+}
+
 // Heures travaillées d'un quart { start: "HH:MM", end: "HH:MM" }
 // Retourne un nombre décimal (10.5 = 10h30). Gère les quarts qui chevauchent minuit.
 function hoursFromShift(s) {
@@ -24,13 +33,31 @@ function hoursFromShift(s) {
   return diff / 60;
 }
 
-// Formate un nombre d'heures : 4.5 → "4.5", 8 → "8"
 function fmtHours(h) {
   if (!h) return "";
   return Number.isInteger(h) ? String(h) : h.toFixed(1);
 }
 
 function dayKey(date) { return date.toISOString().slice(0, 10); }
+
+// Options du dropdown heures : 00:00 → 23:30 par tranches de 30 min (48 options)
+const SCHEDULE_TIME_OPTIONS = (() => {
+  const arr = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      arr.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    }
+  }
+  return arr;
+})();
+function buildTimeOptions(selectedValue) {
+  const sel = selectedValue || "";
+  let html = `<option value="" ${sel === "" ? "selected" : ""}>—</option>`;
+  for (const v of SCHEDULE_TIME_OPTIONS) {
+    html += `<option value="${v}" ${v === sel ? "selected" : ""}>${v}</option>`;
+  }
+  return html;
+}
 
 // Navigation semaine
 function changeScheduleWeek(delta) {
@@ -45,26 +72,32 @@ function resetScheduleWeek() {
 // ═ Rendu principal ══════════════════════════════════════
 function renderEmployes() {
   const weekStart = getWeekStart(scheduleWeekOffset);
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
+  const weekDaysAll = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
   });
-  const weekEnd = weekDays[6];
-  const weekLabel = `${weekDays[0].toLocaleDateString("fr-CA", { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString("fr-CA", { month: "short", day: "numeric", year: "numeric" })}`;
+  const weekEnd = weekDaysAll[6];
+  const weekNum = getISOWeek(weekDaysAll[3]); // jeudi = référence semaine ISO
+  const weekLabel = `${weekDaysAll[0].toLocaleDateString("fr-CA", { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString("fr-CA", { month: "short", day: "numeric", year: "numeric" })}`;
 
   const ratio = Number(scheduleSettings.salesRatio) || 0.32;
+  const openDays = Array.isArray(scheduleSettings.openDays) ? scheduleSettings.openDays : [0, 1, 2, 3, 4, 5, 6];
+  // Indices de jours ouverts (0=Lun, 6=Dim)
+  const visibleIdx = [0, 1, 2, 3, 4, 5, 6].filter(i => openDays.includes(i));
+  const weekDays = visibleIdx.map(i => weekDaysAll[i]);
+  const nCols = visibleIdx.length;
 
-  // Calculs par employé et totaux par jour
-  const dayTotalsHours = new Array(7).fill(0);
-  const dayTotalsCost = new Array(7).fill(0);
+  // Calculs par employé sur les jours ouverts uniquement
+  const dayTotalsHours = new Array(nCols).fill(0);
+  const dayTotalsCost = new Array(nCols).fill(0);
   const empRows = employees.map(emp => {
     const shifts = emp.shifts || {};
     const rate = Number(emp.hourlyRate) || 0;
-    const daily = weekDays.map((d, i) => {
+    const daily = weekDays.map((d, col) => {
       const s = shifts[dayKey(d)];
       const hours = hoursFromShift(s);
       const cost = hours * rate;
-      dayTotalsHours[i] += hours;
-      dayTotalsCost[i] += cost;
+      dayTotalsHours[col] += hours;
+      dayTotalsCost[col] += cost;
       return { shift: s, hours, cost };
     });
     const totalHours = daily.reduce((sum, d) => sum + d.hours, 0);
@@ -84,33 +117,38 @@ function renderEmployes() {
     ${employees.length === 0
       ? `<div class="empty"><div style="margin-bottom:12px;color:var(--text3);display:flex;justify-content:center">${icon("users", 36)}</div>Aucun employé enregistré. Ajoutez-en un pour commencer.</div>`
       : `
-      <!-- ══ Sélecteur de semaine + ratio ══ -->
+      <!-- ══ Sélecteur de semaine + ratio + boutons ══ -->
       <div class="schedule-header">
         <div class="schedule-nav">
-          <button class="btn-icon-only" onclick="changeScheduleWeek(-1)" aria-label="Semaine précédente">${icon("chevron-left", 16)}</button>
+          <button class="btn-icon-only" onclick="changeScheduleWeek(-1)" aria-label="Semaine précédente" title="Semaine précédente">${icon("chevron-left", 16)}</button>
           <div class="schedule-week-label">
+            <div class="schedule-week-num">Semaine ${weekNum}</div>
             <div class="schedule-week-dates">${weekLabel}</div>
             ${scheduleWeekOffset !== 0 ? `<button class="schedule-today-btn" onclick="resetScheduleWeek()">Aujourd'hui</button>` : `<div class="schedule-today-tag">Cette semaine</div>`}
           </div>
-          <button class="btn-icon-only" onclick="changeScheduleWeek(1)" aria-label="Semaine suivante">${icon("chevron-right", 16)}</button>
+          <button class="btn-icon-only" onclick="changeScheduleWeek(1)" aria-label="Semaine suivante" title="Semaine suivante">${icon("chevron-right", 16)}</button>
         </div>
-        <div class="schedule-ratio">
-          <label for="sched-ratio">Ratio salaires / ventes</label>
-          <div class="schedule-ratio-input">
-            <input id="sched-ratio" type="number" min="1" max="100" step="0.5" value="${(ratio * 100).toFixed(1)}" onchange="updateSalesRatio(this.value)"/>
-            <span>%</span>
+        <div class="schedule-actions">
+          <button class="btn-secondary btn-sm" onclick="openOpenDaysModal()" title="Choisir les jours d'ouverture">${icon("calendar", 14)} Jours ouverts</button>
+          <button class="btn-secondary btn-sm" onclick="duplicateScheduleToNextWeek()" title="Copier cet horaire vers la semaine suivante">${icon("copy", 14)} Copier → Semaine ${weekNum + 1}</button>
+          <div class="schedule-ratio">
+            <label for="sched-ratio">Ratio salaires / ventes</label>
+            <div class="schedule-ratio-input">
+              <input id="sched-ratio" type="number" min="1" max="100" step="0.5" value="${(ratio * 100).toFixed(1)}" onchange="updateSalesRatio(this.value)"/>
+              <span>%</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- ══ Grille horaire complète ══ -->
+      <!-- ══ Grille horaire ══ -->
       <div class="schedule-wrap card" style="padding:0;overflow-x:auto">
         <table class="schedule-table">
           <thead>
             <tr>
               <th class="schedule-th--emp">Employé</th>
-              ${weekDays.map((d, i) => `<th class="schedule-th--day" colspan="2">
-                <div class="schedule-day-name">${DAYS_FR[i]}</div>
+              ${weekDays.map((d, k) => `<th class="schedule-th--day" colspan="2">
+                <div class="schedule-day-name">${DAYS_FR[visibleIdx[k]]}</div>
                 <div class="schedule-day-date">${d.getDate()}/${d.getMonth() + 1}</div>
               </th>`).join("")}
               <th class="schedule-th--summary">Heures</th>
@@ -126,17 +164,17 @@ function renderEmployes() {
           <tbody>
             ${empRows.map(row => `<tr>
               <td class="schedule-td--emp">${esc(row.emp.name || "")}</td>
-              ${row.daily.map((d, i) => {
+              ${row.daily.map((d, k) => {
                 const s = d.shift;
                 const filled = s && s.start && s.end;
                 const startVal = s?.start || "";
                 const endVal = s?.end || "";
-                const dk = dayKey(weekDays[i]);
+                const dk = dayKey(weekDays[k]);
                 return `<td class="schedule-td--cell ${filled ? "is-filled" : ""}">
-                  <input type="time" class="schedule-time" value="${startVal}" onchange="updateShift('${row.emp.id}','${dk}','start',this.value)" aria-label="Entrée ${DAYS_FR[i]}"/>
+                  <select class="schedule-time" onchange="updateShift('${row.emp.id}','${dk}','start',this.value)" aria-label="Entrée ${DAYS_FR[visibleIdx[k]]}">${buildTimeOptions(startVal)}</select>
                 </td>
                 <td class="schedule-td--cell ${filled ? "is-filled" : ""}">
-                  <input type="time" class="schedule-time" value="${endVal}" onchange="updateShift('${row.emp.id}','${dk}','end',this.value)" aria-label="Sortie ${DAYS_FR[i]}"/>
+                  <select class="schedule-time" onchange="updateShift('${row.emp.id}','${dk}','end',this.value)" aria-label="Sortie ${DAYS_FR[visibleIdx[k]]}">${buildTimeOptions(endVal)}</select>
                 </td>`;
               }).join("")}
               <td class="schedule-td--summary">${row.totalHours ? fmtHours(row.totalHours) : ""}</td>
@@ -184,10 +222,10 @@ function renderEmployes() {
             <!-- Ligne Écart -->
             <tr class="schedule-tfoot-row schedule-tfoot-row--gap">
               <td class="schedule-tfoot-label">Écart</td>
-              ${weekDays.map((d, i) => {
+              ${weekDays.map((d, k) => {
                 const dk = dayKey(d);
                 const actual = Number(scheduleSettings.actualSales?.[dk] || 0);
-                const predicted = ratio > 0 ? dayTotalsCost[i] / ratio : 0;
+                const predicted = ratio > 0 ? dayTotalsCost[k] / ratio : 0;
                 const gap = actual - predicted;
                 const cls = gap > 0 ? "is-positive" : gap < 0 ? "is-negative" : "";
                 return `<td colspan="2" class="schedule-tfoot-val ${cls}">${(actual || predicted) ? fmtMoney(gap) : ""}</td>`;
@@ -275,6 +313,119 @@ async function updateActualSales(dk, value) {
   await db.collection("settings").doc("schedule").set({
     actualSales
   }, { merge: true });
+}
+
+// ═ Jours d'ouverture (réglage global) ═══════════════════
+function openOpenDaysModal() {
+  const current = Array.isArray(scheduleSettings.openDays) ? scheduleSettings.openDays : [0,1,2,3,4,5,6];
+  showModal(`<div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <h3>${icon("calendar", 18)} Jours d'ouverture</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button>
+    </div>
+    <p style="color:var(--text3);font-size:13px;margin-bottom:16px;line-height:1.5">
+      Cochez les jours où le restaurant est ouvert. Les jours décochés seront cachés de la grille horaire.
+    </p>
+    <div class="open-days-grid">
+      ${DAYS_FR.map((d, i) => {
+        const checked = current.includes(i) ? "checked" : "";
+        const dayLabel = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"][i];
+        return `<label class="open-day-item">
+          <input type="checkbox" data-day="${i}" ${checked} onchange="toggleOpenDay(${i}, this.checked)"/>
+          <span class="open-day-label">${dayLabel}</span>
+        </label>`;
+      }).join("")}
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="closeModal()">${t("close")}</button>
+    </div>
+  </div>`);
+}
+
+async function toggleOpenDay(dayIndex, checked) {
+  const current = Array.isArray(scheduleSettings.openDays) ? [...scheduleSettings.openDays] : [0,1,2,3,4,5,6];
+  let next;
+  if (checked && !current.includes(dayIndex)) {
+    next = [...current, dayIndex].sort((a, b) => a - b);
+  } else if (!checked && current.includes(dayIndex)) {
+    next = current.filter(d => d !== dayIndex);
+  } else {
+    return;
+  }
+  // Garde-fou : ne pas tout décocher
+  if (next.length === 0) {
+    alert("Au moins un jour doit rester ouvert.");
+    const cb = document.querySelector(`.open-days-grid input[data-day="${dayIndex}"]`);
+    if (cb) cb.checked = true;
+    return;
+  }
+  await db.collection("settings").doc("schedule").set({ openDays: next }, { merge: true });
+}
+
+// ═ Duplication vers la semaine suivante ═════════════════
+async function duplicateScheduleToNextWeek() {
+  const weekStart = getWeekStart(scheduleWeekOffset);
+  const curDates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart); d.setDate(d.getDate() + i); return dayKey(d);
+  });
+  const nextDates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart); d.setDate(d.getDate() + 7 + i); return dayKey(d);
+  });
+
+  // Vérifier si la source a au moins un shift
+  const hasSource = employees.some(emp => {
+    const shifts = emp.shifts || {};
+    return curDates.some(dk => shifts[dk] && shifts[dk].start);
+  });
+  if (!hasSource) {
+    alert("La semaine actuelle est vide. Remplissez au moins un horaire avant de copier.");
+    return;
+  }
+
+  // Vérifier si la cible contient déjà des données
+  const nextHasData = employees.some(emp => {
+    const shifts = emp.shifts || {};
+    return nextDates.some(dk => shifts[dk] && shifts[dk].start);
+  });
+
+  const weekNum = getISOWeek(new Date(weekStart.getTime() + 3 * 86400000));
+  const nextWeekNum = weekNum + 1;
+
+  const doCopy = async () => {
+    const batch = db.batch();
+    for (const emp of employees) {
+      const shifts = { ...(emp.shifts || {}) };
+      let changed = false;
+      curDates.forEach((curDk, i) => {
+        const src = shifts[curDk];
+        const tgtDk = nextDates[i];
+        if (src && src.start && src.end) {
+          shifts[tgtDk] = { start: src.start, end: src.end };
+          changed = true;
+        } else {
+          // source vide → on efface aussi la cible pour que les deux semaines soient identiques
+          if (shifts[tgtDk]) { delete shifts[tgtDk]; changed = true; }
+        }
+      });
+      if (changed) batch.update(db.collection("employees").doc(emp.id), { shifts });
+    }
+    await batch.commit();
+    await addLog("—", "Horaire copié", `Semaine ${weekNum} → Semaine ${nextWeekNum}`);
+    // Naviguer vers la semaine suivante pour voir le résultat
+    scheduleWeekOffset += 1;
+    renderPage();
+  };
+
+  if (nextHasData) {
+    openConfirm(
+      "Écraser la semaine suivante ?",
+      `La semaine ${nextWeekNum} contient déjà des horaires. Les copier va les <strong>remplacer</strong>. Continuer ?`,
+      doCopy,
+      true
+    );
+  } else {
+    await doCopy();
+  }
 }
 
 function openEmployeeModal(id) {

@@ -76,12 +76,13 @@ db.collection("fixedExpenseTemplates").onSnapshot(snap => {
   if (isLoggedIn && activePage === "depenses") renderPage();
 });
 
-// Paramètres horaire : ratio salaires/ventes + ventes réelles par jour
+// Paramètres horaire : ratio salaires/ventes + ventes réelles par jour + jours d'ouverture
 db.collection("settings").doc("schedule").onSnapshot(snap => {
   const data = snap.exists ? snap.data() : {};
   scheduleSettings = {
     salesRatio: typeof data.salesRatio === "number" ? data.salesRatio : 0.32,
-    actualSales: data.actualSales || {}
+    actualSales: data.actualSales || {},
+    openDays: Array.isArray(data.openDays) ? data.openDays : [0, 1, 2, 3, 4, 5, 6]
   };
   if (isLoggedIn && activePage === "employes") renderPage();
 });

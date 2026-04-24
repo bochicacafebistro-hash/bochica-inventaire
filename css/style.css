@@ -722,14 +722,23 @@ tr:last-child td{border-bottom:none}
 }
 .schedule-week-label{
   text-align:center;
-  min-width:200px;
+  min-width:220px;
+}
+.schedule-week-num{
+  font-family:var(--font-heading);
+  font-size:28px;
+  color:var(--accent);
+  letter-spacing:.04em;
+  line-height:1;
 }
 .schedule-week-dates{
-  font-family:var(--font-heading);
-  font-size:22px;
-  color:var(--text);
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  color:var(--text2);
   letter-spacing:.02em;
-  line-height:1.1;
+  line-height:1.2;
+  margin-top:2px;
+  font-weight:500;
 }
 .schedule-today-tag{
   font-size:var(--fs-xs);
@@ -787,6 +796,77 @@ tr:last-child td{border-bottom:none}
   outline:none;
 }
 .schedule-ratio-input span{color:var(--text2);font-weight:600}
+
+/* Bloc d'actions : Jours ouverts + Copier + Ratio */
+.schedule-actions{
+  display:flex;
+  align-items:center;
+  gap:var(--sp-3);
+  flex-wrap:wrap;
+}
+.btn-sm{
+  padding:6px 12px;
+  font-size:var(--fs-sm);
+  border-radius:var(--radius-md);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  cursor:pointer;
+  font-family:var(--font-body);
+  font-weight:600;
+  transition:var(--transition-fast);
+  white-space:nowrap;
+}
+.btn-secondary{
+  background:var(--surface);
+  color:var(--text);
+  border:1px solid var(--border-strong);
+}
+.btn-secondary:hover{
+  background:var(--surface2);
+  border-color:var(--accent);
+  color:var(--accent);
+}
+
+/* Modale Jours d'ouverture */
+.open-days-grid{
+  display:grid;
+  grid-template-columns:repeat(2, 1fr);
+  gap:var(--sp-2);
+  margin-bottom:var(--sp-4);
+}
+.open-day-item{
+  display:flex;
+  align-items:center;
+  gap:var(--sp-2);
+  padding:10px 12px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  cursor:pointer;
+  transition:var(--transition-fast);
+  font-family:var(--font-body);
+}
+.open-day-item:hover{border-color:var(--accent);background:var(--surface)}
+.open-day-item input[type="checkbox"]{
+  width:18px;
+  height:18px;
+  accent-color:var(--accent);
+  cursor:pointer;
+  margin:0;
+}
+.open-day-item:has(input:checked){
+  background:var(--accent-soft);
+  border-color:var(--accent);
+}
+.open-day-label{
+  font-weight:600;
+  color:var(--text);
+  font-size:var(--fs-base);
+}
+@media(max-width:480px){
+  .open-days-grid{grid-template-columns:1fr}
+}
 
 /* Tableau principal */
 .schedule-wrap{
@@ -881,7 +961,7 @@ tr:last-child td{border-bottom:none}
 .dark .schedule-td--cell.is-filled{background:rgba(125,191,102,.18)}
 .schedule-time{
   width:100%;
-  min-width:52px;
+  min-width:56px;
   border:none;
   background:transparent;
   font-family:var(--font-body);
@@ -892,10 +972,17 @@ tr:last-child td{border-bottom:none}
   font-variant-numeric:tabular-nums;
   cursor:pointer;
   outline:none;
+  /* Retirer le chevron natif du select pour apparence épurée */
+  appearance:none;
+  -webkit-appearance:none;
+  -moz-appearance:none;
 }
 .schedule-time:focus{background:var(--surface);box-shadow:inset 0 0 0 2px var(--accent)}
-.schedule-time::-webkit-calendar-picker-indicator{opacity:.4}
-.schedule-time:hover::-webkit-calendar-picker-indicator{opacity:.8}
+/* Texte centré pour select aussi */
+select.schedule-time{
+  text-align-last:center;
+  padding-right:4px;
+}
 
 /* Colonnes résumé (Heures / Taux / Total) */
 .schedule-td--summary{
