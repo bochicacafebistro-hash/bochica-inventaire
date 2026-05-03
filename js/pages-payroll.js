@@ -287,7 +287,10 @@ function renderSalaires() {
           ${isLocked
             ? `<span class="payroll-locked-badge" title="Semaine verrouillée — édition bloquée">${icon("shield-check", 14)} Verrouillée</span>
                <button class="btn-secondary btn-sm" onclick="unlockPayrollWeek()" title="Permet à nouveau d'éditer cette semaine">${icon("refresh", 14)} Déverrouiller</button>`
-            : `<button class="btn-secondary btn-sm" onclick="resetActualFromPlanned()" title="Effacer toutes mes modifications et repartir de l'horaire planifié">${icon("trash", 14)} Effacer et reprendre</button>
+            : `${(() => {
+                 const overrideCount = Object.keys(payrollWeekData?.actualShifts || {}).reduce((sum, empId) => sum + Object.keys(payrollWeekData.actualShifts[empId] || {}).length, 0);
+                 return `<button class="btn-secondary btn-sm" onclick="resetActualFromPlanned()" title="Annuler les ajustements manuels que tu as faits ici (les heures repartiront du planning)" ${overrideCount === 0 ? "disabled" : ""}>${icon("refresh", 14)} Annuler mes modifs${overrideCount > 0 ? ` <span class="payroll-modif-count">${overrideCount}</span>` : ""}</button>`;
+               })()}
                <button class="btn btn-primary btn-sm" onclick="lockPayrollWeek()" title="Verrouiller cette semaine et créer la dépense Salaires">${icon("shield-check", 14)} Verrouiller & payer</button>`}
         </div>
       </div>
@@ -748,13 +751,21 @@ async function saveTipShares() {
 // de supprimer entièrement actualShifts pour que les valeurs viennent à
 // nouveau du planning d'origine (Employés & Horaires).
 function resetActualFromPlanned() {
-  if (!payrollWeekData?.actualShifts || Object.keys(payrollWeekData.actualShifts).length === 0) {
-    toast("Aucune modification à effacer — la semaine utilise déjà l'horaire planifié.", "info");
+  const overrideCount = Object.keys(payrollWeekData?.actualShifts || {}).reduce(
+    (sum, empId) => sum + Object.keys(payrollWeekData.actualShifts[empId] || {}).length, 0
+  );
+  if (overrideCount === 0) {
+    toast(
+      "Aucune modification à annuler. Les heures que tu vois viennent du planning planifié (page Employés & Horaires) — elles s'importent automatiquement et ne se modifient que là-bas.",
+      "info",
+      6000
+    );
     return;
   }
   openConfirm(
-    "Effacer mes modifications ?",
-    "Cela va <strong>effacer toutes les heures que tu as saisies manuellement</strong> pour cette semaine. La semaine repartira automatiquement de l'horaire planifié (Employés & Horaires). Continuer ?",
+    "Annuler mes modifications ?",
+    `Cela va <strong>annuler les ${overrideCount} ajustement${overrideCount > 1 ? "s" : ""} manuel${overrideCount > 1 ? "s" : ""}</strong> que tu as fait${overrideCount > 1 ? "s" : ""} sur cette semaine.<br><br>
+     Les heures repartiront du <strong>planning planifié</strong> (Employés & Horaires). Tes ajustements seront perdus mais le planning d'origine reste intact. Continuer ?`,
     doResetActualFromPlanned,
     true
   );

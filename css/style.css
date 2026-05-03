@@ -4218,6 +4218,24 @@ textarea.md-input{
   border-radius:var(--radius-sm);
   border:1px solid rgba(247,179,44,.35);
 }
+/* Compteur de modifications sur le bouton "Annuler mes modifs" */
+.payroll-modif-count{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  margin-left:4px;
+  background:var(--accent);
+  color:var(--accent-text);
+  border-radius:9px;
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:700;
+  line-height:1;
+}
+
 /* Badge "Payée" inline dans le titre de page */
 .payroll-locked-inline-badge{
   display:inline-flex;
