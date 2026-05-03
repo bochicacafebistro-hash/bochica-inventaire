@@ -4102,6 +4102,118 @@ textarea.md-input{
   letter-spacing:.02em;
 }
 
+/* ── Récap pourboires par employé (visible sans scroll) ── */
+.payroll-recap-card{
+  margin-top:var(--sp-4);
+  padding:var(--sp-5);
+}
+.payroll-recap-head{
+  margin-bottom:var(--sp-4);
+}
+.payroll-recap-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(200px, 1fr));
+  gap:var(--sp-3);
+}
+.payroll-recap-card-emp{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:var(--sp-4);
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  position:relative;
+  overflow:hidden;
+}
+.payroll-recap-card-emp::before{
+  content:"";
+  position:absolute;
+  top:0; left:0;
+  width:4px; height:100%;
+}
+.payroll-recap-card-emp.is-kitchen{
+  background:rgba(247,179,44,.08);
+  border-color:rgba(247,179,44,.3);
+}
+.payroll-recap-card-emp.is-kitchen::before{
+  background:var(--accent);
+}
+.payroll-recap-card-emp.is-service{
+  background:rgba(74,144,226,.08);
+  border-color:rgba(74,144,226,.3);
+}
+.payroll-recap-card-emp.is-service::before{
+  background:#4a90e2;
+}
+.payroll-recap-emp-name{
+  font-family:var(--font-heading);
+  font-size:22px;
+  color:var(--text);
+  letter-spacing:.02em;
+  line-height:1.1;
+}
+.payroll-recap-emp-group{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-family:var(--font-mono, var(--font-body));
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text3);
+  margin-bottom:6px;
+}
+.payroll-recap-emp-amount{
+  font-family:var(--font-heading);
+  font-size:32px;
+  color:var(--status-green, #7dbf66);
+  letter-spacing:.02em;
+  line-height:1;
+  margin-top:4px;
+}
+.payroll-recap-emp-meta{
+  font-family:var(--font-body);
+  font-size:var(--fs-xs);
+  color:var(--text3);
+  font-style:italic;
+  margin-top:2px;
+}
+.payroll-recap-total{
+  margin-top:var(--sp-4);
+  padding:var(--sp-3) var(--sp-4);
+  background:rgba(125,191,102,.10);
+  border:1px solid rgba(125,191,102,.35);
+  border-radius:var(--radius-md);
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.payroll-recap-total span{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text2);
+}
+.payroll-recap-total strong{
+  font-family:var(--font-heading);
+  font-size:28px;
+  color:var(--status-green, #7dbf66);
+  letter-spacing:.02em;
+}
+.dark .payroll-recap-card-emp.is-kitchen{
+  background:rgba(247,179,44,.12);
+}
+.dark .payroll-recap-card-emp.is-service{
+  background:rgba(74,144,226,.12);
+}
+
 /* Légende explicative en bas de page */
 .payroll-legend{
   margin-top:var(--sp-4);

@@ -435,6 +435,35 @@ function renderSalaires() {
         </table>
       </div>
 
+      <!-- ══ Récap pourboires par employé (visible sans scroll horizontal) ══ -->
+      <div class="card payroll-recap-card">
+        <div class="payroll-recap-head">
+          <h3 class="payroll-service-title">${icon("dollar-sign", 16)} Pourboires de la semaine par employé</h3>
+          <div class="payroll-service-sub">Total au prorata des heures travaillées dans la fenêtre de service · Cuisine ${(tipShares.cuisine*100).toFixed(0)}% / Service+Admin ${(tipShares.service*100).toFixed(0)}%</div>
+        </div>
+        ${empRows.filter(r => r.tipEligibleHours > 0 || r.tipShare > 0).length === 0
+          ? `<div class="empty" style="margin:var(--sp-4) 0">${icon("info", 24)}<br/>Saisis les heures réelles + un montant de pourboire par jour pour voir la répartition.</div>`
+          : `<div class="payroll-recap-grid">
+              ${empRows.map(row => {
+                const isKitchen = row.group === "cuisine";
+                const groupLabel = isKitchen ? "Cuisine" : "Service + Admin";
+                const groupIcon = isKitchen ? "utensils" : "users";
+                return `<div class="payroll-recap-card-emp ${isKitchen ? "is-kitchen" : "is-service"}">
+                  <div class="payroll-recap-emp-name">${esc(row.emp.name || "")}</div>
+                  <div class="payroll-recap-emp-group">${icon(groupIcon, 11)} ${groupLabel}</div>
+                  <div class="payroll-recap-emp-amount">${fmtMoney(row.tipShare)}</div>
+                  <div class="payroll-recap-emp-meta">
+                    ${fmtHours(row.tipEligibleHours)}h éligibles · ${fmtHours(row.totalHours)}h travaillées
+                  </div>
+                </div>`;
+              }).join("")}
+            </div>
+            <div class="payroll-recap-total">
+              <span>${icon("dollar-sign", 14)} Total redistribué</span>
+              <strong>${fmtMoney(sumTips)}</strong>
+            </div>`}
+      </div>
+
       <p class="payroll-legend">
         ${icon("info", 12)} Les <strong>heures réelles</strong> peuvent différer de l'horaire <strong>planifié</strong>.
         Le badge ★ indique les heures éligibles aux pourboires (dans la fenêtre de service).
