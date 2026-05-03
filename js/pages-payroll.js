@@ -261,6 +261,15 @@ function renderSalaires() {
     ${employees.length === 0 ? `
       <div class="empty"><div class="empty-state-icon">${icon("users", 36)}</div>Aucun employé enregistré. Ajoutez-en un dans Employés & Horaires pour commencer.</div>
     ` : `
+      <!-- ══ Bannière d'info : auto-import du planifié ══ -->
+      <div class="payroll-info-banner">
+        ${icon("calendar", 16)}
+        <div>
+          <strong>Horaire planifié importé automatiquement</strong> depuis Employés & Horaires.
+          Les valeurs s'actualisent à chaque modification du planifié. Modifie ici uniquement les <strong>écarts réels</strong> (employé arrivé tard, parti tôt, etc.) — tes ajustements sont sauvegardés sans toucher au planning d'origine.
+        </div>
+      </div>
+
       <!-- ══ Sélecteur de semaine + actions ══ -->
       <div class="schedule-header">
         <div class="schedule-nav">
@@ -278,8 +287,7 @@ function renderSalaires() {
           ${isLocked
             ? `<span class="payroll-locked-badge" title="Semaine verrouillée — édition bloquée">${icon("shield-check", 14)} Verrouillée</span>
                <button class="btn-secondary btn-sm" onclick="unlockPayrollWeek()" title="Permet à nouveau d'éditer cette semaine">${icon("refresh", 14)} Déverrouiller</button>`
-            : `<button class="btn-secondary btn-sm" onclick="duplicatePayrollToNextWeek()" title="Copier les heures réelles et pourboires vers la semaine suivante">${icon("copy", 14)} Copier → S${weekNum + 1}</button>
-               <button class="btn-secondary btn-sm" onclick="resetActualFromPlanned()" title="Réinitialiser les heures réelles depuis l'horaire planifié">${icon("refresh", 14)} Reprendre du planifié</button>
+            : `<button class="btn-secondary btn-sm" onclick="resetActualFromPlanned()" title="Effacer toutes mes modifications et repartir de l'horaire planifié">${icon("trash", 14)} Effacer et reprendre</button>
                <button class="btn btn-primary btn-sm" onclick="lockPayrollWeek()" title="Verrouiller cette semaine et créer la dépense Salaires">${icon("shield-check", 14)} Verrouiller & payer</button>`}
         </div>
       </div>
@@ -404,16 +412,21 @@ function renderSalaires() {
                   const dayTipHint = d.dayTip > 0
                     ? `<div class="payroll-day-tip" title="Pourboire reçu ce jour (prorata)">${icon("dollar-sign", 9)} ${fmtMoney(d.dayTip)}</div>`
                     : "";
-                  // Affichage du planifié sous l'input quand différent du réel
+                  // Trois états visuels possibles :
+                  // 1. d.isOverride && d.isDifferent → modifié manuellement (cellule jaune)
+                  // 2. d.isOverride && !d.isDifferent → confirmé identique au planifié
+                  // 3. !d.isOverride && d.plannedShift → hérité automatique du planifié
+                  const isAutoFromPlanned = !d.isOverride && d.plannedShift && d.plannedShift.start;
                   const plannedHint = (d.plannedShift && d.plannedShift.start && d.plannedShift.end && d.isDifferent)
-                    ? `<div class="payroll-planned-hint" title="Heure planifiée">${icon("calendar", 9)} ${d.plannedShift.start}→${d.plannedShift.end}</div>`
-                    : (!filled && d.plannedShift && d.plannedShift.start)
-                      ? `<div class="payroll-planned-hint payroll-planned-hint--fallback" title="Valeur héritée du planifié">${icon("calendar", 9)} P:${d.plannedShift.start}→${d.plannedShift.end}</div>`
+                    ? `<div class="payroll-planned-hint" title="Heure planifiée originale">${icon("calendar", 9)} Planifié : ${d.plannedShift.start}→${d.plannedShift.end}</div>`
+                    : isAutoFromPlanned
+                      ? `<div class="payroll-planned-hint payroll-planned-hint--auto" title="Importé automatiquement depuis Employés & Horaires">${icon("calendar", 9)} Auto-importé</div>`
                       : "";
-                  return `<td class="schedule-td--cell payroll-td-cell ${filled ? "is-filled" : ""} ${d.isDifferent ? "is-modified" : ""}">
+                  const cellClasses = `schedule-td--cell payroll-td-cell ${filled ? "is-filled" : ""} ${d.isDifferent ? "is-modified" : ""} ${isAutoFromPlanned ? "is-auto" : ""}`;
+                  return `<td class="${cellClasses}">
                     <input type="time" class="payroll-time-input" value="${startVal}" onchange="updateActualShift('${row.emp.id}','${d.dk}','start',this.value)" aria-label="${empName}, entrée réelle ${dayName}"/>
                   </td>
-                  <td class="schedule-td--cell payroll-td-cell ${filled ? "is-filled" : ""} ${d.isDifferent ? "is-modified" : ""}">
+                  <td class="${cellClasses}">
                     <input type="time" class="payroll-time-input" value="${endVal}" onchange="updateActualShift('${row.emp.id}','${d.dk}','end',this.value)" aria-label="${empName}, sortie réelle ${dayName}"/>
                     ${tipHint}
                     ${dayTipHint}
@@ -502,9 +515,11 @@ function renderSalaires() {
       </div>
 
       <p class="payroll-legend">
-        ${icon("info", 12)} Les <strong>heures réelles</strong> peuvent différer de l'horaire <strong>planifié</strong>.
-        Le badge ★ indique les heures éligibles aux pourboires (dans la fenêtre de service).
-        Une cellule <strong>jaune</strong> indique une heure modifiée par rapport au planifié.
+        ${icon("info", 12)}
+        <strong>Légende des cellules :</strong>
+        <span class="payroll-legend-item"><span class="payroll-legend-swatch payroll-legend-swatch--auto"></span> Bleu pâle = importé du planifié</span>
+        <span class="payroll-legend-item"><span class="payroll-legend-swatch payroll-legend-swatch--modified"></span> Jaune = modifié manuellement</span>
+        <span class="payroll-legend-item">★ = heures éligibles aux pourboires (dans la fenêtre de service)</span>
       </p>
     `}
   </div>`;
@@ -728,127 +743,39 @@ async function saveTipShares() {
   }
 }
 
-// ═ Action : reprendre l'horaire planifié comme valeurs réelles ═
+// ═ Action : effacer toutes les modifications manuelles et repartir du planifié ═
+// Comme le planifié s'auto-importe quand il n'y a pas d'override, il suffit
+// de supprimer entièrement actualShifts pour que les valeurs viennent à
+// nouveau du planning d'origine (Employés & Horaires).
 function resetActualFromPlanned() {
+  if (!payrollWeekData?.actualShifts || Object.keys(payrollWeekData.actualShifts).length === 0) {
+    toast("Aucune modification à effacer — la semaine utilise déjà l'horaire planifié.", "info");
+    return;
+  }
   openConfirm(
-    "Reprendre l'horaire planifié ?",
-    "Cela va <strong>remplacer</strong> toutes les heures réelles de cette semaine par les heures planifiées dans Employés & Horaires. Les modifications saisies ici seront perdues. Continuer ?",
+    "Effacer mes modifications ?",
+    "Cela va <strong>effacer toutes les heures que tu as saisies manuellement</strong> pour cette semaine. La semaine repartira automatiquement de l'horaire planifié (Employés & Horaires). Continuer ?",
     doResetActualFromPlanned,
     true
   );
 }
 
 async function doResetActualFromPlanned() {
-  const ws = getWeekStart(payrollWeekOffset);
-  const wid = payrollWeekId(ws);
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(ws); d.setDate(d.getDate() + i); return dayKey(d);
-  });
-
-  const actualShifts = {};
-  for (const emp of employees) {
-    const planned = emp.shifts || {};
-    const empCopy = {};
-    weekDays.forEach(dk => {
-      const s = planned[dk];
-      if (s && s.start && s.end) {
-        empCopy[dk] = { start: s.start, end: s.end };
-      }
-    });
-    if (Object.keys(empCopy).length) actualShifts[emp.id] = empCopy;
+  try {
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    // Effacer entièrement actualShifts → le rendu repassera sur le planifié via getActualShift
+    await db.collection("payroll").doc(wid).set({
+      weekId: wid,
+      weekStart: dayKey(ws),
+      actualShifts: firebase.firestore.FieldValue.delete(),
+      updatedAt: Date.now()
+    }, { merge: true });
+    toast("Modifications effacées — l'horaire planifié est repris automatiquement.", "success");
+  } catch (err) {
+    console.error("doResetActualFromPlanned failed:", err);
+    toast("Erreur : " + (err.message || err.code || err), "error", 5000);
   }
-
-  const ref = db.collection("payroll").doc(wid);
-  const snap = await ref.get();
-  await ref.set({
-    weekId: wid,
-    weekStart: dayKey(ws),
-    actualShifts,
-    updatedAt: Date.now(),
-    ...(snap.exists ? {} : { createdAt: Date.now() })
-  }, { merge: true });
-  toast("Horaires réels réinitialisés depuis le planifié.", "success");
-}
-
-// ═ Action : copier la semaine courante vers la semaine suivante ═
-function duplicatePayrollToNextWeek() {
-  const ws = getWeekStart(payrollWeekOffset);
-  const weekNum = getISOWeek(new Date(ws.getTime() + 3 * 86400000));
-  const nextWeekNum = weekNum + 1;
-
-  // Vérifier si la source a au moins une donnée
-  const hasSource = !!payrollWeekData &&
-    (Object.keys(payrollWeekData.actualShifts || {}).length > 0
-     || Object.keys(payrollWeekData.tipsByDay || {}).length > 0);
-  if (!hasSource) {
-    toast("La semaine actuelle est vide. Saisis au moins un horaire ou un pourboire avant de copier.", "warning");
-    return;
-  }
-
-  // Vérifier la semaine suivante (lecture directe)
-  const nextWs = new Date(ws); nextWs.setDate(nextWs.getDate() + 7);
-  const nextWid = payrollWeekId(nextWs);
-
-  db.collection("payroll").doc(nextWid).get().then(nextSnap => {
-    const nextData = nextSnap.exists ? nextSnap.data() : null;
-    const nextHasData = nextData && (
-      Object.keys(nextData.actualShifts || {}).length > 0
-      || Object.keys(nextData.tipsByDay || {}).length > 0
-    );
-    const action = () => doDuplicatePayrollToNextWeek(ws, nextWs, nextWid);
-    if (nextHasData) {
-      openConfirm(
-        "Écraser la semaine suivante ?",
-        `La semaine ${nextWeekNum} contient déjà des données. Les copier va les <strong>remplacer</strong>. Continuer ?`,
-        action,
-        true
-      );
-    } else {
-      action();
-    }
-  });
-}
-
-async function doDuplicatePayrollToNextWeek(ws, nextWs, nextWid) {
-  const curDates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(ws); d.setDate(d.getDate() + i); return dayKey(d);
-  });
-  const nextDates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(nextWs); d.setDate(d.getDate() + i); return dayKey(d);
-  });
-
-  // Remappe les clés de jour : "2026-04-29" → "2026-05-06" (même position dans la semaine)
-  const remapByDay = (obj) => {
-    const out = {};
-    curDates.forEach((cur, i) => {
-      if (obj[cur] !== undefined) out[nextDates[i]] = obj[cur];
-    });
-    return out;
-  };
-
-  const curShifts = payrollWeekData?.actualShifts || {};
-  const newActualShifts = {};
-  Object.keys(curShifts).forEach(empId => {
-    const remapped = remapByDay(curShifts[empId]);
-    if (Object.keys(remapped).length) newActualShifts[empId] = remapped;
-  });
-
-  const newTipsByDay = remapByDay(payrollWeekData?.tipsByDay || {});
-
-  await db.collection("payroll").doc(nextWid).set({
-    weekId: nextWid,
-    weekStart: dayKey(nextWs),
-    actualShifts: newActualShifts,
-    tipsByDay: newTipsByDay,
-    updatedAt: Date.now(),
-    createdAt: Date.now()
-  });
-
-  // Naviguer vers la semaine suivante pour voir le résultat
-  payrollWeekOffset += 1;
-  subscribePayrollWeek();
-  renderPage();
-  toast(`Semaine copiée vers ${nextWid}.`, "success");
 }
 
 // ═ Verrouillage de la semaine + création auto de la dépense Salaires ═

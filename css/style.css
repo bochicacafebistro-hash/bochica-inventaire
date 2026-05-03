@@ -3968,6 +3968,49 @@ textarea.md-input{
 .payroll-planned-hint--fallback{
   color:rgba(74,144,226,.7);
 }
+/* Hint discret indiquant qu'une cellule est auto-importée du planifié */
+.payroll-planned-hint--auto{
+  color:rgba(74,144,226,.7);
+  font-size:8px;
+}
+
+/* Cellule en mode "auto-import depuis le planifié" — apparence neutre/discrète */
+.payroll-td-cell.is-auto:not(.is-modified){
+  background:rgba(74,144,226,.04);
+}
+.dark .payroll-td-cell.is-auto:not(.is-modified){
+  background:rgba(74,144,226,.08);
+}
+
+/* ── Bannière d'info auto-import ── */
+.payroll-info-banner{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:var(--sp-3) var(--sp-4);
+  margin-top:var(--sp-3);
+  margin-bottom:var(--sp-2);
+  background:rgba(74,144,226,.08);
+  border:1px solid rgba(74,144,226,.25);
+  border-left:4px solid #4a90e2;
+  border-radius:var(--radius-md);
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  color:var(--text2);
+  line-height:1.5;
+}
+.payroll-info-banner > svg{
+  flex-shrink:0;
+  color:#4a90e2;
+  margin-top:1px;
+}
+.payroll-info-banner strong{
+  color:var(--text);
+  font-weight:700;
+}
+.dark .payroll-info-banner{
+  background:rgba(74,144,226,.12);
+}
 
 /* Pourboire du jour (sous la cellule sortie) */
 .payroll-day-tip{
@@ -4335,6 +4378,28 @@ textarea.md-input{
   color:var(--text2);
   font-weight:700;
   font-style:normal;
+}
+.payroll-legend-item{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-right:var(--sp-3);
+  font-style:normal;
+}
+.payroll-legend-swatch{
+  display:inline-block;
+  width:14px;
+  height:14px;
+  border-radius:3px;
+  border:1px solid var(--border);
+}
+.payroll-legend-swatch--auto{
+  background:rgba(74,144,226,.15);
+  border-color:rgba(74,144,226,.35);
+}
+.payroll-legend-swatch--modified{
+  background:rgba(247,179,44,.15);
+  border-color:var(--accent);
 }
 
 /* ── Modale heures de service ── */
