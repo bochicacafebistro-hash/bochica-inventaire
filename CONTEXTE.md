@@ -1,6 +1,6 @@
 # 📋 CONTEXTE — Projet Bochica Inventaire
 
-> ⚠️ **Dernière mise à jour : 3 mai 2026** — nouvelle page **Salaires & Pourboires** (v3.4.0) avec calcul automatique des salaires (heures réelles × taux) et répartition au prorata des pourboires (cuisine 25% / service+admin 75%) selon les heures travaillées dans la fenêtre de service du resto.
+> ⚠️ **Dernière mise à jour : 3 mai 2026** — page **Salaires & Pourboires** (v3.4.1) avec saisie des pourboires par jour (total auto-calculé), inputs heure précis (à la minute), comparaison heures planifiées vs réelles avec écart, copie vers semaine suivante, et configuration globale des heures de service.
 
 ## 🏠 Description
 Application web de **gestion interne** pour le restaurant colombien Bochica.
@@ -205,13 +205,18 @@ bochica-inventaire/
 
 ### 💵 Salaires & Pourboires
 - Page séparée pour saisir les **heures réelles** travaillées (peuvent différer du planifié)
-- **Fenêtre de service** configurable par jour (ex. Mer 13h-22h) — seules les heures dans cette fenêtre comptent pour les pourboires
+- **Inputs `<input type="time">`** : saisie à la minute près (pas seulement par tranches de 30 min)
+- **Comparaison planifié vs réel** : chaque ligne affiche `Réel / Planifié` + colonne **Écart** avec couleur (vert si plus, rouge si moins)
+- **Cellule en surbrillance ambrée** quand l'heure réelle diffère du planifié
+- **Heures de service configurables** globalement via modale (settings/payroll.defaultServiceHours par jour 0-6) — fixes par défaut, modifiables n'importe quand
+- **Pourboires saisis par jour** dans une grille (un input par jour) — le **total semaine** se calcule automatiquement
 - **Répartition automatique des pourboires** :
   - Cuisine (`section === "cuisine"`) → pool 25% par défaut
   - Service + Admin (`section === "service"` ou `"other"`) → pool 75% par défaut
   - Pourcentages modifiables via la modale « Répartition »
-  - Calcul au prorata des heures éligibles (heures dans la fenêtre de service)
-- Bouton « Reprendre du planifié » : copie l'horaire planifié comme valeurs réelles initiales
+  - Calcul au prorata des heures éligibles (heures dans la fenêtre de service du jour)
+- **Bouton « Copier → S{n+1} »** : duplique heures réelles + pourboires vers la semaine suivante (avec confirmation si la cible contient déjà des données)
+- **Bouton « Reprendre du planifié »** : initialise les heures réelles avec l'horaire planifié de la semaine
 - Calcul salaire = heures réelles totales × taux (ou heures fixes × taux pour les salariés)
 - Total à payer par employé = salaire + pourboire
 
@@ -307,6 +312,23 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 3 mai 2026 — Salaires & Pourboires v2 (v3.4.1) 💵
+- **Inputs `<input type="time">`** à la place des selects 30 min : saisie précise à la minute près (ex. 13h17)
+- **Pourboires par jour** : grille de 7 inputs (un par jour ouvert) au lieu d'un seul total ; le total semaine se calcule automatiquement (`tipsByDay: {dk: amount}` dans Firestore)
+- **Comparaison planifié vs réel** :
+  - Colonne « Réel / Planifié » dans le résumé de chaque ligne (ex. `25h / 23h`)
+  - Nouvelle colonne « Écart » avec couleur (vert/rouge) et flèche ▲/▼
+  - Hint planifié `📅 P:13:00→22:00` affiché sous l'input quand pas encore de saisie réelle
+  - Indicateur visuel (cellule ambrée + barre latérale jaune) quand l'heure réelle diffère du planifié
+- **Heures de service** déplacées en config globale (settings/payroll.defaultServiceHours par jour de semaine 0-6) :
+  - Modifiables n'importe quand via la nouvelle modale « Heures de service »
+  - S'appliquent automatiquement à toutes les semaines (passées et futures)
+  - Affichées en sous-titre dans l'entête de chaque colonne jour
+- **Bouton « Copier → S{n+1} »** : nouvelle action `duplicatePayrollToNextWeek()` qui copie actualShifts + tipsByDay vers la semaine suivante (remappage des clés de date), avec confirmation si la cible contient déjà des données
+- Suppression de la carte « Heures de service » de la page principale (remplacée par la modale)
+- Suppression du champ unique `totalTips` (remplacé par `tipsByDay` ; rétrocompat pour anciennes semaines)
+- Bumper `CACHE_VERSION` à `v3.4.1`
 
 ### 3 mai 2026 — Salaires & Pourboires (v3.4.0) 💵
 - Nouvelle page **Salaires & Pourboires** sous Employés & Horaires (admin seul)
