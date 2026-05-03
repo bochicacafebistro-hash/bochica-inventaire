@@ -204,7 +204,7 @@ function renderSalaires() {
       <h2 class="page-title">${icon("dollar-sign", 22)} Salaires & Pourboires</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-secondary btn-sm" onclick="openServiceHoursModal()" title="Configurer les heures d'ouverture du service">${icon("clock", 14)} Heures de service</button>
-        <button class="btn-secondary btn-sm" onclick="openTipSharesModal()" title="Répartition cuisine/service">${icon("percent", 14)} Répartition</button>
+        <button class="btn-secondary btn-sm" onclick="openTipSharesModal()" title="Modifier la répartition cuisine / service des pourboires">${icon("percent", 14)} Répartition</button>
       </div>
     </div>
 
@@ -398,86 +398,123 @@ function renderSalaires() {
 }
 
 // ═ Actions Firestore ════════════════════════════════════
+// Toutes les écritures utilisent `set merge` avec objets imbriqués
+// → Firestore fait un deep merge automatique des sous-clés
+// → pour les suppressions, on utilise firebase.firestore.FieldValue.delete()
+// → try/catch + toast pour rendre les erreurs visibles à l'utilisateur
 
-// Met à jour un shift réel (start ou end) pour la semaine courante
+// Met à jour un champ (start ou end) d'un shift réel pour la semaine courante.
+// Si la valeur est vide, on stocke "" — pas une suppression complète du shift,
+// car l'utilisateur peut vouloir saisir start avant end.
 async function updateActualShift(empId, dk, field, value) {
-  const ws = getWeekStart(payrollWeekOffset);
-  const wid = payrollWeekId(ws);
-  const ref = db.collection("payroll").doc(wid);
-  const snap = await ref.get();
-  const data = snap.exists ? snap.data() : {};
-  const actualShifts = { ...(data.actualShifts || {}) };
-  const empShifts = { ...(actualShifts[empId] || {}) };
-  const current = empShifts[dk] || {};
-  const next = { ...current, [field]: value || "" };
-  if (!next.start && !next.end) {
-    delete empShifts[dk];
-  } else {
-    empShifts[dk] = next;
+  try {
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    const ref = db.collection("payroll").doc(wid);
+    // Deep merge : seul le champ ciblé est mis à jour, les autres restent intacts
+    const update = {
+      weekId: wid,
+      weekStart: dayKey(ws),
+      updatedAt: Date.now(),
+      actualShifts: {
+        [empId]: {
+          [dk]: {
+            [field]: value || ""
+          }
+        }
+      }
+    };
+    await ref.set(update, { merge: true });
+  } catch (err) {
+    console.error("updateActualShift failed:", err);
+    toast("Erreur sauvegarde horaire : " + (err.message || err.code || err), "error", 5000);
   }
-  if (Object.keys(empShifts).length === 0) {
-    delete actualShifts[empId];
-  } else {
-    actualShifts[empId] = empShifts;
-  }
-  await ref.set({
-    weekId: wid,
-    weekStart: dayKey(ws),
-    actualShifts,
-    updatedAt: Date.now(),
-    ...(snap.exists ? {} : { createdAt: Date.now() })
-  }, { merge: true });
 }
 
-// Met à jour le pourboire reçu pour un jour donné
-async function updateTipForDay(dk, value) {
-  const v = Number(value);
-  const ws = getWeekStart(payrollWeekOffset);
-  const wid = payrollWeekId(ws);
-  const ref = db.collection("payroll").doc(wid);
-  const snap = await ref.get();
-  const data = snap.exists ? snap.data() : {};
-  const tipsByDay = { ...(data.tipsByDay || {}) };
-  if (isNaN(v) || v <= 0) {
-    delete tipsByDay[dk];
-  } else {
-    tipsByDay[dk] = v;
+// Efface complètement le shift d'un employé pour un jour (les deux champs)
+async function clearActualShift(empId, dk) {
+  try {
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    const ref = db.collection("payroll").doc(wid);
+    await ref.set({
+      weekId: wid,
+      weekStart: dayKey(ws),
+      updatedAt: Date.now(),
+      actualShifts: {
+        [empId]: {
+          [dk]: firebase.firestore.FieldValue.delete()
+        }
+      }
+    }, { merge: true });
+  } catch (err) {
+    console.error("clearActualShift failed:", err);
+    toast("Erreur : " + (err.message || err.code || err), "error", 5000);
   }
-  await ref.set({
-    weekId: wid,
-    weekStart: dayKey(ws),
-    tipsByDay,
-    updatedAt: Date.now(),
-    ...(snap.exists ? {} : { createdAt: Date.now() })
-  }, { merge: true });
+}
+
+// Met à jour le pourboire reçu pour un jour donné.
+// Si valeur vide ou <= 0 → suppression du jour (FieldValue.delete).
+async function updateTipForDay(dk, value) {
+  try {
+    const v = Number(value);
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    const ref = db.collection("payroll").doc(wid);
+    const tipValue = (!value || isNaN(v) || v <= 0)
+      ? firebase.firestore.FieldValue.delete()
+      : v;
+    await ref.set({
+      weekId: wid,
+      weekStart: dayKey(ws),
+      updatedAt: Date.now(),
+      tipsByDay: {
+        [dk]: tipValue
+      }
+    }, { merge: true });
+  } catch (err) {
+    console.error("updateTipForDay failed:", err);
+    toast("Erreur sauvegarde pourboire : " + (err.message || err.code || err), "error", 5000);
+  }
 }
 
 // ═ Modale : configurer les heures de service (config globale) ═
+// Affiche les 7 jours avec un état Ouvert/Fermé clair + inputs heure début/fin.
+// Les jours marqués fermés via Horaires (scheduleSettings.openDays) sont indiqués
+// pour cohérence visuelle, mais on permet quand même de configurer (l'utilisateur
+// peut vouloir préparer la config pour quand il rouvrira).
 function openServiceHoursModal() {
   const cur = payrollSettings?.defaultServiceHours || {};
   const dayNamesLong = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-  showModal(`<div class="modal" style="max-width:520px">
+  const openDays = Array.isArray(scheduleSettings.openDays) ? scheduleSettings.openDays : [0,1,2,3,4,5,6];
+
+  showModal(`<div class="modal" style="max-width:560px">
     <div class="modal-header">
       <h3>${icon("clock", 18)} Heures de service</h3>
       <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
     </div>
     <p style="color:var(--text3);font-size:13px;margin-bottom:16px;line-height:1.5">
-      Définis la fenêtre où le restaurant <strong>sert les clients</strong> (donc où les pourboires sont gagnés).
-      Cette config s'applique à <strong>toutes les semaines</strong> et peut être modifiée à tout moment.
-      Laisse vide un jour pour le marquer comme fermé.
+      Fenêtre où le restaurant <strong>sert les clients</strong> — c'est là que les pourboires sont gagnés.
+      Coche un jour pour l'activer et choisis ses heures.
     </p>
     <div class="payroll-svc-modal-grid">
       ${[0,1,2,3,4,5,6].map(i => {
         const win = cur[i] || {};
         const startVal = win.start || "";
         const endVal = win.end || "";
-        return `<div class="payroll-svc-modal-row">
-          <div class="payroll-svc-modal-day">${dayNamesLong[i]}</div>
-          <div class="payroll-svc-modal-inputs">
-            <input id="svc-${i}-start" type="time" value="${startVal}" aria-label="${dayNamesLong[i]} début"/>
+        const isOpen = !!(startVal && endVal);
+        const isOpenInSchedule = openDays.includes(i);
+        const closedHint = !isOpenInSchedule ? `<span class="payroll-svc-modal-hint">(fermé dans Horaires)</span>` : "";
+        return `<div class="payroll-svc-modal-row ${isOpen ? "is-open" : ""}" data-day="${i}">
+          <label class="payroll-svc-modal-toggle">
+            <input type="checkbox" id="svc-${i}-toggle" ${isOpen ? "checked" : ""} onchange="toggleServiceDay(${i}, this.checked)"/>
+            <span class="payroll-svc-modal-day">${dayNamesLong[i]}</span>
+            ${closedHint}
+          </label>
+          <div class="payroll-svc-modal-inputs" id="svc-${i}-inputs" style="display:${isOpen ? "flex" : "none"}">
+            <input id="svc-${i}-start" type="time" value="${startVal || "13:00"}" aria-label="${dayNamesLong[i]} début"/>
             <span>→</span>
-            <input id="svc-${i}-end" type="time" value="${endVal}" aria-label="${dayNamesLong[i]} fin"/>
-            <button type="button" class="btn-icon-only btn-sm" onclick="clearServiceDay(${i})" aria-label="Effacer ${dayNamesLong[i]}" title="Marquer comme fermé">${icon("x", 14)}</button>
+            <input id="svc-${i}-end" type="time" value="${endVal || "22:00"}" aria-label="${dayNamesLong[i]} fin"/>
           </div>
         </div>`;
       }).join("")}
@@ -489,27 +526,42 @@ function openServiceHoursModal() {
   </div>`);
 }
 
-function clearServiceDay(i) {
-  const s = document.getElementById(`svc-${i}-start`);
-  const e = document.getElementById(`svc-${i}-end`);
-  if (s) s.value = "";
-  if (e) e.value = "";
+// Active/désactive un jour : montre/cache les inputs et bascule l'état "is-open"
+function toggleServiceDay(i, checked) {
+  const inputs = document.getElementById(`svc-${i}-inputs`);
+  const row = document.querySelector(`.payroll-svc-modal-row[data-day="${i}"]`);
+  if (inputs) inputs.style.display = checked ? "flex" : "none";
+  if (row) row.classList.toggle("is-open", checked);
 }
 
 async function saveServiceHours() {
-  const next = {};
-  for (let i = 0; i < 7; i++) {
-    const start = document.getElementById(`svc-${i}-start`)?.value || "";
-    const end = document.getElementById(`svc-${i}-end`)?.value || "";
-    if (start && end) {
-      next[i] = { start, end };
+  try {
+    const next = {};
+    for (let i = 0; i < 7; i++) {
+      const toggleEl = document.getElementById(`svc-${i}-toggle`);
+      const isChecked = !!(toggleEl && toggleEl.checked);
+      if (!isChecked) continue;
+      const start = document.getElementById(`svc-${i}-start`)?.value || "";
+      const end = document.getElementById(`svc-${i}-end`)?.value || "";
+      if (start && end) {
+        next[i] = { start, end };
+      }
     }
+    // ⚠ Set sans merge sur defaultServiceHours pour REMPLACER complètement
+    // (sinon les jours retirés resteraient car deep merge préserve les sous-clés).
+    // On préserve tipShares en le réécrivant explicitement avec la valeur courante.
+    const currentShares = payrollSettings?.tipShares || { cuisine: 0.25, service: 0.75 };
+    await db.collection("settings").doc("payroll").set({
+      tipShares: currentShares,
+      defaultServiceHours: next,
+      updatedAt: Date.now()
+    });
+    closeModal();
+    toast("Heures de service enregistrées.", "success");
+  } catch (err) {
+    console.error("saveServiceHours failed:", err);
+    toast("Erreur sauvegarde : " + (err.message || err.code || err), "error", 5000);
   }
-  await db.collection("settings").doc("payroll").set({
-    defaultServiceHours: next
-  }, { merge: true });
-  closeModal();
-  toast("Heures de service enregistrées.", "success");
 }
 
 // ═ Modale : répartition cuisine/service (%) ═════════════
@@ -542,19 +594,25 @@ function openTipSharesModal() {
 }
 
 async function saveTipShares() {
-  const cuisinePct = Number(document.getElementById("tip-cuisine-pct").value);
-  const servicePct = Number(document.getElementById("tip-service-pct").value);
-  if (isNaN(cuisinePct) || isNaN(servicePct) || cuisinePct < 0 || servicePct < 0) {
-    return toast("Pourcentages invalides.", "error");
+  try {
+    const cuisinePct = Number(document.getElementById("tip-cuisine-pct").value);
+    const servicePct = Number(document.getElementById("tip-service-pct").value);
+    if (isNaN(cuisinePct) || isNaN(servicePct) || cuisinePct < 0 || servicePct < 0) {
+      return toast("Pourcentages invalides.", "error");
+    }
+    if (Math.abs(cuisinePct + servicePct - 100) > 0.5) {
+      return toast("La somme doit être 100% (cuisine + service).", "error");
+    }
+    await db.collection("settings").doc("payroll").set({
+      tipShares: { cuisine: cuisinePct / 100, service: servicePct / 100 },
+      updatedAt: Date.now()
+    }, { merge: true });
+    closeModal();
+    toast("Répartition enregistrée.", "success");
+  } catch (err) {
+    console.error("saveTipShares failed:", err);
+    toast("Erreur : " + (err.message || err.code || err), "error", 5000);
   }
-  if (Math.abs(cuisinePct + servicePct - 100) > 0.5) {
-    return toast("La somme doit être 100% (cuisine + service).", "error");
-  }
-  await db.collection("settings").doc("payroll").set({
-    tipShares: { cuisine: cuisinePct / 100, service: servicePct / 100 }
-  }, { merge: true });
-  closeModal();
-  toast("Répartition enregistrée.", "success");
 }
 
 // ═ Action : reprendre l'horaire planifié comme valeurs réelles ═
