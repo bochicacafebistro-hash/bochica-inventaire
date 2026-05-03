@@ -235,10 +235,23 @@ function renderSalaires() {
   const sumActualHours = empRows.reduce((s, r) => s + r.totalHours, 0);
   const sumPlannedHours = empRows.reduce((s, r) => s + r.plannedHours, 0);
 
+  // ─ Ratio salaires/ventes (utilise actualSales saisis dans Horaires) ─
+  const actualSales = scheduleSettings.actualSales || {};
+  const weekSales = weekDays.reduce((sum, d) => sum + (Number(actualSales[dayKey(d)]) || 0), 0);
+  const salesRatio = weekSales > 0 ? (sumGross / weekSales) : 0;
+  // Couleur du ratio : vert < 32%, jaune 32-40%, rouge > 40% (cibles typiques restaurant)
+  const ratioCls = salesRatio === 0 ? "is-empty"
+    : salesRatio < 0.32 ? "is-good"
+    : salesRatio < 0.40 ? "is-warn"
+    : "is-bad";
+
+  // État verrouillage de la semaine
+  const isLocked = !!payrollWeekData?.locked;
+
   // ─ HTML ───────────────────────────────────────────
-  return `<div class="page">
+  return `<div class="page ${isLocked ? "is-payroll-locked" : ""}">
     <div class="toolbar">
-      <h2 class="page-title">${icon("dollar-sign", 22)} Salaires & Pourboires</h2>
+      <h2 class="page-title">${icon("dollar-sign", 22)} Salaires & Pourboires${isLocked ? ` <span class="payroll-locked-inline-badge">${icon("shield-check", 14)} Payée</span>` : ""}</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-secondary btn-sm" onclick="openServiceHoursModal()" title="Configurer les heures d'ouverture du service">${icon("clock", 14)} Heures de service</button>
         <button class="btn-secondary btn-sm" onclick="openTipSharesModal()" title="Modifier la répartition cuisine / service des pourboires">${icon("percent", 14)} Répartition</button>
@@ -262,8 +275,32 @@ function renderSalaires() {
           <button class="btn-icon-only" onclick="changePayrollWeek(1)" aria-label="Semaine suivante" title="Semaine suivante">${icon("chevron-right", 16)}</button>
         </div>
         <div class="schedule-actions">
-          <button class="btn-secondary btn-sm" onclick="duplicatePayrollToNextWeek()" title="Copier les heures réelles et pourboires vers la semaine suivante">${icon("copy", 14)} Copier → S${weekNum + 1}</button>
-          <button class="btn-secondary btn-sm" onclick="resetActualFromPlanned()" title="Réinitialiser les heures réelles depuis l'horaire planifié">${icon("refresh", 14)} Reprendre du planifié</button>
+          ${isLocked
+            ? `<span class="payroll-locked-badge" title="Semaine verrouillée — édition bloquée">${icon("shield-check", 14)} Verrouillée</span>
+               <button class="btn-secondary btn-sm" onclick="unlockPayrollWeek()" title="Permet à nouveau d'éditer cette semaine">${icon("refresh", 14)} Déverrouiller</button>`
+            : `<button class="btn-secondary btn-sm" onclick="duplicatePayrollToNextWeek()" title="Copier les heures réelles et pourboires vers la semaine suivante">${icon("copy", 14)} Copier → S${weekNum + 1}</button>
+               <button class="btn-secondary btn-sm" onclick="resetActualFromPlanned()" title="Réinitialiser les heures réelles depuis l'horaire planifié">${icon("refresh", 14)} Reprendre du planifié</button>
+               <button class="btn btn-primary btn-sm" onclick="lockPayrollWeek()" title="Verrouiller cette semaine et créer la dépense Salaires">${icon("shield-check", 14)} Verrouiller & payer</button>`}
+        </div>
+      </div>
+
+      <!-- ══ Carte ratio salaires/ventes (utilise les ventes réelles d'Horaires) ══ -->
+      <div class="card payroll-ratio-card payroll-ratio-card--${ratioCls}">
+        <div class="payroll-ratio-head">
+          <div>
+            <h3 class="payroll-service-title">${icon("trending-up", 16)} Ratio salaires / ventes</h3>
+            <div class="payroll-service-sub">
+              ${weekSales > 0
+                ? `Salaires bruts <strong>${fmtMoney(sumGross)}</strong> ÷ Ventes <strong>${fmtMoney(weekSales)}</strong>`
+                : `Saisis les ventes réelles de la semaine dans <strong>Employés & Horaires</strong> pour voir le ratio`}
+            </div>
+          </div>
+          <div class="payroll-ratio-value">
+            ${weekSales > 0
+              ? `<div class="payroll-ratio-pct">${(salesRatio * 100).toFixed(1)}<small>%</small></div>
+                 <div class="payroll-ratio-target" title="Cible typique resto : < 32%">${salesRatio < 0.32 ? "✓ Sous la cible" : salesRatio < 0.40 ? "⚠ Au-dessus" : "⚠ Critique"}</div>`
+              : `<div class="payroll-ratio-pct payroll-ratio-pct--empty">—</div>`}
+          </div>
         </div>
       </div>
 
@@ -812,4 +849,150 @@ async function doDuplicatePayrollToNextWeek(ws, nextWs, nextWid) {
   subscribePayrollWeek();
   renderPage();
   toast(`Semaine copiée vers ${nextWid}.`, "success");
+}
+
+// ═ Verrouillage de la semaine + création auto de la dépense Salaires ═
+// Calcule le sumGross actuel (sans pourboires — ceux-ci viennent des clients,
+// pas une dépense employeur). Crée un doc dans /expenses lié à la semaine.
+function _computeWeekGrossWage() {
+  const weekStart = getWeekStart(payrollWeekOffset);
+  const openDays = Array.isArray(scheduleSettings.openDays) ? scheduleSettings.openDays : [0,1,2,3,4,5,6];
+  const visibleIdx = [0,1,2,3,4,5,6].filter(i => openDays.includes(i));
+  const weekDays = visibleIdx.map(i => {
+    const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
+  });
+
+  let sumGross = 0;
+  for (const emp of employees) {
+    const rate = Number(emp.hourlyRate) || 0;
+    const isSal = !!emp.isSalaried;
+    const fixedHours = Number(emp.fixedWeeklyHours) || 0;
+    if (isSal) {
+      sumGross += fixedHours * rate;
+    } else {
+      let totalHours = 0;
+      for (const d of weekDays) {
+        totalHours += hoursFromShift(getActualShift(emp.id, dayKey(d)));
+      }
+      sumGross += totalHours * rate;
+    }
+  }
+  return { sumGross, weekStart, weekEnd: weekDays[weekDays.length - 1] || weekStart };
+}
+
+// Verrouille la semaine : crée la dépense Salaires + bloque les édits
+function lockPayrollWeek() {
+  const { sumGross, weekStart, weekEnd } = _computeWeekGrossWage();
+  if (sumGross <= 0) {
+    toast("Aucun salaire à verrouiller (le total est 0$). Saisis d'abord les heures.", "warning");
+    return;
+  }
+  const weekNum = getISOWeek(new Date(weekStart.getTime() + 3 * 86400000));
+  const startLabel = weekStart.toLocaleDateString("fr-CA", { month: "short", day: "numeric" });
+  const endLabel = weekEnd.toLocaleDateString("fr-CA", { month: "short", day: "numeric", year: "numeric" });
+  openConfirm(
+    "Verrouiller cette semaine ?",
+    `Cette action va :<br>
+     • Créer une dépense « <strong>Salaires sem. ${weekNum}</strong> » de <strong>${fmtMoney(sumGross)}</strong> dans Dépenses & Revenus<br>
+     • <strong>Bloquer les modifications</strong> sur cette semaine de paie<br><br>
+     Tu pourras déverrouiller plus tard si nécessaire. Continuer ?`,
+    () => doLockPayrollWeek(sumGross, weekStart, weekEnd, weekNum, startLabel, endLabel),
+    false
+  );
+}
+
+async function doLockPayrollWeek(sumGross, weekStart, weekEnd, weekNum, startLabel, endLabel) {
+  try {
+    const wid = payrollWeekId(weekStart);
+    const expenseRef = db.collection("expenses").doc();
+    const description = `Salaires sem. ${weekNum} (${startLabel} – ${endLabel})`;
+
+    // Date de la dépense : dimanche (fin de semaine)
+    const expenseDate = dayKey(weekEnd);
+
+    await expenseRef.set({
+      id: expenseRef.id,
+      description,
+      supplier: "",
+      amount: Number(sumGross.toFixed(2)),
+      tps: 0,
+      tvq: 0,
+      date: expenseDate,
+      category: "Salaires",
+      type: "fixe",
+      notes: `Auto-créé depuis Salaires & Pourboires (verrouillage paie semaine ${weekNum}). Modifie ici si tu ajustes le montant.`,
+      payrollWeekId: wid,
+      isFixedAuto: false,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    });
+
+    await db.collection("payroll").doc(wid).set({
+      weekId: wid,
+      weekStart: dayKey(weekStart),
+      locked: true,
+      lockedAt: Date.now(),
+      lockedAmount: Number(sumGross.toFixed(2)),
+      expenseId: expenseRef.id,
+      updatedAt: Date.now()
+    }, { merge: true });
+
+    await addLog("—", "Paie verrouillée", `Semaine ${weekNum} · ${fmtMoney(sumGross)} → dépense ${expenseRef.id}`);
+    toast(`Semaine ${weekNum} verrouillée. Dépense « ${description} » créée.`, "success", 5000);
+  } catch (err) {
+    console.error("doLockPayrollWeek failed:", err);
+    toast("Erreur verrouillage : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// Déverrouille la semaine : supprime la dépense liée + débloque les édits
+function unlockPayrollWeek() {
+  if (!payrollWeekData?.locked) {
+    toast("Cette semaine n'est pas verrouillée.", "info");
+    return;
+  }
+  const lockedAmount = payrollWeekData.lockedAmount || 0;
+  openConfirm(
+    "Déverrouiller cette semaine ?",
+    `Cela va :<br>
+     • <strong>Supprimer</strong> la dépense Salaires liée (${fmtMoney(lockedAmount)}) de Dépenses & Revenus<br>
+     • Permettre à nouveau de modifier les heures et pourboires<br><br>
+     Continuer ?`,
+    doUnlockPayrollWeek,
+    true
+  );
+}
+
+async function doUnlockPayrollWeek() {
+  try {
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    const expenseId = payrollWeekData?.expenseId;
+
+    if (expenseId) {
+      try {
+        await db.collection("expenses").doc(expenseId).delete();
+      } catch (delErr) {
+        // Si la dépense a déjà été supprimée manuellement, on continue quand même
+        console.warn("Dépense déjà supprimée ?", delErr);
+      }
+    }
+
+    await db.collection("payroll").doc(wid).set({
+      weekId: wid,
+      weekStart: dayKey(ws),
+      locked: false,
+      lockedAt: firebase.firestore.FieldValue.delete(),
+      lockedAmount: firebase.firestore.FieldValue.delete(),
+      expenseId: firebase.firestore.FieldValue.delete(),
+      updatedAt: Date.now()
+    }, { merge: true });
+
+    const weekNum = getISOWeek(new Date(ws.getTime() + 3 * 86400000));
+    await addLog("—", "Paie déverrouillée", `Semaine ${weekNum} · dépense supprimée`);
+    toast(`Semaine ${weekNum} déverrouillée.`, "success");
+  } catch (err) {
+    console.error("doUnlockPayrollWeek failed:", err);
+    toast("Erreur déverrouillage : " + (err.message || err.code || err), "error", 5000);
+  }
 }

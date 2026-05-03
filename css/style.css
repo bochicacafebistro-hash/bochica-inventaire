@@ -4102,6 +4102,107 @@ textarea.md-input{
   letter-spacing:.02em;
 }
 
+/* ── Carte ratio salaires/ventes ── */
+.payroll-ratio-card{
+  margin-top:var(--sp-4);
+  padding:var(--sp-4) var(--sp-5);
+  border-left:4px solid var(--border);
+}
+.payroll-ratio-card--is-good{
+  border-left-color:var(--status-green, #7dbf66);
+  background:rgba(125,191,102,.05);
+}
+.payroll-ratio-card--is-warn{
+  border-left-color:#b45309;
+  background:rgba(180,83,9,.05);
+}
+.payroll-ratio-card--is-bad{
+  border-left-color:var(--status-red, #d9534f);
+  background:rgba(217,83,79,.05);
+}
+.payroll-ratio-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:var(--sp-4);
+  flex-wrap:wrap;
+}
+.payroll-ratio-value{
+  text-align:right;
+}
+.payroll-ratio-pct{
+  font-family:var(--font-heading);
+  font-size:48px;
+  line-height:1;
+  letter-spacing:.02em;
+  color:var(--text);
+}
+.payroll-ratio-pct small{
+  font-size:24px;
+  color:var(--text3);
+  margin-left:2px;
+}
+.payroll-ratio-card--is-good .payroll-ratio-pct{ color:var(--status-green, #7dbf66); }
+.payroll-ratio-card--is-warn .payroll-ratio-pct{ color:#b45309; }
+.payroll-ratio-card--is-bad .payroll-ratio-pct{ color:var(--status-red, #d9534f); }
+.payroll-ratio-pct--empty{ color:var(--text3) !important; }
+.payroll-ratio-target{
+  font-family:var(--font-body);
+  font-size:var(--fs-xs);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text3);
+  margin-top:2px;
+}
+.payroll-ratio-card--is-good .payroll-ratio-target{ color:var(--status-green, #7dbf66); }
+.payroll-ratio-card--is-warn .payroll-ratio-target{ color:#b45309; }
+.payroll-ratio-card--is-bad .payroll-ratio-target{ color:var(--status-red, #d9534f); }
+
+/* ── Badge "Verrouillée" ── */
+.payroll-locked-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  color:var(--accent-warm);
+  background:rgba(247,179,44,.18);
+  padding:6px 12px;
+  border-radius:var(--radius-sm);
+  border:1px solid rgba(247,179,44,.35);
+}
+/* Badge "Payée" inline dans le titre de page */
+.payroll-locked-inline-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-family:var(--font-body);
+  font-size:13px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--status-green, #7dbf66);
+  background:rgba(125,191,102,.15);
+  padding:3px 10px;
+  border-radius:var(--radius-pill);
+  border:1px solid rgba(125,191,102,.4);
+  margin-left:10px;
+  vertical-align:middle;
+}
+
+/* Mode "verrouillée" : inputs en lecture seule (visuel) */
+.page.is-payroll-locked .payroll-time-input,
+.page.is-payroll-locked .payroll-tips-day__input input,
+.page.is-payroll-locked input[type="number"]{
+  pointer-events:none;
+  opacity:.65;
+  cursor:not-allowed;
+}
+
 /* ── Récap pourboires par employé (visible sans scroll) ── */
 .payroll-recap-card{
   margin-top:var(--sp-4);
