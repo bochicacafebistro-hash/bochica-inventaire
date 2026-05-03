@@ -288,8 +288,10 @@ function renderSalaires() {
             ? `<span class="payroll-locked-badge" title="Semaine verrouillée — édition bloquée">${icon("shield-check", 14)} Verrouillée</span>
                <button class="btn-secondary btn-sm" onclick="unlockPayrollWeek()" title="Permet à nouveau d'éditer cette semaine">${icon("refresh", 14)} Déverrouiller</button>`
             : `${(() => {
-                 const overrideCount = Object.keys(payrollWeekData?.actualShifts || {}).reduce((sum, empId) => sum + Object.keys(payrollWeekData.actualShifts[empId] || {}).length, 0);
-                 return `<button class="btn-secondary btn-sm" onclick="resetActualFromPlanned()" title="Annuler les ajustements manuels que tu as faits ici (les heures repartiront du planning)" ${overrideCount === 0 ? "disabled" : ""}>${icon("refresh", 14)} Annuler mes modifs${overrideCount > 0 ? ` <span class="payroll-modif-count">${overrideCount}</span>` : ""}</button>`;
+                 const shiftOverrides = Object.keys(payrollWeekData?.actualShifts || {}).reduce((sum, empId) => sum + Object.keys(payrollWeekData.actualShifts[empId] || {}).length, 0);
+                 const tipDaysCount = Object.keys(payrollWeekData?.tipsByDay || {}).length;
+                 const totalCount = shiftOverrides + tipDaysCount;
+                 return `<button class="btn-secondary btn-sm" onclick="resetActualFromPlanned()" title="Effacer toutes tes saisies de la semaine (heures + pourboires). Le planning planifié n'est pas touché." ${totalCount === 0 ? "disabled" : ""}>${icon("refresh", 14)} Annuler mes saisies${totalCount > 0 ? ` <span class="payroll-modif-count">${totalCount}</span>` : ""}</button>`;
                })()}
                <button class="btn btn-primary btn-sm" onclick="lockPayrollWeek()" title="Verrouiller cette semaine et créer la dépense Salaires">${icon("shield-check", 14)} Verrouiller & payer</button>`}
         </div>
@@ -751,21 +753,34 @@ async function saveTipShares() {
 // de supprimer entièrement actualShifts pour que les valeurs viennent à
 // nouveau du planning d'origine (Employés & Horaires).
 function resetActualFromPlanned() {
-  const overrideCount = Object.keys(payrollWeekData?.actualShifts || {}).reduce(
+  const shiftOverrides = Object.keys(payrollWeekData?.actualShifts || {}).reduce(
     (sum, empId) => sum + Object.keys(payrollWeekData.actualShifts[empId] || {}).length, 0
   );
-  if (overrideCount === 0) {
+  const tipDaysCount = Object.keys(payrollWeekData?.tipsByDay || {}).length;
+  const totalCount = shiftOverrides + tipDaysCount;
+
+  if (totalCount === 0) {
     toast(
-      "Aucune modification à annuler. Les heures que tu vois viennent du planning planifié (page Employés & Horaires) — elles s'importent automatiquement et ne se modifient que là-bas.",
+      "Aucune saisie à effacer. Les heures que tu vois viennent du planning planifié (page Employés & Horaires) — elles s'importent automatiquement.",
       "info",
       6000
     );
     return;
   }
+
+  // Détail à afficher dans la confirmation
+  const parts = [];
+  if (shiftOverrides > 0) parts.push(`<strong>${shiftOverrides}</strong> ajustement${shiftOverrides > 1 ? "s" : ""} d'horaire`);
+  if (tipDaysCount > 0) parts.push(`<strong>${tipDaysCount}</strong> jour${tipDaysCount > 1 ? "s" : ""} de pourboires saisis`);
+  const detailLine = parts.join(" + ");
+
   openConfirm(
-    "Annuler mes modifications ?",
-    `Cela va <strong>annuler les ${overrideCount} ajustement${overrideCount > 1 ? "s" : ""} manuel${overrideCount > 1 ? "s" : ""}</strong> que tu as fait${overrideCount > 1 ? "s" : ""} sur cette semaine.<br><br>
-     Les heures repartiront du <strong>planning planifié</strong> (Employés & Horaires). Tes ajustements seront perdus mais le planning d'origine reste intact. Continuer ?`,
+    "Annuler toutes les saisies de la semaine ?",
+    `Cela va effacer ${detailLine} pour cette semaine.<br><br>
+     ✓ Les heures repartiront automatiquement du <strong>planning planifié</strong> (Employés & Horaires).<br>
+     ✓ Les pourboires journaliers seront <strong>remis à zéro</strong>.<br>
+     ✓ Le <strong>planning planifié reste intact</strong> — il n'est jamais modifié depuis cette page.<br><br>
+     Continuer ?`,
     doResetActualFromPlanned,
     true
   );
@@ -775,14 +790,19 @@ async function doResetActualFromPlanned() {
   try {
     const ws = getWeekStart(payrollWeekOffset);
     const wid = payrollWeekId(ws);
-    // Effacer entièrement actualShifts → le rendu repassera sur le planifié via getActualShift
+    // Effacer entièrement actualShifts ET tipsByDay
+    // → les heures repassent sur le planifié via getActualShift (auto-import)
+    // → les pourboires journaliers sont supprimés
     await db.collection("payroll").doc(wid).set({
       weekId: wid,
       weekStart: dayKey(ws),
       actualShifts: firebase.firestore.FieldValue.delete(),
+      tipsByDay: firebase.firestore.FieldValue.delete(),
+      // Nettoyer aussi l'éventuel ancien champ totalTips (rétrocompat)
+      totalTips: firebase.firestore.FieldValue.delete(),
       updatedAt: Date.now()
     }, { merge: true });
-    toast("Modifications effacées — l'horaire planifié est repris automatiquement.", "success");
+    toast("Saisies effacées — heures repartent du planifié, pourboires remis à zéro.", "success", 4000);
   } catch (err) {
     console.error("doResetActualFromPlanned failed:", err);
     toast("Erreur : " + (err.message || err.code || err), "error", 5000);
