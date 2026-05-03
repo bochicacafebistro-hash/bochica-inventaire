@@ -3969,6 +3969,26 @@ textarea.md-input{
   color:rgba(74,144,226,.7);
 }
 
+/* Pourboire du jour (sous la cellule sortie) */
+.payroll-day-tip{
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  font-family:var(--font-heading);
+  font-size:11px;
+  color:var(--status-green, #7dbf66);
+  margin-top:2px;
+  font-weight:600;
+  letter-spacing:.02em;
+  background:rgba(125,191,102,.12);
+  padding:1px 5px;
+  border-radius:var(--radius-sm);
+  white-space:nowrap;
+}
+.dark .payroll-day-tip{
+  background:rgba(125,191,102,.18);
+}
+
 /* Cellule "Heures réel / planifié" (résumé ligne) */
 .payroll-hours-cell{
   display:inline-flex;

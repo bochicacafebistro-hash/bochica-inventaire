@@ -161,6 +161,29 @@ function renderSalaires() {
   const poolCuisine = totalTips * (Number(tipShares.cuisine) || 0);
   const poolService = totalTips * (Number(tipShares.service) || 0);
 
+  // ─ Pré-calcul des pools journaliers ──────────────
+  // Pour chaque jour, on calcule le pool cuisine/service du jour ET le total
+  // d'heures éligibles par groupe ce jour-là. Le pourboire de chaque employé
+  // est ensuite calculé jour par jour (plus juste : un employé absent un
+  // jour ne touche rien du pool de ce jour-là).
+  const dailyCalc = weekDays.map((d, k) => {
+    const dk = dayKey(d);
+    const dowIdx = visibleIdx[k];
+    const dayTotal = Number(tipsByDay[dk]) || 0;
+    const poolKitchenDay = dayTotal * (Number(tipShares.cuisine) || 0);
+    const poolServiceDay = dayTotal * (Number(tipShares.service) || 0);
+    const serviceWin = getServiceWindow(dowIdx);
+    let totalKitchenHrsDay = 0;
+    let totalServiceHrsDay = 0;
+    for (const emp of employees) {
+      const shift = getActualShift(emp.id, dk);
+      const tipHrs = serviceWin ? intersectShiftHours(shift, serviceWin) : 0;
+      if (tipGroupOf(emp) === "cuisine") totalKitchenHrsDay += tipHrs;
+      else totalServiceHrsDay += tipHrs;
+    }
+    return { dk, dowIdx, serviceWin, dayTotal, poolKitchenDay, poolServiceDay, totalKitchenHrsDay, totalServiceHrsDay };
+  });
+
   // ─ Calculs par employé ────────────────────────────
   const empRows = employees.map(emp => {
     const rate = Number(emp.hourlyRate) || 0;
@@ -171,41 +194,40 @@ function renderSalaires() {
     let totalHours = 0;
     let plannedHours = 0;
     let tipEligibleHours = 0;
+    let tipShare = 0;
     const daily = weekDays.map((d, k) => {
       const dk = dayKey(d);
       const dowIdx = visibleIdx[k];
       const actualShift = getActualShift(emp.id, dk);
       const plannedShift = getPlannedShift(emp.id, dk);
-      const serviceWin = getServiceWindow(dowIdx);
+      const serviceWin = dailyCalc[k].serviceWin;
       const hours = hoursFromShift(actualShift);
       const pHours = hoursFromShift(plannedShift);
       const tipHours = serviceWin ? intersectShiftHours(actualShift, serviceWin) : 0;
       const isOverride = hasActualOverride(emp.id, dk);
       const isDifferent = isOverride && !sameShift(actualShift, plannedShift);
+
+      // Pourboire du jour pour cet employé (prorata journalier)
+      const groupPool = group === "cuisine" ? dailyCalc[k].poolKitchenDay : dailyCalc[k].poolServiceDay;
+      const groupTotalHrs = group === "cuisine" ? dailyCalc[k].totalKitchenHrsDay : dailyCalc[k].totalServiceHrsDay;
+      const dayTip = (groupTotalHrs > 0 && tipHours > 0) ? (tipHours / groupTotalHrs) * groupPool : 0;
+
       totalHours += hours;
       plannedHours += pHours;
       tipEligibleHours += tipHours;
-      return { dk, dowIdx, actualShift, plannedShift, hours, pHours, tipHours, isOverride, isDifferent };
+      tipShare += dayTip;
+      return { dk, dowIdx, actualShift, plannedShift, hours, pHours, tipHours, dayTip, isOverride, isDifferent };
     });
 
     const grossWage = isSal ? (fixedHours * rate) : (totalHours * rate);
     const gap = totalHours - plannedHours;
-    return { emp, rate, isSal, fixedHours, group, daily, totalHours, plannedHours, gap, tipEligibleHours, grossWage };
+    const totalPay = grossWage + tipShare;
+    return { emp, rate, isSal, fixedHours, group, daily, totalHours, plannedHours, gap, tipEligibleHours, tipShare, grossWage, totalPay };
   });
 
-  // Totaux par groupe pour le prorata
+  // Totaux par groupe pour les hints des pools (somme des heures de la semaine)
   const totalCuisineHrs = empRows.filter(r => r.group === "cuisine").reduce((s, r) => s + r.tipEligibleHours, 0);
   const totalServiceHrs = empRows.filter(r => r.group === "service").reduce((s, r) => s + r.tipEligibleHours, 0);
-
-  // Attribution prorata
-  empRows.forEach(r => {
-    if (r.group === "cuisine") {
-      r.tipShare = totalCuisineHrs > 0 ? (r.tipEligibleHours / totalCuisineHrs) * poolCuisine : 0;
-    } else {
-      r.tipShare = totalServiceHrs > 0 ? (r.tipEligibleHours / totalServiceHrs) * poolService : 0;
-    }
-    r.totalPay = r.grossWage + r.tipShare;
-  });
 
   const sumGross = empRows.reduce((s, r) => s + r.grossWage, 0);
   const sumTips = empRows.reduce((s, r) => s + r.tipShare, 0);
@@ -341,6 +363,10 @@ function renderSalaires() {
                   const tipHint = (d.tipHours > 0 && Math.abs(d.tipHours - d.hours) > 0.01)
                     ? `<span class="payroll-tip-hint" title="${fmtHours(d.tipHours)}h dans la fenêtre service">★${fmtHours(d.tipHours)}</span>`
                     : "";
+                  // Pourboire du jour pour cet employé
+                  const dayTipHint = d.dayTip > 0
+                    ? `<div class="payroll-day-tip" title="Pourboire reçu ce jour (prorata)">${icon("dollar-sign", 9)} ${fmtMoney(d.dayTip)}</div>`
+                    : "";
                   // Affichage du planifié sous l'input quand différent du réel
                   const plannedHint = (d.plannedShift && d.plannedShift.start && d.plannedShift.end && d.isDifferent)
                     ? `<div class="payroll-planned-hint" title="Heure planifiée">${icon("calendar", 9)} ${d.plannedShift.start}→${d.plannedShift.end}</div>`
@@ -353,6 +379,7 @@ function renderSalaires() {
                   <td class="schedule-td--cell payroll-td-cell ${filled ? "is-filled" : ""} ${d.isDifferent ? "is-modified" : ""}">
                     <input type="time" class="payroll-time-input" value="${endVal}" onchange="updateActualShift('${row.emp.id}','${d.dk}','end',this.value)" aria-label="${empName}, sortie réelle ${dayName}"/>
                     ${tipHint}
+                    ${dayTipHint}
                     ${plannedHint}
                   </td>`;
                 }).join("")}
