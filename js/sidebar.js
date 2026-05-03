@@ -12,6 +12,7 @@ function buildSidebar() {
     { section: t("nav_section_dashboard") },
     { icon: "clipboard", label: t("nav_tasks"), page: "taches" },
     { icon: "users", label: t("nav_employees"), page: "employes" },
+    { icon: "dollar-sign", label: t("nav_salaires"), page: "salaires" },
     { icon: "wallet", label: t("nav_expenses"), page: "depenses" },
     { icon: "shield-check", label: "TPS/TVQ", page: "taxes" },
     { icon: "utensils", label: t("nav_menu"), page: "menu" },
@@ -127,6 +128,7 @@ function renderPage() {
     historique:  { label: t("nav_history"),     icon: "history" },
     taches:      { label: t("nav_tasks"),       icon: "clipboard" },
     employes:    { label: t("nav_employees"),   icon: "users" },
+    salaires:    { label: t("nav_salaires"),    icon: "dollar-sign" },
     depenses:    { label: t("nav_expenses"),    icon: "wallet" },
     taxes:       { label: "TPS/TVQ",            icon: "shield-check" },
     menu:        { label: t("nav_menu"),        icon: "utensils" },
@@ -172,6 +174,11 @@ function renderPage() {
     pc.innerHTML = renderEmployes();
     // Initialiser le graphique de couverture après l'injection du DOM
     setTimeout(() => { if (typeof initCoverageChart === "function") initCoverageChart(); }, 50);
+  }
+  else if (activePage === "salaires") {
+    // S'abonner au doc payroll de la semaine courante (idempotent)
+    if (typeof subscribePayrollWeek === "function") subscribePayrollWeek();
+    pc.innerHTML = renderSalaires();
   }
   else if (activePage === "depenses") {
     pc.innerHTML = renderDepenses();

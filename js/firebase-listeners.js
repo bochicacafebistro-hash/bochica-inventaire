@@ -85,5 +85,24 @@ db.collection("settings").doc("schedule").onSnapshot(snap => {
     actualSales: data.actualSales || {},
     openDays: Array.isArray(data.openDays) ? data.openDays : [0, 1, 2, 3, 4, 5, 6]
   };
-  if (isLoggedIn && activePage === "employes") renderPage();
+  if (isLoggedIn && (activePage === "employes" || activePage === "salaires")) renderPage();
 });
+
+// Paramètres paie : pourcentages cuisine/service + fenêtre de service par défaut
+db.collection("settings").doc("payroll").onSnapshot(snap => {
+  const data = snap.exists ? snap.data() : {};
+  payrollSettings = {
+    tipShares: data.tipShares && typeof data.tipShares.cuisine === "number"
+      ? { cuisine: Number(data.tipShares.cuisine), service: Number(data.tipShares.service) }
+      : { cuisine: 0.25, service: 0.75 },
+    defaultServiceHours: data.defaultServiceHours && typeof data.defaultServiceHours === "object"
+      ? data.defaultServiceHours
+      : {}
+  };
+  if (isLoggedIn && activePage === "salaires") renderPage();
+});
+
+// Note : le listener sur /payroll/{weekId} de la semaine courante est géré
+// dynamiquement par subscribePayrollWeek() (dans pages-payroll.js) pour ne
+// charger qu'un seul document à la fois. On l'abonne au login et à chaque
+// changement de semaine.

@@ -36,3 +36,16 @@ let scheduleSettings = { salesRatio: 0.32, actualSales: {}, openDays: [0, 1, 2, 
 let scheduleCoverageSection = "all";
 // Instance Chart.js (détruit/recréé à chaque render pour éviter les fuites)
 let _coverageChartInstance = null;
+
+// ── Salaires & Pourboires ─────────────────────────────
+// Page hebdomadaire pour saisir les heures réelles + calculer salaires et
+// répartition des pourboires au prorata des heures de service.
+let payrollWeekOffset = 0;          // 0 = semaine courante
+let payrollWeekData = null;         // doc Firestore /payroll/{weekId} (cache live)
+let payrollSettings = {              // doc Firestore /settings/payroll
+  tipShares: { cuisine: 0.25, service: 0.75 }, // 25% cuisine / 75% service+admin
+  defaultServiceHours: {}            // { 0: {start,end}, 2: {start,end}, ... } par jour de semaine
+};
+// Unsubscribe du listener temps réel sur le doc /payroll/{weekId} courant
+// (réabonné à chaque changement de semaine pour limiter la BP)
+let _payrollUnsub = null;

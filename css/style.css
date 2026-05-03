@@ -3719,3 +3719,271 @@ textarea.md-input{
   display:block;
   letter-spacing:0;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   SALAIRES & POURBOIRES — page de paie hebdomadaire
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Carte heures de service ── */
+.payroll-service-card{
+  margin-top:var(--sp-4);
+  padding:var(--sp-5);
+}
+.payroll-service-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:var(--sp-4);
+  margin-bottom:var(--sp-4);
+}
+.payroll-service-title{
+  font-family:var(--font-heading);
+  font-size:22px;
+  margin:0 0 4px;
+  color:var(--text);
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.payroll-service-sub{
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  color:var(--text3);
+  line-height:1.4;
+}
+.payroll-service-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));
+  gap:var(--sp-3);
+}
+.payroll-service-day{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:var(--sp-3);
+  display:flex;
+  flex-direction:column;
+  gap:var(--sp-2);
+  transition:background var(--transition-base), border-color var(--transition-base);
+}
+.payroll-service-day.is-open{
+  background:rgba(var(--accent-rgb), .08);
+  border-color:rgba(var(--accent-rgb), .35);
+}
+.payroll-service-day__name{
+  font-family:var(--font-heading);
+  font-size:18px;
+  letter-spacing:.04em;
+  color:var(--text);
+}
+.payroll-service-day__date{
+  font-family:var(--font-body);
+  font-size:11px;
+  color:var(--text3);
+  font-weight:500;
+  letter-spacing:0;
+  margin-left:4px;
+}
+.payroll-service-day__inputs{
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.payroll-service-day__inputs .schedule-time{
+  flex:1;
+  min-width:0;
+}
+.payroll-service-day__sep{
+  font-size:13px;
+  color:var(--text3);
+  font-weight:600;
+}
+
+/* ── Carte total pourboires ── */
+.payroll-tips-card{
+  margin-top:var(--sp-4);
+  padding:var(--sp-5);
+}
+.payroll-tips-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:var(--sp-4);
+  margin-bottom:var(--sp-4);
+  flex-wrap:wrap;
+}
+.payroll-tips-input{
+  display:inline-flex;
+  align-items:center;
+  gap:var(--sp-2);
+  background:var(--surface);
+  border:2px solid var(--accent);
+  border-radius:var(--radius-md);
+  padding:6px 12px;
+  box-shadow:0 2px 8px rgba(var(--accent-rgb),.15);
+}
+.payroll-tips-input label{
+  font-family:var(--font-body);
+  font-size:var(--fs-xs);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text3);
+  margin:0;
+  padding:0;
+}
+.payroll-tips-input input{
+  font-family:var(--font-heading);
+  font-size:24px;
+  border:none;
+  outline:none;
+  background:transparent;
+  color:var(--text);
+  width:120px;
+  padding:0;
+}
+.payroll-tips-input__currency{
+  font-family:var(--font-heading);
+  font-size:18px;
+  color:var(--accent);
+}
+
+.payroll-tips-pools{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
+  gap:var(--sp-3);
+}
+.payroll-tips-pool{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:var(--sp-4);
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.payroll-tips-pool--kitchen{
+  background:rgba(247,179,44,.10);
+  border-color:rgba(247,179,44,.35);
+}
+.payroll-tips-pool--service{
+  background:rgba(74,144,226,.10);
+  border-color:rgba(74,144,226,.35);
+}
+.payroll-tips-pool__label{
+  font-family:var(--font-body);
+  font-size:var(--fs-xs);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text2);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.payroll-tips-pool__amount{
+  font-family:var(--font-heading);
+  font-size:32px;
+  color:var(--text);
+  letter-spacing:.02em;
+  line-height:1.1;
+}
+.payroll-tips-pool__hint{
+  font-family:var(--font-body);
+  font-size:var(--fs-xs);
+  color:var(--text3);
+  font-style:italic;
+}
+
+/* ── Tableau paie (réutilise schedule-table) ── */
+.payroll-table-wrap{
+  margin-top:var(--sp-4);
+}
+.payroll-table .schedule-th--summary{
+  min-width:90px;
+}
+
+/* Badge cuisine 25% / service 75% sur la cellule employé */
+.payroll-group-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-family:var(--font-mono, var(--font-body));
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.04em;
+  padding:2px 7px;
+  border-radius:var(--radius-sm);
+  white-space:nowrap;
+}
+.payroll-group-badge--kitchen{
+  background:rgba(247,179,44,.2);
+  color:var(--accent-warm);
+}
+.payroll-group-badge--service{
+  background:rgba(74,144,226,.18);
+  color:var(--blue-text, #2c5e8e);
+}
+
+/* Indication des heures éligibles aux pourboires dans une cellule de shift */
+.payroll-tip-hint{
+  display:inline-block;
+  font-family:var(--font-mono, var(--font-body));
+  font-size:9px;
+  font-weight:700;
+  color:var(--accent-warm);
+  background:rgba(247,179,44,.15);
+  padding:1px 5px;
+  border-radius:var(--radius-sm);
+  margin-left:4px;
+  vertical-align:middle;
+  letter-spacing:.02em;
+}
+
+/* Légende explicative en bas de page */
+.payroll-legend{
+  margin-top:var(--sp-4);
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  color:var(--text3);
+  line-height:1.6;
+  font-style:italic;
+  display:flex;
+  align-items:flex-start;
+  gap:6px;
+  padding:var(--sp-3) var(--sp-4);
+  background:var(--surface2);
+  border-radius:var(--radius-md);
+  border-left:3px solid var(--accent);
+}
+.payroll-legend strong{
+  color:var(--text2);
+  font-weight:700;
+  font-style:normal;
+}
+
+/* Dark mode adaptations */
+.dark .payroll-tips-pool--kitchen{
+  background:rgba(247,179,44,.15);
+}
+.dark .payroll-tips-pool--service{
+  background:rgba(74,144,226,.15);
+}
+.dark .payroll-service-day.is-open{
+  background:rgba(var(--accent-rgb), .12);
+}
+
+/* Mobile : empilement vertical des pools */
+@media (max-width: 600px){
+  .payroll-tips-head{
+    flex-direction:column;
+    align-items:stretch;
+  }
+  .payroll-tips-input{
+    width:100%;
+    justify-content:space-between;
+  }
+  .payroll-service-grid{
+    grid-template-columns:1fr 1fr;
+  }
+}

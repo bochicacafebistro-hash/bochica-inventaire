@@ -1,6 +1,6 @@
 # 📋 CONTEXTE — Projet Bochica Inventaire
 
-> ⚠️ **Dernière mise à jour : 24 avril 2026** — migration vers **Firebase Authentication** (backend sécurisé) + règles Firestore par rôle. Remplace l'ancien système SHA-256 côté client.
+> ⚠️ **Dernière mise à jour : 3 mai 2026** — nouvelle page **Salaires & Pourboires** (v3.4.0) avec calcul automatique des salaires (heures réelles × taux) et répartition au prorata des pourboires (cuisine 25% / service+admin 75%) selon les heures travaillées dans la fenêtre de service du resto.
 
 ## 🏠 Description
 Application web de **gestion interne** pour le restaurant colombien Bochica.
@@ -54,6 +54,7 @@ bochica-inventaire/
 │   ├── modals-produits.js  ← Modals produit, note, catégorie (drag & drop), réception
 │   ├── pages-secondaires.js ← Pages rapport, historique, tâches
 │   ├── pages-hr.js         ← Employés, horaires, coverage chart, salaires fixes
+│   ├── pages-payroll.js    ← Salaires & Pourboires (heures réelles, fenêtre service, prorata)
 │   ├── pages-finance.js    ← Dépenses, revenus, catégories, frais fixes, rapports, charts dépenses
 │   ├── pages-kitchen.js    ← Menu, fournisseurs, ingrédients, recettes
 │   ├── pages-dashboard.js  ← Dashboard, taxes, helpers taxes, autoApplyFixedExpenses
@@ -80,6 +81,7 @@ bochica-inventaire/
 <script src="js/modals-produits.js"></script>
 <script src="js/pages-secondaires.js"></script>
 <script src="js/pages-hr.js"></script>
+<script src="js/pages-payroll.js"></script>
 <script src="js/pages-finance.js"></script>
 <script src="js/pages-kitchen.js"></script>
 <script src="js/pages-dashboard.js"></script>
@@ -98,6 +100,10 @@ bochica-inventaire/
   - `menu` — items du menu (name, description, price, category, available, recipe[])
   - `ingredients` — ingrédients pour food cost (name, costPerUnit, unit, category)
   - `recipes` — livre de cuisine (name, description, category, servings, prepTime, cookTime, ingredients, steps, tips — **markdown**)
+  - `payroll` — paie hebdomadaire (un doc par semaine ISO `YYYY-Www`) :
+    - `weekId`, `weekStart`, `totalTips`, `serviceHours` `{dk: {start,end}}`, `actualShifts` `{empId: {dk: {start,end}}}`, `notes`, `createdAt`/`updatedAt`
+    - Indépendant des shifts planifiés dans `employees[id].shifts` — permet de saisir l'horaire **réel** sans toucher au planning
+  - `settings/payroll` — `tipShares: { cuisine, service }` (par défaut 0.25 / 0.75) + `defaultServiceHours` par jour de semaine
   - `expenses` — dépenses (description, supplier, amount, tps, tvq, date, category, type, notes, isFixedAuto)
   - `revenues` — revenus (description, amount, tps, tvq, date, notes)
   - `expenseCategories` — catégories personnalisées de dépenses (name, type)
@@ -194,6 +200,20 @@ bochica-inventaire/
 
 ### 👥 Employés & Horaires
 - Fiche employé + grille horaire semaine (Matin/Soir/Journée/Congé)
+- Section employé (cuisine / service / autre) — utilisée pour le pool de pourboires
+- Taux horaire par employé + option salarié (heures fixes hebdomadaires)
+
+### 💵 Salaires & Pourboires
+- Page séparée pour saisir les **heures réelles** travaillées (peuvent différer du planifié)
+- **Fenêtre de service** configurable par jour (ex. Mer 13h-22h) — seules les heures dans cette fenêtre comptent pour les pourboires
+- **Répartition automatique des pourboires** :
+  - Cuisine (`section === "cuisine"`) → pool 25% par défaut
+  - Service + Admin (`section === "service"` ou `"other"`) → pool 75% par défaut
+  - Pourcentages modifiables via la modale « Répartition »
+  - Calcul au prorata des heures éligibles (heures dans la fenêtre de service)
+- Bouton « Reprendre du planifié » : copie l'horaire planifié comme valeurs réelles initiales
+- Calcul salaire = heures réelles totales × taux (ou heures fixes × taux pour les salariés)
+- Total à payer par employé = salaire + pourboire
 
 ### 💰 Dépenses & Revenus
 - Calcul TPS/TVQ auto, catégories personnalisables, frais fixes auto
@@ -287,6 +307,25 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 3 mai 2026 — Salaires & Pourboires (v3.4.0) 💵
+- Nouvelle page **Salaires & Pourboires** sous Employés & Horaires (admin seul)
+- Nouveau module `js/pages-payroll.js` (~470 lignes) :
+  - `renderSalaires()` — vue hebdomadaire avec sélecteur de semaine, fenêtre de service, total pourboires, pools cuisine/service, tableau heures réelles + salaires + pourboires
+  - Helper `intersectShiftHours(shift, window)` — calcule l'intersection entre un shift et la fenêtre de service du jour (gère les chevauchements de minuit)
+  - `getActualShift(empId, dk)` — fallback automatique sur l'horaire planifié si pas encore de saisie réelle
+  - `subscribePayrollWeek()` — listener Firestore dynamique abonné/désabonné à chaque changement de semaine
+- **Nouvelle collection Firestore `payroll`** : un doc par semaine ISO (`YYYY-Www`) avec `totalTips`, `serviceHours`, `actualShifts` (séparés des shifts planifiés)
+- **Nouveaux settings `settings/payroll`** : `tipShares` (cuisine 25% / service 75% par défaut) + `defaultServiceHours`
+- **Règles Firestore** : `match /payroll/{doc=**}` admin only
+- Calcul automatique :
+  - Salaire = heures réelles × taux (ou heures fixes × taux pour les salariés)
+  - Pool cuisine = `totalTips × 0.25` réparti au prorata des heures de service des employés cuisine
+  - Pool service = `totalTips × 0.75` réparti au prorata des heures de service des employés service+other
+  - Badge ★ visible sur les cellules où la fenêtre de service ne couvre pas tout le shift
+- Modale « Répartition » pour ajuster les % cuisine/service (validation : somme = 100%)
+- Bouton « Reprendre du planifié » : initialise les heures réelles avec l'horaire planifié de la semaine
+- Bumper `CACHE_VERSION` à `v3.4.0` + ajout de `pages-payroll.js` à l'app shell
 
 ### 24 avril 2026 — Cohérence design + fix bugs (v3.2.1 → v3.3.0) 🎨
 - **2 bugs pré-existants corrigés** (v3.2.1) :
