@@ -106,16 +106,31 @@ function resetPayrollWeek() {
 }
 
 // ═ Listener Firestore sur le doc de la semaine courante ═
+// IDEMPOTENT : si on est déjà abonné à la même semaine, on ne fait rien.
+// Sinon on détache l'ancien listener et on crée un nouveau.
+// Critique : appelé depuis renderPage qui est lui-même déclenché par le
+// snapshot du listener → sans cette idempotence on crée une boucle infinie
+// de connexions Listen/channel vers Firestore (cf. bug v3.4.3).
 function subscribePayrollWeek() {
-  if (typeof _payrollUnsub === "function") {
-    try { _payrollUnsub(); } catch (_) {}
-  }
-  payrollWeekData = null;
   const ws = getWeekStart(payrollWeekOffset);
   const wid = payrollWeekId(ws);
+  // Déjà abonné à cette semaine → no-op (évite la boucle infinie)
+  if (_payrollSubscribedWid === wid && typeof _payrollUnsub === "function") {
+    return;
+  }
+  // Détacher l'ancien listener si on change de semaine
+  if (typeof _payrollUnsub === "function") {
+    try { _payrollUnsub(); } catch (_) {}
+    _payrollUnsub = null;
+  }
+  payrollWeekData = null;
+  _payrollSubscribedWid = wid;
   _payrollUnsub = db.collection("payroll").doc(wid).onSnapshot(snap => {
     payrollWeekData = snap.exists ? snap.data() : null;
     if (isLoggedIn && activePage === "salaires") renderPage();
+  }, err => {
+    console.error("payroll listener error:", err);
+    toast("Erreur connexion paie : " + (err.message || err.code || err), "error", 5000);
   });
 }
 

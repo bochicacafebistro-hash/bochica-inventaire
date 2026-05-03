@@ -47,5 +47,8 @@ let payrollSettings = {              // doc Firestore /settings/payroll
   defaultServiceHours: {}            // { 0: {start,end}, 2: {start,end}, ... } par jour de semaine
 };
 // Unsubscribe du listener temps réel sur le doc /payroll/{weekId} courant
-// (réabonné à chaque changement de semaine pour limiter la BP)
+// (réabonné UNIQUEMENT à chaque changement de semaine pour limiter la BP)
 let _payrollUnsub = null;
+// ID de la semaine actuellement abonnée — évite les ré-abonnements en boucle
+// (sinon chaque snapshot déclenche renderPage qui re-subscribe = boucle infinie)
+let _payrollSubscribedWid = null;
