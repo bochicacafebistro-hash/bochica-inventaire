@@ -427,11 +427,11 @@ function renderSalaires() {
                     : isAutoFromPlanned
                       ? `<div class="payroll-planned-hint payroll-planned-hint--auto" title="Importé automatiquement depuis Employés & Horaires">${icon("calendar", 9)} Auto-importé</div>`
                       : "";
-                  const cellClasses = `schedule-td--cell payroll-td-cell ${filled ? "is-filled" : ""} ${d.isDifferent ? "is-modified" : ""} ${isAutoFromPlanned ? "is-auto" : ""}`;
-                  return `<td class="${cellClasses}">
+                  const baseClasses = `schedule-td--cell payroll-td-cell ${filled ? "is-filled" : ""} ${d.isDifferent ? "is-modified" : ""} ${isAutoFromPlanned ? "is-auto" : ""}`;
+                  return `<td class="${baseClasses} schedule-td--day-entry">
                     <input type="time" class="payroll-time-input" value="${startVal}" onchange="updateActualShift('${row.emp.id}','${d.dk}','start',this.value)" aria-label="${empName}, entrée réelle ${dayName}"/>
                   </td>
-                  <td class="${cellClasses}">
+                  <td class="${baseClasses} schedule-td--day-exit">
                     <input type="time" class="payroll-time-input" value="${endVal}" onchange="updateActualShift('${row.emp.id}','${d.dk}','end',this.value)" aria-label="${empName}, sortie réelle ${dayName}"/>
                     ${tipHint}
                     ${dayTipHint}

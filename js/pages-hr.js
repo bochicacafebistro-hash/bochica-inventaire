@@ -229,10 +229,10 @@ function renderEmployes() {
                 const dk = dayKey(weekDays[k]);
                 const empName = esc(row.emp.name || "");
                 const dayName = DAYS_FR[visibleIdx[k]];
-                return `<td class="schedule-td--cell ${filled ? "is-filled" : ""}">
+                return `<td class="schedule-td--cell schedule-td--day-entry ${filled ? "is-filled" : ""}">
                   <select class="schedule-time" onchange="updateShift('${row.emp.id}','${dk}','start',this.value)" aria-label="${empName}, entrée ${dayName}">${buildTimeOptions(startVal)}</select>
                 </td>
-                <td class="schedule-td--cell ${filled ? "is-filled" : ""}">
+                <td class="schedule-td--cell schedule-td--day-exit ${filled ? "is-filled" : ""}">
                   <select class="schedule-time" onchange="updateShift('${row.emp.id}','${dk}','end',this.value)" aria-label="${empName}, sortie ${dayName}">${buildTimeOptions(endVal)}</select>
                 </td>`;
               }).join("")}
@@ -252,13 +252,13 @@ function renderEmployes() {
             <!-- Ligne Heures / jour -->
             <tr class="schedule-tfoot-row">
               <td class="schedule-tfoot-label">Heures / jour</td>
-              ${dayTotalsHours.map(h => `<td colspan="2" class="schedule-tfoot-val">${h ? fmtHours(h) : ""}</td>`).join("")}
+              ${dayTotalsHours.map(h => `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">${h ? fmtHours(h) : ""}</td>`).join("")}
               <td class="schedule-tfoot-val schedule-td--total" colspan="3">${fmtHours(weekTotalHours)} h</td>
             </tr>
             <!-- Ligne Mt / jour -->
             <tr class="schedule-tfoot-row">
               <td class="schedule-tfoot-label">Mt / jour</td>
-              ${dayTotalsCost.map(c => `<td colspan="2" class="schedule-tfoot-val">${c ? fmtMoney(c) : ""}</td>`).join("")}
+              ${dayTotalsCost.map(c => `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">${c ? fmtMoney(c) : ""}</td>`).join("")}
               <td class="schedule-tfoot-val schedule-td--total" colspan="3">${fmtMoney(weekTotalCost)}</td>
             </tr>
             <!-- Ligne Ventes prévues -->
@@ -266,7 +266,7 @@ function renderEmployes() {
               <td class="schedule-tfoot-label">Ventes prévues</td>
               ${dayTotalsCost.map(c => {
                 const predicted = ratio > 0 ? c / ratio : 0;
-                return `<td colspan="2" class="schedule-tfoot-val">${predicted ? fmtMoney(predicted) : ""}</td>`;
+                return `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">${predicted ? fmtMoney(predicted) : ""}</td>`;
               }).join("")}
               <td class="schedule-tfoot-val schedule-td--total" colspan="3">${fmtMoney(ratio > 0 ? weekTotalCost / ratio : 0)}</td>
             </tr>
@@ -278,7 +278,7 @@ function renderEmployes() {
                 const val = Number(scheduleSettings.actualSales?.[dk] || 0);
                 const dayName = DAYS_FR[visibleIdx[k]];
                 const dateLabel = `${d.getDate()}/${d.getMonth() + 1}`;
-                return `<td colspan="2" class="schedule-tfoot-val">
+                return `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">
                   <input type="number" step="0.01" min="0" class="schedule-sales-input" placeholder="—" value="${val || ""}" onchange="updateActualSales('${dk}',this.value)" aria-label="Ventes réelles ${dayName} ${dateLabel}"/>
                 </td>`;
               }).join("")}
@@ -298,7 +298,7 @@ function renderEmployes() {
                 const cls = gap > 0 ? "is-positive" : gap < 0 ? "is-negative" : "";
                 const arrow = gap > 0 ? "▲" : gap < 0 ? "▼" : "";
                 const content = (actual || predicted) ? `<span class="gap-arrow">${arrow}</span>${fmtMoney(gap)}` : "";
-                return `<td colspan="2" class="schedule-tfoot-val ${cls}">${content}</td>`;
+                return `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot ${cls}">${content}</td>`;
               }).join("")}
               <td class="schedule-tfoot-val schedule-td--total" colspan="3">${(() => {
                 const totalActual = weekDays.reduce((sum, d) => sum + (Number(scheduleSettings.actualSales?.[dayKey(d)] || 0)), 0);

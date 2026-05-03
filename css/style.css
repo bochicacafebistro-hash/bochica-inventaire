@@ -1220,6 +1220,31 @@ tr:last-child td{border-bottom:none}
 .schedule-th--entry,
 .schedule-th--exit{width:46px}
 
+/* ── Séparation visuelle entre les jours ──────────────────
+   Bordure droite renforcée à la fin de chaque jour (cellule "sortie")
+   pour faciliter la lecture des colonnes par jour. */
+.schedule-th--day,
+.schedule-th--exit,
+.schedule-td--day-exit,
+.schedule-td--day-foot{
+  border-right:2px solid var(--border-strong) !important;
+}
+/* Variante dark mode : bordure plus visible */
+.dark .schedule-th--day,
+.dark .schedule-th--exit,
+.dark .schedule-td--day-exit,
+.dark .schedule-td--day-foot{
+  border-right-color:rgba(245,241,232,.18) !important;
+}
+/* Cellule "entrée" du jour : très légère bordure gauche pour renforcer
+   la perception du groupe entrée+sortie comme une unité */
+.schedule-td--day-entry{
+  border-left:1px solid var(--border) !important;
+}
+.dark .schedule-td--day-entry{
+  border-left-color:rgba(245,241,232,.06) !important;
+}
+
 /* Cellules employé (corps) */
 .schedule-td--emp{
   text-align:left !important;
