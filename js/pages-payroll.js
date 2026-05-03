@@ -326,8 +326,8 @@ function renderSalaires() {
               <th class="schedule-th--summary">Réel / Planif</th>
               <th class="schedule-th--summary">Écart</th>
               <th class="schedule-th--summary">Salaire</th>
-              <th class="schedule-th--summary">Pourboire</th>
-              <th class="schedule-th--summary">Total</th>
+              <th class="schedule-th--summary payroll-th-tip" title="Pourboire total de la semaine">Pourboire (sem.)</th>
+              <th class="schedule-th--summary">Total à payer</th>
             </tr>
             <tr class="schedule-subheader">
               <th></th>
@@ -399,7 +399,12 @@ function renderSalaires() {
                     : "—"}
                 </td>
                 <td class="schedule-td--summary">${row.grossWage ? fmtMoney(row.grossWage) : "—"}</td>
-                <td class="schedule-td--summary">${row.tipShare ? fmtMoney(row.tipShare) : "—"}</td>
+                <td class="schedule-td--summary payroll-td-tip ${row.tipShare > 0 ? "has-tip" : ""}">
+                  ${row.tipShare > 0
+                    ? `<div class="payroll-tip-amount">${fmtMoney(row.tipShare)}</div>
+                       <div class="payroll-tip-hours" title="Heures éligibles aux pourboires">${fmtHours(row.tipEligibleHours)}h ★</div>`
+                    : "—"}
+                </td>
                 <td class="schedule-td--summary schedule-td--total">${row.totalPay ? fmtMoney(row.totalPay) : ""}</td>
               </tr>`;
             }).join("")}

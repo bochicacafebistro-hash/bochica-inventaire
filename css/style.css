@@ -3989,6 +3989,39 @@ textarea.md-input{
   background:rgba(125,191,102,.18);
 }
 
+/* En-tête de colonne « Pourboire (sem.) » mis en avant */
+.payroll-th-tip{
+  background:rgba(125,191,102,.10) !important;
+  color:var(--status-green, #7dbf66) !important;
+}
+
+/* Cellule récap pourboire semaine — montant en gros + heures éligibles */
+.payroll-td-tip{
+  text-align:right;
+}
+.payroll-td-tip.has-tip{
+  background:rgba(125,191,102,.06);
+}
+.dark .payroll-td-tip.has-tip{
+  background:rgba(125,191,102,.10);
+}
+.payroll-tip-amount{
+  font-family:var(--font-heading);
+  font-size:18px;
+  color:var(--status-green, #7dbf66);
+  letter-spacing:.02em;
+  line-height:1.1;
+  font-weight:600;
+}
+.payroll-tip-hours{
+  font-family:var(--font-mono, var(--font-body));
+  font-size:10px;
+  color:var(--text3);
+  font-weight:500;
+  margin-top:1px;
+  letter-spacing:.02em;
+}
+
 /* Cellule "Heures réel / planifié" (résumé ligne) */
 .payroll-hours-cell{
   display:inline-flex;
