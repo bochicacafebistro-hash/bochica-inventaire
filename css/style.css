@@ -1267,57 +1267,64 @@ tr:last-child td{border-bottom:none}
    pour colorer son fond avec une opacité variable.
    ═══════════════════════════════════════════════════════════════ */
 
-/* Fond des cellules (nom, résumé, shifts) basé sur la couleur de l'employé.
-   Opacité très faible par défaut → la ligne est visible mais discrète. */
+/* Fond des cellules (nom, résumé, shifts, total) basé sur la couleur de l'employé.
+   Opacité plus vive pour que la ligne ressorte clairement, et UNIFORME sur
+   toute la ligne (incluant la cellule Total) — chaque employé a sa couleur. */
 .schedule-emp-row .schedule-td--emp,
 .schedule-emp-row .schedule-td--summary{
-  background:rgba(var(--emp-rgb, 14,13,12), .05);
+  background:rgba(var(--emp-rgb, 14,13,12), .22);
 }
 .schedule-emp-row .schedule-td--summary.schedule-td--total{
-  background:rgba(var(--accent-rgb), .14);
+  background:rgba(var(--emp-rgb, 14,13,12), .28);
 }
 .schedule-emp-row .schedule-td--cell{
-  background:rgba(var(--emp-rgb, 14,13,12), .04);
+  background:rgba(var(--emp-rgb, 14,13,12), .15);
 }
 .schedule-emp-row .schedule-td--cell.is-filled{
-  background:rgba(var(--emp-rgb, 14,13,12), .18);
+  background:rgba(var(--emp-rgb, 14,13,12), .38);
 }
 
-/* ── Hover : toute la ligne s'illumine dans la couleur de l'employé ── */
+/* ── Hover : toute la ligne s'illumine encore plus dans la couleur de l'employé ── */
 .schedule-emp-row:hover .schedule-td--emp,
 .schedule-emp-row:hover .schedule-td--summary{
-  background:rgba(var(--emp-rgb, 14,13,12), .14);
+  background:rgba(var(--emp-rgb, 14,13,12), .34);
 }
 .schedule-emp-row:hover .schedule-td--summary.schedule-td--total{
-  background:rgba(var(--accent-rgb), .24);
+  background:rgba(var(--emp-rgb, 14,13,12), .42);
 }
 .schedule-emp-row:hover .schedule-td--cell{
-  background:rgba(var(--emp-rgb, 14,13,12), .1);
+  background:rgba(var(--emp-rgb, 14,13,12), .26);
 }
 .schedule-emp-row:hover .schedule-td--cell.is-filled{
-  background:rgba(var(--emp-rgb, 14,13,12), .3);
+  background:rgba(var(--emp-rgb, 14,13,12), .5);
 }
 
-/* Dark mode : garder l'approche RGB, juste opacités légèrement plus hautes pour compenser le fond sombre */
+/* Dark mode : garder l'approche RGB, opacités plus hautes pour compenser le fond sombre */
 .dark .schedule-emp-row .schedule-td--emp,
 .dark .schedule-emp-row .schedule-td--summary{
-  background:rgba(var(--emp-rgb, 245,241,232), .08);
+  background:rgba(var(--emp-rgb, 245,241,232), .26);
+}
+.dark .schedule-emp-row .schedule-td--summary.schedule-td--total{
+  background:rgba(var(--emp-rgb, 245,241,232), .32);
 }
 .dark .schedule-emp-row .schedule-td--cell{
-  background:rgba(var(--emp-rgb, 245,241,232), .06);
+  background:rgba(var(--emp-rgb, 245,241,232), .18);
 }
 .dark .schedule-emp-row .schedule-td--cell.is-filled{
-  background:rgba(var(--emp-rgb, 245,241,232), .22);
+  background:rgba(var(--emp-rgb, 245,241,232), .42);
 }
 .dark .schedule-emp-row:hover .schedule-td--emp,
 .dark .schedule-emp-row:hover .schedule-td--summary{
-  background:rgba(var(--emp-rgb, 245,241,232), .2);
+  background:rgba(var(--emp-rgb, 245,241,232), .38);
+}
+.dark .schedule-emp-row:hover .schedule-td--summary.schedule-td--total{
+  background:rgba(var(--emp-rgb, 245,241,232), .46);
 }
 .dark .schedule-emp-row:hover .schedule-td--cell{
-  background:rgba(var(--emp-rgb, 245,241,232), .14);
+  background:rgba(var(--emp-rgb, 245,241,232), .3);
 }
 .dark .schedule-emp-row:hover .schedule-td--cell.is-filled{
-  background:rgba(var(--emp-rgb, 245,241,232), .36);
+  background:rgba(var(--emp-rgb, 245,241,232), .58);
 }
 .schedule-emp-cell{
   display:flex;
