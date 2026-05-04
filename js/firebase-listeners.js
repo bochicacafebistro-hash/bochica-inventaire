@@ -57,6 +57,12 @@ db.collection("recipes").onSnapshot(snap => {
   if (isLoggedIn && activePage === "recettes") renderPage();
 });
 
+// Liste d'ingrédients (commandes / approvisionnement — séparée des ingrédients food cost)
+db.collection("shoppingList").onSnapshot(snap => {
+  shoppingList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (isLoggedIn && activePage === "shopping") renderPage();
+});
+
 db.collection("expenses").orderBy("date", "desc").limit(500).onSnapshot(snap => {
   expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (isLoggedIn && activePage === "depenses") renderPage();

@@ -4572,3 +4572,323 @@ textarea.md-input{
     width:100%;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   LISTE D'INGRÉDIENTS — page Shopping (commandes / approvisionnement)
+   Couleurs propres à chaque fournisseur :
+   - Costco  → bleu  #4a90e2
+   - Viandex → rouge #e74c3c
+   - Gordon  → vert  #7dbf66
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Onglets fournisseurs (filtres) */
+.shopping-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:var(--sp-3);
+  padding:4px;
+  background:var(--surface2);
+  border-radius:var(--radius-pill);
+  width:fit-content;
+}
+.shopping-tab{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 14px;
+  border:none;
+  background:transparent;
+  color:var(--text2);
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  font-weight:600;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  transition:var(--transition-fast);
+  white-space:nowrap;
+}
+.shopping-tab:hover{color:var(--text);background:rgba(14,13,12,.05)}
+.dark .shopping-tab:hover{background:rgba(245,241,232,.06)}
+.shopping-tab.is-active{
+  background:var(--accent);
+  color:var(--accent-text);
+  box-shadow:0 1px 4px rgba(var(--accent-rgb),.3);
+}
+.shopping-tab--costco.is-active{
+  background:#4a90e2;
+  color:#fff;
+  box-shadow:0 1px 4px rgba(74,144,226,.4);
+}
+.shopping-tab--viandex.is-active{
+  background:#e74c3c;
+  color:#fff;
+  box-shadow:0 1px 4px rgba(231,76,60,.4);
+}
+.shopping-tab--gordon.is-active{
+  background:#7dbf66;
+  color:#fff;
+  box-shadow:0 1px 4px rgba(125,191,102,.4);
+}
+.shopping-tab-count{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:20px;
+  height:18px;
+  padding:0 6px;
+  background:rgba(14,13,12,.08);
+  color:inherit;
+  font-size:11px;
+  font-weight:700;
+  border-radius:var(--radius-pill);
+}
+.shopping-tab.is-active .shopping-tab-count{
+  background:rgba(255,255,255,.25);
+}
+.dark .shopping-tab-count{background:rgba(245,241,232,.1)}
+
+/* Barre contrôles : recherche + tri */
+.shopping-controls{
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--sp-3);
+  margin-bottom:var(--sp-4);
+  align-items:center;
+}
+.shopping-search-wrap{
+  position:relative;
+  display:flex;
+  align-items:center;
+  flex:1;
+  min-width:240px;
+  max-width:480px;
+}
+.shopping-search-icon{
+  position:absolute;
+  left:12px;
+  color:var(--text3);
+  pointer-events:none;
+  display:inline-flex;
+}
+.shopping-search-wrap input{
+  width:100%;
+  padding:10px 36px 10px 38px;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-md);
+  font-family:var(--font-body);
+  font-size:var(--fs-base);
+  color:var(--text);
+  transition:var(--transition-fast);
+}
+.shopping-search-wrap input:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(var(--accent-rgb),.15);
+}
+.shopping-search-clear{
+  position:absolute;
+  right:8px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:24px;
+  height:24px;
+  border:none;
+  background:transparent;
+  color:var(--text3);
+  border-radius:var(--radius-full);
+  cursor:pointer;
+  transition:var(--transition-fast);
+}
+.shopping-search-clear:hover{
+  background:var(--surface2);
+  color:var(--text);
+}
+.shopping-sort__label{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  color:var(--text2);
+  font-size:var(--fs-sm);
+  font-weight:600;
+}
+.shopping-sort__label select{
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-sm);
+  padding:8px 10px;
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  color:var(--text);
+  cursor:pointer;
+}
+
+/* Sections groupées par fournisseur */
+.shopping-section{
+  margin-bottom:var(--sp-6);
+}
+.shopping-section__title{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-family:var(--font-heading);
+  font-size:24px;
+  letter-spacing:.04em;
+  color:var(--text);
+  margin-bottom:var(--sp-3);
+  padding-bottom:var(--sp-2);
+  border-bottom:2px solid var(--border-strong);
+}
+.shopping-section--costco .shopping-section__title{border-bottom-color:#4a90e2}
+.shopping-section--viandex .shopping-section__title{border-bottom-color:#e74c3c}
+.shopping-section--gordon .shopping-section__title{border-bottom-color:#7dbf66}
+.shopping-section__title-icon{
+  display:inline-flex;
+  align-items:center;
+  color:var(--text3);
+}
+.shopping-section--costco .shopping-section__title-icon{color:#4a90e2}
+.shopping-section--viandex .shopping-section__title-icon{color:#e74c3c}
+.shopping-section--gordon .shopping-section__title-icon{color:#7dbf66}
+.shopping-section__count{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:24px;
+  height:22px;
+  padding:0 8px;
+  background:var(--surface2);
+  color:var(--text2);
+  font-family:var(--font-body);
+  font-size:var(--fs-xs);
+  font-weight:700;
+  border-radius:var(--radius-pill);
+  margin-left:4px;
+}
+
+/* Pills fournisseur (couleurs vives) */
+.shopping-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:3px 10px;
+  border-radius:var(--radius-pill);
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  white-space:nowrap;
+}
+.shopping-pill--costco{
+  background:rgba(74,144,226,.15);
+  color:#2c5d8f;
+  border:1px solid rgba(74,144,226,.4);
+}
+.shopping-pill--viandex{
+  background:rgba(231,76,60,.15);
+  color:#a52a1f;
+  border:1px solid rgba(231,76,60,.4);
+}
+.shopping-pill--gordon{
+  background:rgba(125,191,102,.18);
+  color:#3d6e2c;
+  border:1px solid rgba(125,191,102,.45);
+}
+.shopping-pill--autre{
+  background:var(--surface2);
+  color:var(--text3);
+  border:1px solid var(--border);
+}
+.dark .shopping-pill--costco{color:#7eb4ee;background:rgba(74,144,226,.22)}
+.dark .shopping-pill--viandex{color:#ee8479;background:rgba(231,76,60,.22)}
+.dark .shopping-pill--gordon{color:#a6d895;background:rgba(125,191,102,.25)}
+
+/* Pills catégorie (plus discrètes) */
+.shopping-cat-pill{
+  display:inline-flex;
+  align-items:center;
+  padding:3px 10px;
+  border-radius:var(--radius-pill);
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:600;
+  background:var(--surface2);
+  color:var(--text2);
+  border:1px solid var(--border);
+  white-space:nowrap;
+}
+.shopping-cat-pill--proteine{background:rgba(231,76,60,.08);color:#a52a1f;border-color:rgba(231,76,60,.2)}
+.shopping-cat-pill--legume{background:rgba(125,191,102,.1);color:#3d6e2c;border-color:rgba(125,191,102,.25)}
+.shopping-cat-pill--laitier{background:rgba(74,144,226,.08);color:#2c5d8f;border-color:rgba(74,144,226,.2)}
+.shopping-cat-pill--epicerie{background:rgba(247,179,44,.12);color:#8a6a1a;border-color:rgba(247,179,44,.3)}
+.shopping-cat-pill--autre{background:var(--surface2);color:var(--text3)}
+.dark .shopping-cat-pill--proteine{color:#ee8479}
+.dark .shopping-cat-pill--legume{color:#a6d895}
+.dark .shopping-cat-pill--laitier{color:#7eb4ee}
+.dark .shopping-cat-pill--epicerie{color:#f7b32c}
+
+/* Tableau (desktop) — bande colorée à gauche selon fournisseur */
+.shopping-table-wrap{margin-bottom:var(--sp-5)}
+.shopping-table tr.shopping-tr--costco td:first-child{border-left:3px solid #4a90e2}
+.shopping-table tr.shopping-tr--viandex td:first-child{border-left:3px solid #e74c3c}
+.shopping-table tr.shopping-tr--gordon td:first-child{border-left:3px solid #7dbf66}
+.shopping-table tr.shopping-tr--autre td:first-child{border-left:3px solid var(--border-strong)}
+
+/* Liste mobile (cartes) */
+.shopping-list-mobile{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  margin-bottom:var(--sp-4);
+}
+.shopping-row-mobile{
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  padding:12px 14px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  border-left-width:4px;
+  transition:var(--transition-fast);
+}
+.shopping-row-mobile:hover{background:var(--surface2)}
+.shopping-row--costco{border-left-color:#4a90e2}
+.shopping-row--viandex{border-left-color:#e74c3c}
+.shopping-row--gordon{border-left-color:#7dbf66}
+.shopping-row--autre{border-left-color:var(--border-strong)}
+.shopping-row-mobile__main{flex:1;min-width:0}
+.shopping-row-mobile__name{
+  font-family:var(--font-heading);
+  font-size:18px;
+  letter-spacing:.02em;
+  color:var(--text);
+  margin-bottom:6px;
+  word-break:break-word;
+}
+.shopping-row-mobile__meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+  margin-bottom:4px;
+}
+.shopping-row-mobile__notes{
+  font-family:var(--font-body);
+  font-size:12px;
+  color:var(--text3);
+  font-style:italic;
+  line-height:1.4;
+  margin-top:4px;
+  word-break:break-word;
+}
+
+@media (max-width:640px){
+  .shopping-tabs{width:100%;justify-content:flex-start;overflow-x:auto}
+  .shopping-tab{padding:7px 11px;font-size:12px}
+  .shopping-controls{flex-direction:column;align-items:stretch}
+  .shopping-search-wrap{max-width:100%}
+  .shopping-section__title{font-size:20px}
+}

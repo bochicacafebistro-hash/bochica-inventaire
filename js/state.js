@@ -8,6 +8,13 @@ let ingredients = []; // Ingrédients de menu (avec coûts, séparés des produi
 let recipes = [];    // Livre de cuisine — recettes pour préparation (sans coûts)
 let recipeFilter = "all"; // Filtre actif sur page Recettes
 
+// Liste d'ingrédients (commande / approvisionnement) — séparée des Ingrédients (food cost)
+// Chaque item : { id, name, supplier (costco/viandex/gordon), category (proteine/legume/laitier/epicerie/autre), notes }
+let shoppingList = [];
+let shoppingFilterSupplier = "all"; // "all" | "costco" | "viandex" | "gordon"
+let shoppingSortMode = "supplier";  // "supplier" | "name"
+let shoppingSearchQuery = "";       // recherche texte (nom ou notes)
+
 let isAdmin = false, isLoggedIn = false, darkMode = false;
 let userRole = null; // "global_admin" | "chef" | "employee" | null
 let loggedInUser = null; // { id, name, role } pour traçabilité

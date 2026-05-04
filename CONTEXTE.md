@@ -1,6 +1,6 @@
 # 📋 CONTEXTE — Projet Bochica Inventaire
 
-> ⚠️ **Dernière mise à jour : 3 mai 2026** — page **Salaires & Pourboires** (v3.4.1) avec saisie des pourboires par jour (total auto-calculé), inputs heure précis (à la minute), comparaison heures planifiées vs réelles avec écart, copie vers semaine suivante, et configuration globale des heures de service.
+> ⚠️ **Dernière mise à jour : 4 mai 2026** — nouvelle page **Liste d'ingrédients** (v3.6.0) : section commande/approvisionnement séparée des Ingrédients (food cost), avec 3 fournisseurs fixes (Costco / Viandex / Gordon), 5 catégories (Protéine / Légume / Produit laitier / Épicerie / Autre), filtre par fournisseur, tri A→Z, recherche texte. Accès Admin + Chef.
 
 ## 🏠 Description
 Application web de **gestion interne** pour le restaurant colombien Bochica.
@@ -21,7 +21,7 @@ Migration v3.0.0 — voir `FIREBASE_AUTH_SETUP.md` pour la procédure de migrati
 | Username | Email interne | Rôle | Accès |
 |---|---|---|---|
 | **Bochica** | bochica@bochica.app | `global_admin` | Tout |
-| **Chef** | chef@bochica.app | `chef` | Inventaire, Menu, Ingrédients, Recettes |
+| **Chef** | chef@bochica.app | `chef` | Inventaire, Menu, Ingrédients, Recettes, Liste d'ingrédients |
 | **Employe** | employe@bochica.app | `employee` | Inventaire uniquement |
 
 ### Sécurité
@@ -57,6 +57,7 @@ bochica-inventaire/
 │   ├── pages-payroll.js    ← Salaires & Pourboires (heures réelles, fenêtre service, prorata)
 │   ├── pages-finance.js    ← Dépenses, revenus, catégories, frais fixes, rapports, charts dépenses
 │   ├── pages-kitchen.js    ← Menu, fournisseurs, ingrédients, recettes
+│   ├── pages-shopping.js   ← Liste d'ingrédients (commandes par fournisseur)
 │   ├── pages-dashboard.js  ← Dashboard, taxes, helpers taxes, autoApplyFixedExpenses
 │   ├── sidebar.js          ← Navigation, sidebar, renderPage(), goHome()
 │   ├── auth.js             ← Firebase Auth, login/logout, session, rôles
@@ -84,6 +85,7 @@ bochica-inventaire/
 <script src="js/pages-payroll.js"></script>
 <script src="js/pages-finance.js"></script>
 <script src="js/pages-kitchen.js"></script>
+<script src="js/pages-shopping.js"></script>
 <script src="js/pages-dashboard.js"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/auth.js"></script>
@@ -100,6 +102,9 @@ bochica-inventaire/
   - `menu` — items du menu (name, description, price, category, available, recipe[])
   - `ingredients` — ingrédients pour food cost (name, costPerUnit, unit, category)
   - `recipes` — livre de cuisine (name, description, category, servings, prepTime, cookTime, ingredients, steps, tips — **markdown**)
+  - `shoppingList` — **liste d'ingrédients** pour commandes/approvisionnement (séparée de `ingredients`) :
+    - Champs : `id`, `name`, `supplier` (∈ `costco`/`viandex`/`gordon`), `category` (∈ `proteine`/`legume`/`laitier`/`epicerie`/`autre`), `notes`, `createdAt`, `updatedAt`
+    - Accès : admin + chef
   - `payroll` — paie hebdomadaire (un doc par semaine ISO `YYYY-Www`) :
     - `weekId`, `weekStart`, `totalTips`, `serviceHours` `{dk: {start,end}}`, `actualShifts` `{empId: {dk: {start,end}}}`, `notes`, `createdAt`/`updatedAt`
     - Indépendant des shifts planifiés dans `employees[id].shifts` — permet de saisir l'horaire **réel** sans toucher au planning
@@ -233,6 +238,19 @@ bochica-inventaire/
 - Séparés des produits d'inventaire
 - Coût par unité utilisé pour calculer le food cost des items du menu
 
+### 🛒 Liste d'ingrédients (commandes / approvisionnement)
+- Section **distincte** des Ingrédients (food cost) — orientée liste de courses
+- Champs par item : nom, fournisseur, catégorie, notes
+- **3 fournisseurs fixes** : Costco (bleu), Viandex (rouge), Gordon (vert)
+- **5 catégories** : Protéine, Légume, Produit laitier, Épicerie, Autre
+- **Onglets de filtrage** par fournisseur (avec compteurs)
+- **Recherche texte** (nom + notes) avec focus préservé entre les frappes
+- **Tri** : par fournisseur (groupé en sections colorées) ou par nom (A→Z)
+- Couleurs vives par fournisseur — sections desktop séparées par bandeau coloré
+- Vue mobile : cartes avec bord coloré gauche selon fournisseur
+- Duplication via dropdown ⋯
+- Accès : admin + chef
+
 ### 📖 Recettes (livre de cuisine)
 - Recettes complètes avec ingrédients, étapes, conseils
 - **Éditeur markdown** intégré avec toolbar (gras, italique, barré, listes à puces, numérotées)
@@ -312,6 +330,28 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 4 mai 2026 — Liste d'ingrédients (v3.6.0) 🛒
+- Nouvelle page **Liste d'ingrédients** sous Recettes (admin + chef)
+- Nouveau module `js/pages-shopping.js` (~300 lignes) :
+  - `renderShoppingList()` — vue avec onglets fournisseurs, recherche texte, tri (fournisseur/nom), groupement automatique par fournisseur en mode tri
+  - `openShoppingModal()` / `saveShoppingItem()` — CRUD complet
+  - Helpers `tShoppingSupplier()` / `tShoppingCategory()` pour libellés FR
+- **Nouvelle collection Firestore `shoppingList`** : items avec `name`, `supplier` (3 valeurs fixes), `category` (5 valeurs fixes), `notes`, `createdAt`, `updatedAt`
+- **3 fournisseurs fixes** : Costco (#4a90e2 bleu), Viandex (#e74c3c rouge), Gordon (#7dbf66 vert)
+- **5 catégories** : Protéine, Légume, Produit laitier, Épicerie, Autre
+- **Filtres** :
+  - Onglets fournisseurs (Tous + 3 fournisseurs) avec compteurs et couleur active vive
+  - Recherche texte (nom + notes) avec focus préservé entre frappes
+  - Sélecteur de tri : par fournisseur (groupé en sections) ou par nom A→Z
+- **Vue desktop** : tableau avec bande colorée gauche selon fournisseur ; sections séparées par titre coloré quand groupé
+- **Vue mobile** : cartes avec bord coloré gauche, pills fournisseur+catégorie, notes en italique
+- **Duplication** intégrée à `DUPLICATE_CONFIG` (collection `shoppingList`)
+- **Règle Firestore** : `match /shoppingList/{doc=**}` lecture authentifiée + écriture admin/chef
+- **Permissions** : ajout de `"shopping"` à `ROLE_PERMISSIONS.global_admin` et `.chef`
+- **Sidebar** : nouvel item « Liste d'ingrédients » sous Recettes (icône `cart`)
+- **CSS** : ~300 lignes ajoutées (`.shopping-tabs`, `.shopping-pill--{costco,viandex,gordon}`, `.shopping-cat-pill--{cat}`, `.shopping-section`, `.shopping-row-mobile`, etc.) — couleurs vives propres à chaque fournisseur, dark mode adapté
+- Bumper `CACHE_VERSION` à `v3.6.0` + ajout de `pages-shopping.js` à l'app shell
 
 ### 3 mai 2026 — Salaires & Pourboires v2 (v3.4.1) 💵
 - **Inputs `<input type="time">`** à la place des selects 30 min : saisie précise à la minute près (ex. 13h17)

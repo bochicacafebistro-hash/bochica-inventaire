@@ -342,15 +342,16 @@ window.addEventListener("resize", () => { if (openDropId) closeAllDrops(); });
 // Mapping collection → fonction d'édition (window.*) + accesseur au state local
 // + ID du champ "nom" à focuser automatiquement dans la modale d'édition
 const DUPLICATE_CONFIG = {
-  products:    { editor: "openProductModal",    getState: () => products,    nameInput: "p-name" },
-  recipes:     { editor: "openRecipeModal",     getState: () => recipes,     nameInput: "rec-name" },
-  menu:        { editor: "openMenuModal",       getState: () => menuItems,   nameInput: "mn-name" },
-  suppliers:   { editor: "openSupplierModal",   getState: () => suppliers,   nameInput: "s-name" },
-  ingredients: { editor: "openIngredientModal", getState: () => ingredients, nameInput: "ing-name" },
-  employees:   { editor: "openEmployeeModal",   getState: () => employees,   nameInput: "e-name" },
-  tasks:       { editor: "openTaskModal",       getState: () => tasks,       nameInput: "t-title" },
-  expenses:    { editor: "openExpenseModal",    getState: () => expenses,    nameInput: "ex-desc" },
-  revenues:    { editor: "openRevenueModal",    getState: () => revenues,    nameInput: "rv-desc" }
+  products:     { editor: "openProductModal",    getState: () => products,     nameInput: "p-name" },
+  recipes:      { editor: "openRecipeModal",     getState: () => recipes,      nameInput: "rec-name" },
+  menu:         { editor: "openMenuModal",       getState: () => menuItems,    nameInput: "mn-name" },
+  suppliers:    { editor: "openSupplierModal",   getState: () => suppliers,    nameInput: "s-name" },
+  ingredients:  { editor: "openIngredientModal", getState: () => ingredients,  nameInput: "ing-name" },
+  employees:    { editor: "openEmployeeModal",   getState: () => employees,    nameInput: "e-name" },
+  tasks:        { editor: "openTaskModal",       getState: () => tasks,        nameInput: "t-title" },
+  expenses:     { editor: "openExpenseModal",    getState: () => expenses,     nameInput: "ex-desc" },
+  revenues:     { editor: "openRevenueModal",    getState: () => revenues,     nameInput: "rv-desc" },
+  shoppingList: { editor: "openShoppingModal",   getState: () => shoppingList, nameInput: "shop-name" }
 };
 
 // Attend que le listener Firestore ait propagé le nouvel item dans le state local
