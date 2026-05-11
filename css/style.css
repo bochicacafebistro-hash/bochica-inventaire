@@ -1165,7 +1165,7 @@ tr:last-child td{border-bottom:none}
 }
 .schedule-table th,
 .schedule-table td{
-  padding:6px 4px;
+  padding:3px 4px;
   text-align:center;
   border:none;
   border-bottom:1px solid var(--border);
@@ -1608,7 +1608,7 @@ tr:last-child td{border-bottom:none}
 .schedule-row--drop-after td:first-child::after{bottom:-2px}
 .schedule-td--cell{
   /* Fond géré par .schedule-emp-row (basé sur --emp-rgb de l'employé) */
-  padding:2px !important;
+  padding:1px !important;
   vertical-align:middle;
 }
 /* Les règles .is-filled / hover sont dans le bloc "Coloration par employé" plus haut */
@@ -1618,10 +1618,11 @@ tr:last-child td{border-bottom:none}
   border:none;
   background:transparent;
   font-family:var(--font-mono);
-  font-size:var(--fs-md);       /* 16px (était fs-base = 14px) */
+  font-size:var(--fs-lg);       /* 18px (était fs-md = 16px) */
   font-weight:700;              /* gras pour mieux lire les heures */
   color:var(--text);            /* noir chaud plein */
-  padding:6px 2px;
+  padding:1px 1px;              /* padding minimal pour maximiser la taille des chiffres */
+  line-height:1.1;              /* compact pour ne pas gaspiller d'espace vertical */
   text-align:center;
   font-variant-numeric:tabular-nums;
   letter-spacing:.02em;
@@ -1750,7 +1751,7 @@ select.schedule-time{
   .schedule-td--emp{font-size:var(--fs-md);padding-left:var(--sp-2) !important}
   .schedule-th--emp{padding-left:var(--sp-2) !important}
   .schedule-td--summary{font-size:var(--fs-xl);width:80px;font-weight:700}
-  .schedule-time{font-size:var(--fs-base);font-weight:700}
+  .schedule-time{font-size:var(--fs-md);font-weight:700;padding:1px;line-height:1.1}
   .schedule-tfoot-val{font-size:var(--fs-lg)}
 }
 

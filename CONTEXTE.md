@@ -387,6 +387,15 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 11 mai 2026 — Padding réduit + chiffres encore plus gros (v3.9.0) 📏
+- **Padding aggressivement réduit** dans les cases d'heures pour libérer l'espace :
+  - `.schedule-table td/th` : `6px 4px` → **`3px 4px`** (vertical divisé par 2)
+  - `.schedule-td--cell` : `2px` → **`1px`**
+  - `.schedule-time` (select) : `6px 2px` → **`1px 1px`** + `line-height:1.1` pour rendu compact
+- **`.schedule-time` agrandi** : `fs-md` (16px) → **`fs-lg` (18px)**
+- Mobile : `.schedule-time` aussi mis à `fs-md` (16px) avec mêmes paddings réduits
+- Bumper `CACHE_VERSION` à `v3.9.0`
+
 ### 11 mai 2026 — Numéros encore plus gros (v3.8.9) 🔢
 - Chaque taille du tableau Employés montée d'un cran supplémentaire :
   - `.schedule-time` (heures entrée/sortie) : `fs-base` (14px) → **`fs-md` (16px)**
