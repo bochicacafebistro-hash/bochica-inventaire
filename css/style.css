@@ -1156,16 +1156,38 @@ tr:last-child td{border-bottom:none}
 .schedule-wrap{
   margin-bottom:var(--sp-5);
 }
-/* Colonne employé : largeur min pour accommoder le nom à 22px */
+/* Colonne employé : largeur min pour accommoder le nom à 18px */
 .schedule-td--emp,
-.schedule-th--emp{min-width:170px}
+.schedule-th--emp{
+  min-width:150px;
+  width:150px;
+}
+
+/* Toutes les colonnes entrée/sortie : MÊME LARGEUR (uniforme) */
+.schedule-td--day-entry,
+.schedule-td--day-exit,
+.schedule-th--entry,
+.schedule-th--exit{
+  width:64px;
+  min-width:64px;
+}
+
+/* Toutes les lignes employés : MÊME HAUTEUR (uniforme), peu importe le contenu */
+.schedule-emp-row{
+  height:54px;
+}
+.schedule-emp-row td{
+  height:54px;
+  vertical-align:middle;
+}
 
 .schedule-table{
   width:100%;
   border-collapse:separate;
   border-spacing:0;
   font-size:var(--fs-sm);
-  min-width:980px;
+  table-layout:fixed;           /* respecte strictement les widths déclarés → colonnes uniformes */
+  min-width:920px;
 }
 .schedule-table th,
 .schedule-table td{
@@ -1350,7 +1372,7 @@ tr:last-child td{border-bottom:none}
 }
 .schedule-emp-name{
   font-family:var(--font-heading);
-  font-size:var(--fs-xl);       /* 22px — uniforme avec tout le tableau */
+  font-size:var(--fs-lg);       /* 18px — uniforme avec tout le tableau */
   font-weight:700;
   letter-spacing:.02em;
   color:var(--text);
@@ -1620,11 +1642,11 @@ tr:last-child td{border-bottom:none}
 /* Les règles .is-filled / hover sont dans le bloc "Coloration par employé" plus haut */
 .schedule-time{
   width:100%;
-  min-width:72px;
+  min-width:60px;
   border:none;
   background:transparent;
   font-family:var(--font-mono);
-  font-size:var(--fs-xl);       /* 22px — uniforme avec tout le tableau */
+  font-size:var(--fs-lg);       /* 18px — uniforme avec tout le tableau */
   font-weight:700;              /* gras pour mieux lire les heures */
   color:var(--text);            /* noir chaud plein */
   padding:2px 1px;              /* padding minimal pour maximiser la taille des chiffres */
@@ -1648,10 +1670,10 @@ select.schedule-time{
 
 /* Colonnes résumé (Heures / Taux / Total) — chiffres bien gros et foncés */
 .schedule-td--summary{
-  width:80px;
+  width:70px;
   background:var(--surface2);
   font-family:var(--font-heading);
-  font-size:var(--fs-xl);       /* 22px — uniforme avec tout le tableau */
+  font-size:var(--fs-lg);       /* 18px — uniforme avec tout le tableau */
   font-weight:700;
   color:var(--text);
   font-variant-numeric:tabular-nums;
@@ -1663,14 +1685,14 @@ select.schedule-time{
   background:rgba(var(--accent-rgb),.18);
   color:var(--accent-text);     /* noir chaud plutôt que jaune pour meilleur contraste */
   font-weight:800;              /* extra-bold pour le total */
-  font-size:var(--fs-xl);       /* 22px */
+  font-size:var(--fs-lg);       /* 18px */
 }
 
 /* Lignes pied de page (totaux) — chiffres bien visibles aussi */
 .schedule-tfoot-row td{
   background:var(--surface2);
   font-family:var(--font-heading);
-  font-size:var(--fs-xl);       /* 22px — uniforme */
+  font-size:var(--fs-lg);       /* 18px — uniforme */
   font-weight:700;
   color:var(--text);
   border-top:2px solid var(--border-strong);
@@ -1693,7 +1715,7 @@ select.schedule-time{
 .schedule-tfoot-val{
   font-variant-numeric:tabular-nums;
   color:var(--text);
-  font-size:var(--fs-xl);       /* 22px — uniforme */
+  font-size:var(--fs-lg);       /* 18px — uniforme */
   font-weight:700;
   letter-spacing:.01em;
 }
@@ -1753,14 +1775,20 @@ select.schedule-time{
   .schedule-header{flex-direction:column;align-items:stretch}
   .schedule-nav{justify-content:space-between}
   .schedule-ratio{flex-direction:row;align-items:center;justify-content:space-between}
-  .schedule-table{font-size:13px;min-width:880px}
+  .schedule-table{font-size:13px;min-width:820px}
   .schedule-td--emp,
-  .schedule-th--emp{padding-left:var(--sp-2) !important;min-width:140px}
-  .schedule-emp-name{font-size:var(--fs-lg)}
-  .schedule-td--summary{font-size:var(--fs-lg);width:72px;font-weight:700}
-  .schedule-time{font-size:var(--fs-lg);font-weight:700;padding:2px 1px;line-height:1.1;min-width:64px}
-  .schedule-tfoot-val{font-size:var(--fs-lg)}
-  .schedule-tfoot-row td{font-size:var(--fs-lg)}
+  .schedule-th--emp{padding-left:var(--sp-2) !important;width:130px;min-width:130px}
+  .schedule-td--day-entry,
+  .schedule-td--day-exit,
+  .schedule-th--entry,
+  .schedule-th--exit{width:58px;min-width:58px}
+  .schedule-emp-row{height:48px}
+  .schedule-emp-row td{height:48px}
+  .schedule-emp-name{font-size:var(--fs-md)}
+  .schedule-td--summary{font-size:var(--fs-md);width:62px;font-weight:700}
+  .schedule-time{font-size:var(--fs-md);font-weight:700;padding:2px 1px;line-height:1.1;min-width:56px}
+  .schedule-tfoot-val{font-size:var(--fs-md)}
+  .schedule-tfoot-row td{font-size:var(--fs-md)}
 }
 
 .task-col{

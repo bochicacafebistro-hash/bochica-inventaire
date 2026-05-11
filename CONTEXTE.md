@@ -387,6 +387,20 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 11 mai 2026 — Tableau uniforme + taille 18px (v3.9.3) 📐
+- **Toutes les lignes employés à la MÊME HAUTEUR** : `height: 54px` sur `.schedule-emp-row` + `.schedule-emp-row td` (peu importe le contenu)
+- **Toutes les colonnes d'heures (entrée/sortie) à la MÊME LARGEUR** : `width: 64px` strict
+- **`table-layout: fixed`** activé sur la table → les largeurs déclarées sont respectées strictement (avant : auto-resize selon contenu)
+- **Tailles descendues à `var(--fs-lg)` = 18px** uniformément (nom employé, heures, summary, total, footer)
+- Largeurs ajustées :
+  - Colonne employé : 170 → **150 px**
+  - Colonnes entrée/sortie : 64 px (uniforme)
+  - Colonnes summary : 80 → **70 px**
+  - Min-width select heure : 72 → **60 px**
+  - Table min-width : 980 → **920 px**
+- Mobile : tout à `var(--fs-md)` (16px), height 48px, colonnes entrée/sortie 58px, employé 130px
+- Bumper `CACHE_VERSION` à `v3.9.3`
+
 ### 11 mai 2026 — Tailles redescendues à 22px (28px coupait les heures) (v3.9.2) 📐
 - 28px était trop gros : les heures « HH:MM » étaient coupées en « 11:0 » dans les cellules entrée/sortie
 - **Tout redescendu à `var(--fs-xl)` (22px)** uniformément :
