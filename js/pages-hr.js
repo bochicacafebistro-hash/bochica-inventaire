@@ -185,21 +185,17 @@ function renderEmployes() {
           </thead>
           <tbody>
             ${empRows.map((row, rowIdx) => {
-              // Couleur unique par employé — palette de 8 RGB cycliques (sortOrder ou index)
-              // Stockées en "R,G,B" (triplet sans parenthèses) pour permettre rgba() en CSS
-              // avec opacité variable (discret par défaut, marqué au hover)
+              // Alternance simple sur 2 couleurs de la marque Bochica (lignes
+              // zébrées plus sobres que l'ancienne palette de 8 teintes).
+              // Stockées en "R,G,B" (triplet sans parenthèses) pour permettre
+              // rgba() en CSS avec opacité variable (discret au repos, marqué au hover).
               const EMP_RGB = [
-                "74,144,226",   // bleu
-                "247,179,44",   // jaune
-                "231,76,60",    // rouge
-                "125,191,102",  // vert
-                "139,92,246",   // violet
-                "249,115,22",   // orange
-                "20,184,166",   // teal
-                "236,72,153"    // rose
+                "247,179,44",   // jaune Bochica (accent)
+                "74,144,226"    // bleu Colombie
               ];
-              const colorIdx = ((row.emp.sortOrder ?? rowIdx) % EMP_RGB.length + EMP_RGB.length) % EMP_RGB.length;
-              const empRgb = EMP_RGB[colorIdx];
+              // Alternance pure par ligne visible (rowIdx) — pas par sortOrder,
+              // pour que l'effet zébré reste cohérent même après réordonnement.
+              const empRgb = EMP_RGB[rowIdx % EMP_RGB.length];
               // Section : fallback sur "service" si pas encore définie (compat employés existants)
               const empSection = row.emp.section || "service";
               const sectionIcon = empSection === "cuisine" ? icon("utensils", 10) : empSection === "service" ? icon("users", 10) : "";

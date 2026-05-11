@@ -387,6 +387,46 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 11 mai 2026 — Palette Employés simplifiée (v3.8.4) 🎨
+- **Tableau Employés & Horaires** : palette `EMP_RGB` réduite de **8 couleurs → 2 couleurs** en alternance
+  - Avant : bleu, jaune, rouge, vert, violet, orange, teal, rose (cyclées sur `sortOrder`)
+  - Après : **jaune Bochica `247,179,44`** + **bleu Colombie `74,144,226`** alternés par `rowIdx % 2`
+- Effet zébré sobre, cohérent avec la marque (les 2 couleurs principales du design system)
+- Alternance basée sur la position visible (rowIdx) plutôt que sur `sortOrder` → reste cohérente après réordonnement drag & drop
+- Aucun changement CSS requis : les rules `.schedule-emp-row .schedule-td--*` utilisent déjà `rgba(var(--emp-rgb), ...)` avec opacités calibrées qui fonctionnent avec les nouvelles couleurs
+- Le graphique de couverture horaire (`DAY_COLORS`) garde ses 7 couleurs distinctes — nécessaires pour distinguer les courbes des 7 jours superposés
+- Bumper `CACHE_VERSION` à `v3.8.4`
+
+### 11 mai 2026 — QR code vers le menu en ligne (v3.8.3) 📱
+- Nouveau bloc dans le footer du PDF de soumission :
+  - **QR code 26×26 mm à gauche** pointant vers `https://bochicacafebistro.ca/`
+  - Titre **« Consultez notre menu en ligne »**
+  - Sous-titre **« Scannez ce code QR avec votre téléphone ou visitez : »**
+  - URL en **jaune/accent** cliquable (textWithLink jsPDF)
+  - Note **« Découvrez tous nos plats colombiens authentiques. »**
+  - Ligne séparatrice avant les mentions légales (pourboire / taxes / validité)
+- Nouvelle lib externe : **`qrcode-generator@1.4.4`** chargée via CDN dans `index.html` (defer)
+- Nouveau helper **`drawQRCode(doc, text, x, y, sizeMm)`** dans `pages-quotes.js` :
+  - QR vectoriel — chaque module dessiné comme un petit rectangle noir via `doc.rect()`
+  - Rendu parfait à l'impression (pas de raster, pas de pixellisation)
+  - Fallback gracieux : si la lib n'est pas chargée, le PDF est généré sans QR mais le reste fonctionne
+  - Fond blanc derrière le QR pour assurer la lisibilité sur le fond crème
+- Bumper `CACHE_VERSION` à `v3.8.3`
+
+### 11 mai 2026 — Fix PDF : totaux + apostrophes + mention pourboire (v3.8.2) 🔧
+- **Validation `guestCount ≥ 1`** ajoutée à `saveQuote()` — empêche de sauver une soumission avec 0 personnes (qui donnait des totaux à 0,00 $ dans le PDF). Champ rendu `required` dans le formulaire.
+- **Bug `\'essentiel` corrigé** : `esc()` de utils.js utilise `\\\'` pour échapper l'apostrophe (correct pour les onclick mais visible dans les inputs HTML). Solution locale à `pages-quotes.js` :
+  - Nouveau helper **`attrEsc(s)`** : échappement HTML correct avec `&#39;` pour les apostrophes — utilisé pour TOUS les `value="..."` et `placeholder="..."` des modales soumission/forfaits
+  - Nouveau helper **`pdfStr(s)`** : retire `\'` → `'` et `&quot;` → `"` — appliqué :
+    - à toutes les valeurs lues du formulaire dans `saveQuote()` et `saveTemplate()` (nettoyage avant sauvegarde → BD propre)
+    - à tous les textes affichés dans `generateQuotePDF()` (forfait, client, événement, custom lines, notes)
+    - aux libellés des cartes de soumission dans la liste
+  - Les valeurs en BD sont progressivement nettoyées à chaque sauvegarde
+- **Mention pourboire/service** ajoutée au footer PDF :
+  - Ligne **rouge en gras** : « Le service (pourboire) n'est pas inclus dans les montants ci-dessus. »
+  - Suivie de la mention des taxes (TPS 5 % + TVQ 9,975 %) et de la date de validité
+- Bumper `CACHE_VERSION` à `v3.8.2`
+
 ### 11 mai 2026 — Fix bière + prix éditable par soumission (v3.8.1) 🍺
 - **Bug PDF corrigé** : l'emoji 🍺 s'affichait comme « Ø<ßz » dans le PDF (jsPDF helvetica ne supporte pas l'Unicode > Latin-1). Remplacé par un cercle décoratif dessiné + texte ASCII pur
 - **Wording corrigé** : « Ajout d'une bière » → « **Boisson remplacée par une bière** » (c'est une substitution, pas un ajout au menu existant)

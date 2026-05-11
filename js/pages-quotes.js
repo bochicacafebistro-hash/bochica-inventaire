@@ -34,6 +34,65 @@ function tQuoteVenue(v) {
   return map[v] || v || "—";
 }
 
+// Nettoie les apostrophes échappées par esc() — utilisé pour l'affichage PDF
+// et les sauvegardes (esc() ajoute "\'" pour les onclick, ce qui pollue les valeurs)
+function pdfStr(s) {
+  if (s == null) return "";
+  return String(s)
+    .replace(/\\'/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&");
+}
+
+// Échappement HTML correct pour les attributs value/placeholder — contrairement
+// à esc() qui utilise \\' (correct pour les onclick mais visible dans les inputs).
+// Utilisé exclusivement pour les valeurs d'inputs dans les modales soumission/forfaits.
+function attrEsc(s) {
+  if (s == null) return "";
+  return String(s)
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
+// ─── QR code (utilise qrcode-generator chargé via CDN) ─────────
+// Dessine un QR vectoriel directement sur le PDF (chaque module = un petit
+// rectangle noir). Pas de raster → rendu parfait à l'impression.
+// Retourne true si succès, false si la lib n'est pas chargée.
+function drawQRCode(doc, text, x, y, sizeMm) {
+  if (typeof qrcode === "undefined") {
+    console.warn("Lib qrcode-generator non chargée — QR code omis");
+    return false;
+  }
+  try {
+    // typeNumber 0 = auto (détermine la taille selon la quantité de données)
+    // errorCorrectLevel 'M' = ~15 % de redondance (bon compromis taille/robustesse)
+    const qr = qrcode(0, "M");
+    qr.addData(text);
+    qr.make();
+    const moduleCount = qr.getModuleCount();
+    const dot = sizeMm / moduleCount;
+    // Fond blanc (pour bien lire au-dessus du fond crème)
+    doc.setFillColor(255, 255, 255);
+    doc.rect(x - 1, y - 1, sizeMm + 2, sizeMm + 2, "F");
+    // Modules noirs
+    doc.setFillColor(14, 13, 12);
+    for (let r = 0; r < moduleCount; r++) {
+      for (let c = 0; c < moduleCount; c++) {
+        if (qr.isDark(r, c)) {
+          doc.rect(x + c * dot, y + r * dot, dot, dot, "F");
+        }
+      }
+    }
+    return true;
+  } catch (err) {
+    console.warn("Erreur génération QR :", err);
+    return false;
+  }
+}
+
 function quoteAccentHex(c) {
   // Aligné sur le design system Bochica (palette tricolore Colombie + verts)
   const map = {
@@ -214,8 +273,8 @@ function renderQuoteCards(items, writable) {
       </div>
       <div class="quote-card__body">
         <div class="quote-card__client">
-          <strong>${esc(qt.clientName || "Client sans nom")}</strong>
-          ${qt.clientCompany ? `<span class="quote-card__company">${esc(qt.clientCompany)}</span>` : ""}
+          <strong>${esc(pdfStr(qt.clientName) || "Client sans nom")}</strong>
+          ${qt.clientCompany ? `<span class="quote-card__company">${esc(pdfStr(qt.clientCompany))}</span>` : ""}
         </div>
         <div class="quote-card__meta">
           ${qt.eventDate ? `<span class="quote-card__meta-item">${icon("calendar", 12)} ${esc(qt.eventDate)}${qt.eventTime ? " · " + esc(qt.eventTime) : ""}</span>` : ""}
@@ -296,18 +355,18 @@ function openQuoteModal(id) {
 
     <!-- Bloc CLIENT -->
     <h4 class="quote-modal-section">${icon("user", 14)} Client</h4>
-    <label>Nom du client <input id="q-client-name" value="${esc(qt?.clientName || "")}" placeholder="ex: Marie Tremblay"/></label>
-    <label>Entreprise (optionnel) <input id="q-client-company" value="${esc(qt?.clientCompany || "")}" placeholder="ex: Cabinet Dupont inc."/></label>
+    <label>Nom du client <input id="q-client-name" value="${attrEsc(pdfStr(qt?.clientName))}" placeholder="ex: Marie Tremblay"/></label>
+    <label>Entreprise (optionnel) <input id="q-client-company" value="${attrEsc(pdfStr(qt?.clientCompany))}" placeholder="ex: Cabinet Dupont inc."/></label>
     <div class="form-row">
-      <label>Téléphone <input id="q-client-phone" type="tel" value="${esc(qt?.clientPhone || "")}" placeholder="514-555-1234"/></label>
-      <label>Courriel <input id="q-client-email" type="email" value="${esc(qt?.clientEmail || "")}" placeholder="client@exemple.ca"/></label>
+      <label>Téléphone <input id="q-client-phone" type="tel" value="${attrEsc(pdfStr(qt?.clientPhone))}" placeholder="514-555-1234"/></label>
+      <label>Courriel <input id="q-client-email" type="email" value="${attrEsc(pdfStr(qt?.clientEmail))}" placeholder="client@exemple.ca"/></label>
     </div>
 
     <!-- Bloc ÉVÉNEMENT -->
     <h4 class="quote-modal-section">${icon("calendar", 14)} Événement</h4>
     <div class="form-row">
-      <label>Date <input id="q-event-date" type="date" value="${esc(qt?.eventDate || "")}"/></label>
-      <label>Heure (optionnel) <input id="q-event-time" type="time" value="${esc(qt?.eventTime || "")}"/></label>
+      <label>Date <input id="q-event-date" type="date" value="${attrEsc(qt?.eventDate)}"/></label>
+      <label>Heure (optionnel) <input id="q-event-time" type="time" value="${attrEsc(qt?.eventTime)}"/></label>
     </div>
     <div class="form-row">
       <label>Lieu
@@ -315,23 +374,23 @@ function openQuoteModal(id) {
           ${QUOTE_VENUES.map(v => `<option value="${v}" ${(qt?.eventVenue || "bochica") === v ? "selected" : ""}>${tQuoteVenue(v)}</option>`).join("")}
         </select>
       </label>
-      <label>Nombre de personnes <input id="q-guest-count" type="number" min="1" step="1" value="${esc(qt?.guestCount != null ? String(qt.guestCount) : "")}" placeholder="ex: 25"/></label>
+      <label>Nombre de personnes <input id="q-guest-count" type="number" min="1" step="1" value="${attrEsc(qt?.guestCount != null ? String(qt.guestCount) : "")}" placeholder="ex: 25" required/></label>
     </div>
-    <label>Adresse / précisions sur le lieu <input id="q-event-address" value="${esc(qt?.eventAddress || "")}" placeholder="ex: 123 rue Principale, Montréal"/></label>
+    <label>Adresse / précisions sur le lieu <input id="q-event-address" value="${attrEsc(pdfStr(qt?.eventAddress))}" placeholder="ex: 123 rue Principale, Montréal"/></label>
 
     <!-- Bloc FORFAIT -->
     <h4 class="quote-modal-section">${icon("utensils", 14)} Forfait</h4>
     <div class="quote-package-choices">
       ${quoteTemplates.map(tpl => `<label class="quote-package-card quote-package-card--${tpl.accentColor || "yellow"}">
-        <input type="radio" name="q-package" value="${esc(tpl.id)}" data-beer-price="${esc(String(tpl.beerPrice || 0))}" onchange="onPackageChange(this)" ${tpl.id === defaultPackageId ? "checked" : ""}/>
+        <input type="radio" name="q-package" value="${attrEsc(tpl.id)}" data-beer-price="${attrEsc(String(tpl.beerPrice || 0))}" onchange="onPackageChange(this)" ${tpl.id === defaultPackageId ? "checked" : ""}/>
         <div class="quote-package-card__body">
-          <div class="quote-package-card__label">${esc(tpl.label || "")}</div>
-          <div class="quote-package-card__name">${esc(tpl.name || "")}</div>
+          <div class="quote-package-card__label">${attrEsc(pdfStr(tpl.label))}</div>
+          <div class="quote-package-card__name">${attrEsc(pdfStr(tpl.name))}</div>
           <div class="quote-package-card__price">${fmtMoney(tpl.pricePerPerson || 0)} / pers.</div>
           <div class="quote-package-card__details">
-            <div><strong>Entrée :</strong> ${esc(tpl.entree || "—")}</div>
-            <div><strong>Plat :</strong> ${esc(tpl.plat || "—")}</div>
-            <div><strong>Boisson :</strong> ${esc(tpl.boisson || "—")}</div>
+            <div><strong>Entrée :</strong> ${attrEsc(pdfStr(tpl.entree) || "—")}</div>
+            <div><strong>Plat :</strong> ${attrEsc(pdfStr(tpl.plat) || "—")}</div>
+            <div><strong>Boisson :</strong> ${attrEsc(pdfStr(tpl.boisson) || "—")}</div>
           </div>
         </div>
       </label>`).join("")}
@@ -343,7 +402,7 @@ function openQuoteModal(id) {
       </label>
       <label class="quote-beer-price">
         <span class="quote-beer-price__label">Prix de la bière par personne ($)</span>
-        <input id="q-beer-price" type="number" min="0" step="0.01" value="${esc(String(initialBeerPrice))}" data-touched="false" oninput="this.dataset.touched='true'"/>
+        <input id="q-beer-price" type="number" min="0" step="0.01" value="${attrEsc(String(initialBeerPrice))}" data-touched="false" oninput="this.dataset.touched='true'"/>
         <span class="quote-beer-price__hint">Modifiable pour offrir un rabais (ex. 5,00 $ au lieu de 7,00 $)</span>
       </label>
     </div>
@@ -360,7 +419,7 @@ function openQuoteModal(id) {
     <!-- Bloc PAIEMENT -->
     <h4 class="quote-modal-section">${icon("dollar-sign", 14)} Dépôt</h4>
     <div class="form-row">
-      <label>Montant dépôt exigé ($) <input id="q-deposit" type="number" min="0" step="0.01" value="${esc(qt?.depositAmount != null ? String(qt.depositAmount) : "")}" placeholder="ex: 250.00"/></label>
+      <label>Montant dépôt exigé ($) <input id="q-deposit" type="number" min="0" step="0.01" value="${attrEsc(qt?.depositAmount != null ? String(qt.depositAmount) : "")}" placeholder="ex: 250.00"/></label>
       <div style="display:flex;flex-direction:column;justify-content:flex-end">
         <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:8px 0">
           <input type="checkbox" id="q-deposit-paid" ${qt?.depositPaid ? "checked" : ""}/>
@@ -371,7 +430,7 @@ function openQuoteModal(id) {
 
     <!-- Bloc VALIDITÉ + NOTES -->
     <div class="form-row">
-      <label>Valide jusqu'au <input id="q-valid-until" type="date" value="${esc(qt?.validUntil || defaultValidIso)}"/></label>
+      <label>Valide jusqu'au <input id="q-valid-until" type="date" value="${attrEsc(qt?.validUntil || defaultValidIso)}"/></label>
       <label>Statut
         <select id="q-status">
           ${QUOTE_STATUSES.map(s => `<option value="${s}" ${(qt?.status || "brouillon") === s ? "selected" : ""}>${tQuoteStatus(s)}</option>`).join("")}
@@ -379,7 +438,7 @@ function openQuoteModal(id) {
       </label>
     </div>
 
-    <label>Notes / conditions <textarea id="q-notes" style="height:80px" placeholder="Allergies, demandes particulières, conditions de paiement, etc.">${esc(qt?.notes || "")}</textarea></label>
+    <label>Notes / conditions <textarea id="q-notes" style="height:80px" placeholder="Allergies, demandes particulières, conditions de paiement, etc.">${attrEsc(pdfStr(qt?.notes))}</textarea></label>
 
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
@@ -410,8 +469,8 @@ function renderCustomLinesInputs(lines) {
     return `<div class="quote-custom-empty text-muted" style="font-size:12px">Aucun supplément. Cliquez sur « Ajouter une ligne » pour en créer.</div>`;
   }
   return lines.map((l, i) => `<div class="quote-custom-line" data-idx="${i}">
-    <input type="text" class="quote-custom-desc" value="${esc(l.description || "")}" placeholder="ex: Décor spécial, Service après minuit, Rabais 10%..." />
-    <input type="number" step="0.01" class="quote-custom-amount" value="${esc(l.amount != null ? String(l.amount) : "")}" placeholder="0.00" />
+    <input type="text" class="quote-custom-desc" value="${attrEsc(pdfStr(l.description))}" placeholder="ex: Décor spécial, Service après minuit, Rabais 10%..." />
+    <input type="number" step="0.01" class="quote-custom-amount" value="${attrEsc(l.amount != null ? String(l.amount) : "")}" placeholder="0.00" />
     <button type="button" class="btn-icon-only" onclick="removeCustomLineInput(${i})" aria-label="Retirer">${icon("trash", 14)}</button>
   </div>`).join("");
 }
@@ -443,7 +502,7 @@ function removeCustomLineInput(idx) {
 
 // ─── Sauvegarde soumission ────────────────────────────
 async function saveQuote(id) {
-  const name = document.getElementById("q-client-name").value.trim();
+  const name = pdfStr(document.getElementById("q-client-name").value.trim());
   if (!name) return toast("Veuillez saisir le nom du client.", "error");
   const packageId = document.querySelector("input[name='q-package']:checked")?.value;
   if (!packageId) return toast("Veuillez sélectionner un forfait.", "error");
@@ -451,6 +510,7 @@ async function saveQuote(id) {
   if (!tpl) return toast("Forfait introuvable.", "error");
 
   const guestCount = Math.max(0, Math.floor(Number(document.getElementById("q-guest-count").value) || 0));
+  if (guestCount < 1) return toast("Veuillez saisir le nombre de personnes (minimum 1).", "error");
   const depositAmount = Math.max(0, Number(document.getElementById("q-deposit").value) || 0);
 
   // Prix bière saisi dans le formulaire (peut être différent du prix par défaut
@@ -460,36 +520,43 @@ async function saveQuote(id) {
   // Snapshot du forfait au moment du devis (pour ne pas casser les anciens
   // PDFs si on modifie un template par la suite). Le beerPrice du snapshot
   // est celui SAISI dans le formulaire (peut être un rabais).
+  // On nettoie les \' parasites laissés par esc() dans les inputs.
   const packageSnapshot = {
     id: tpl.id,
-    name: tpl.name,
-    label: tpl.label,
+    name: pdfStr(tpl.name),
+    label: pdfStr(tpl.label),
     pricePerPerson: Number(tpl.pricePerPerson || 0),
     accentColor: tpl.accentColor || "yellow",
-    entree: tpl.entree || "",
-    plat: tpl.plat || "",
-    boisson: tpl.boisson || "",
+    entree: pdfStr(tpl.entree || ""),
+    plat:   pdfStr(tpl.plat || ""),
+    boisson:pdfStr(tpl.boisson || ""),
     beerPrice: beerPriceFromForm
   };
 
+  // Lignes personnalisées : nettoyer aussi les apostrophes
+  const customLines = readCustomLinesFromDOM().map(l => ({
+    description: pdfStr(l.description || ""),
+    amount: Number(l.amount || 0)
+  }));
+
   const data = {
     clientName: name,
-    clientCompany: document.getElementById("q-client-company").value.trim(),
-    clientPhone:   document.getElementById("q-client-phone").value.trim(),
-    clientEmail:   document.getElementById("q-client-email").value.trim(),
+    clientCompany: pdfStr(document.getElementById("q-client-company").value.trim()),
+    clientPhone:   pdfStr(document.getElementById("q-client-phone").value.trim()),
+    clientEmail:   pdfStr(document.getElementById("q-client-email").value.trim()),
     eventDate:    document.getElementById("q-event-date").value || "",
     eventTime:    document.getElementById("q-event-time").value || "",
     eventVenue:   document.getElementById("q-event-venue").value,
-    eventAddress: document.getElementById("q-event-address").value.trim(),
+    eventAddress: pdfStr(document.getElementById("q-event-address").value.trim()),
     guestCount,
     packageId,
     packageSnapshot,
     beerAddon: document.getElementById("q-beer-addon").checked,
-    customLines: readCustomLinesFromDOM(),
+    customLines,
     depositAmount,
     depositPaid:    document.getElementById("q-deposit-paid").checked,
     validUntil: document.getElementById("q-valid-until").value || "",
-    notes:      document.getElementById("q-notes").value.trim(),
+    notes:      pdfStr(document.getElementById("q-notes").value.trim()),
     status:     document.getElementById("q-status").value,
     updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
   };
@@ -552,15 +619,15 @@ function openQuoteTemplatesModal() {
 }
 
 function renderTemplateEditor(tpl) {
-  return `<div class="quote-tpl-editor quote-tpl-editor--${tpl.accentColor || "yellow"}" data-tpl-id="${esc(tpl.id)}">
+  return `<div class="quote-tpl-editor quote-tpl-editor--${tpl.accentColor || "yellow"}" data-tpl-id="${attrEsc(tpl.id)}">
     <div class="quote-tpl-editor__head">
-      <input class="quote-tpl-label" data-field="label" value="${esc(tpl.label || "")}" placeholder="Forfait Un" aria-label="Étiquette"/>
-      <input class="quote-tpl-name" data-field="name" value="${esc(tpl.name || "")}" placeholder="L'Essentiel" aria-label="Nom du forfait"/>
+      <input class="quote-tpl-label" data-field="label" value="${attrEsc(pdfStr(tpl.label))}" placeholder="Forfait Un" aria-label="Étiquette"/>
+      <input class="quote-tpl-name" data-field="name" value="${attrEsc(pdfStr(tpl.name))}" placeholder="L'Essentiel" aria-label="Nom du forfait"/>
       <button class="btn-icon-only text-danger" onclick="deleteTemplate('${esc(tpl.id)}')" aria-label="Supprimer le forfait" title="Supprimer">${icon("trash", 14)}</button>
     </div>
     <div class="form-row" style="margin-top:8px">
       <label>Prix / personne ($)
-        <input type="number" min="0" step="0.01" data-field="pricePerPerson" value="${esc(String(tpl.pricePerPerson || 0))}"/>
+        <input type="number" min="0" step="0.01" data-field="pricePerPerson" value="${attrEsc(String(tpl.pricePerPerson || 0))}"/>
       </label>
       <label>Couleur d'accent
         <select data-field="accentColor">
@@ -568,10 +635,10 @@ function renderTemplateEditor(tpl) {
         </select>
       </label>
     </div>
-    <label>Entrée <input data-field="entree" value="${esc(tpl.entree || "")}" placeholder="ex: 1 empanada au bœuf ou au poulet par personne"/></label>
-    <label>Plat principal <input data-field="plat" value="${esc(tpl.plat || "")}" placeholder="ex: Arepa classique ou végé"/></label>
-    <label>Boisson <input data-field="boisson" value="${esc(tpl.boisson || "")}" placeholder="ex: Une boisson gazeuse colombienne ou autre"/></label>
-    <label>Prix par défaut bière de substitution ($) <input type="number" min="0" step="0.01" data-field="beerPrice" value="${esc(String(tpl.beerPrice || 0))}"/></label>
+    <label>Entrée <input data-field="entree" value="${attrEsc(pdfStr(tpl.entree))}" placeholder="ex: 1 empanada au bœuf ou au poulet par personne"/></label>
+    <label>Plat principal <input data-field="plat" value="${attrEsc(pdfStr(tpl.plat))}" placeholder="ex: Arepa classique ou végé"/></label>
+    <label>Boisson <input data-field="boisson" value="${attrEsc(pdfStr(tpl.boisson))}" placeholder="ex: Une boisson gazeuse colombienne ou autre"/></label>
+    <label>Prix par défaut bière de substitution ($) <input type="number" min="0" step="0.01" data-field="beerPrice" value="${attrEsc(String(tpl.beerPrice || 0))}"/></label>
     <p class="text-muted" style="font-size:11px;margin:4px 0 0">Prix appliqué quand la boisson est remplacée par une bière. Modifiable par soumission pour offrir un rabais.</p>
     <div style="display:flex;justify-content:flex-end;margin-top:8px">
       <button class="btn btn-primary btn-sm" onclick="saveTemplate('${esc(tpl.id)}')">${icon("save", 12)} Enregistrer ce forfait</button>
@@ -613,7 +680,12 @@ async function saveTemplate(id) {
   card.querySelectorAll("[data-field]").forEach(el => {
     const field = el.getAttribute("data-field");
     let v = el.value;
-    if (["pricePerPerson", "beerPrice"].includes(field)) v = Math.max(0, Number(v) || 0);
+    if (["pricePerPerson", "beerPrice"].includes(field)) {
+      v = Math.max(0, Number(v) || 0);
+    } else {
+      // Nettoyer les apostrophes échappées \' héritées de esc()
+      v = pdfStr(v);
+    }
     data[field] = v;
   });
   try {
@@ -758,17 +830,17 @@ function generateQuotePDF(quoteId) {
   }
 
   const clientLines = [
-    qt.clientName || "—",
-    qt.clientCompany || "",
-    qt.clientPhone ? `Tél : ${qt.clientPhone}` : "",
-    qt.clientEmail ? `Courriel : ${qt.clientEmail}` : ""
+    pdfStr(qt.clientName) || "—",
+    pdfStr(qt.clientCompany),
+    qt.clientPhone ? `Tel : ${pdfStr(qt.clientPhone)}` : "",
+    qt.clientEmail ? `Courriel : ${pdfStr(qt.clientEmail)}` : ""
   ].filter(Boolean);
 
   const venueLabel = tQuoteVenue(qt.eventVenue || "bochica");
   const eventLines = [
     qt.eventDate ? `Date : ${qt.eventDate}${qt.eventTime ? " · " + qt.eventTime : ""}` : "",
     `Lieu : ${venueLabel}`,
-    qt.eventAddress || "",
+    pdfStr(qt.eventAddress),
     qt.guestCount ? `Nombre de personnes : ${qt.guestCount}` : ""
   ].filter(Boolean);
 
@@ -796,12 +868,12 @@ function generateQuotePDF(quoteId) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(8);
   doc.setTextColor(...COLOR_TEXT_LIGHT);
-  doc.text((tpl.label || "FORFAIT").toUpperCase(), cardX + 9, cardY + 8);
+  doc.text(pdfStr(tpl.label || "FORFAIT").toUpperCase(), cardX + 9, cardY + 8);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
   doc.setTextColor(...COLOR_TEXT);
-  doc.text(tpl.name || "—", cardX + 9, cardY + 18);
+  doc.text(pdfStr(tpl.name) || "—", cardX + 9, cardY + 18);
 
   // Prix par personne — à droite
   doc.setFont("helvetica", "bold");
@@ -821,9 +893,9 @@ function generateQuotePDF(quoteId) {
 
   // 3 lignes : Entrée / Plat / Boisson (bullets bleus)
   const items = [
-    ["ENTRÉE", tpl.entree],
-    ["PLAT PRINCIPAL", tpl.plat],
-    ["BOISSON", tpl.boisson]
+    ["ENTRÉE", pdfStr(tpl.entree)],
+    ["PLAT PRINCIPAL", pdfStr(tpl.plat)],
+    ["BOISSON", pdfStr(tpl.boisson)]
   ];
   let itemY = cardY + 30;
   items.forEach(([label, content]) => {
@@ -878,7 +950,7 @@ function generateQuotePDF(quoteId) {
     doc.setFontSize(9);
     qt.customLines.forEach(line => {
       doc.setTextColor(...COLOR_TEXT);
-      doc.text(line.description || "—", M, y + 4);
+      doc.text(pdfStr(line.description) || "—", M, y + 4);
       const amt = Number(line.amount || 0);
       doc.setTextColor(amt < 0 ? COLOR_GREEN[0] : COLOR_TEXT[0], amt < 0 ? COLOR_GREEN[1] : COLOR_TEXT[1], amt < 0 ? COLOR_GREEN[2] : COLOR_TEXT[2]);
       doc.text(`${amt >= 0 ? "+" : ""}${fmtMoney(amt).replace(" $", "")} $`, M + contentW, y + 4, { align: "right" });
@@ -932,23 +1004,70 @@ function generateQuotePDF(quoteId) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(9);
     doc.setTextColor(...COLOR_TEXT_LIGHT);
-    const split = doc.splitTextToSize(qt.notes, contentW);
+    const split = doc.splitTextToSize(pdfStr(qt.notes), contentW);
     doc.text(split, M, y);
     y += split.length * 4 + 4;
   }
 
-  // ═══ Validité (footer) ═══
-  doc.setFont("helvetica", "italic");
+  // ═══ Bloc QR code + invitation menu ═══
+  // Positionné au-dessus du footer texte. QR à gauche, texte à droite.
+  const qrSize = 26;
+  const qrY = H - 56;
+  const qrX = M;
+  const menuUrl = "https://bochicacafebistro.ca/";
+  const qrDrawn = drawQRCode(doc, menuUrl, qrX, qrY, qrSize);
+
+  // Texte à droite du QR
+  const textX = qrX + qrSize + 8;
+  let textY = qrY + 4;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...COLOR_TEXT);
+  doc.text("Consultez notre menu en ligne", textX, textY);
+  textY += 5;
+  doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COLOR_TEXT_LIGHT);
-  const footerY = H - 16;
-  if (qt.validUntil) {
-    doc.text(`Soumission valide jusqu'au ${qt.validUntil}`, W / 2, footerY, { align: "center" });
-  }
-  doc.text("Les prix indiqués incluent les taxes applicables (TPS 5 % + TVQ 9,975 %).", W / 2, footerY + 5, { align: "center" });
+  doc.text(qrDrawn ? "Scannez ce code QR avec votre téléphone" : "Visitez notre site web", textX, textY);
+  textY += 4;
+  doc.text("ou visitez :", textX, textY);
+  textY += 5;
+  // URL en jaune/accent, soulignée pour cliquabilité
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...COLOR_ACCENT);
+  doc.textWithLink(menuUrl, textX, textY, { url: menuUrl });
+  textY += 6;
+  // Petite note sympathique
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8);
+  doc.setTextColor(...COLOR_TEXT_LIGHT);
+  doc.text("Découvrez tous nos plats colombiens authentiques.", textX, textY);
 
-  // Téléchargement
-  const filename = `Bochica_Soumission_${qt.quoteNumber || "draft"}_${(qt.clientName || "client").replace(/[^a-z0-9]/gi, "_")}.pdf`;
+  // Ligne séparatrice avant le footer légal
+  doc.setDrawColor(...COLOR_TEXT_LIGHT);
+  doc.setLineWidth(0.2);
+  doc.line(M, H - 24, W - M, H - 24);
+
+  // ═══ Footer : validité + mentions légales ═══
+  const footerY = H - 19;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.setTextColor(...COLOR_RED);
+  doc.text("Le service (pourboire) n'est pas inclus dans les montants ci-dessus.", W / 2, footerY, { align: "center" });
+
+  // Mentions légales standard
+  doc.setFont("helvetica", "italic");
+  doc.setFontSize(8);
+  doc.setTextColor(...COLOR_TEXT_LIGHT);
+  doc.text("Les montants ci-dessus incluent les taxes applicables (TPS 5 % + TVQ 9,975 %).", W / 2, footerY + 5, { align: "center" });
+  if (qt.validUntil) {
+    doc.text(`Soumission valide jusqu'au ${qt.validUntil}.`, W / 2, footerY + 10, { align: "center" });
+  }
+
+  // Téléchargement (on nettoie aussi le nom pour le filename)
+  const cleanClient = pdfStr(qt.clientName || "client").replace(/[^a-z0-9]/gi, "_");
+  const filename = `Bochica_Soumission_${qt.quoteNumber || "draft"}_${cleanClient}.pdf`;
   doc.save(filename);
   toast("PDF généré et téléchargé.", "success");
 }
