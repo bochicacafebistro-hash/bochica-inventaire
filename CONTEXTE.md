@@ -387,6 +387,19 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 11 mai 2026 — Zébré jaune Bochica uniforme (v3.8.6) 🟡
+- **Couleur** : retour au **jaune Bochica `247,179,44`** (l'accent de marque) au lieu du gris
+- **Uniformité par ligne** : toutes les cellules d'une même ligne ont maintenant la **même opacité** — peu importe si la cellule contient des heures (`.is-filled`) ou non
+  - Avant : la cellule remplie était plus foncée que la vide → effet "tache" sur la ligne
+  - Après : ligne entière du même ton → effet zébré franc et lisible
+- **2 tons d'opacité** :
+  - Ligne impaire (`.is-odd`) — ton foncé : opacité 0.22
+  - Ligne paire (`.is-even`) — ton clair : opacité 0.08
+- **Cellule TOTAL** (la dernière colonne) : légèrement plus marquée (0.35 / 0.20) pour rester un point d'ancrage visuel
+- **Hover** : ligne entière s'illumine en même couleur (0.35 / 0.18) — pas de variation par cellule
+- **Dark mode** : opacités calibrées (0.25 / 0.10) — le jaune accent reste visible sur fond sombre
+- Bumper `CACHE_VERSION` à `v3.8.6`
+
 ### 11 mai 2026 — Zébré 1 couleur 2 tons + chiffres plus gros (v3.8.5) ⚫⚪
 - **Tableau Employés & Horaires** : passage à un **vrai zébré** sur une seule couleur (gris noir chaud `14,13,12`) avec deux opacités différentes :
   - Lignes impaires (`.is-odd`) — ton plus foncé : opacités 0.06 / 0.10 / 0.14 / 0.18 (cellule / emp+summary / total / filled)

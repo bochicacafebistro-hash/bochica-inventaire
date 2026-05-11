@@ -185,10 +185,10 @@ function renderEmployes() {
           </thead>
           <tbody>
             ${empRows.map((row, rowIdx) => {
-              // Zébré sobre : une seule couleur (gris noir chaud — la teinte
-              // du texte Bochica), deux opacités via les classes is-even/is-odd
-              // dans le CSS. Plus lisible que l'ancienne palette multi-couleurs.
-              const empRgb = "14,13,12";
+              // Zébré sobre sur une seule couleur (jaune Bochica), deux tons
+              // via les classes is-odd/is-even. Toute la ligne est uniforme,
+              // peu importe si une cellule contient des heures ou non.
+              const empRgb = "247,179,44";  // jaune accent Bochica
               const toneClass = rowIdx % 2 === 0 ? "is-odd" : "is-even";
               // Section : fallback sur "service" si pas encore définie (compat employés existants)
               const empSection = row.emp.section || "service";
