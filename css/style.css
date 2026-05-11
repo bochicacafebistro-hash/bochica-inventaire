@@ -1274,7 +1274,7 @@ tr:last-child td{border-bottom:none}
 .schedule-emp-row.is-odd .schedule-td--summary,
 .schedule-emp-row.is-odd .schedule-td--cell,
 .schedule-emp-row.is-odd .schedule-td--cell.is-filled{
-  background:rgba(var(--emp-rgb, 247,179,44), .22);
+  background:rgba(var(--emp-rgb, 247,179,44), .38);
 }
 
 /* ── Ton CLAIR uniforme (lignes paires : 2, 4, 6...) ── */
@@ -1282,15 +1282,15 @@ tr:last-child td{border-bottom:none}
 .schedule-emp-row.is-even .schedule-td--summary,
 .schedule-emp-row.is-even .schedule-td--cell,
 .schedule-emp-row.is-even .schedule-td--cell.is-filled{
-  background:rgba(var(--emp-rgb, 247,179,44), .08);
+  background:rgba(var(--emp-rgb, 247,179,44), .15);
 }
 
 /* ── Cellule TOTAL : légèrement plus marquée pour rester un point d'ancrage ── */
 .schedule-emp-row.is-odd .schedule-td--summary.schedule-td--total{
-  background:rgba(var(--emp-rgb, 247,179,44), .35);
+  background:rgba(var(--emp-rgb, 247,179,44), .55);
 }
 .schedule-emp-row.is-even .schedule-td--summary.schedule-td--total{
-  background:rgba(var(--emp-rgb, 247,179,44), .20);
+  background:rgba(var(--emp-rgb, 247,179,44), .32);
 }
 
 /* ── Hover : ligne entière s'illumine (toujours uniforme) ── */
@@ -1298,51 +1298,51 @@ tr:last-child td{border-bottom:none}
 .schedule-emp-row.is-odd:hover .schedule-td--summary,
 .schedule-emp-row.is-odd:hover .schedule-td--cell,
 .schedule-emp-row.is-odd:hover .schedule-td--cell.is-filled{
-  background:rgba(var(--emp-rgb, 247,179,44), .35);
+  background:rgba(var(--emp-rgb, 247,179,44), .52);
 }
 .schedule-emp-row.is-even:hover .schedule-td--emp,
 .schedule-emp-row.is-even:hover .schedule-td--summary,
 .schedule-emp-row.is-even:hover .schedule-td--cell,
 .schedule-emp-row.is-even:hover .schedule-td--cell.is-filled{
-  background:rgba(var(--emp-rgb, 247,179,44), .18);
+  background:rgba(var(--emp-rgb, 247,179,44), .28);
 }
 .schedule-emp-row.is-odd:hover .schedule-td--summary.schedule-td--total{
-  background:rgba(var(--emp-rgb, 247,179,44), .48);
+  background:rgba(var(--emp-rgb, 247,179,44), .68);
 }
 .schedule-emp-row.is-even:hover .schedule-td--summary.schedule-td--total{
-  background:rgba(var(--emp-rgb, 247,179,44), .32);
+  background:rgba(var(--emp-rgb, 247,179,44), .45);
 }
 
-/* ── Dark mode : mêmes opacités, le jaune accent reste lisible sur fond sombre ── */
+/* ── Dark mode : opacités calibrées (le jaune reste lisible sur fond sombre) ── */
 .dark .schedule-emp-row.is-odd .schedule-td--emp,
 .dark .schedule-emp-row.is-odd .schedule-td--summary,
 .dark .schedule-emp-row.is-odd .schedule-td--cell,
 .dark .schedule-emp-row.is-odd .schedule-td--cell.is-filled{
-  background:rgba(var(--emp-rgb, 247,179,44), .25);
+  background:rgba(var(--emp-rgb, 247,179,44), .40);
 }
 .dark .schedule-emp-row.is-even .schedule-td--emp,
 .dark .schedule-emp-row.is-even .schedule-td--summary,
 .dark .schedule-emp-row.is-even .schedule-td--cell,
 .dark .schedule-emp-row.is-even .schedule-td--cell.is-filled{
-  background:rgba(var(--emp-rgb, 247,179,44), .10);
+  background:rgba(var(--emp-rgb, 247,179,44), .18);
 }
 .dark .schedule-emp-row.is-odd .schedule-td--summary.schedule-td--total{
-  background:rgba(var(--emp-rgb, 247,179,44), .38);
+  background:rgba(var(--emp-rgb, 247,179,44), .58);
 }
 .dark .schedule-emp-row.is-even .schedule-td--summary.schedule-td--total{
-  background:rgba(var(--emp-rgb, 247,179,44), .22);
+  background:rgba(var(--emp-rgb, 247,179,44), .35);
 }
 .dark .schedule-emp-row.is-odd:hover .schedule-td--emp,
 .dark .schedule-emp-row.is-odd:hover .schedule-td--summary,
 .dark .schedule-emp-row.is-odd:hover .schedule-td--cell,
 .dark .schedule-emp-row.is-odd:hover .schedule-td--cell.is-filled{
-  background:rgba(var(--emp-rgb, 247,179,44), .38);
+  background:rgba(var(--emp-rgb, 247,179,44), .55);
 }
 .dark .schedule-emp-row.is-even:hover .schedule-td--emp,
 .dark .schedule-emp-row.is-even:hover .schedule-td--summary,
 .dark .schedule-emp-row.is-even:hover .schedule-td--cell,
 .dark .schedule-emp-row.is-even:hover .schedule-td--cell.is-filled{
-  background:rgba(var(--emp-rgb, 247,179,44), .20);
+  background:rgba(var(--emp-rgb, 247,179,44), .30);
 }
 
 /* Bande latérale gauche : on garde transparente (l'identification se fait par

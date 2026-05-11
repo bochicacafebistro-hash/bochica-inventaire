@@ -387,6 +387,17 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 11 mai 2026 — Jaune plus vif, alternance plus marquée (v3.8.7) 🟨
+- Opacités du zébré employés **rehaussées** pour mieux voir la différence entre les 2 tons :
+  - Ton foncé : 0.22 → **0.38**
+  - Ton clair : 0.08 → **0.15**
+  - Cellule total (foncé) : 0.35 → **0.55**
+  - Cellule total (clair) : 0.20 → **0.32**
+  - Hover foncé : 0.35 → **0.52**
+  - Hover clair : 0.18 → **0.28**
+- Dark mode ajusté proportionnellement (0.40 / 0.18 / 0.58 / 0.35)
+- Bumper `CACHE_VERSION` à `v3.8.7`
+
 ### 11 mai 2026 — Zébré jaune Bochica uniforme (v3.8.6) 🟡
 - **Couleur** : retour au **jaune Bochica `247,179,44`** (l'accent de marque) au lieu du gris
 - **Uniformité par ligne** : toutes les cellules d'une même ligne ont maintenant la **même opacité** — peu importe si la cellule contient des heures (`.is-filled`) ou non
