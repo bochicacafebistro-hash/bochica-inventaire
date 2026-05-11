@@ -4897,28 +4897,40 @@ textarea.md-input{
    ÉVÉNEMENTS — Calendrier, listes, pills par type/statut
    ───────────────────────────────────────────────────────────────
    Palette par type :
-   - reservation → bleu  #4a90e2  (drapeau Colombie)
-   - special     → jaune #F7B32C  (accent Bochica)
-   - ferie       → rouge #e74c3c  (drapeau Colombie)
-   - interne     → vert  #7dbf66
+   - reservation  → bleu   #4a90e2  (drapeau Colombie)
+   - karaoke      → violet #a855f7  (animation, fête)
+   - spectacle    → orange #f97316  (scène, chaleur)
+   - hors_bochica → slate  #64748b  (neutre, externe)
+   - ferie        → rouge  #e74c3c  (drapeau Colombie)
+   - interne      → vert   #7dbf66
    ═══════════════════════════════════════════════════════════════ */
 
 /* ─── Tokens couleurs événements ─────────────────────── */
 :root{
   --ev-reservation: #4a90e2;
   --ev-reservation-soft: rgba(74,144,226,.12);
-  --ev-special: #F7B32C;
-  --ev-special-soft: rgba(247,179,44,.15);
+  --ev-karaoke: #a855f7;
+  --ev-karaoke-soft: rgba(168,85,247,.12);
+  --ev-spectacle: #f97316;
+  --ev-spectacle-soft: rgba(249,115,22,.12);
+  --ev-hors-bochica: #64748b;
+  --ev-hors-bochica-soft: rgba(100,116,139,.14);
   --ev-ferie: #e74c3c;
   --ev-ferie-soft: rgba(231,76,60,.12);
   --ev-interne: #7dbf66;
   --ev-interne-soft: rgba(125,191,102,.15);
+  /* Legacy : ancien type "special" (rétrocompat) */
+  --ev-special: #F7B32C;
+  --ev-special-soft: rgba(247,179,44,.15);
 }
 .dark{
   --ev-reservation-soft: rgba(74,144,226,.2);
-  --ev-special-soft: rgba(247,179,44,.22);
+  --ev-karaoke-soft: rgba(168,85,247,.22);
+  --ev-spectacle-soft: rgba(249,115,22,.22);
+  --ev-hors-bochica-soft: rgba(148,163,184,.2);
   --ev-ferie-soft: rgba(231,76,60,.22);
   --ev-interne-soft: rgba(125,191,102,.22);
+  --ev-special-soft: rgba(247,179,44,.22);
 }
 
 /* ─── Switcher de vue (Calendrier / Mois / À venir) ──── */
@@ -4990,9 +5002,12 @@ textarea.md-input{
   border-color:var(--accent);
 }
 .ev-type-tab--reservation.is-active{background:var(--ev-reservation);color:#fff;border-color:var(--ev-reservation)}
-.ev-type-tab--special.is-active{background:var(--ev-special);color:var(--accent-text);border-color:var(--ev-special)}
+.ev-type-tab--karaoke.is-active{background:var(--ev-karaoke);color:#fff;border-color:var(--ev-karaoke)}
+.ev-type-tab--spectacle.is-active{background:var(--ev-spectacle);color:#fff;border-color:var(--ev-spectacle)}
+.ev-type-tab--hors_bochica.is-active{background:var(--ev-hors-bochica);color:#fff;border-color:var(--ev-hors-bochica)}
 .ev-type-tab--ferie.is-active{background:var(--ev-ferie);color:#fff;border-color:var(--ev-ferie)}
 .ev-type-tab--interne.is-active{background:var(--ev-interne);color:#fff;border-color:var(--ev-interne)}
+.ev-type-tab--special.is-active{background:var(--ev-special);color:var(--accent-text);border-color:var(--ev-special)}
 .ev-type-count{
   display:inline-flex;
   align-items:center;
@@ -5184,11 +5199,16 @@ textarea.md-input{
 }
 .ev-cal-pill:hover{filter:brightness(.92)}
 .ev-cal-pill--reservation{background:var(--ev-reservation-soft);color:var(--ev-reservation);border-left:3px solid var(--ev-reservation)}
-.ev-cal-pill--special{background:var(--ev-special-soft);color:#8a6a1a;border-left:3px solid var(--ev-special)}
-.dark .ev-cal-pill--special{color:var(--ev-special)}
+.ev-cal-pill--karaoke{background:var(--ev-karaoke-soft);color:var(--ev-karaoke);border-left:3px solid var(--ev-karaoke)}
+.ev-cal-pill--spectacle{background:var(--ev-spectacle-soft);color:var(--ev-spectacle);border-left:3px solid var(--ev-spectacle)}
+.ev-cal-pill--hors_bochica{background:var(--ev-hors-bochica-soft);color:var(--ev-hors-bochica);border-left:3px solid var(--ev-hors-bochica)}
+.dark .ev-cal-pill--hors_bochica{color:#94a3b8}
 .ev-cal-pill--ferie{background:var(--ev-ferie-soft);color:var(--ev-ferie);border-left:3px solid var(--ev-ferie)}
 .ev-cal-pill--interne{background:var(--ev-interne-soft);color:#3e6b34;border-left:3px solid var(--ev-interne)}
 .dark .ev-cal-pill--interne{color:var(--ev-interne)}
+/* Legacy : ancien type "special" */
+.ev-cal-pill--special{background:var(--ev-special-soft);color:#8a6a1a;border-left:3px solid var(--ev-special)}
+.dark .ev-cal-pill--special{color:var(--ev-special)}
 .ev-cal-pill--status-attente{opacity:.7;font-style:italic}
 .ev-cal-pill--status-annule{text-decoration:line-through;opacity:.5}
 .ev-cal-more{
@@ -5221,9 +5241,12 @@ textarea.md-input{
   border-radius:var(--radius-sm);
 }
 .ev-legend-dot--reservation{background:var(--ev-reservation)}
-.ev-legend-dot--special{background:var(--ev-special)}
+.ev-legend-dot--karaoke{background:var(--ev-karaoke)}
+.ev-legend-dot--spectacle{background:var(--ev-spectacle)}
+.ev-legend-dot--hors_bochica{background:var(--ev-hors-bochica)}
 .ev-legend-dot--ferie{background:var(--ev-ferie)}
 .ev-legend-dot--interne{background:var(--ev-interne)}
+.ev-legend-dot--special{background:var(--ev-special)}
 
 /* ─── Vue Mois / À venir : cartes événements ─────────── */
 .ev-upcoming__head{
@@ -5258,9 +5281,12 @@ textarea.md-input{
 }
 .ev-card:hover{box-shadow:var(--shadow-sm)}
 .ev-card--reservation{border-left-color:var(--ev-reservation)}
-.ev-card--special{border-left-color:var(--ev-special)}
+.ev-card--karaoke{border-left-color:var(--ev-karaoke)}
+.ev-card--spectacle{border-left-color:var(--ev-spectacle)}
+.ev-card--hors_bochica{border-left-color:var(--ev-hors-bochica)}
 .ev-card--ferie{border-left-color:var(--ev-ferie)}
 .ev-card--interne{border-left-color:var(--ev-interne)}
+.ev-card--special{border-left-color:var(--ev-special)}
 .ev-card.is-past{opacity:.65}
 .ev-card.is-cancelled .ev-card__name{text-decoration:line-through;color:var(--text3)}
 
@@ -5351,11 +5377,15 @@ textarea.md-input{
   letter-spacing:.04em;
 }
 .ev-type-pill--reservation{background:var(--ev-reservation-soft);color:var(--ev-reservation)}
-.ev-type-pill--special{background:var(--ev-special-soft);color:#8a6a1a}
-.dark .ev-type-pill--special{color:var(--ev-special)}
+.ev-type-pill--karaoke{background:var(--ev-karaoke-soft);color:var(--ev-karaoke)}
+.ev-type-pill--spectacle{background:var(--ev-spectacle-soft);color:var(--ev-spectacle)}
+.ev-type-pill--hors_bochica{background:var(--ev-hors-bochica-soft);color:var(--ev-hors-bochica)}
+.dark .ev-type-pill--hors_bochica{color:#94a3b8}
 .ev-type-pill--ferie{background:var(--ev-ferie-soft);color:var(--ev-ferie)}
 .ev-type-pill--interne{background:var(--ev-interne-soft);color:#3e6b34}
 .dark .ev-type-pill--interne{color:var(--ev-interne)}
+.ev-type-pill--special{background:var(--ev-special-soft);color:#8a6a1a}
+.dark .ev-type-pill--special{color:var(--ev-special)}
 
 .ev-status-pill{
   display:inline-flex;

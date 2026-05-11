@@ -15,12 +15,13 @@ let shoppingFilterSupplier = "all"; // "all" | "costco" | "viandex" | "gordon"
 let shoppingSortMode = "supplier";  // "supplier" | "name"
 let shoppingSearchQuery = "";       // recherche texte (nom ou notes)
 
-// Événements (calendrier) — réservations, soirées spéciales, jours fériés, événements internes
-// Chaque item : { id, name, date (YYYY-MM-DD), time (HH:MM, optionnel), type (reservation/special/ferie/interne),
+// Événements (calendrier) — réservations, karaoké, spectacles, hors-site, fériés, internes
+// Chaque item : { id, name, date (YYYY-MM-DD), time (HH:MM, optionnel),
+//                 type (reservation/karaoke/spectacle/hors_bochica/ferie/interne),
 //                 status (confirme/attente/annule), capacity, contactName, contactPhone, contactEmail, notes }
 let events = [];
 let eventsViewMode = "calendar";        // "calendar" | "month" | "upcoming"
-let eventsFilterType = "all";           // "all" | "reservation" | "special" | "ferie" | "interne"
+let eventsFilterType = "all";           // "all" | "reservation" | "karaoke" | "spectacle" | "hors_bochica" | "ferie" | "interne"
 let eventsCalendarOffset = 0;           // 0 = mois courant, -1 = précédent, +1 = suivant
 let eventsSearchQuery = "";             // recherche texte (nom, contact, notes)
 

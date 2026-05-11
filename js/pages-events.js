@@ -9,25 +9,32 @@
 // Accès        : Admin (global_admin) + Chef
 // ═══════════════════════════════════════════════════════════════
 
-const EVENT_TYPES = ["reservation", "special", "ferie", "interne"];
+const EVENT_TYPES = ["reservation", "karaoke", "spectacle", "hors_bochica", "ferie", "interne"];
 const EVENT_STATUSES = ["confirme", "attente", "annule"];
 
 function tEventType(t) {
   const map = {
-    reservation: "Réservation privée",
-    special:     "Soirée spéciale",
-    ferie:       "Jour férié / fermeture",
-    interne:     "Événement interne"
+    reservation:  "Réservation privée",
+    karaoke:      "Soirée karaoké",
+    spectacle:    "Soirée spectacle",
+    hors_bochica: "Événement hors Bochica",
+    ferie:        "Journée fériée / fermeture",
+    interne:      "Événement interne",
+    // Rétrocompat : ancien type 'special' (avant v3.7.1)
+    special:      "Soirée spéciale"
   };
   return map[t] || t || "—";
 }
 
 function tEventTypeShort(t) {
   const map = {
-    reservation: "Réservation",
-    special:     "Spécial",
-    ferie:       "Férié",
-    interne:     "Interne"
+    reservation:  "Réservation",
+    karaoke:      "Karaoké",
+    spectacle:    "Spectacle",
+    hors_bochica: "Hors Bochica",
+    ferie:        "Férié",
+    interne:      "Interne",
+    special:      "Spécial"
   };
   return map[t] || t || "—";
 }
@@ -44,10 +51,13 @@ function tEventStatus(s) {
 // Icône par type d'événement
 function eventTypeIcon(type) {
   const map = {
-    reservation: "users",
-    special:     "star",
-    ferie:       "flag",
-    interne:     "briefcase"
+    reservation:  "users",
+    karaoke:      "mic",
+    spectacle:    "music",
+    hors_bochica: "map-pin",
+    ferie:        "flag",
+    interne:      "briefcase",
+    special:      "star"
   };
   return map[type] || "calendar";
 }
@@ -160,13 +170,10 @@ function renderEvents() {
   const writable = canWrite("evenements");
 
   // Comptes par type (avant filtre, pour onglets)
-  const counts = {
-    all: events.length,
-    reservation: events.filter(e => e.type === "reservation").length,
-    special:     events.filter(e => e.type === "special").length,
-    ferie:       events.filter(e => e.type === "ferie").length,
-    interne:     events.filter(e => e.type === "interne").length
-  };
+  const counts = { all: events.length };
+  EVENT_TYPES.forEach(typ => {
+    counts[typ] = events.filter(e => e.type === typ).length;
+  });
 
   let h = `<div class="page">
     <div class="toolbar">
@@ -311,7 +318,9 @@ function renderEventCalendar(writable) {
   h += `</div>
     <div class="ev-calendar__legend">
       <span class="ev-legend-item"><span class="ev-legend-dot ev-legend-dot--reservation"></span>Réservation</span>
-      <span class="ev-legend-item"><span class="ev-legend-dot ev-legend-dot--special"></span>Soirée spéciale</span>
+      <span class="ev-legend-item"><span class="ev-legend-dot ev-legend-dot--karaoke"></span>Karaoké</span>
+      <span class="ev-legend-item"><span class="ev-legend-dot ev-legend-dot--spectacle"></span>Spectacle</span>
+      <span class="ev-legend-item"><span class="ev-legend-dot ev-legend-dot--hors_bochica"></span>Hors Bochica</span>
       <span class="ev-legend-item"><span class="ev-legend-dot ev-legend-dot--ferie"></span>Férié / fermeture</span>
       <span class="ev-legend-item"><span class="ev-legend-dot ev-legend-dot--interne"></span>Interne</span>
     </div>

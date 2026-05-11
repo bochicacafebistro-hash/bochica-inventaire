@@ -1,6 +1,6 @@
 # 📋 CONTEXTE — Projet Bochica Inventaire
 
-> ⚠️ **Dernière mise à jour : 11 mai 2026** — nouvelle page **Événements** (v3.7.0) : calendrier mensuel (grille), vue « Ce mois-ci », vue « À venir (30 j) », filtres par type (réservation, soirée spéciale, jour férié, événement interne), recherche texte, statuts (confirmé / en attente / annulé), capacité + contact + notes par événement. Widget « Prochains événements » ajouté au dashboard admin. Accès Admin + Chef.
+> ⚠️ **Dernière mise à jour : 11 mai 2026** — page **Événements** (v3.7.1) : calendrier mensuel (grille), vue « Ce mois-ci », vue « À venir (30 j) », filtres par type (6 types : réservation privée, soirée karaoké, soirée spectacle, événement hors Bochica, journée fériée, événement interne), recherche texte, statuts (confirmé / en attente / annulé), capacité + contact + notes par événement. Widget « Prochains événements » ajouté au dashboard admin. Accès Admin + Chef.
 
 ## 🏠 Description
 Application web de **gestion interne** pour le restaurant colombien Bochica.
@@ -107,8 +107,8 @@ bochica-inventaire/
   - `shoppingList` — **liste d'ingrédients** pour commandes/approvisionnement (séparée de `ingredients`) :
     - Champs : `id`, `name`, `supplier` (∈ `costco`/`viandex`/`gordon`), `category` (∈ `proteine`/`legume`/`laitier`/`epicerie`/`autre`), `notes`, `createdAt`, `updatedAt`
     - Accès : admin + chef
-  - `events` — **événements / calendrier** (réservations, soirées spéciales, jours fériés, événements internes) :
-    - Champs : `id`, `name`, `date` (ISO YYYY-MM-DD), `time` (HH:MM, optionnel), `type` (∈ `reservation`/`special`/`ferie`/`interne`), `status` (∈ `confirme`/`attente`/`annule`), `capacity`, `contactName`, `contactPhone`, `contactEmail`, `notes`, `createdAt`, `updatedAt`
+  - `events` — **événements / calendrier** (réservations, karaoké, spectacles, hors-site, fériés, internes) :
+    - Champs : `id`, `name`, `date` (ISO YYYY-MM-DD), `time` (HH:MM, optionnel), `type` (∈ `reservation`/`karaoke`/`spectacle`/`hors_bochica`/`ferie`/`interne`), `status` (∈ `confirme`/`attente`/`annule`), `capacity`, `contactName`, `contactPhone`, `contactEmail`, `notes`, `createdAt`, `updatedAt`
     - Accès : admin + chef
   - `payroll` — paie hebdomadaire (un doc par semaine ISO `YYYY-Www`) :
     - `weekId`, `weekStart`, `totalTips`, `serviceHours` `{dk: {start,end}}`, `actualShifts` `{empId: {dk: {start,end}}}`, `notes`, `createdAt`/`updatedAt`
@@ -246,7 +246,7 @@ bochica-inventaire/
 ### 📅 Événements (calendrier)
 - Page **Événements** sous Liste d'ingrédients
 - **3 vues** : Calendrier mensuel (grille 7×6), Ce mois-ci (liste), À venir (30 jours)
-- **4 types** (couleurs distinctes) : Réservation (bleu), Soirée spéciale (jaune), Jour férié / fermeture (rouge), Événement interne (vert)
+- **6 types** (couleurs distinctes + icônes dédiées) : Réservation privée (bleu, `users`), Soirée karaoké (violet, `mic`), Soirée spectacle (orange, `music`), Événement hors Bochica (slate, `map-pin`), Journée fériée (rouge, `flag`), Événement interne (vert, `briefcase`)
 - **3 statuts** : Confirmé, En attente, Annulé (annulé = barré dans le calendrier)
 - Champs par événement : nom, date, heure optionnelle, type, statut, nombre de personnes (capacité), contact (nom + tél + courriel), notes
 - **Calendrier mensuel** : navigation mois précédent/suivant, bouton « Aujourd'hui » pour revenir, highlight du jour courant (badge jaune), clic sur une case vide pour créer un événement à cette date, clic sur une pill pour l'éditer, max 3 événements visibles par case + indicateur « +N autres », légende couleurs en bas
@@ -349,6 +349,16 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 11 mai 2026 — Types d'événements étendus (v3.7.1) 🎤🎵
+- **`EVENT_TYPES` passe de 4 à 6 valeurs** : `reservation`, `karaoke`, `spectacle`, `hors_bochica`, `ferie`, `interne`
+- Ancien type `special` retiré (rétrocompat conservée dans `tEventType`, `tEventTypeShort`, `eventTypeIcon` et le CSS au cas où des événements en base utilisent encore ce slug)
+- **3 nouvelles icônes** ajoutées à `icons.js` : `mic` (karaoké), `music` (spectacle), `map-pin` (hors Bochica)
+- **3 nouveaux tokens CSS** : `--ev-karaoke` (#a855f7 violet), `--ev-spectacle` (#f97316 orange), `--ev-hors-bochica` (#64748b slate) avec variantes `*-soft` et adaptations dark mode
+- Variantes ajoutées partout : `.ev-cal-pill--{karaoke,spectacle,hors_bochica}`, `.ev-type-pill--{...}`, `.ev-type-tab--{...}.is-active`, `.ev-card--{...}`, `.ev-legend-dot--{...}`
+- Légende du calendrier mise à jour avec les 6 types
+- `renderEvents()` : comptes par type calculés dynamiquement via `EVENT_TYPES.forEach` (plus de hardcoding)
+- Bumper `CACHE_VERSION` à `v3.7.1`
 
 ### 11 mai 2026 — Événements / Calendrier (v3.7.0) 📅
 - Nouvelle page **Événements** sous Liste d'ingrédients (admin + chef)
