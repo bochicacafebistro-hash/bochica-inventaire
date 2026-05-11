@@ -387,6 +387,17 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 11 mai 2026 — Numéros encore plus gros (v3.8.9) 🔢
+- Chaque taille du tableau Employés montée d'un cran supplémentaire :
+  - `.schedule-time` (heures entrée/sortie) : `fs-base` (14px) → **`fs-md` (16px)**
+  - `.schedule-td--summary` (Heures / Taux / Total) : `fs-xl` (22px) → **`fs-2xl` (28px)**
+  - `.schedule-td--total` : `fs-xl` (22px) → **`fs-2xl` (28px)**
+  - `.schedule-tfoot-val` (totaux par jour) : `fs-lg` (18px) → **`fs-xl` (22px)**
+  - `.schedule-tfoot-row td` (label de ligne foot) : `fs-lg` (18px) → **`fs-xl` (22px)**
+- Largeurs ajustées : colonne summary 84 → **96 px**, min-width des selects time 60 → **66 px**
+- Mobile : pareil, un cran de plus partout — table min-width 780 → 820 px
+- Bumper `CACHE_VERSION` à `v3.8.9`
+
 ### 11 mai 2026 — 2 couleurs vives qui contrastent (v3.8.8) 🟡🔵
 - **Retour à 2 couleurs distinctes** au lieu de 2 tons d'une même couleur :
   - Lignes paires (0, 2, 4...) → **jaune Bochica** `#F7B32C` (`247,179,44`)
