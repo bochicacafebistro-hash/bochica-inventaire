@@ -185,10 +185,17 @@ function renderEmployes() {
           </thead>
           <tbody>
             ${empRows.map((row, rowIdx) => {
-              // Zébré sobre sur une seule couleur (jaune Bochica), deux tons
-              // via les classes is-odd/is-even. Toute la ligne est uniforme,
-              // peu importe si une cellule contient des heures ou non.
-              const empRgb = "247,179,44";  // jaune accent Bochica
+              // Alternance sur 2 couleurs vives qui contrastent :
+              // jaune Bochica (accent marque) et bleu Colombie. Chaque ligne
+              // est uniforme (toutes les cellules même couleur), peu importe
+              // si les heures sont saisies ou non.
+              const EMP_RGB = [
+                "247,179,44",   // jaune Bochica
+                "74,144,226"    // bleu Colombie
+              ];
+              const empRgb = EMP_RGB[rowIdx % EMP_RGB.length];
+              // toneClass conservé pour rétrocompat CSS (le sélecteur s'applique
+              // mais l'opacité est désormais identique → pas d'impact visuel)
               const toneClass = rowIdx % 2 === 0 ? "is-odd" : "is-even";
               // Section : fallback sur "service" si pas encore définie (compat employés existants)
               const empSection = row.emp.section || "service";

@@ -387,6 +387,16 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 11 mai 2026 — 2 couleurs vives qui contrastent (v3.8.8) 🟡🔵
+- **Retour à 2 couleurs distinctes** au lieu de 2 tons d'une même couleur :
+  - Lignes paires (0, 2, 4...) → **jaune Bochica** `#F7B32C` (`247,179,44`)
+  - Lignes impaires (1, 3, 5...) → **bleu Colombie** `#4a90e2` (`74,144,226`)
+- **Opacités vives** (0.45 base, 0.65 total) pour que les couleurs ressortent bien sans masquer le texte
+- **Hover** : 0.60 / 0.80 — la ligne survolée s'illumine clairement
+- **Uniformité par ligne maintenue** : toutes les cellules d'une même ligne ont exactement la même couleur, peu importe si remplie ou vide
+- **CSS simplifié** : les sélecteurs `.is-odd` / `.is-even` sont retirés (la couleur RGB est injectée directement par le JS via `--emp-rgb`)
+- Bumper `CACHE_VERSION` à `v3.8.8`
+
 ### 11 mai 2026 — Jaune plus vif, alternance plus marquée (v3.8.7) 🟨
 - Opacités du zébré employés **rehaussées** pour mieux voir la différence entre les 2 tons :
   - Ton foncé : 0.22 → **0.38**
