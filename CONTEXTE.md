@@ -387,6 +387,23 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 11 mai 2026 — Cellule employé simplifiée + tout à 28px (v3.9.1) 🔠
+- **Cellule employé simplifiée** dans la grille horaire :
+  - Avant : grip + nom + pill section (Cuisine/Service/Autre) + rôle
+  - **Après : grip + nom seulement** — interface plus épurée et plus lisible
+  - (les sections + rôles restent éditables via la modale Fiche employé, juste pas affichés dans le tableau)
+- **TOUS les chiffres et le nom de l'employé au même format** que la cellule Total : **`var(--fs-2xl)` = 28px**
+  - `.schedule-emp-name` : `fs-lg` (18) → **`fs-2xl` (28)** + `font-weight: 700`
+  - `.schedule-time` : `fs-lg` (18) → **`fs-2xl` (28)**, min-width 66 → 80px
+  - `.schedule-td--summary` (Heures/Taux/Total) : déjà à 28px
+  - `.schedule-td--total` : déjà à 28px
+  - `.schedule-tfoot-val` : `fs-xl` (22) → **`fs-2xl` (28)**
+  - `.schedule-tfoot-row td` : `fs-xl` (22) → **`fs-2xl` (28)**
+- **Grip drag&drop** : icône passée de 14px → 16px pour rester proportionné
+- **Largeur table min** : 920 → **1100 px** (la colonne employé est à 200px minimum)
+- **Mobile** : tout à `var(--fs-xl)` (22px) — taille moyenne pour rester lisible sur petit écran sans casser le scroll horizontal. Table min-width 820 → 980 px
+- Bumper `CACHE_VERSION` à `v3.9.1`
+
 ### 11 mai 2026 — Padding réduit + chiffres encore plus gros (v3.9.0) 📏
 - **Padding aggressivement réduit** dans les cases d'heures pour libérer l'espace :
   - `.schedule-table td/th` : `6px 4px` → **`3px 4px`** (vertical divisé par 2)

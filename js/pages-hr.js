@@ -197,10 +197,6 @@ function renderEmployes() {
               // toneClass conservé pour rétrocompat CSS (le sélecteur s'applique
               // mais l'opacité est désormais identique → pas d'impact visuel)
               const toneClass = rowIdx % 2 === 0 ? "is-odd" : "is-even";
-              // Section : fallback sur "service" si pas encore définie (compat employés existants)
-              const empSection = row.emp.section || "service";
-              const sectionIcon = empSection === "cuisine" ? icon("utensils", 10) : empSection === "service" ? icon("users", 10) : "";
-              const sectionLabel = empSection === "cuisine" ? "Cuisine" : empSection === "service" ? "Service" : "Autre";
               return `<tr class="schedule-emp-row ${toneClass}" data-emp-id="${row.emp.id}" style="--emp-rgb:${empRgb};--emp-color:rgb(${empRgb})"
                 ondragover="empRowDragOver(event,'${row.emp.id}')"
                 ondragleave="empRowDragLeave(event)"
@@ -208,14 +204,8 @@ function renderEmployes() {
                 ondragend="empRowDragEnd(event)">
               <td class="schedule-td--emp">
                 <div class="schedule-emp-cell">
-                  <span class="schedule-emp-grip" draggable="true" ondragstart="empRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 14)}</span>
-                  <div class="schedule-emp-info">
-                    <div class="schedule-emp-name">${esc(row.emp.name || "")}</div>
-                    <div class="schedule-emp-meta">
-                      <span class="schedule-emp-section schedule-emp-section--${empSection}">${sectionIcon}${sectionLabel}</span>
-                      ${row.emp.role ? `<span class="schedule-emp-role">${esc(row.emp.role)}</span>` : ""}
-                    </div>
-                  </div>
+                  <span class="schedule-emp-grip" draggable="true" ondragstart="empRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 16)}</span>
+                  <div class="schedule-emp-name">${esc(row.emp.name || "")}</div>
                 </div>
               </td>
               ${row.daily.map((d, k) => {
