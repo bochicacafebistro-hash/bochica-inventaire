@@ -1156,16 +1156,16 @@ tr:last-child td{border-bottom:none}
 .schedule-wrap{
   margin-bottom:var(--sp-5);
 }
-/* Colonne employé : largeur min pour accommoder le nom à 28px */
+/* Colonne employé : largeur min pour accommoder le nom à 22px */
 .schedule-td--emp,
-.schedule-th--emp{min-width:200px}
+.schedule-th--emp{min-width:170px}
 
 .schedule-table{
   width:100%;
   border-collapse:separate;
   border-spacing:0;
   font-size:var(--fs-sm);
-  min-width:1100px;
+  min-width:980px;
 }
 .schedule-table th,
 .schedule-table td{
@@ -1350,7 +1350,7 @@ tr:last-child td{border-bottom:none}
 }
 .schedule-emp-name{
   font-family:var(--font-heading);
-  font-size:var(--fs-2xl);      /* 28px — même taille que la cellule Total */
+  font-size:var(--fs-xl);       /* 22px — uniforme avec tout le tableau */
   font-weight:700;
   letter-spacing:.02em;
   color:var(--text);
@@ -1620,14 +1620,14 @@ tr:last-child td{border-bottom:none}
 /* Les règles .is-filled / hover sont dans le bloc "Coloration par employé" plus haut */
 .schedule-time{
   width:100%;
-  min-width:80px;
+  min-width:72px;
   border:none;
   background:transparent;
   font-family:var(--font-mono);
-  font-size:var(--fs-2xl);      /* 28px — même taille que la cellule Total */
+  font-size:var(--fs-xl);       /* 22px — uniforme avec tout le tableau */
   font-weight:700;              /* gras pour mieux lire les heures */
   color:var(--text);            /* noir chaud plein */
-  padding:1px 1px;              /* padding minimal pour maximiser la taille des chiffres */
+  padding:2px 1px;              /* padding minimal pour maximiser la taille des chiffres */
   line-height:1.1;              /* compact pour ne pas gaspiller d'espace vertical */
   text-align:center;
   font-variant-numeric:tabular-nums;
@@ -1648,10 +1648,10 @@ select.schedule-time{
 
 /* Colonnes résumé (Heures / Taux / Total) — chiffres bien gros et foncés */
 .schedule-td--summary{
-  width:96px;
+  width:80px;
   background:var(--surface2);
   font-family:var(--font-heading);
-  font-size:var(--fs-2xl);      /* 28px (était fs-xl = 22px) */
+  font-size:var(--fs-xl);       /* 22px — uniforme avec tout le tableau */
   font-weight:700;
   color:var(--text);
   font-variant-numeric:tabular-nums;
@@ -1663,18 +1663,18 @@ select.schedule-time{
   background:rgba(var(--accent-rgb),.18);
   color:var(--accent-text);     /* noir chaud plutôt que jaune pour meilleur contraste */
   font-weight:800;              /* extra-bold pour le total */
-  font-size:var(--fs-2xl);      /* 28px */
+  font-size:var(--fs-xl);       /* 22px */
 }
 
 /* Lignes pied de page (totaux) — chiffres bien visibles aussi */
 .schedule-tfoot-row td{
   background:var(--surface2);
   font-family:var(--font-heading);
-  font-size:var(--fs-2xl);      /* 28px — aligné sur la cellule Total */
+  font-size:var(--fs-xl);       /* 22px — uniforme */
   font-weight:700;
   color:var(--text);
   border-top:2px solid var(--border-strong);
-  padding:10px 4px;
+  padding:8px 4px;
 }
 .schedule-tfoot-label{
   text-align:left !important;
@@ -1693,7 +1693,7 @@ select.schedule-time{
 .schedule-tfoot-val{
   font-variant-numeric:tabular-nums;
   color:var(--text);
-  font-size:var(--fs-2xl);      /* 28px — aligné sur la cellule Total */
+  font-size:var(--fs-xl);       /* 22px — uniforme */
   font-weight:700;
   letter-spacing:.01em;
 }
@@ -1753,14 +1753,14 @@ select.schedule-time{
   .schedule-header{flex-direction:column;align-items:stretch}
   .schedule-nav{justify-content:space-between}
   .schedule-ratio{flex-direction:row;align-items:center;justify-content:space-between}
-  .schedule-table{font-size:13px;min-width:980px}
+  .schedule-table{font-size:13px;min-width:880px}
   .schedule-td--emp,
-  .schedule-th--emp{padding-left:var(--sp-2) !important;min-width:170px}
-  .schedule-emp-name{font-size:var(--fs-xl)}
-  .schedule-td--summary{font-size:var(--fs-xl);width:84px;font-weight:700}
-  .schedule-time{font-size:var(--fs-xl);font-weight:700;padding:1px;line-height:1.1}
-  .schedule-tfoot-val{font-size:var(--fs-xl)}
-  .schedule-tfoot-row td{font-size:var(--fs-xl)}
+  .schedule-th--emp{padding-left:var(--sp-2) !important;min-width:140px}
+  .schedule-emp-name{font-size:var(--fs-lg)}
+  .schedule-td--summary{font-size:var(--fs-lg);width:72px;font-weight:700}
+  .schedule-time{font-size:var(--fs-lg);font-weight:700;padding:2px 1px;line-height:1.1;min-width:64px}
+  .schedule-tfoot-val{font-size:var(--fs-lg)}
+  .schedule-tfoot-row td{font-size:var(--fs-lg)}
 }
 
 .task-col{

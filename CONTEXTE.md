@@ -387,6 +387,18 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 11 mai 2026 — Tailles redescendues à 22px (28px coupait les heures) (v3.9.2) 📐
+- 28px était trop gros : les heures « HH:MM » étaient coupées en « 11:0 » dans les cellules entrée/sortie
+- **Tout redescendu à `var(--fs-xl)` (22px)** uniformément :
+  - Nom employé, heures entrée/sortie (selects), Heures/Taux/Total, totaux footer — toutes au même format **22px**
+- Largeurs ajustées en conséquence :
+  - Colonne employé : 200 → **170 px**
+  - Min-width select heure : 80 → **72 px** (juste assez pour « 22:00 » à 22px mono)
+  - Largeur colonne summary : 96 → **80 px**
+  - Table min-width : 1100 → **980 px**
+- Mobile : tout à `var(--fs-lg)` (18px) avec colonnes proportionnellement réduites
+- Bumper `CACHE_VERSION` à `v3.9.2`
+
 ### 11 mai 2026 — Cellule employé simplifiée + tout à 28px (v3.9.1) 🔠
 - **Cellule employé simplifiée** dans la grille horaire :
   - Avant : grip + nom + pill section (Cuisine/Service/Autre) + rôle
