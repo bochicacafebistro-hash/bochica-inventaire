@@ -20,6 +20,7 @@ function buildSidebar() {
     { icon: "file-text", label: t("nav_recipes"), page: "recettes" },
     { icon: "cart", label: "Liste d'ingrédients", page: "shopping" },
     { icon: "calendar", label: "Événements", page: "evenements" },
+    { icon: "receipt", label: "Soumissions", page: "soumissions" },
     { section: t("nav_section_management") },
     { icon: "store", label: t("nav_suppliers"), page: "fournisseurs" },
   ];
@@ -138,6 +139,7 @@ function renderPage() {
     recettes:    { label: t("nav_recipes"),     icon: "file-text" },
     shopping:    { label: "Liste d'ingrédients", icon: "cart" },
     evenements:  { label: "Événements",         icon: "calendar" },
+    soumissions: { label: "Soumissions",        icon: "receipt" },
     fournisseurs:{ label: t("nav_suppliers"),   icon: "store" },
     rapport:     { label: t("nav_to_order"),    icon: "cart" }
   };
@@ -194,6 +196,7 @@ function renderPage() {
   else if (activePage === "recettes") pc.innerHTML = renderRecettes();
   else if (activePage === "shopping") pc.innerHTML = renderShoppingList();
   else if (activePage === "evenements") pc.innerHTML = renderEvents();
+  else if (activePage === "soumissions") pc.innerHTML = renderQuotes();
   else if (activePage === "fournisseurs") pc.innerHTML = renderFournisseurs();
   else pc.innerHTML = `<div class="page"><div class="empty">Page introuvable.</div></div>`;
 }

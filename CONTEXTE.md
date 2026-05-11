@@ -1,6 +1,6 @@
 # 📋 CONTEXTE — Projet Bochica Inventaire
 
-> ⚠️ **Dernière mise à jour : 11 mai 2026** — page **Événements** (v3.7.1) : calendrier mensuel (grille), vue « Ce mois-ci », vue « À venir (30 j) », filtres par type (6 types : réservation privée, soirée karaoké, soirée spectacle, événement hors Bochica, journée fériée, événement interne), recherche texte, statuts (confirmé / en attente / annulé), capacité + contact + notes par événement. Widget « Prochains événements » ajouté au dashboard admin. Accès Admin + Chef.
+> ⚠️ **Dernière mise à jour : 11 mai 2026** — nouvelle page **Soumissions** (v3.8.0) : devis pour clients avec génération PDF style Bochica (logo + tricolore + cartes forfait colorées, calqué sur Menu_Forfaits.pdf). Forfaits éditables via modale dédiée (« Gérer les forfaits »). 5 statuts (brouillon / envoyée / acceptée / refusée / expirée), suivi dépôt, lignes personnalisées (suppléments / rabais), date de validité, snapshot du forfait au moment du devis. Accès Admin seulement (chef en lecture sur les forfaits).
 
 ## 🏠 Description
 Application web de **gestion interne** pour le restaurant colombien Bochica.
@@ -59,6 +59,7 @@ bochica-inventaire/
 │   ├── pages-kitchen.js    ← Menu, fournisseurs, ingrédients, recettes
 │   ├── pages-shopping.js   ← Liste d'ingrédients (commandes par fournisseur)
 │   ├── pages-events.js     ← Événements / calendrier (réservations, soirées, etc.)
+│   ├── pages-quotes.js     ← Soumissions (devis clients + génération PDF jsPDF)
 │   ├── pages-dashboard.js  ← Dashboard, taxes, helpers taxes, autoApplyFixedExpenses
 │   ├── sidebar.js          ← Navigation, sidebar, renderPage(), goHome()
 │   ├── auth.js             ← Firebase Auth, login/logout, session, rôles
@@ -88,6 +89,7 @@ bochica-inventaire/
 <script src="js/pages-kitchen.js"></script>
 <script src="js/pages-shopping.js"></script>
 <script src="js/pages-events.js"></script>
+<script src="js/pages-quotes.js"></script>
 <script src="js/pages-dashboard.js"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/auth.js"></script>
@@ -110,6 +112,11 @@ bochica-inventaire/
   - `events` — **événements / calendrier** (réservations, karaoké, spectacles, hors-site, fériés, internes) :
     - Champs : `id`, `name`, `date` (ISO YYYY-MM-DD), `time` (HH:MM, optionnel), `type` (∈ `reservation`/`karaoke`/`spectacle`/`hors_bochica`/`ferie`/`interne`), `status` (∈ `confirme`/`attente`/`annule`), `capacity`, `contactName`, `contactPhone`, `contactEmail`, `notes`, `createdAt`, `updatedAt`
     - Accès : admin + chef
+  - `quotes` — **soumissions** (devis pour clients) — admin uniquement :
+    - Champs : `id`, `quoteNumber` (YYYY-NNN), `clientName`, `clientCompany`, `clientPhone`, `clientEmail`, `eventDate`, `eventTime`, `eventVenue` (∈ `bochica`/`client`/`autre`), `eventAddress`, `guestCount`, `packageId`, `packageSnapshot` (copie figée du forfait), `beerAddon`, `customLines[]` ({description, amount}), `depositAmount`, `depositPaid`, `validUntil`, `notes`, `status` (∈ `brouillon`/`envoyee`/`acceptee`/`refusee`/`expiree`), `createdAt`, `updatedAt`, `createdBy`
+  - `quoteTemplates` — **forfaits par défaut** (base des soumissions) — admin écriture, admin+chef lecture :
+    - Champs : `id`, `name`, `label`, `pricePerPerson`, `accentColor` (∈ `yellow`/`red`/`blue`/`green`), `entree`, `plat`, `boisson`, `beerPrice`, `sortOrder`
+    - Seed automatique au 1er lancement (Essentiel 22$ + Gourmand 27$) via `DEFAULT_QUOTE_TEMPLATES` dans `config.js`
   - `payroll` — paie hebdomadaire (un doc par semaine ISO `YYYY-Www`) :
     - `weekId`, `weekStart`, `totalTips`, `serviceHours` `{dk: {start,end}}`, `actualShifts` `{empId: {dk: {start,end}}}`, `notes`, `createdAt`/`updatedAt`
     - Indépendant des shifts planifiés dans `employees[id].shifts` — permet de saisir l'horaire **réel** sans toucher au planning
@@ -243,6 +250,36 @@ bochica-inventaire/
 - Séparés des produits d'inventaire
 - Coût par unité utilisé pour calculer le food cost des items du menu
 
+### 🧾 Soumissions (devis avec génération PDF)
+- Page **Soumissions** (admin seulement) sous Événements
+- **CRUD complet** : créer, modifier, dupliquer, supprimer une soumission
+- **Numérotation auto** : format `YYYY-NNN` (ex. `2026-001`) calculé à partir des soumissions existantes
+- **Champs client** : nom, entreprise, téléphone, courriel
+- **Champs événement** : date, heure, lieu (Bochica / chez le client / autre), adresse, nombre de personnes
+- **Choix de forfait** : cartes radio interactives (couleur d'accent visible) → sélection d'un des forfaits configurés
+- **Add-on bière** : toggle qui ajoute le prix bière du forfait × nombre de personnes
+- **Lignes personnalisées** : ajout dynamique de suppléments (ex. « Décor 100$ ») ou rabais (montants négatifs)
+- **Dépôt** : montant exigé + case « déjà versé », solde calculé automatiquement
+- **Date de validité** : par défaut +30 jours, affichée sur le PDF
+- **5 statuts** : Brouillon · Envoyée · Acceptée · Refusée · Expirée — changement rapide via dropdown ⋯
+- **Snapshot du forfait** : copie figée des données du forfait au moment de la création (les PDF anciens restent corrects même si on modifie un template par la suite)
+- **Génération PDF (jsPDF)** : design fidèle à `Menu_Forfaits.pdf` :
+  - Logo BOCHICA + sous-titre « Restaurant Colombien » + tricolore jaune/bleu/rouge
+  - Titre « Soumission » + numéro centré
+  - Bloc Client + Bloc Événement (2 colonnes, fond crème)
+  - Carte forfait avec barre latérale colorée (selon `accentColor`), prix en rouge, séparateur pointillé, bullets bleus pour Entrée / Plat / Boisson
+  - Section bière sur fond jaune si activée
+  - Liste des suppléments (rabais en vert)
+  - Sous-total → TPS 5% → TVQ 9,975% → TOTAL en gras
+  - Si dépôt : ligne « Dépôt versé/exigé » + « Solde à payer »
+  - Notes + footer « Soumission valide jusqu'au … »
+  - Nom de fichier : `Bochica_Soumission_{numéro}_{client}.pdf`
+- **Forfaits éditables** : modale « Gérer les forfaits » accessible via toolbar
+  - Modifier nom, étiquette, prix/personne, couleur d'accent (jaune/rouge/bleu/vert), contenu (entrée/plat/boisson), prix bière
+  - Ajouter de nouveaux forfaits (illimité)
+  - Supprimer un forfait (avertissement si des soumissions l'utilisent)
+- **Seed automatique** : au premier lancement, 2 forfaits par défaut sont créés (L'Essentiel 22$ avec accent jaune, Le Gourmand 27$ avec accent rouge) — calqués sur le PDF original
+
 ### 📅 Événements (calendrier)
 - Page **Événements** sous Liste d'ingrédients
 - **3 vues** : Calendrier mensuel (grille 7×6), Ce mois-ci (liste), À venir (30 jours)
@@ -349,6 +386,39 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 11 mai 2026 — Soumissions + génération PDF (v3.8.0) 🧾📄
+- Nouvelle page **Soumissions** (admin seulement) avec CRUD complet sur les devis clients
+- Nouveau module `js/pages-quotes.js` (~570 lignes) :
+  - `renderQuotes()` — liste des soumissions avec onglets statut + recherche
+  - `renderQuoteCards()` — cartes avec n° soumission, total, client, événement, actions
+  - `openQuoteModal()` / `saveQuote()` — formulaire complet (client / événement / forfait radio / lignes custom / dépôt / validité / statut)
+  - `openQuoteTemplatesModal()` — gestion des forfaits éditables (ajouter / modifier / supprimer)
+  - `generateQuotePDF()` — génération PDF jsPDF style Bochica (~200 lignes de dessin)
+  - `computeQuoteTotal()` — calcul sous-total + TPS + TVQ + dépôt + solde
+  - `generateQuoteNumber()` — numérotation auto YYYY-NNN
+  - Helpers : `tQuoteStatus()`, `tQuoteVenue()`, `quoteAccentHex()`, `seedQuoteTemplates()`
+- **Nouvelle collection `quotes`** (admin only) + **`quoteTemplates`** (admin write + chef read)
+- **Seed automatique** : `DEFAULT_QUOTE_TEMPLATES` dans `config.js` → 2 forfaits créés au 1er lancement (L'Essentiel 22$ jaune, Le Gourmand 27$ rouge, bière +7$) — calqués sur `Menu_Forfaits.pdf`
+- **Snapshot du forfait** : chaque soumission enregistre une copie figée du forfait → modifier un template ne casse pas les anciennes soumissions/PDF
+- **Génération PDF (jsPDF)** : reproduction fidèle du style Menu_Forfaits.pdf
+  - Logo BOCHICA + sous-titre + tricolore jaune/bleu/rouge centré
+  - Titre Soumission + n°
+  - 2 blocs info (Client + Événement) côte à côte sur fond crème
+  - Carte forfait avec barre latérale colorée selon `accentColor`, prix par personne en rouge, séparateur pointillé, bullets bleus
+  - Section bière en jaune si activée
+  - Lignes custom (rabais en vert)
+  - Calcul détaillé sous-total → taxes → total → dépôt → solde
+  - Footer « Soumission valide jusqu'au … »
+- **5 statuts** : brouillon (gris) · envoyée (bleu) · acceptée (vert) · refusée (rouge, atténué) · expirée (ambre, atténué)
+- **Numérotation YYYY-NNN** calculée à partir des soumissions existantes de l'année
+- **Lignes personnalisées dynamiques** : ajout/retrait à la volée, support montants négatifs (rabais)
+- **Règles Firestore** : `match /quotes/{doc=**}` admin only, `match /quoteTemplates/{doc=**}` admin write + chef read
+- **Permissions** : ajout de `"soumissions"` à `ROLE_PERMISSIONS.global_admin` seulement
+- **Sidebar** : nouvel item « Soumissions » sous Événements (icône `receipt`)
+- **Duplication** intégrée à `DUPLICATE_CONFIG` (collection `quotes`)
+- **CSS** : ~360 lignes ajoutées (`.quote-tabs`, `.quote-card`, `.quote-status-pill--{status}`, `.quote-package-card--{color}`, `.quote-tpl-editor`, etc.) — dark mode adapté, responsive mobile
+- Bumper `CACHE_VERSION` à `v3.8.0` + ajout de `pages-quotes.js` à l'app shell
 
 ### 11 mai 2026 — Types d'événements étendus (v3.7.1) 🎤🎵
 - **`EVENT_TYPES` passe de 4 à 6 valeurs** : `reservation`, `karaoke`, `spectacle`, `hors_bochica`, `ferie`, `interne`

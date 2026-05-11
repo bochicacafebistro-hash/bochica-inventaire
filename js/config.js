@@ -30,9 +30,9 @@ const AUTH_DISPLAY_NAMES = {
 const ROLE_PERMISSIONS = {
   global_admin: {
     canAccess: ["dashboard", "inventaire", "rapport", "historique", "taches", "employes", "salaires",
-                "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "fournisseurs"],
+                "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "fournisseurs"],
     canWrite: ["dashboard", "inventaire", "rapport", "historique", "taches", "employes", "salaires",
-               "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "fournisseurs"],
+               "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "fournisseurs"],
     homePage: "dashboard"
   },
   chef: {
@@ -67,6 +67,36 @@ const EXPENSE_CATS = [
 ];
 const TPS_RATE = 0.05;
 const TVQ_RATE = 0.09975;
+
+// ── Forfaits par défaut (Soumissions) ─────────────────
+// Utilisés au premier chargement (seed). Une fois en base, ils sont
+// modifiables via la modale « Gérer les forfaits ».
+const DEFAULT_QUOTE_TEMPLATES = [
+  {
+    id: "forfait-essentiel",
+    name: "L'Essentiel",
+    label: "Forfait Un",
+    pricePerPerson: 22,
+    accentColor: "yellow",
+    entree:  "1 empanada au bœuf ou au poulet par personne",
+    plat:    "Arepa classique ou végé",
+    boisson: "Une boisson gazeuse colombienne ou autre",
+    beerPrice: 7,
+    sortOrder: 0
+  },
+  {
+    id: "forfait-gourmand",
+    name: "Le Gourmand",
+    label: "Forfait Deux",
+    pricePerPerson: 27,
+    accentColor: "red",
+    entree:  "1 empanada au bœuf ou au poulet par personne",
+    plat:    "Bol Bogota, Bol Medellin, Bol végé, Salchipapas ou Bochica Burger",
+    boisson: "Une boisson gazeuse colombienne ou autre",
+    beerPrice: 7,
+    sortOrder: 1
+  }
+];
 
 const SHIFT_TYPES = [
   { label: "Matin",   color: "#3b82f6" },

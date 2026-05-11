@@ -71,6 +71,28 @@ db.collection("events").onSnapshot(snap => {
   if (isLoggedIn && (activePage === "evenements" || activePage === "dashboard")) renderPage();
 });
 
+// Soumissions (admin only — devis pour clients)
+db.collection("quotes").onSnapshot(snap => {
+  quotes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+  if (isLoggedIn && activePage === "soumissions") renderPage();
+}, err => {
+  // Le chef n'a pas accès à /quotes → on ignore silencieusement la perm denied
+  if (err && err.code !== "permission-denied") console.warn("listener quotes:", err);
+});
+
+// Templates de forfaits (admin + chef — base des soumissions)
+db.collection("quoteTemplates").onSnapshot(snap => {
+  quoteTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
+  // Seed des templates par défaut au premier lancement si la collection est vide
+  // Seul l'admin a les droits d'écriture (les règles le bloqueront sinon)
+  if (snap.empty && isAdmin && typeof seedQuoteTemplates === "function") {
+    seedQuoteTemplates();
+  }
+  if (isLoggedIn && activePage === "soumissions") renderPage();
+});
+
 db.collection("expenses").orderBy("date", "desc").limit(500).onSnapshot(snap => {
   expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (isLoggedIn && activePage === "depenses") renderPage();

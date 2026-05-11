@@ -109,6 +109,20 @@ service cloud.firestore {
       allow write: if isChefOrAdmin();
     }
 
+    // ── /quotes : soumissions / devis pour clients ──
+    // Données financières + contacts clients — admin uniquement
+    match /quotes/{doc=**} {
+      allow read, write: if isAdmin();
+    }
+
+    // ── /quoteTemplates : forfaits par défaut (offres tarifaires) ──
+    // Lecture admin + chef (le chef peut voir les forfaits offerts),
+    // écriture admin uniquement
+    match /quoteTemplates/{doc=**} {
+      allow read:  if isChefOrAdmin();
+      allow write: if isAdmin();
+    }
+
     // ── /payroll : salaires + pourboires hebdomadaires (admin seul) ──
     // Un doc par semaine ISO (ex: "2026-W18") avec heures réelles, fenêtres
     // de service, total pourboires.

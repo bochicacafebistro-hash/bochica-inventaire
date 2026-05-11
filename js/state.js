@@ -25,6 +25,24 @@ let eventsFilterType = "all";           // "all" | "reservation" | "karaoke" | "
 let eventsCalendarOffset = 0;           // 0 = mois courant, -1 = précédent, +1 = suivant
 let eventsSearchQuery = "";             // recherche texte (nom, contact, notes)
 
+// Soumissions (devis pour clients) — admin uniquement
+// Chaque soumission : { id, quoteNumber ("2026-001"), clientName, clientPhone, clientEmail, clientCompany,
+//                       eventDate, eventTime, eventVenue ("bochica"/"client"/"autre"), eventAddress, guestCount,
+//                       packageId (ref vers quoteTemplates), packageSnapshot (copie figée du forfait au moment du devis),
+//                       beerAddon (bool), customLines[] (liste de {description, amount}),
+//                       depositAmount, depositPaid, depositPaidDate, validUntil (YYYY-MM-DD),
+//                       notes, status ("brouillon"/"envoyee"/"acceptee"/"refusee"/"expiree"), createdAt, updatedAt }
+let quotes = [];
+let quotesFilterStatus = "all";          // "all" | "brouillon" | "envoyee" | "acceptee" | "refusee" | "expiree"
+let quotesSearchQuery = "";              // recherche (numéro, nom client, contact)
+
+// Templates de forfaits (offres tarifaires) — sert de base pour les soumissions
+// Chaque template : { id, name ("L'Essentiel"), label ("Forfait Un"), pricePerPerson, accentColor ("yellow"/"red"/"blue"/"green"),
+//                     entree (texte), plat (texte), boisson (texte), sortOrder, beerPrice }
+// beerPrice : prix de l'add-on bière commun à tous les forfaits (stocké dans chaque template pour simplicité,
+//             le 1er template fait foi à l'affichage)
+let quoteTemplates = [];
+
 let isAdmin = false, isLoggedIn = false, darkMode = false;
 let userRole = null; // "global_admin" | "chef" | "employee" | null
 let loggedInUser = null; // { id, name, role } pour traçabilité

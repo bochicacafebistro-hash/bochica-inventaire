@@ -352,7 +352,8 @@ const DUPLICATE_CONFIG = {
   expenses:     { editor: "openExpenseModal",    getState: () => expenses,     nameInput: "ex-desc" },
   revenues:     { editor: "openRevenueModal",    getState: () => revenues,     nameInput: "rv-desc" },
   shoppingList: { editor: "openShoppingModal",   getState: () => shoppingList, nameInput: "shop-name" },
-  events:       { editor: "openEventModal",      getState: () => events,       nameInput: "ev-name" }
+  events:       { editor: "openEventModal",      getState: () => events,       nameInput: "ev-name" },
+  quotes:       { editor: "openQuoteModal",      getState: () => quotes,       nameInput: "q-client-name" }
 };
 
 // Attend que le listener Firestore ait propagé le nouvel item dans le state local
