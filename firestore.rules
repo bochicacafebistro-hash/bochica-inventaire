@@ -101,6 +101,14 @@ service cloud.firestore {
       allow write: if isChefOrAdmin();
     }
 
+    // ── /events : événements du calendrier ──
+    // Réservations privées, soirées spéciales, jours fériés, événements internes
+    // (nom, date, heure, type, statut, capacité, contact, notes) — accès admin + chef
+    match /events/{doc=**} {
+      allow read:  if isAuthed();
+      allow write: if isChefOrAdmin();
+    }
+
     // ── /payroll : salaires + pourboires hebdomadaires (admin seul) ──
     // Un doc par semaine ISO (ex: "2026-W18") avec heures réelles, fenêtres
     // de service, total pourboires.

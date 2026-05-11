@@ -63,6 +63,14 @@ db.collection("shoppingList").onSnapshot(snap => {
   if (isLoggedIn && activePage === "shopping") renderPage();
 });
 
+// Événements (calendrier — réservations, soirées spéciales, jours fériés, internes)
+// Re-render aussi le dashboard car il affiche le widget "Prochains événements".
+db.collection("events").onSnapshot(snap => {
+  events = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  if (isLoggedIn && (activePage === "evenements" || activePage === "dashboard")) renderPage();
+});
+
 db.collection("expenses").orderBy("date", "desc").limit(500).onSnapshot(snap => {
   expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (isLoggedIn && activePage === "depenses") renderPage();

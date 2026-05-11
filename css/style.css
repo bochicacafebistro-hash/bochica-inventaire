@@ -4892,3 +4892,507 @@ textarea.md-input{
   .shopping-search-wrap{max-width:100%}
   .shopping-section__title{font-size:20px}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   ÉVÉNEMENTS — Calendrier, listes, pills par type/statut
+   ───────────────────────────────────────────────────────────────
+   Palette par type :
+   - reservation → bleu  #4a90e2  (drapeau Colombie)
+   - special     → jaune #F7B32C  (accent Bochica)
+   - ferie       → rouge #e74c3c  (drapeau Colombie)
+   - interne     → vert  #7dbf66
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Tokens couleurs événements ─────────────────────── */
+:root{
+  --ev-reservation: #4a90e2;
+  --ev-reservation-soft: rgba(74,144,226,.12);
+  --ev-special: #F7B32C;
+  --ev-special-soft: rgba(247,179,44,.15);
+  --ev-ferie: #e74c3c;
+  --ev-ferie-soft: rgba(231,76,60,.12);
+  --ev-interne: #7dbf66;
+  --ev-interne-soft: rgba(125,191,102,.15);
+}
+.dark{
+  --ev-reservation-soft: rgba(74,144,226,.2);
+  --ev-special-soft: rgba(247,179,44,.22);
+  --ev-ferie-soft: rgba(231,76,60,.22);
+  --ev-interne-soft: rgba(125,191,102,.22);
+}
+
+/* ─── Switcher de vue (Calendrier / Mois / À venir) ──── */
+.ev-views{
+  display:flex;
+  gap:4px;
+  margin-bottom:var(--sp-3);
+  padding:4px;
+  background:var(--surface2);
+  border-radius:var(--radius-pill);
+  width:fit-content;
+}
+.ev-view-btn{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:8px 14px;
+  border:none;
+  background:transparent;
+  color:var(--text2);
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  font-weight:600;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  transition:var(--transition-fast);
+  white-space:nowrap;
+}
+.ev-view-btn:hover{color:var(--text);background:rgba(14,13,12,.05)}
+.dark .ev-view-btn:hover{background:rgba(245,241,232,.06)}
+.ev-view-btn.is-active{
+  background:var(--accent);
+  color:var(--accent-text);
+  box-shadow:0 1px 4px rgba(var(--accent-rgb),.3);
+}
+
+/* ─── Barre filtres types + recherche ─────────────────── */
+.ev-filters{
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--sp-3);
+  margin-bottom:var(--sp-4);
+  align-items:center;
+}
+.ev-type-tabs{
+  display:flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.ev-type-tab{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:7px 12px;
+  border:1px solid var(--border-strong);
+  background:var(--surface);
+  color:var(--text2);
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  font-weight:600;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  transition:var(--transition-fast);
+}
+.ev-type-tab:hover{color:var(--text);border-color:var(--accent)}
+.ev-type-tab.is-active{
+  background:var(--accent);
+  color:var(--accent-text);
+  border-color:var(--accent);
+}
+.ev-type-tab--reservation.is-active{background:var(--ev-reservation);color:#fff;border-color:var(--ev-reservation)}
+.ev-type-tab--special.is-active{background:var(--ev-special);color:var(--accent-text);border-color:var(--ev-special)}
+.ev-type-tab--ferie.is-active{background:var(--ev-ferie);color:#fff;border-color:var(--ev-ferie)}
+.ev-type-tab--interne.is-active{background:var(--ev-interne);color:#fff;border-color:var(--ev-interne)}
+.ev-type-count{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:18px;
+  height:18px;
+  padding:0 6px;
+  background:rgba(14,13,12,.08);
+  font-size:10px;
+  font-weight:700;
+  border-radius:var(--radius-pill);
+}
+.ev-type-tab.is-active .ev-type-count{background:rgba(255,255,255,.25)}
+.dark .ev-type-count{background:rgba(245,241,232,.1)}
+
+.ev-search-wrap{
+  position:relative;
+  display:flex;
+  align-items:center;
+  flex:1;
+  min-width:240px;
+  max-width:400px;
+}
+.ev-search-icon{
+  position:absolute;
+  left:12px;
+  color:var(--text3);
+  pointer-events:none;
+  display:inline-flex;
+}
+.ev-search-wrap input{
+  width:100%;
+  padding:9px 36px 9px 36px;
+  background:var(--surface);
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-md);
+  font-family:var(--font-body);
+  font-size:var(--fs-base);
+  color:var(--text);
+  transition:var(--transition-fast);
+}
+.ev-search-wrap input:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(var(--accent-rgb),.15);
+}
+.ev-search-clear{
+  position:absolute;
+  right:8px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:24px;
+  height:24px;
+  border:none;
+  background:transparent;
+  color:var(--text3);
+  border-radius:var(--radius-full);
+  cursor:pointer;
+}
+.ev-search-clear:hover{background:var(--surface2);color:var(--text)}
+
+/* ─── Calendrier mensuel (grille) ─────────────────────── */
+.ev-calendar{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  overflow:hidden;
+}
+.ev-calendar__head{
+  display:flex;
+  align-items:center;
+  gap:var(--sp-3);
+  padding:var(--sp-3) var(--sp-4);
+  background:var(--surface2);
+  border-bottom:1px solid var(--border);
+}
+.ev-calendar__title{
+  font-family:var(--font-heading);
+  font-size:24px;
+  letter-spacing:.02em;
+  margin:0;
+  flex:1;
+  text-align:center;
+}
+.ev-cal-nav{
+  border:1px solid var(--border-strong);
+  color:var(--text2);
+}
+.ev-cal-today{
+  font-size:12px;
+  padding:5px 10px;
+}
+.ev-calendar__dow{
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+  background:var(--surface3);
+  border-bottom:1px solid var(--border);
+}
+.ev-calendar__dow-cell{
+  padding:8px 4px;
+  text-align:center;
+  font-family:var(--font-mono);
+  font-size:11px;
+  font-weight:600;
+  color:var(--text2);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+}
+.ev-calendar__grid{
+  display:grid;
+  grid-template-columns:repeat(7, 1fr);
+  grid-auto-rows:minmax(95px, auto);
+}
+.ev-calendar__cell{
+  border-right:1px solid var(--border);
+  border-bottom:1px solid var(--border);
+  padding:6px;
+  background:var(--surface);
+  cursor:pointer;
+  transition:background var(--transition-fast);
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  min-height:95px;
+}
+.ev-calendar__cell:nth-child(7n){border-right:none}
+.ev-calendar__cell:hover{background:var(--surface2)}
+.ev-calendar__cell.is-other-month{
+  background:var(--surface2);
+  opacity:.55;
+}
+.ev-calendar__cell.is-today{
+  background:rgba(var(--accent-rgb),.08);
+  box-shadow:inset 0 0 0 2px var(--accent);
+}
+.ev-calendar__cell.is-today .ev-calendar__day-num{
+  color:var(--accent-text);
+  background:var(--accent);
+  border-radius:var(--radius-full);
+  width:24px;
+  height:24px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-weight:700;
+}
+.ev-calendar__cell:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:-2px;
+}
+.ev-calendar__day-num{
+  font-family:var(--font-mono);
+  font-size:12px;
+  font-weight:600;
+  color:var(--text2);
+  align-self:flex-start;
+}
+.ev-calendar__day-list{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  min-width:0;
+}
+.ev-cal-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:2px 6px;
+  border:none;
+  border-radius:var(--radius-sm);
+  font-family:var(--font-body);
+  font-size:10px;
+  font-weight:600;
+  text-align:left;
+  cursor:pointer;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  min-width:0;
+  transition:var(--transition-fast);
+}
+.ev-cal-pill__time{font-family:var(--font-mono);font-weight:700;opacity:.85}
+.ev-cal-pill__name{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  flex:1;
+  min-width:0;
+}
+.ev-cal-pill:hover{filter:brightness(.92)}
+.ev-cal-pill--reservation{background:var(--ev-reservation-soft);color:var(--ev-reservation);border-left:3px solid var(--ev-reservation)}
+.ev-cal-pill--special{background:var(--ev-special-soft);color:#8a6a1a;border-left:3px solid var(--ev-special)}
+.dark .ev-cal-pill--special{color:var(--ev-special)}
+.ev-cal-pill--ferie{background:var(--ev-ferie-soft);color:var(--ev-ferie);border-left:3px solid var(--ev-ferie)}
+.ev-cal-pill--interne{background:var(--ev-interne-soft);color:#3e6b34;border-left:3px solid var(--ev-interne)}
+.dark .ev-cal-pill--interne{color:var(--ev-interne)}
+.ev-cal-pill--status-attente{opacity:.7;font-style:italic}
+.ev-cal-pill--status-annule{text-decoration:line-through;opacity:.5}
+.ev-cal-more{
+  font-size:10px;
+  color:var(--text3);
+  padding:1px 6px;
+  font-weight:600;
+}
+
+/* ─── Légende ────────────────────────────────────────── */
+.ev-calendar__legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:var(--sp-4);
+  padding:var(--sp-3) var(--sp-4);
+  background:var(--surface2);
+  border-top:1px solid var(--border);
+}
+.ev-legend-item{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:11px;
+  color:var(--text2);
+  font-weight:600;
+}
+.ev-legend-dot{
+  width:12px;
+  height:12px;
+  border-radius:var(--radius-sm);
+}
+.ev-legend-dot--reservation{background:var(--ev-reservation)}
+.ev-legend-dot--special{background:var(--ev-special)}
+.ev-legend-dot--ferie{background:var(--ev-ferie)}
+.ev-legend-dot--interne{background:var(--ev-interne)}
+
+/* ─── Vue Mois / À venir : cartes événements ─────────── */
+.ev-upcoming__head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--sp-3);
+  margin-bottom:var(--sp-3);
+}
+.ev-upcoming__count{
+  font-family:var(--font-mono);
+  font-size:12px;
+  color:var(--text3);
+  font-weight:600;
+}
+.ev-card-list{
+  display:flex;
+  flex-direction:column;
+  gap:var(--sp-3);
+}
+.ev-card{
+  display:grid;
+  grid-template-columns:80px 1fr auto;
+  gap:var(--sp-3);
+  align-items:flex-start;
+  padding:var(--sp-3);
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:4px solid var(--text3);
+  border-radius:var(--radius-md);
+  transition:var(--transition-fast);
+}
+.ev-card:hover{box-shadow:var(--shadow-sm)}
+.ev-card--reservation{border-left-color:var(--ev-reservation)}
+.ev-card--special{border-left-color:var(--ev-special)}
+.ev-card--ferie{border-left-color:var(--ev-ferie)}
+.ev-card--interne{border-left-color:var(--ev-interne)}
+.ev-card.is-past{opacity:.65}
+.ev-card.is-cancelled .ev-card__name{text-decoration:line-through;color:var(--text3)}
+
+.ev-card__date{
+  text-align:center;
+  padding:6px 4px;
+  background:var(--surface2);
+  border-radius:var(--radius-sm);
+  min-width:72px;
+}
+.ev-card__date-day{
+  font-family:var(--font-heading);
+  font-size:28px;
+  line-height:1;
+  color:var(--text);
+}
+.ev-card__date-mon{
+  font-family:var(--font-mono);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text2);
+  margin-top:2px;
+}
+.ev-card__date-rel{
+  font-size:10px;
+  color:var(--text3);
+  margin-top:4px;
+  font-weight:600;
+}
+.ev-card__body{min-width:0;flex:1}
+.ev-card__head-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  margin-bottom:6px;
+}
+.ev-card__name{
+  font-family:var(--font-body);
+  font-size:15px;
+  font-weight:700;
+  margin:0;
+  flex:1;
+  min-width:0;
+  word-break:break-word;
+}
+.ev-card__pills{
+  display:inline-flex;
+  flex-wrap:wrap;
+  gap:6px;
+}
+.ev-card__meta{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px 14px;
+  font-size:12px;
+  color:var(--text2);
+  margin-top:4px;
+}
+.ev-card__meta-item{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+}
+.ev-card__notes{
+  margin-top:6px;
+  font-size:12px;
+  color:var(--text3);
+  font-style:italic;
+  line-height:1.4;
+  white-space:pre-line;
+  word-break:break-word;
+}
+.ev-card__actions{align-self:flex-start}
+
+/* ─── Pills type & statut ────────────────────────────── */
+.ev-type-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  padding:2px 8px;
+  border-radius:var(--radius-pill);
+  font-family:var(--font-body);
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.ev-type-pill--reservation{background:var(--ev-reservation-soft);color:var(--ev-reservation)}
+.ev-type-pill--special{background:var(--ev-special-soft);color:#8a6a1a}
+.dark .ev-type-pill--special{color:var(--ev-special)}
+.ev-type-pill--ferie{background:var(--ev-ferie-soft);color:var(--ev-ferie)}
+.ev-type-pill--interne{background:var(--ev-interne-soft);color:#3e6b34}
+.dark .ev-type-pill--interne{color:var(--ev-interne)}
+
+.ev-status-pill{
+  display:inline-flex;
+  align-items:center;
+  padding:2px 8px;
+  border-radius:var(--radius-pill);
+  font-family:var(--font-body);
+  font-size:10px;
+  font-weight:700;
+  border:1px solid;
+}
+.ev-status-pill--confirme{background:rgba(125,191,102,.12);color:#3e6b34;border-color:rgba(125,191,102,.5)}
+.dark .ev-status-pill--confirme{color:#a3d49c;border-color:rgba(125,191,102,.4)}
+.ev-status-pill--attente{background:rgba(180,83,9,.1);color:#b45309;border-color:rgba(180,83,9,.4)}
+.dark .ev-status-pill--attente{color:#fbbf24;border-color:rgba(251,191,36,.4)}
+.ev-status-pill--annule{background:rgba(217,83,79,.1);color:#d9534f;border-color:rgba(217,83,79,.4)}
+.dark .ev-status-pill--annule{color:#fca5a5;border-color:rgba(252,165,165,.4)}
+
+/* ─── Responsive mobile ──────────────────────────────── */
+@media (max-width:768px){
+  .ev-calendar__grid{grid-auto-rows:minmax(70px, auto)}
+  .ev-calendar__cell{padding:3px;min-height:70px}
+  .ev-cal-pill{font-size:9px;padding:1px 4px}
+  .ev-cal-pill__time{display:none}
+  .ev-calendar__title{font-size:20px}
+}
+@media (max-width:640px){
+  .ev-views{width:100%;justify-content:flex-start;overflow-x:auto}
+  .ev-view-btn{padding:7px 11px;font-size:12px}
+  .ev-filters{flex-direction:column;align-items:stretch}
+  .ev-type-tabs{overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+  .ev-search-wrap{max-width:100%}
+  .ev-calendar__grid{grid-auto-rows:minmax(58px, auto)}
+  .ev-calendar__cell{min-height:58px}
+  .ev-cal-pill__name{font-size:8px}
+  .ev-card{grid-template-columns:64px 1fr;grid-template-areas:"date body" "date actions"}
+  .ev-card__date{min-width:60px}
+  .ev-card__date-day{font-size:24px}
+  .ev-card__actions{grid-area:actions;justify-self:flex-end}
+}

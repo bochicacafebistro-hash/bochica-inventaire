@@ -30,14 +30,14 @@ const AUTH_DISPLAY_NAMES = {
 const ROLE_PERMISSIONS = {
   global_admin: {
     canAccess: ["dashboard", "inventaire", "rapport", "historique", "taches", "employes", "salaires",
-                "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "fournisseurs"],
+                "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "fournisseurs"],
     canWrite: ["dashboard", "inventaire", "rapport", "historique", "taches", "employes", "salaires",
-               "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "fournisseurs"],
+               "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "fournisseurs"],
     homePage: "dashboard"
   },
   chef: {
-    canAccess: ["inventaire", "menu", "ingredients", "recettes", "shopping"],
-    canWrite:  ["inventaire", "menu", "ingredients", "recettes", "shopping"],
+    canAccess: ["inventaire", "menu", "ingredients", "recettes", "shopping", "evenements"],
+    canWrite:  ["inventaire", "menu", "ingredients", "recettes", "shopping", "evenements"],
     homePage: "inventaire"
   },
   employee: {

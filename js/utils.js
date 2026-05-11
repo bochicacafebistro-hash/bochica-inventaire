@@ -351,7 +351,8 @@ const DUPLICATE_CONFIG = {
   tasks:        { editor: "openTaskModal",       getState: () => tasks,        nameInput: "t-title" },
   expenses:     { editor: "openExpenseModal",    getState: () => expenses,     nameInput: "ex-desc" },
   revenues:     { editor: "openRevenueModal",    getState: () => revenues,     nameInput: "rv-desc" },
-  shoppingList: { editor: "openShoppingModal",   getState: () => shoppingList, nameInput: "shop-name" }
+  shoppingList: { editor: "openShoppingModal",   getState: () => shoppingList, nameInput: "shop-name" },
+  events:       { editor: "openEventModal",      getState: () => events,       nameInput: "ev-name" }
 };
 
 // Attend que le listener Firestore ait propagé le nouvel item dans le state local
@@ -607,6 +608,16 @@ function updateCmdKResults(query) {
       icon: "store",
       items: suppliers.filter(s => (s.name || "").toLowerCase().includes(q)).slice(0, 5)
         .map(s => ({ label: s.name, sub: s.contact || "", page: "fournisseurs" }))
+    },
+    {
+      title: "Événements",
+      icon: "calendar",
+      items: (typeof events !== "undefined" ? events : []).filter(ev =>
+        (ev.name || "").toLowerCase().includes(q) ||
+        (ev.contactName || "").toLowerCase().includes(q) ||
+        (ev.notes || "").toLowerCase().includes(q)
+      ).slice(0, 5)
+        .map(ev => ({ label: ev.name, sub: `${ev.date || ""}${ev.time ? " · " + ev.time : ""}`, page: "evenements", id: ev.id, action: "openEventModal" }))
     },
   ];
 

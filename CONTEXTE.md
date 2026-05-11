@@ -1,6 +1,6 @@
 # 📋 CONTEXTE — Projet Bochica Inventaire
 
-> ⚠️ **Dernière mise à jour : 4 mai 2026** — nouvelle page **Liste d'ingrédients** (v3.6.0) : section commande/approvisionnement séparée des Ingrédients (food cost), avec 3 fournisseurs fixes (Costco / Viandex / Gordon), 5 catégories (Protéine / Légume / Produit laitier / Épicerie / Autre), filtre par fournisseur, tri A→Z, recherche texte. Accès Admin + Chef.
+> ⚠️ **Dernière mise à jour : 11 mai 2026** — nouvelle page **Événements** (v3.7.0) : calendrier mensuel (grille), vue « Ce mois-ci », vue « À venir (30 j) », filtres par type (réservation, soirée spéciale, jour férié, événement interne), recherche texte, statuts (confirmé / en attente / annulé), capacité + contact + notes par événement. Widget « Prochains événements » ajouté au dashboard admin. Accès Admin + Chef.
 
 ## 🏠 Description
 Application web de **gestion interne** pour le restaurant colombien Bochica.
@@ -21,7 +21,7 @@ Migration v3.0.0 — voir `FIREBASE_AUTH_SETUP.md` pour la procédure de migrati
 | Username | Email interne | Rôle | Accès |
 |---|---|---|---|
 | **Bochica** | bochica@bochica.app | `global_admin` | Tout |
-| **Chef** | chef@bochica.app | `chef` | Inventaire, Menu, Ingrédients, Recettes, Liste d'ingrédients |
+| **Chef** | chef@bochica.app | `chef` | Inventaire, Menu, Ingrédients, Recettes, Liste d'ingrédients, Événements |
 | **Employe** | employe@bochica.app | `employee` | Inventaire uniquement |
 
 ### Sécurité
@@ -58,6 +58,7 @@ bochica-inventaire/
 │   ├── pages-finance.js    ← Dépenses, revenus, catégories, frais fixes, rapports, charts dépenses
 │   ├── pages-kitchen.js    ← Menu, fournisseurs, ingrédients, recettes
 │   ├── pages-shopping.js   ← Liste d'ingrédients (commandes par fournisseur)
+│   ├── pages-events.js     ← Événements / calendrier (réservations, soirées, etc.)
 │   ├── pages-dashboard.js  ← Dashboard, taxes, helpers taxes, autoApplyFixedExpenses
 │   ├── sidebar.js          ← Navigation, sidebar, renderPage(), goHome()
 │   ├── auth.js             ← Firebase Auth, login/logout, session, rôles
@@ -86,6 +87,7 @@ bochica-inventaire/
 <script src="js/pages-finance.js"></script>
 <script src="js/pages-kitchen.js"></script>
 <script src="js/pages-shopping.js"></script>
+<script src="js/pages-events.js"></script>
 <script src="js/pages-dashboard.js"></script>
 <script src="js/sidebar.js"></script>
 <script src="js/auth.js"></script>
@@ -104,6 +106,9 @@ bochica-inventaire/
   - `recipes` — livre de cuisine (name, description, category, servings, prepTime, cookTime, ingredients, steps, tips — **markdown**)
   - `shoppingList` — **liste d'ingrédients** pour commandes/approvisionnement (séparée de `ingredients`) :
     - Champs : `id`, `name`, `supplier` (∈ `costco`/`viandex`/`gordon`), `category` (∈ `proteine`/`legume`/`laitier`/`epicerie`/`autre`), `notes`, `createdAt`, `updatedAt`
+    - Accès : admin + chef
+  - `events` — **événements / calendrier** (réservations, soirées spéciales, jours fériés, événements internes) :
+    - Champs : `id`, `name`, `date` (ISO YYYY-MM-DD), `time` (HH:MM, optionnel), `type` (∈ `reservation`/`special`/`ferie`/`interne`), `status` (∈ `confirme`/`attente`/`annule`), `capacity`, `contactName`, `contactPhone`, `contactEmail`, `notes`, `createdAt`, `updatedAt`
     - Accès : admin + chef
   - `payroll` — paie hebdomadaire (un doc par semaine ISO `YYYY-Www`) :
     - `weekId`, `weekStart`, `totalTips`, `serviceHours` `{dk: {start,end}}`, `actualShifts` `{empId: {dk: {start,end}}}`, `notes`, `createdAt`/`updatedAt`
@@ -238,6 +243,20 @@ bochica-inventaire/
 - Séparés des produits d'inventaire
 - Coût par unité utilisé pour calculer le food cost des items du menu
 
+### 📅 Événements (calendrier)
+- Page **Événements** sous Liste d'ingrédients
+- **3 vues** : Calendrier mensuel (grille 7×6), Ce mois-ci (liste), À venir (30 jours)
+- **4 types** (couleurs distinctes) : Réservation (bleu), Soirée spéciale (jaune), Jour férié / fermeture (rouge), Événement interne (vert)
+- **3 statuts** : Confirmé, En attente, Annulé (annulé = barré dans le calendrier)
+- Champs par événement : nom, date, heure optionnelle, type, statut, nombre de personnes (capacité), contact (nom + tél + courriel), notes
+- **Calendrier mensuel** : navigation mois précédent/suivant, bouton « Aujourd'hui » pour revenir, highlight du jour courant (badge jaune), clic sur une case vide pour créer un événement à cette date, clic sur une pill pour l'éditer, max 3 événements visibles par case + indicateur « +N autres », légende couleurs en bas
+- **Filtre par type** (tous / réservation / spéciale / férié / interne) avec compteurs
+- **Recherche texte** (nom, contact, notes) avec focus préservé
+- **Affichage relatif** : « Aujourd'hui », « Demain », « Dans 3 jours », « Il y a 2 jours »
+- **Widget dashboard** : « Prochains événements » (5 max, dans les 60 jours, hors annulés)
+- Duplication via dropdown ⋯
+- Accès : admin + chef
+
 ### 🛒 Liste d'ingrédients (commandes / approvisionnement)
 - Section **distincte** des Ingrédients (food cost) — orientée liste de courses
 - Champs par item : nom, fournisseur, catégorie, notes
@@ -330,6 +349,27 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 11 mai 2026 — Événements / Calendrier (v3.7.0) 📅
+- Nouvelle page **Événements** sous Liste d'ingrédients (admin + chef)
+- Nouveau module `js/pages-events.js` (~470 lignes) :
+  - `renderEvents()` — switcher de vue (calendrier / mois / à venir) + filtre type + recherche
+  - `renderEventCalendar()` — grille 7×6 cases (42), navigation mois prev/next, click case vide → créer événement à cette date, max 3 pills par case + « +N autres », jour courant en pill jaune
+  - `renderEventMonthList()` — liste chronologique des événements du mois (filtré)
+  - `renderEventUpcoming()` — liste chronologique des 30 prochains jours
+  - `openEventModal()` / `saveEvent()` — CRUD complet avec validation type/statut
+  - Helpers : `todayISO()`, `isoToLocalDate()`, `daysBetween()`, `formatRelativeDate()`, `formatLongDate()`, `tEventType()`, `tEventTypeShort()`, `tEventStatus()`, `eventTypeIcon()`
+- **Nouvelle collection Firestore `events`** : `id`, `name`, `date`, `time`, `type` (4 valeurs fixes), `status` (3 valeurs fixes), `capacity`, `contactName`, `contactPhone`, `contactEmail`, `notes`, `createdAt`, `updatedAt`
+- **4 types fixes** (couleurs vives) : reservation (#4a90e2 bleu), special (#F7B32C jaune accent), ferie (#e74c3c rouge), interne (#7dbf66 vert)
+- **3 statuts** : confirme (vert), attente (jaune ambré, italique), annule (rouge, barré)
+- **Widget dashboard** : `renderDashUpcomingEvents()` affiche les 5 prochains événements à venir (60 jours, hors annulés) avec pill type + date relative
+- **Règle Firestore** : `match /events/{doc=**}` lecture authentifiée + écriture admin/chef
+- **Permissions** : ajout de `"evenements"` à `ROLE_PERMISSIONS.global_admin` et `.chef`
+- **Sidebar** : nouvel item « Événements » sous Liste d'ingrédients (icône `calendar`)
+- **Duplication** intégrée à `DUPLICATE_CONFIG` (collection `events`)
+- **CSS** : ~460 lignes ajoutées (`.ev-calendar`, `.ev-calendar__grid`, `.ev-cal-pill--{type}`, `.ev-card`, `.ev-type-pill--{type}`, `.ev-status-pill--{status}`, `.ev-views`, `.ev-type-tabs`, etc.) — couleurs vives par type, dark mode adapté, responsive mobile (cases compactes, heure cachée sur mobile)
+- Tokens CSS dédiés : `--ev-reservation`, `--ev-special`, `--ev-ferie`, `--ev-interne` (+ variantes `*-soft`)
+- Bumper `CACHE_VERSION` à `v3.7.0` + ajout de `pages-events.js` à l'app shell
 
 ### 4 mai 2026 — Liste d'ingrédients (v3.6.0) 🛒
 - Nouvelle page **Liste d'ingrédients** sous Recettes (admin + chef)

@@ -165,6 +165,18 @@ function renderDashboard() {
     .sort((a, b) => Number(b.amount || 0) - Number(a.amount || 0))
     .slice(0, 5);
 
+  // Prochains événements (5 max, dans les 60 prochains jours, hors annulés)
+  const todayStr = now.toISOString().slice(0, 10);
+  const in60 = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const upcomingEvents = (typeof events !== "undefined" ? events : [])
+    .filter(e => e.date && e.date >= todayStr && e.date <= in60 && e.status !== "annule")
+    .sort((a, b) => {
+      const c = (a.date || "").localeCompare(b.date || "");
+      if (c !== 0) return c;
+      return (a.time || "99:99").localeCompare(b.time || "99:99");
+    })
+    .slice(0, 5);
+
   // Marge moyenne du menu
   const itemsWithRecipe = menuItems.filter(m => Array.isArray(m.recipe) && m.recipe.length > 0 && m.price > 0);
   const avgMargin = itemsWithRecipe.length > 0
@@ -230,6 +242,7 @@ function renderDashboard() {
     <!-- Grille principale en 2 colonnes -->
     <div class="dash-grid">
       ${renderDashTaxCard(q, taxes, daysToDeadline)}
+      ${renderDashUpcomingEvents(upcomingEvents)}
       ${renderDashCriticalStock(criticalProducts)}
       ${renderDashOverdueTasks(overdueTasks)}
       ${renderDashTopExpenses(topExpenses)}
@@ -347,6 +360,40 @@ function renderDashOverdueTasks(overdue) {
         <span class="dash-list__name">${esc(tk.title || "?")}</span>
         <span class="dash-list__value" style="color:var(--status-red);font-size:11px">${tk.dueDate}</span>
       </li>`).join("")}
+    </ul>
+  </div>`;
+}
+
+function renderDashUpcomingEvents(upcoming) {
+  if (!upcoming || upcoming.length === 0) {
+    return `<div class="dash-card dash-card--ok">
+      <div class="dash-card__head">
+        <h3 class="dash-card__title">${icon("calendar", 16)} Prochains événements</h3>
+        <button class="btn-icon-only" onclick="navTo('evenements')" aria-label="Voir le calendrier" title="Voir le calendrier">${icon("arrow-right", 14)}</button>
+      </div>
+      <div class="dash-empty">Aucun événement à venir dans les 60 prochains jours.</div>
+    </div>`;
+  }
+  return `<div class="dash-card">
+    <div class="dash-card__head">
+      <h3 class="dash-card__title">${icon("calendar", 16)} Prochains événements</h3>
+      <button class="btn-icon-only" onclick="navTo('evenements')" aria-label="Voir le calendrier" title="Voir le calendrier">${icon("arrow-right", 14)}</button>
+    </div>
+    <ul class="dash-list">
+      ${upcoming.map(e => {
+        const typ = e.type || "interne";
+        const status = e.status || "confirme";
+        const rel = typeof formatRelativeDate === "function" ? formatRelativeDate(e.date) : e.date;
+        const typLabel = typeof tEventTypeShort === "function" ? tEventTypeShort(typ) : typ;
+        return `<li class="dash-list__item">
+          <span class="dash-list__name">
+            <span class="ev-type-pill ev-type-pill--${typ}" style="margin-right:6px;font-size:10px">${typLabel}</span>
+            ${esc(e.name || "?")}
+            <br/><small style="color:var(--text3);font-size:10px">${rel}${e.time ? " · " + esc(e.time) : ""}${e.capacity ? " · " + esc(String(e.capacity)) + " pers." : ""}${status === "attente" ? " · <em>en attente</em>" : ""}</small>
+          </span>
+          <span class="dash-list__value" style="color:var(--text3);font-size:11px">${e.date || ""}</span>
+        </li>`;
+      }).join("")}
     </ul>
   </div>`;
 }
