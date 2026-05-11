@@ -5728,22 +5728,47 @@ textarea.md-input{
   font-weight:700;
 }
 
-/* Toggle bière */
+/* Bloc bière : toggle + prix surchargeable */
+.quote-beer-block{
+  background:rgba(var(--accent-rgb), .08);
+  border:1px solid rgba(var(--accent-rgb), .35);
+  border-radius:var(--radius-md);
+  padding:12px 14px;
+  margin-bottom:8px;
+}
 .quote-beer-toggle{
   display:flex !important;
   flex-direction:row !important;
   align-items:center;
   gap:8px;
-  padding:10px 14px;
-  background:rgba(var(--accent-rgb), .12);
-  border:1px solid rgba(var(--accent-rgb), .4);
-  border-radius:var(--radius-md);
   cursor:pointer;
   font-weight:600;
   color:var(--text);
-  margin-bottom:8px;
+  margin:0 0 8px !important;
 }
 .quote-beer-toggle input{margin:0;width:auto;accent-color:var(--accent)}
+.quote-beer-price{
+  display:flex !important;
+  flex-direction:column !important;
+  gap:4px;
+  padding-left:24px;
+  margin:0 !important;
+}
+.quote-beer-price__label{
+  font-size:12px;
+  color:var(--text2);
+  font-weight:600;
+}
+.quote-beer-price input{
+  max-width:140px;
+  padding:7px 10px;
+  font-size:14px;
+}
+.quote-beer-price__hint{
+  font-size:11px;
+  color:var(--text3);
+  font-style:italic;
+}
 
 /* Lignes personnalisées */
 .quote-custom-line{

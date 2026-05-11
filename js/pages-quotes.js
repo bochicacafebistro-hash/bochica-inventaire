@@ -283,6 +283,9 @@ function openQuoteModal(id) {
   const defaultValidIso = defaultValid.toISOString().slice(0, 10);
 
   const defaultPackageId = qt?.packageId || quoteTemplates[0]?.id || "";
+  const defaultTpl = quoteTemplates.find(t => t.id === defaultPackageId) || quoteTemplates[0] || {};
+  // Prix bière initial : valeur du snapshot si édition (peut avoir été surchargée), sinon prix par défaut du forfait sélectionné
+  const initialBeerPrice = qt?.packageSnapshot?.beerPrice ?? defaultTpl.beerPrice ?? 7;
   const customLines = Array.isArray(qt?.customLines) ? qt.customLines.slice() : [];
 
   showModal(`<div class="modal modal-quote">
@@ -320,7 +323,7 @@ function openQuoteModal(id) {
     <h4 class="quote-modal-section">${icon("utensils", 14)} Forfait</h4>
     <div class="quote-package-choices">
       ${quoteTemplates.map(tpl => `<label class="quote-package-card quote-package-card--${tpl.accentColor || "yellow"}">
-        <input type="radio" name="q-package" value="${esc(tpl.id)}" ${tpl.id === defaultPackageId ? "checked" : ""}/>
+        <input type="radio" name="q-package" value="${esc(tpl.id)}" data-beer-price="${esc(String(tpl.beerPrice || 0))}" onchange="onPackageChange(this)" ${tpl.id === defaultPackageId ? "checked" : ""}/>
         <div class="quote-package-card__body">
           <div class="quote-package-card__label">${esc(tpl.label || "")}</div>
           <div class="quote-package-card__name">${esc(tpl.name || "")}</div>
@@ -333,10 +336,17 @@ function openQuoteModal(id) {
         </div>
       </label>`).join("")}
     </div>
-    <label class="quote-beer-toggle">
-      <input type="checkbox" id="q-beer-addon" ${qt?.beerAddon ? "checked" : ""}/>
-      <span>🍺 Ajout d'une bière par personne (+${fmtMoney(quoteTemplates[0]?.beerPrice || 7)} / pers.)</span>
-    </label>
+    <div class="quote-beer-block">
+      <label class="quote-beer-toggle">
+        <input type="checkbox" id="q-beer-addon" ${qt?.beerAddon ? "checked" : ""}/>
+        <span>🍺 Remplacer la boisson par une bière (en supplément, par personne)</span>
+      </label>
+      <label class="quote-beer-price">
+        <span class="quote-beer-price__label">Prix de la bière par personne ($)</span>
+        <input id="q-beer-price" type="number" min="0" step="0.01" value="${esc(String(initialBeerPrice))}" data-touched="false" oninput="this.dataset.touched='true'"/>
+        <span class="quote-beer-price__hint">Modifiable pour offrir un rabais (ex. 5,00 $ au lieu de 7,00 $)</span>
+      </label>
+    </div>
 
     <!-- Bloc LIGNES PERSONNALISÉES -->
     <h4 class="quote-modal-section">${icon("plus", 14)} Suppléments / rabais</h4>
@@ -382,6 +392,16 @@ function openQuoteModal(id) {
     const el = document.getElementById("q-client-name");
     if (el) { el.focus(); if (typeof el.select === "function") el.select(); }
   }, 50);
+}
+
+// Quand l'utilisateur change de forfait, on met à jour le prix bière par défaut
+// — sauf si l'utilisateur a déjà modifié manuellement le champ (data-touched=true)
+function onPackageChange(radioEl) {
+  const beerInput = document.getElementById("q-beer-price");
+  if (!beerInput) return;
+  if (beerInput.dataset.touched === "true") return;
+  const newPrice = radioEl.getAttribute("data-beer-price");
+  if (newPrice != null) beerInput.value = newPrice;
 }
 
 // ─── Lignes personnalisées (ajout dynamique) ──────────
@@ -433,8 +453,13 @@ async function saveQuote(id) {
   const guestCount = Math.max(0, Math.floor(Number(document.getElementById("q-guest-count").value) || 0));
   const depositAmount = Math.max(0, Number(document.getElementById("q-deposit").value) || 0);
 
+  // Prix bière saisi dans le formulaire (peut être différent du prix par défaut
+  // du forfait — ex. rabais accordé à un client fidèle)
+  const beerPriceFromForm = Math.max(0, Number(document.getElementById("q-beer-price")?.value) || 0);
+
   // Snapshot du forfait au moment du devis (pour ne pas casser les anciens
-  // PDFs si on modifie un template par la suite)
+  // PDFs si on modifie un template par la suite). Le beerPrice du snapshot
+  // est celui SAISI dans le formulaire (peut être un rabais).
   const packageSnapshot = {
     id: tpl.id,
     name: tpl.name,
@@ -444,7 +469,7 @@ async function saveQuote(id) {
     entree: tpl.entree || "",
     plat: tpl.plat || "",
     boisson: tpl.boisson || "",
-    beerPrice: Number(tpl.beerPrice || 0)
+    beerPrice: beerPriceFromForm
   };
 
   const data = {
@@ -546,7 +571,8 @@ function renderTemplateEditor(tpl) {
     <label>Entrée <input data-field="entree" value="${esc(tpl.entree || "")}" placeholder="ex: 1 empanada au bœuf ou au poulet par personne"/></label>
     <label>Plat principal <input data-field="plat" value="${esc(tpl.plat || "")}" placeholder="ex: Arepa classique ou végé"/></label>
     <label>Boisson <input data-field="boisson" value="${esc(tpl.boisson || "")}" placeholder="ex: Une boisson gazeuse colombienne ou autre"/></label>
-    <label>Prix bière en sus ($) <input type="number" min="0" step="0.01" data-field="beerPrice" value="${esc(String(tpl.beerPrice || 0))}"/></label>
+    <label>Prix par défaut bière de substitution ($) <input type="number" min="0" step="0.01" data-field="beerPrice" value="${esc(String(tpl.beerPrice || 0))}"/></label>
+    <p class="text-muted" style="font-size:11px;margin:4px 0 0">Prix appliqué quand la boisson est remplacée par une bière. Modifiable par soumission pour offrir un rabais.</p>
     <div style="display:flex;justify-content:flex-end;margin-top:8px">
       <button class="btn btn-primary btn-sm" onclick="saveTemplate('${esc(tpl.id)}')">${icon("save", 12)} Enregistrer ce forfait</button>
     </div>
@@ -815,18 +841,29 @@ function generateQuotePDF(quoteId) {
   });
   y = cardY + cardH + 6;
 
-  // ═══ Add-on bière (si activé) ═══
+  // ═══ Substitution bière (si activée) ═══
+  // ⚠️ jsPDF helvetica ne supporte pas les emojis Unicode (ex. 🍺) — ils
+  // s'affichent comme "Ø<ßz". On utilise uniquement du texte ASCII/Latin-1.
   if (qt.beerAddon) {
-    const beerH = 11;
+    const beerH = 14;
     doc.setFillColor(...COLOR_ACCENT);
     doc.roundedRect(M, y, contentW, beerH, 2, 2, "F");
+    // Petit cercle décoratif (remplace l'emoji bière)
+    doc.setFillColor(...COLOR_TEXT);
+    doc.circle(M + 6, y + 7, 1.8, "F");
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(...COLOR_TEXT);
-    doc.text(`🍺 Ajout d'une bière par personne`, M + 4, y + 7);
+    doc.text(`Boisson remplacée par une bière`, M + 11, y + 6);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text(`(supplément par personne)`, M + 11, y + 10.5);
+    // Prix en rouge à droite
+    doc.setFont("helvetica", "bold");
     doc.setTextColor(...COLOR_RED);
-    doc.setFontSize(11);
-    doc.text(`+ ${fmtMoney(tpl.beerPrice || 0).replace(" $", "")} $ / pers.`, M + contentW - 4, y + 7, { align: "right" });
+    doc.setFontSize(12);
+    doc.text(`+ ${fmtMoney(tpl.beerPrice || 0).replace(" $", "")} $ / pers.`, M + contentW - 4, y + 8.5, { align: "right" });
     y += beerH + 4;
   }
 
@@ -869,7 +906,7 @@ function generateQuotePDF(quoteId) {
 
   totalLine(`Forfait (${qt.guestCount || 0} × ${fmtMoney(tpl.pricePerPerson || 0)})`, fmtMoney(totals.subtotal));
   if (totals.beerSubtotal > 0) {
-    totalLine(`Bière (${qt.guestCount || 0} × ${fmtMoney(tpl.beerPrice || 0)})`, fmtMoney(totals.beerSubtotal));
+    totalLine(`Bière en remplacement (${qt.guestCount || 0} × ${fmtMoney(tpl.beerPrice || 0)})`, fmtMoney(totals.beerSubtotal));
   }
   if (totals.customSubtotal !== 0) {
     totalLine("Suppléments", fmtMoney(totals.customSubtotal));

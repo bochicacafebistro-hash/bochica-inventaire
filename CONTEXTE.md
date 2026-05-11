@@ -387,6 +387,17 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 11 mai 2026 — Fix bière + prix éditable par soumission (v3.8.1) 🍺
+- **Bug PDF corrigé** : l'emoji 🍺 s'affichait comme « Ø<ßz » dans le PDF (jsPDF helvetica ne supporte pas l'Unicode > Latin-1). Remplacé par un cercle décoratif dessiné + texte ASCII pur
+- **Wording corrigé** : « Ajout d'une bière » → « **Boisson remplacée par une bière** » (c'est une substitution, pas un ajout au menu existant)
+- **Prix bière éditable par soumission** : nouveau champ « Prix de la bière par personne » dans le formulaire de soumission, sous la case à cocher
+  - Pré-rempli automatiquement avec le `beerPrice` du forfait sélectionné
+  - Se met à jour quand on change de forfait (sauf si l'utilisateur l'a modifié manuellement — détecté via `data-touched`)
+  - Permet d'offrir un rabais ponctuel (ex. 5,00 $ au lieu de 7,00 $)
+  - Stocké dans `packageSnapshot.beerPrice` pour conservation historique
+- Modale **Gérer les forfaits** : label précisé « Prix par défaut bière de substitution » + texte d'aide
+- CSS : nouveau bloc `.quote-beer-block` enveloppant le toggle + champ prix avec hint italique
+
 ### 11 mai 2026 — Soumissions + génération PDF (v3.8.0) 🧾📄
 - Nouvelle page **Soumissions** (admin seulement) avec CRUD complet sur les devis clients
 - Nouveau module `js/pages-quotes.js` (~570 lignes) :
