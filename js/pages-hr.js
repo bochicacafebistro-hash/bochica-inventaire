@@ -185,22 +185,16 @@ function renderEmployes() {
           </thead>
           <tbody>
             ${empRows.map((row, rowIdx) => {
-              // Alternance simple sur 2 couleurs de la marque Bochica (lignes
-              // zébrées plus sobres que l'ancienne palette de 8 teintes).
-              // Stockées en "R,G,B" (triplet sans parenthèses) pour permettre
-              // rgba() en CSS avec opacité variable (discret au repos, marqué au hover).
-              const EMP_RGB = [
-                "247,179,44",   // jaune Bochica (accent)
-                "74,144,226"    // bleu Colombie
-              ];
-              // Alternance pure par ligne visible (rowIdx) — pas par sortOrder,
-              // pour que l'effet zébré reste cohérent même après réordonnement.
-              const empRgb = EMP_RGB[rowIdx % EMP_RGB.length];
+              // Zébré sobre : une seule couleur (gris noir chaud — la teinte
+              // du texte Bochica), deux opacités via les classes is-even/is-odd
+              // dans le CSS. Plus lisible que l'ancienne palette multi-couleurs.
+              const empRgb = "14,13,12";
+              const toneClass = rowIdx % 2 === 0 ? "is-odd" : "is-even";
               // Section : fallback sur "service" si pas encore définie (compat employés existants)
               const empSection = row.emp.section || "service";
               const sectionIcon = empSection === "cuisine" ? icon("utensils", 10) : empSection === "service" ? icon("users", 10) : "";
               const sectionLabel = empSection === "cuisine" ? "Cuisine" : empSection === "service" ? "Service" : "Autre";
-              return `<tr class="schedule-emp-row" data-emp-id="${row.emp.id}" style="--emp-rgb:${empRgb};--emp-color:rgb(${empRgb})"
+              return `<tr class="schedule-emp-row ${toneClass}" data-emp-id="${row.emp.id}" style="--emp-rgb:${empRgb};--emp-color:rgb(${empRgb})"
                 ondragover="empRowDragOver(event,'${row.emp.id}')"
                 ondragleave="empRowDragLeave(event)"
                 ondrop="empRowDrop(event,'${row.emp.id}')"

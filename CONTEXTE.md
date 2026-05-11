@@ -387,6 +387,23 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 11 mai 2026 — Zébré 1 couleur 2 tons + chiffres plus gros (v3.8.5) ⚫⚪
+- **Tableau Employés & Horaires** : passage à un **vrai zébré** sur une seule couleur (gris noir chaud `14,13,12`) avec deux opacités différentes :
+  - Lignes impaires (`.is-odd`) — ton plus foncé : opacités 0.06 / 0.10 / 0.14 / 0.18 (cellule / emp+summary / total / filled)
+  - Lignes paires (`.is-even`) — ton plus clair : opacités 0.02 / 0.04 / 0.08 / 0.12
+  - Plus de couleur de marque par ligne — sobre et professionnel
+- **Hover** : utilise maintenant l'accent jaune Bochica (`rgba(var(--accent-rgb), .14)` → `.25` selon cellule) pour bien signaler la ligne survolée sans rendre le tableau bruyant
+- **Bande latérale colorée à gauche retirée** (`border-left-color: transparent !important`) — l'identification par employé se fait uniquement par leur nom maintenant
+- **Chiffres plus gros et plus foncés** dans tout le tableau :
+  - `.schedule-time` (heures entrée/sortie) : `var(--fs-sm)` → `var(--fs-base)` (13 → 14px), `font-weight: 700`, font-family JetBrains Mono pour meilleure lisibilité numérique
+  - `.schedule-td--summary` (Heures / Taux / Total) : `var(--fs-lg)` → `var(--fs-xl)` (18 → 22px), `font-weight: 700`, largeur 78 → 84px
+  - `.schedule-td--total` (cellule total payé) : `font-weight: 600` → `800` (extra-bold), couleur noir chaud au lieu de jaune pour meilleur contraste
+  - `.schedule-tfoot-val` (totaux par jour en bas) : `var(--fs-md)` → `var(--fs-lg)` (16 → 18px), `font-weight: 700`
+- **Mobile** : tailles ajustées en proportion (`fs-md` → `fs-lg` pour summary, ajout de `font-weight: 700` sur `.schedule-time` et `.schedule-tfoot-val`)
+- **Dark mode** : opacités calibrées avec `245,241,232` (crème) à la place de `14,13,12` (noir) pour le bon contraste sur fond sombre
+- JS : nouvelle class `is-odd` / `is-even` injectée sur `<tr>` selon `rowIdx % 2`
+- Bumper `CACHE_VERSION` à `v3.8.5`
+
 ### 11 mai 2026 — Palette Employés simplifiée (v3.8.4) 🎨
 - **Tableau Employés & Horaires** : palette `EMP_RGB` réduite de **8 couleurs → 2 couleurs** en alternance
   - Avant : bleu, jaune, rouge, vert, violet, orange, teal, rose (cyclées sur `sortOrder`)
