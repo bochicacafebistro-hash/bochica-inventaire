@@ -1,4 +1,14 @@
 // ── État global de l'application ──────────────────────
+
+// ── Bootstrap : suivi des collections ayant reçu leur premier snapshot ──
+// Sert à fixer la race condition au démarrage : si un snapshot arrive APRÈS
+// le premier renderPage déclenché par applyLogin et que sa collection a un
+// filtre `activePage` qui ne matche pas la home page, le re-render n'a pas
+// lieu → données vides jusqu'au reload manuel. La solution : forcer le
+// re-render lors du PREMIER snap de chaque collection, peu importe la page.
+// Reset au logout pour que la logique fonctionne aussi au re-login.
+let _firstSnapshots = new Set();
+
 let products = [], suppliers = [], customSections = [], logs = [];
 // allSections : liste complète (par défaut + personnalisées) gérée via Firestore.
 // Si vide/absente en BD, fallback sur [...DEFAULT_SECTIONS, ...customSections].

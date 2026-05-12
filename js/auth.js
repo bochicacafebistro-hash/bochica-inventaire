@@ -28,6 +28,9 @@ function initAuth() {
       isAdmin = false;
       isLoggedIn = false;
       loggedInUser = null;
+      // Reset du tracker de premier snapshot pour que le prochain login
+      // force à nouveau un render quand chaque collection arrive
+      if (typeof _firstSnapshots !== "undefined") _firstSnapshots = new Set();
       document.getElementById("app-shell").style.display = "none";
       showLogin();
       return;

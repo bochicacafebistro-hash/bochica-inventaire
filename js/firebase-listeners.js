@@ -1,13 +1,30 @@
 // ── Listeners Firebase temps réel ─────────────────────
+//
+// Bootstrap : `_firstSnapshots` (déclaré dans state.js) suit quelles
+// collections ont reçu leur premier snapshot. Si un listener a un filtre
+// `activePage === "X"` qui ne matche pas la home page (ex: dashboard),
+// le premier snap doit quand même déclencher un render pour peupler la
+// page. Le helper `shouldRender(collKey, ...activePages)` gère ça :
+//   - 1er snap pour cette collection → toujours render si isLoggedIn
+//   - 2e+ snap → render si activePage matche (optimisation préservée)
+function shouldRender(collKey, ...activePages) {
+  if (!isLoggedIn) return false;
+  const firstTime = !_firstSnapshots.has(collKey);
+  if (firstTime) _firstSnapshots.add(collKey);
+  if (firstTime) return true; // 1er snap : toujours render (la var globale vient d'être peuplée)
+  if (activePages.length === 0) return true; // pas de filtre = toujours render
+  return activePages.includes(activePage);
+}
+
 db.collection("products").onSnapshot(snap => {
   products = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
-  if (isLoggedIn) renderPage();
+  if (shouldRender("products")) renderPage();
 });
 
 db.collection("suppliers").onSnapshot(snap => {
   suppliers = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (isLoggedIn) renderPage();
+  if (shouldRender("suppliers")) renderPage();
 });
 
 db.collection("settings").doc("sections").onSnapshot(snap => {
@@ -19,48 +36,48 @@ db.collection("settings").doc("sections").onSnapshot(snap => {
   } else {
     allSections = [...DEFAULT_SECTIONS, ...customSections];
   }
-  if (isLoggedIn) renderPage();
+  if (shouldRender("settings/sections")) renderPage();
 });
 
 db.collection("logs").orderBy("ts", "desc").limit(300).onSnapshot(snap => {
   logs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (isLoggedIn && activePage === "historique") renderPage();
+  if (shouldRender("logs", "historique")) renderPage();
 });
 
 db.collection("employees").onSnapshot(snap => {
   employees = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
-  if (isLoggedIn && activePage === "employes") renderPage();
+  if (shouldRender("employees", "employes", "salaires", "simulations", "dashboard")) renderPage();
 });
 
 db.collection("tasks").onSnapshot(snap => {
   tasks = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (isLoggedIn && ["taches", "inventaire"].includes(activePage)) renderPage();
+  if (shouldRender("tasks", "taches", "inventaire", "dashboard")) renderPage();
 });
 
 db.collection("menu").onSnapshot(snap => {
   menuItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (isLoggedIn && ["menu", "recettes"].includes(activePage)) renderPage();
+  if (shouldRender("menu", "menu", "recettes", "dashboard")) renderPage();
 });
 
 // Ingrédients (séparés des produits d'inventaire — pour calcul food cost)
 db.collection("ingredients").onSnapshot(snap => {
   ingredients = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  if (isLoggedIn && ["ingredients", "menu"].includes(activePage)) renderPage();
+  if (shouldRender("ingredients", "ingredients", "menu")) renderPage();
 });
 
 // Recettes (livre de cuisine — pour préparation des plats)
 db.collection("recipes").onSnapshot(snap => {
   recipes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
-  if (isLoggedIn && activePage === "recettes") renderPage();
+  if (shouldRender("recipes", "recettes")) renderPage();
 });
 
 // Liste d'ingrédients (commandes / approvisionnement — séparée des ingrédients food cost)
 db.collection("shoppingList").onSnapshot(snap => {
   shoppingList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (isLoggedIn && activePage === "shopping") renderPage();
+  if (shouldRender("shoppingList", "shopping")) renderPage();
 });
 
 // Événements (calendrier — réservations, soirées spéciales, jours fériés, internes)
@@ -68,14 +85,14 @@ db.collection("shoppingList").onSnapshot(snap => {
 db.collection("events").onSnapshot(snap => {
   events = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  if (isLoggedIn && (activePage === "evenements" || activePage === "dashboard")) renderPage();
+  if (shouldRender("events", "evenements", "dashboard")) renderPage();
 });
 
 // Soumissions (admin only — devis pour clients)
 db.collection("quotes").onSnapshot(snap => {
   quotes = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-  if (isLoggedIn && activePage === "soumissions") renderPage();
+  if (shouldRender("quotes", "soumissions")) renderPage();
 }, err => {
   // Le chef n'a pas accès à /quotes → on ignore silencieusement la perm denied
   if (err && err.code !== "permission-denied") console.warn("listener quotes:", err);
@@ -90,27 +107,27 @@ db.collection("quoteTemplates").onSnapshot(snap => {
   if (snap.empty && isAdmin && typeof seedQuoteTemplates === "function") {
     seedQuoteTemplates();
   }
-  if (isLoggedIn && activePage === "soumissions") renderPage();
+  if (shouldRender("quoteTemplates", "soumissions")) renderPage();
 });
 
 db.collection("expenses").orderBy("date", "desc").limit(500).onSnapshot(snap => {
   expenses = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (isLoggedIn && activePage === "depenses") renderPage();
+  if (shouldRender("expenses", "depenses", "dashboard", "taxes")) renderPage();
 });
 
 db.collection("revenues").orderBy("date", "desc").limit(500).onSnapshot(snap => {
   revenues = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (isLoggedIn && activePage === "depenses") renderPage();
+  if (shouldRender("revenues", "depenses", "dashboard", "taxes")) renderPage();
 });
 
 db.collection("expenseCategories").onSnapshot(snap => {
   expenseCategories = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (isLoggedIn && activePage === "depenses") renderPage();
+  if (shouldRender("expenseCategories", "depenses")) renderPage();
 });
 
 db.collection("fixedExpenseTemplates").onSnapshot(snap => {
   fixedExpenseTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (isLoggedIn && activePage === "depenses") renderPage();
+  if (shouldRender("fixedExpenseTemplates", "depenses", "dashboard")) renderPage();
 });
 
 // Paramètres horaire : ratio salaires/ventes + ventes réelles par jour + jours d'ouverture
@@ -121,7 +138,7 @@ db.collection("settings").doc("schedule").onSnapshot(snap => {
     actualSales: data.actualSales || {},
     openDays: Array.isArray(data.openDays) ? data.openDays : [0, 1, 2, 3, 4, 5, 6]
   };
-  if (isLoggedIn && (activePage === "employes" || activePage === "salaires")) renderPage();
+  if (shouldRender("settings/schedule", "employes", "salaires", "simulations")) renderPage();
 });
 
 // Paramètres paie : pourcentages cuisine/service + fenêtre de service par défaut
@@ -135,7 +152,7 @@ db.collection("settings").doc("payroll").onSnapshot(snap => {
       ? data.defaultServiceHours
       : {}
   };
-  if (isLoggedIn && activePage === "salaires") renderPage();
+  if (shouldRender("settings/payroll", "salaires", "simulations")) renderPage();
 });
 
 // Simulations paie (admin only — scénarios hypothétiques RH)
@@ -143,10 +160,13 @@ db.collection("settings").doc("payroll").onSnapshot(snap => {
 // que les inputs reflètent la sauvegarde Firestore).
 db.collection("payrollSimulations").onSnapshot(snap => {
   payrollSimulations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-  if (isLoggedIn && activePage === "simulations") {
-    // Si on est dans l'éditeur d'une sim, on rend juste l'éditeur (sinon perte de focus
-    // sur les inputs après chaque update)
-    if (typeof _editingSimId !== "undefined" && _editingSimId) {
+  const firstTime = !_firstSnapshots.has("payrollSimulations");
+  _firstSnapshots.add("payrollSimulations");
+  if (!isLoggedIn) return;
+  // Cas spécial : si on est dans l'éditeur d'une sim, on re-render juste
+  // l'éditeur (sinon perte de focus sur les inputs après chaque update)
+  if (activePage === "simulations" || firstTime) {
+    if (typeof _editingSimId !== "undefined" && _editingSimId && activePage === "simulations") {
       // Sauver le focus avant le re-render
       const activeId = document.activeElement?.id;
       const sel = document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "SELECT"
@@ -167,9 +187,11 @@ db.collection("payrollSimulations").onSnapshot(snap => {
           }
         }
       }
-    } else {
+    } else if (activePage === "simulations") {
       renderPage();
     }
+    // Si firstTime mais pas sur simulations : on ne render pas (pas besoin)
+    // — les autres listeners qui matchent la home page le feront déjà.
   }
 }, err => {
   if (err && err.code !== "permission-denied") console.warn("listener payrollSimulations:", err);

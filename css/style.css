@@ -1174,10 +1174,10 @@ tr:last-child td{border-bottom:none}
 
 /* Toutes les lignes employés : MÊME HAUTEUR (uniforme), peu importe le contenu */
 .schedule-emp-row{
-  height:54px;
+  height:42px;
 }
 .schedule-emp-row td{
-  height:54px;
+  height:42px;
   vertical-align:middle;
 }
 
@@ -1372,7 +1372,7 @@ tr:last-child td{border-bottom:none}
 }
 .schedule-emp-name{
   font-family:var(--font-heading);
-  font-size:var(--fs-lg);       /* 18px — uniforme avec tout le tableau */
+  font-size:var(--fs-base);     /* 14px — taille compacte demandée */
   font-weight:700;
   letter-spacing:.02em;
   color:var(--text);
@@ -1646,7 +1646,7 @@ tr:last-child td{border-bottom:none}
   border:none;
   background:transparent;
   font-family:var(--font-mono);
-  font-size:var(--fs-lg);       /* 18px — uniforme avec tout le tableau */
+  font-size:var(--fs-base);     /* 14px — taille compacte demandée */
   font-weight:700;              /* gras pour mieux lire les heures */
   color:var(--text);            /* noir chaud plein */
   padding:2px 1px;              /* padding minimal pour maximiser la taille des chiffres */
@@ -1668,12 +1668,12 @@ select.schedule-time{
   padding-right:4px;
 }
 
-/* Colonnes résumé (Heures / Taux / Total) — chiffres bien gros et foncés */
+/* Colonnes résumé (Heures / Taux / Total) — compactes et lisibles */
 .schedule-td--summary{
   width:70px;
   background:var(--surface2);
   font-family:var(--font-heading);
-  font-size:var(--fs-lg);       /* 18px — uniforme avec tout le tableau */
+  font-size:var(--fs-base);     /* 14px — taille compacte demandée */
   font-weight:700;
   color:var(--text);
   font-variant-numeric:tabular-nums;
@@ -1685,14 +1685,14 @@ select.schedule-time{
   background:rgba(var(--accent-rgb),.18);
   color:var(--accent-text);     /* noir chaud plutôt que jaune pour meilleur contraste */
   font-weight:800;              /* extra-bold pour le total */
-  font-size:var(--fs-lg);       /* 18px */
+  font-size:var(--fs-base);     /* 14px */
 }
 
 /* Lignes pied de page (totaux) — chiffres bien visibles aussi */
 .schedule-tfoot-row td{
   background:var(--surface2);
   font-family:var(--font-heading);
-  font-size:var(--fs-lg);       /* 18px — uniforme */
+  font-size:var(--fs-base);     /* 14px — taille compacte demandée */
   font-weight:700;
   color:var(--text);
   border-top:2px solid var(--border-strong);
@@ -1715,7 +1715,7 @@ select.schedule-time{
 .schedule-tfoot-val{
   font-variant-numeric:tabular-nums;
   color:var(--text);
-  font-size:var(--fs-lg);       /* 18px — uniforme */
+  font-size:var(--fs-base);     /* 14px — taille compacte demandée */
   font-weight:700;
   letter-spacing:.01em;
 }
@@ -1742,7 +1742,7 @@ select.schedule-time{
 }
 .schedule-tfoot-row--gap .schedule-tfoot-val{
   font-family:var(--font-heading);
-  font-size:20px;
+  font-size:var(--fs-md);       /* 16px — un peu plus gros que le reste (KPI) */
   letter-spacing:.02em;
   font-weight:400;
 }
@@ -1782,13 +1782,13 @@ select.schedule-time{
   .schedule-td--day-exit,
   .schedule-th--entry,
   .schedule-th--exit{width:58px;min-width:58px}
-  .schedule-emp-row{height:48px}
-  .schedule-emp-row td{height:48px}
-  .schedule-emp-name{font-size:var(--fs-md)}
-  .schedule-td--summary{font-size:var(--fs-md);width:62px;font-weight:700}
-  .schedule-time{font-size:var(--fs-md);font-weight:700;padding:2px 1px;line-height:1.1;min-width:56px}
-  .schedule-tfoot-val{font-size:var(--fs-md)}
-  .schedule-tfoot-row td{font-size:var(--fs-md)}
+  .schedule-emp-row{height:38px}
+  .schedule-emp-row td{height:38px}
+  .schedule-emp-name{font-size:var(--fs-sm)}
+  .schedule-td--summary{font-size:var(--fs-sm);width:58px;font-weight:700}
+  .schedule-time{font-size:var(--fs-sm);font-weight:700;padding:2px 1px;line-height:1.1;min-width:54px}
+  .schedule-tfoot-val{font-size:var(--fs-sm)}
+  .schedule-tfoot-row td{font-size:var(--fs-sm)}
 }
 
 .task-col{
@@ -6151,11 +6151,11 @@ textarea.md-input{
   flex:1;
   border:1px solid transparent;
   background:transparent;
-  padding:4px 6px;
+  padding:3px 6px;
   border-radius:var(--radius-sm);
   font-weight:600;
   color:var(--text);
-  font-size:var(--fs-md);
+  font-size:var(--fs-base);     /* 14px — cohérent avec le tableau */
   min-width:0;
 }
 .sim-input-name:hover{border-color:var(--border)}

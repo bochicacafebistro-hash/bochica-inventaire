@@ -424,6 +424,18 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 12 mai 2026 — Fix race condition au démarrage + tableaux compacts (v3.10.1) 🐞🔠
+- **Fix bug critique** : à l'ouverture de l'app, les données n'apparaissaient pas tant qu'on ne rechargeait pas la page manuellement. Cause : les listeners Firestore avec filtre `if (isLoggedIn && activePage === "X")` ne déclenchaient pas de render si leur snapshot arrivait APRÈS `applyLogin` et que la page active (souvent `dashboard`) ne matchait pas le filtre. Beaucoup de listeners (`expenses`, `revenues`, `tasks`, `menuItems`, `fixedExpenseTemplates`) étaient concernés.
+- **Solution** : nouveau helper `shouldRender(collKey, ...activePages)` qui retourne toujours `true` au PREMIER snap de chaque collection (peu importe la page), puis applique le filtre habituel pour les snaps suivants. Ajout d'un Set global `_firstSnapshots` dans `state.js`, reset au logout dans `auth.js`.
+- **Filtres `activePage` élargis** au passage : `employees` re-render aussi sur `salaires`/`simulations`/`dashboard` ; `expenses`/`revenues` re-render aussi sur `dashboard`/`taxes` ; `tasks`/`menuItems` re-render aussi sur `dashboard`.
+- **Tableau Horaire + Simulation rendus plus compacts** :
+  - Police descendue de `var(--fs-lg)` (18px) à `var(--fs-base)` (14px) sur : nom employé, heures (Entr/Sort), résumés (Heures/Taux/Total), tfoot (Heures/jour, Mt/jour, Ventes…)
+  - Ligne Écart KPI : 20px → 16px (`var(--fs-md)`) pour rester légèrement plus gros que le reste
+  - Hauteur de ligne 54px → 42px pour suivre la nouvelle taille
+  - Mobile (≤900px) : hauteur 48px → 38px, polices `fs-md` → `fs-sm` (13px)
+  - Sim : `.sim-input-name` 16px → 14px pour cohérence
+- **CACHE_VERSION** bumpé à `v3.10.1`
+
 ### 12 mai 2026 — Simulation paie (v3.10.0) 📈🧮
 - **Nouvelle page Simulation paie** sous Salaires & Pourboires (admin seulement)
 - **Modèle de données** : nouvelle collection Firestore `payrollSimulations` avec `baseline` (snapshot figé du planifié) + `simulation` (copie modifiable)
