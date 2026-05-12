@@ -138,6 +138,43 @@ db.collection("settings").doc("payroll").onSnapshot(snap => {
   if (isLoggedIn && activePage === "salaires") renderPage();
 });
 
+// Simulations paie (admin only — scénarios hypothétiques RH)
+// Re-render si on est sur la liste OU dans l'éditeur d'une simulation (pour
+// que les inputs reflètent la sauvegarde Firestore).
+db.collection("payrollSimulations").onSnapshot(snap => {
+  payrollSimulations = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  if (isLoggedIn && activePage === "simulations") {
+    // Si on est dans l'éditeur d'une sim, on rend juste l'éditeur (sinon perte de focus
+    // sur les inputs après chaque update)
+    if (typeof _editingSimId !== "undefined" && _editingSimId) {
+      // Sauver le focus avant le re-render
+      const activeId = document.activeElement?.id;
+      const sel = document.activeElement?.tagName === "INPUT" || document.activeElement?.tagName === "SELECT"
+        ? { start: document.activeElement.selectionStart, end: document.activeElement.selectionEnd }
+        : null;
+      if (typeof renderSimulationEditor === "function") {
+        renderSimulationEditor();
+      } else {
+        renderPage();
+      }
+      // Restaurer le focus
+      if (activeId) {
+        const el = document.getElementById(activeId);
+        if (el) {
+          el.focus();
+          if (sel && el.setSelectionRange) {
+            try { el.setSelectionRange(sel.start, sel.end); } catch (_) {}
+          }
+        }
+      }
+    } else {
+      renderPage();
+    }
+  }
+}, err => {
+  if (err && err.code !== "permission-denied") console.warn("listener payrollSimulations:", err);
+});
+
 // Note : le listener sur /payroll/{weekId} de la semaine courante est géré
 // dynamiquement par subscribePayrollWeek() (dans pages-payroll.js) pour ne
 // charger qu'un seul document à la fois. On l'abonne au login et à chaque

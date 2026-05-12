@@ -72,6 +72,19 @@ let scheduleCoverageSection = "all";
 // Instance Chart.js (détruit/recréé à chaque render pour éviter les fuites)
 let _coverageChartInstance = null;
 
+// ── Simulations paie ──────────────────────────────────
+// Scénarios hypothétiques pour planifier des changements RH :
+// copie figée de l'horaire planifié + version modifiable (nom, taux,
+// heures, section, ajout/retrait d'employés) + comparaison écart $/%.
+// Doc Firestore /payrollSimulations/{id}
+//   { id, name, description, baseWeekRef, baseline, simulation,
+//     createdAt, updatedAt, createdBy }
+// baseline et simulation ont la même structure :
+//   { employees[], serviceHours, tipShares, totalTips, openDays }
+// Les shifts sont indexés par jour de semaine (0=Lun..6=Dim) plutôt
+// que par date — la sim est indépendante d'une semaine particulière.
+let payrollSimulations = [];
+
 // ── Salaires & Pourboires ─────────────────────────────
 // Page hebdomadaire pour saisir les heures réelles + calculer salaires et
 // répartition des pourboires au prorata des heures de service.

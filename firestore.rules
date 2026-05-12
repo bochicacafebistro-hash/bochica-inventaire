@@ -130,6 +130,14 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // ── /payrollSimulations : scénarios paie hypothétiques (admin seul) ──
+    // Snapshot figé du planifié + version modifiable pour planifier des
+    // changements RH (embauche, hausse de taux, restructuration). Contient
+    // données financières + identité employés → admin uniquement.
+    match /payrollSimulations/{doc=**} {
+      allow read, write: if isAdmin();
+    }
+
     // ── /expenses, /revenues, /expenseCategories,
     //    /fixedExpenseTemplates : finances (admin seul) ──
     match /expenses/{doc=**} {

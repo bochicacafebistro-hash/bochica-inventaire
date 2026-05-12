@@ -13,6 +13,7 @@ function buildSidebar() {
     { icon: "clipboard", label: t("nav_tasks"), page: "taches" },
     { icon: "users", label: t("nav_employees"), page: "employes" },
     { icon: "dollar-sign", label: t("nav_salaires"), page: "salaires" },
+    { icon: "trending-up", label: "Simulation paie", page: "simulations" },
     { icon: "wallet", label: t("nav_expenses"), page: "depenses" },
     { icon: "shield-check", label: "TPS/TVQ", page: "taxes" },
     { icon: "utensils", label: t("nav_menu"), page: "menu" },
@@ -98,6 +99,11 @@ function navTo(page) {
   if (!canAccess(page)) {
     page = getHomePage();
   }
+  // Reset de l'éditeur de simulation à chaque navigation : si l'utilisateur
+  // clique sur "Simulation paie" dans la sidebar, il retombe sur la liste.
+  // L'éditeur est ouvert seulement par openSimulationEditor (qui ne passe
+  // pas par navTo), donc reset systématique sans risque.
+  if (typeof _editingSimId !== "undefined") _editingSimId = null;
   activePage = page; searchQuery = "";
   buildSidebar(); renderPage();
   if (window.innerWidth <= 768) {
@@ -132,6 +138,7 @@ function renderPage() {
     taches:      { label: t("nav_tasks"),       icon: "clipboard" },
     employes:    { label: t("nav_employees"),   icon: "users" },
     salaires:    { label: t("nav_salaires"),    icon: "dollar-sign" },
+    simulations: { label: "Simulation paie",    icon: "trending-up" },
     depenses:    { label: t("nav_expenses"),    icon: "wallet" },
     taxes:       { label: "TPS/TVQ",            icon: "shield-check" },
     menu:        { label: t("nav_menu"),        icon: "utensils" },
@@ -185,6 +192,20 @@ function renderPage() {
     // S'abonner au doc payroll de la semaine courante (idempotent)
     if (typeof subscribePayrollWeek === "function") subscribePayrollWeek();
     pc.innerHTML = renderSalaires();
+  }
+  else if (activePage === "simulations") {
+    // Si on est en train d'éditer une sim, montrer l'éditeur ; sinon la liste
+    if (typeof _editingSimId !== "undefined" && _editingSimId) {
+      const sim = (payrollSimulations || []).find(s => s.id === _editingSimId);
+      if (sim) {
+        pc.innerHTML = renderSimulationEditorHTML(sim);
+      } else {
+        _editingSimId = null;
+        pc.innerHTML = renderSimulations();
+      }
+    } else {
+      pc.innerHTML = renderSimulations();
+    }
   }
   else if (activePage === "depenses") {
     pc.innerHTML = renderDepenses();

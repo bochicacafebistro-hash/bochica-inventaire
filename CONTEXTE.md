@@ -1,6 +1,6 @@
 # 📋 CONTEXTE — Projet Bochica Inventaire
 
-> ⚠️ **Dernière mise à jour : 11 mai 2026** — nouvelle page **Soumissions** (v3.8.0) : devis pour clients avec génération PDF style Bochica (logo + tricolore + cartes forfait colorées, calqué sur Menu_Forfaits.pdf). Forfaits éditables via modale dédiée (« Gérer les forfaits »). 5 statuts (brouillon / envoyée / acceptée / refusée / expirée), suivi dépôt, lignes personnalisées (suppléments / rabais), date de validité, snapshot du forfait au moment du devis. Accès Admin seulement (chef en lecture sur les forfaits).
+> ⚠️ **Dernière mise à jour : 12 mai 2026** — nouvelle page **Simulation paie** (v3.10.0) : scénarios hypothétiques RH (admin seulement). Création d'une simulation à partir de l'horaire planifié courant → copie figée (baseline) + version modifiable. Modification libre des noms, taux horaires, sections, heures par jour, pourboires totaux, parts cuisine/service. Ajout d'employés fictifs (futures embauches) et retrait d'employés (départs). Comparaison côte à côte du réel vs la simulation avec écart $ et % par employé + totaux (heures, masse salariale, pourboires, total à payer). Persistance Firestore (`payrollSimulations`) → plusieurs scénarios sauvegardables.
 
 ## 🏠 Description
 Application web de **gestion interne** pour le restaurant colombien Bochica.
@@ -55,6 +55,7 @@ bochica-inventaire/
 │   ├── pages-secondaires.js ← Pages rapport, historique, tâches
 │   ├── pages-hr.js         ← Employés, horaires, coverage chart, salaires fixes
 │   ├── pages-payroll.js    ← Salaires & Pourboires (heures réelles, fenêtre service, prorata)
+│   ├── pages-simulations.js ← Simulation paie (scénarios RH hypothétiques, comparaison côte à côte)
 │   ├── pages-finance.js    ← Dépenses, revenus, catégories, frais fixes, rapports, charts dépenses
 │   ├── pages-kitchen.js    ← Menu, fournisseurs, ingrédients, recettes
 │   ├── pages-shopping.js   ← Liste d'ingrédients (commandes par fournisseur)
@@ -85,6 +86,7 @@ bochica-inventaire/
 <script src="js/pages-secondaires.js"></script>
 <script src="js/pages-hr.js"></script>
 <script src="js/pages-payroll.js"></script>
+<script src="js/pages-simulations.js"></script>
 <script src="js/pages-finance.js"></script>
 <script src="js/pages-kitchen.js"></script>
 <script src="js/pages-shopping.js"></script>
@@ -117,6 +119,14 @@ bochica-inventaire/
   - `quoteTemplates` — **forfaits par défaut** (base des soumissions) — admin écriture, admin+chef lecture :
     - Champs : `id`, `name`, `label`, `pricePerPerson`, `accentColor` (∈ `yellow`/`red`/`blue`/`green`), `entree`, `plat`, `boisson`, `beerPrice`, `sortOrder`
     - Seed automatique au 1er lancement (Essentiel 22$ + Gourmand 27$) via `DEFAULT_QUOTE_TEMPLATES` dans `config.js`
+  - `payrollSimulations` — **scénarios paie hypothétiques** (admin seulement) :
+    - Champs : `id`, `name`, `description`, `baseWeekRef` (ex: `2026-W19`), `createdAt`, `updatedAt`, `createdBy`
+    - `baseline` : SNAPSHOT FIGÉ au moment de la création (référence "réel" pour comparaison)
+    - `simulation` : COPIE MODIFIABLE — l'utilisateur édite seulement celle-ci
+    - Structure commune (`baseline` et `simulation`) : `{ employees[], serviceHours, tipShares, totalTips, openDays }`
+    - `employees[]` = `[{ id, name, section, hourlyRate, isSalaried, fixedWeeklyHours, role, isFictional, shifts }]`
+    - **shifts indexés par jour de semaine (0=Lun..6=Dim)** plutôt que par date — la sim est indépendante d'une semaine particulière
+    - `isFictional: true` pour les employés ajoutés dans la simulation (futures embauches)
   - `payroll` — paie hebdomadaire (un doc par semaine ISO `YYYY-Www`) :
     - `weekId`, `weekStart`, `totalTips`, `serviceHours` `{dk: {start,end}}`, `actualShifts` `{empId: {dk: {start,end}}}`, `notes`, `createdAt`/`updatedAt`
     - Indépendant des shifts planifiés dans `employees[id].shifts` — permet de saisir l'horaire **réel** sans toucher au planning
@@ -236,6 +246,33 @@ bochica-inventaire/
 - **Bouton « Reprendre du planifié »** : initialise les heures réelles avec l'horaire planifié de la semaine
 - Calcul salaire = heures réelles totales × taux (ou heures fixes × taux pour les salariés)
 - Total à payer par employé = salaire + pourboire
+
+### 📈 Simulation paie (scénarios hypothétiques RH)
+- Page **Simulation paie** (admin seulement) sous Salaires & Pourboires
+- **Création** depuis l'horaire planifié courant : snapshot figé (baseline) + version modifiable (simulation)
+- Donne un nom + description au scénario (ex : « Embauche serveuse été », « Hausse salaire cuisine +2$/h »)
+- **Modifications possibles** sur la simulation :
+  - Renommer un employé fictivement
+  - Changer le taux horaire
+  - Changer la section (cuisine / service / autre) → impacte la répartition des pourboires
+  - Ajuster les heures de chaque jour (entrée/sortie par dropdown 30 min)
+  - **Ajouter des employés fictifs** (badge « FICTIF ») pour tester une future embauche
+  - **Retirer un employé** de la simulation (badge « RETIRÉ » dans la comparaison)
+  - Modifier le total pourboires + parts cuisine/service
+  - Modifier les heures de service par jour de semaine
+  - Modifier les jours d'ouverture
+- **Comparaison côte à côte** : tableau Réel | Simulation | Écart $ avec % par employé + ligne TOTAL
+- **4 KPI en haut** : Heures totales, Masse salariale, Pourboires distribués, Total à payer (avec écart $/%)
+- **Code couleur sémantique** :
+  - Coûts qui augmentent (masse salariale, total) → rouge
+  - Coûts qui baissent → vert
+  - Pourboires qui montent → vert (positif pour l'équipe)
+  - Heures qui montent → vert (plus de couverture)
+- **Bouton « Réinitialiser au réel »** : écrase la simulation par le snapshot baseline
+- **Duplication** : créer une variante d'une simulation existante
+- **Plusieurs scénarios sauvegardés** simultanément (Firestore `payrollSimulations`)
+- **Persistance sans toucher au réel** : aucune modification de la simulation n'affecte les vrais employés, horaires ou paie
+- Reset automatique à la liste quand on clique sur « Simulation paie » dans la sidebar (sortie propre de l'éditeur)
 
 ### 💰 Dépenses & Revenus
 - Calcul TPS/TVQ auto, catégories personnalisables, frais fixes auto
@@ -386,6 +423,28 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 12 mai 2026 — Simulation paie (v3.10.0) 📈🧮
+- **Nouvelle page Simulation paie** sous Salaires & Pourboires (admin seulement)
+- **Modèle de données** : nouvelle collection Firestore `payrollSimulations` avec `baseline` (snapshot figé du planifié) + `simulation` (copie modifiable)
+- **Nouveau fichier** `js/pages-simulations.js` (~600 lignes) avec :
+  - `renderSimulations()` : liste des scénarios sauvegardés (cartes avec comparaison rapide réel/sim + écart $)
+  - `renderSimulationEditorHTML()` : éditeur complet d'une simulation (KPI + paramètres globaux + tableau employés + comparaison)
+  - `computeSimScenario()` : calculs de salaires + pourboires (réutilise `hoursFromShift`, `intersectShiftHours`)
+  - `createSimFromPlanned()` : snapshot depuis horaire planifié courant — conversion shifts par date → par index de jour de semaine (0=Lun..6=Dim)
+  - CRUD complet : créer, modifier, dupliquer, réinitialiser au baseline, supprimer
+  - Ajout/retrait d'employés fictifs (badge FICTIF / RETIRÉ / AJOUTÉ)
+  - Édition de nom, taux, section, heures par jour, pourboires, parts cuisine/service, heures de service, jours ouverts
+- **Sidebar** : nouvelle entrée « Simulation paie » sous Salaires (icône `trending-up`)
+- **Permissions** : `simulations` ajouté à `ROLE_PERMISSIONS.global_admin.canAccess/canWrite`
+- **Firestore rules** : règle `/payrollSimulations/{doc=**}` admin only (contient données financières + identité employés)
+- **Listener Firestore** dans `firebase-listeners.js` avec préservation du focus dans l'éditeur (sinon perte de saisie après chaque update)
+- **Reset automatique** de `_editingSimId` dans `navTo()` → clic sidebar « Simulation paie » = retour à la liste
+- **CSS** : ~350 lignes (cartes de simulation, KPI tuiles, tableau côte à côte avec colonnes teintées, badges FICTIF/RETIRÉ/AJOUTÉ, dark mode adapté, responsive 900px / 640px)
+- **Code couleur sémantique** : coûts qui montent = rouge, qui baissent = vert ; heures et pourboires qui montent = vert
+- **Persistance multi-scénarios** : plusieurs simulations peuvent coexister, chacune avec son baseline figé
+- **Indépendance temporelle** : shifts stockés par jour de semaine (0..6), pas par date → la sim n'est pas attachée à une semaine particulière
+- **CACHE_VERSION** bumpé à `v3.10.0` + `pages-simulations.js` ajouté à l'app shell du SW
 
 ### 11 mai 2026 — Tableau uniforme + taille 18px (v3.9.3) 📐
 - **Toutes les lignes employés à la MÊME HAUTEUR** : `height: 54px` sur `.schedule-emp-row` + `.schedule-emp-row td` (peu importe le contenu)
