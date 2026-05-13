@@ -6212,11 +6212,13 @@ textarea.md-input{
 /* Champ taux horaire — compact, pas de label ($/h impliqué) */
 .sim-rate-input{
   width:46px;
+  height:24px;                          /* hauteur fixe identique au select */
+  box-sizing:border-box;
   flex-shrink:0;
   border:1px solid var(--border);
   border-radius:var(--radius-sm);
   background:var(--surface);
-  padding:3px 5px;
+  padding:0 4px;
   font-size:11px;
   font-family:var(--font-mono);
   font-weight:600;
@@ -6224,6 +6226,7 @@ textarea.md-input{
   text-align:center;
   font-variant-numeric:tabular-nums;
   -moz-appearance:textfield;
+  line-height:1;
 }
 .sim-rate-input::-webkit-outer-spin-button,
 .sim-rate-input::-webkit-inner-spin-button{
@@ -6240,15 +6243,17 @@ textarea.md-input{
 .sim-section-select{
   flex:1;
   min-width:0;
+  height:24px;                          /* hauteur fixe identique au taux */
+  box-sizing:border-box;
   border:1px solid var(--border);
   border-radius:var(--radius-sm);
   background:var(--surface);
-  padding:3px 4px;
-  padding-right:14px;
+  padding:0 14px 0 5px;
   font-size:11px;
   font-family:var(--font-body);
   color:var(--text);
   cursor:pointer;
+  line-height:1;
   /* Chevron custom via SVG background pour gagner de la place */
   appearance:none;
   -webkit-appearance:none;

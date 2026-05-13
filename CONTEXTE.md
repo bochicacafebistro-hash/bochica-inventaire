@@ -424,6 +424,10 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 12 mai 2026 — Hauteur uniforme taux/section (v3.10.4) 📏
+- **Sim** : `height:24px` + `box-sizing:border-box` + `line-height:1` forcés sur `.sim-rate-input` ET `.sim-section-select` pour qu'ils s'alignent parfaitement côte à côte (avant : hauteur dépendait du browser/UA-styles).
+- **CACHE_VERSION** bumpé à `v3.10.4`
+
 ### 12 mai 2026 — Cellule employé sim ultra-compacte (v3.10.3) 📏
 - **Page Simulation paie — cellule employé compactée drastiquement** :
   - Retrait de l'icône `$` et du label `$/h` (info implicite — pas besoin de la rappeler)
