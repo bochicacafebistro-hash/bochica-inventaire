@@ -611,18 +611,12 @@ function renderSimEmpRow(sim, row, rowIdx, visibleIdx, baseRows) {
           ${isFictional ? `<span class="sim-badge-fictional" title="Employé ajouté dans la simulation">FICTIF</span>` : ""}
         </div>
         <div class="sim-emp-fields">
-          <label class="sim-mini-field" title="Taux horaire">
-            ${icon("dollar-sign", 11)}
-            <input type="number" min="0" step="0.25" value="${emp.hourlyRate || ""}" placeholder="Taux" onchange="updateSimEmployee('${sim.id}','${emp.id}','hourlyRate',this.value)"/>
-            <span>$/h</span>
-          </label>
-          <label class="sim-mini-field" title="Section pour les pourboires">
-            <select onchange="updateSimEmployee('${sim.id}','${emp.id}','section',this.value)">
-              <option value="service" ${emp.section === "service" ? "selected" : ""}>Service</option>
-              <option value="cuisine" ${emp.section === "cuisine" ? "selected" : ""}>Cuisine</option>
-              <option value="other" ${emp.section === "other" ? "selected" : ""}>Autre</option>
-            </select>
-          </label>
+          <input class="sim-rate-input" type="number" min="0" step="0.25" value="${emp.hourlyRate || ""}" placeholder="Taux" title="Taux horaire ($/h)" onchange="updateSimEmployee('${sim.id}','${emp.id}','hourlyRate',this.value)"/>
+          <select class="sim-section-select" title="Section pour les pourboires" onchange="updateSimEmployee('${sim.id}','${emp.id}','section',this.value)">
+            <option value="service" ${emp.section === "service" ? "selected" : ""}>Service</option>
+            <option value="cuisine" ${emp.section === "cuisine" ? "selected" : ""}>Cuisine</option>
+            <option value="other" ${emp.section === "other" ? "selected" : ""}>Autre</option>
+          </select>
         </div>
       </div>
     </td>

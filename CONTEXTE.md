@@ -424,6 +424,18 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 12 mai 2026 — Cellule employé sim ultra-compacte (v3.10.3) 📏
+- **Page Simulation paie — cellule employé compactée drastiquement** :
+  - Retrait de l'icône `$` et du label `$/h` (info implicite — pas besoin de la rappeler)
+  - Retrait des "mini-fields" englobants (`.sim-mini-field`) avec leur padding et bordure interne
+  - Remplacé par : input taux direct (`.sim-rate-input`) + select section direct (`.sim-section-select`), sans wrapper
+  - Largeur colonne emp : **220px → 160px** (gain de 60px de largeur pour les colonnes jours)
+  - min-height ligne : 48px → 44px
+  - Spinners natifs cachés sur l'input taux (`-webkit-appearance:none`)
+  - Chevron du select customisé en SVG inline pour gagner ~10px (vs chevron natif)
+  - Min-width table : 1100px → 1000px
+- **CACHE_VERSION** bumpé à `v3.10.3`
+
 ### 12 mai 2026 — Refonte UI Salaires & Simulation (v3.10.2) 🎨🔧
 - **Page Salaires & Pourboires** :
   - **Retrait des badges « Auto-importé »** dans chaque cellule (bruit visuel énorme). L'info reste accessible via le tooltip de la cellule + le fond bleuté discret.

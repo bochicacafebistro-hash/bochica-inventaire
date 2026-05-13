@@ -6159,15 +6159,15 @@ textarea.md-input{
 
 /* Tableau de la simulation */
 .sim-table-wrap{margin-bottom:var(--sp-4)}
-.sim-table{min-width:1100px}
+.sim-table{min-width:1000px}
 .sim-table .sim-th--emp,
 .sim-table .sim-td--emp{
-  min-width:220px;
-  width:220px;
-  padding:6px 8px;
+  min-width:160px;
+  width:160px;
+  padding:4px 6px;
 }
 /* Tighter row height for sim — la cellule emp doit accueillir nom + taux + section */
-.sim-emp-row td{height:auto;min-height:48px;padding:4px 3px}
+.sim-emp-row td{height:auto;min-height:44px;padding:3px}
 .sim-table .schedule-td--day-entry,
 .sim-table .schedule-td--day-exit{padding:2px 1px}
 .sim-emp-row.is-fictional{
@@ -6206,36 +6206,65 @@ textarea.md-input{
   display:flex;
   gap:4px;
   align-items:center;
-  flex-wrap:wrap;
+  flex-wrap:nowrap;
+  min-width:0;
 }
-.sim-mini-field{
-  display:flex;
-  align-items:center;
-  gap:3px;
-  font-size:10px;
-  color:var(--text3);
-  background:var(--surface);
+/* Champ taux horaire — compact, pas de label ($/h impliqué) */
+.sim-rate-input{
+  width:46px;
+  flex-shrink:0;
   border:1px solid var(--border);
   border-radius:var(--radius-sm);
-  padding:2px 5px;
-}
-.sim-mini-field:hover,
-.sim-mini-field:focus-within{border-color:var(--accent)}
-.sim-mini-field input,
-.sim-mini-field select{
-  border:none;
-  background:transparent;
+  background:var(--surface);
+  padding:3px 5px;
   font-size:11px;
+  font-family:var(--font-mono);
+  font-weight:600;
   color:var(--text);
-  padding:0;
-  width:50px;
-  min-width:0;
-  font-family:inherit;
+  text-align:center;
+  font-variant-numeric:tabular-nums;
+  -moz-appearance:textfield;
 }
-.sim-mini-field select{width:auto;padding-right:2px}
-.sim-mini-field input:focus,
-.sim-mini-field select:focus{outline:none}
-.sim-mini-field span{font-size:10px;color:var(--text3)}
+.sim-rate-input::-webkit-outer-spin-button,
+.sim-rate-input::-webkit-inner-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+.sim-rate-input:hover{border-color:var(--accent)}
+.sim-rate-input:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(var(--accent-rgb),.18);
+}
+/* Sélecteur section (service/cuisine/autre) — minimaliste */
+.sim-section-select{
+  flex:1;
+  min-width:0;
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  background:var(--surface);
+  padding:3px 4px;
+  padding-right:14px;
+  font-size:11px;
+  font-family:var(--font-body);
+  color:var(--text);
+  cursor:pointer;
+  /* Chevron custom via SVG background pour gagner de la place */
+  appearance:none;
+  -webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%230e0d0c' stroke-width='3' opacity='.5'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 3px center;
+}
+.sim-section-select:hover{border-color:var(--accent)}
+.sim-section-select:focus{
+  outline:none;
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(var(--accent-rgb),.18);
+}
+body.dark .sim-section-select{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%23f5f1e8' stroke-width='3' opacity='.5'><polyline points='6 9 12 15 18 9'/></svg>");
+}
 
 /* Badges */
 .sim-badge-fictional{
