@@ -6815,6 +6815,28 @@ body.dark .card:hover{
   margin-left: auto;
   flex-shrink: 0;
 }
+.dash-today-item__day{
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text2);
+  background: var(--surface2);
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  min-width: 38px;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+}
+.dash-today-item.is-today{
+  border-color: rgba(var(--accent-rgb), .4);
+  background: rgba(var(--accent-rgb), .06);
+}
+.dash-today-item.is-today .dash-today-item__day{
+  background: var(--accent);
+  color: var(--accent-text);
+}
 .dash-today-empty{
   font-size: 11px;
   color: var(--text3);

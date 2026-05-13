@@ -389,23 +389,29 @@ function renderDashTodayWidget(now, todayStr) {
     .filter(Boolean)
     .sort((a, b) => (a.start || "").localeCompare(b.start || ""));
 
-  // Événements du jour (non annulés)
-  const eventsToday = (typeof events !== "undefined" ? events : [])
-    .filter(e => e.date === todayStr && e.status !== "annule")
-    .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
-
-  // Tâches dues aujourd'hui (non complétées)
-  const tasksToday = (typeof tasks !== "undefined" ? tasks : [])
-    .filter(tk => tk.status !== "Complété" && tk.dueDate === todayStr)
-    .slice(0, 5);
-
-  // Ratio salaires/ventes : utilise les ventes réelles + heures planifiées de la semaine courante
-  // (même logique que la page Salaires : sumGross hebdo ÷ ventes hebdo)
+  // Calcul du début/fin de semaine ISO (lundi → dimanche, en cours)
   const weekStartDate = getWeekStartForDashboard(now);
   const weekDates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(weekStartDate); d.setDate(d.getDate() + i);
     return d.toISOString().slice(0, 10);
   });
+  const weekStartStr = weekDates[0];
+  const weekEndStr = weekDates[6];
+
+  // Événements de la SEMAINE en cours (lundi → dimanche, non annulés)
+  // Inclut les spectacles, réservations, soirées karaoké, internes, fériés
+  const eventsWeek = (typeof events !== "undefined" ? events : [])
+    .filter(e => e.date && e.date >= weekStartStr && e.date <= weekEndStr && e.status !== "annule")
+    .sort((a, b) => {
+      const c = (a.date || "").localeCompare(b.date || "");
+      if (c !== 0) return c;
+      return (a.time || "99:99").localeCompare(b.time || "99:99");
+    });
+
+  // Tâches dues aujourd'hui (non complétées)
+  const tasksToday = (typeof tasks !== "undefined" ? tasks : [])
+    .filter(tk => tk.status !== "Complété" && tk.dueDate === todayStr)
+    .slice(0, 5);
   let weekGross = 0;
   let weekSales = 0;
   if (typeof employees !== "undefined") {
@@ -467,16 +473,35 @@ function renderDashTodayWidget(now, todayStr) {
         </div>
       </div>
 
-      <!-- Événements du jour -->
+      <!-- Événements de la semaine -->
       <div class="dash-today-block">
-        <div class="dash-today-block__title">${icon("calendar", 12)} Événements (${eventsToday.length})</div>
+        <div class="dash-today-block__title">${icon("calendar", 12)} Événements cette semaine (${eventsWeek.length})</div>
         <div class="dash-today-block__list">
-          ${eventsToday.length === 0
-            ? `<div class="dash-today-empty">Aucun événement aujourd'hui</div>`
-            : eventsToday.slice(0, 5).map(e => `<div class="dash-today-item" onclick="navTo('evenements')" style="cursor:pointer">
-                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.name || "Sans nom")}</span>
-                ${e.time ? `<span class="dash-today-item__time">${e.time}</span>` : ""}
-              </div>`).join("")
+          ${eventsWeek.length === 0
+            ? `<div class="dash-today-empty">Aucun événement cette semaine</div>`
+            : eventsWeek.slice(0, 6).map(e => {
+                // Label jour court : "Lun 12", "Aujourd'hui", "Demain"
+                let dayLabel = "";
+                if (e.date === todayStr) {
+                  dayLabel = "Auj.";
+                } else {
+                  const ed = new Date(e.date + "T00:00:00");
+                  const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
+                  if (e.date === tomorrow.toISOString().slice(0, 10)) {
+                    dayLabel = "Demain";
+                  } else {
+                    const days = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+                    dayLabel = `${days[ed.getDay()]} ${ed.getDate()}`;
+                  }
+                }
+                const isToday = e.date === todayStr;
+                return `<div class="dash-today-item ${isToday ? "is-today" : ""}" onclick="navTo('evenements')" style="cursor:pointer">
+                  <span class="dash-today-item__day">${dayLabel}</span>
+                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(e.name || "Sans nom")}</span>
+                  ${e.time ? `<span class="dash-today-item__time">${e.time}</span>` : ""}
+                </div>`;
+              }).join("")
+              + (eventsWeek.length > 6 ? `<div class="dash-today-empty">+ ${eventsWeek.length - 6} autres…</div>` : "")
           }
         </div>
       </div>
