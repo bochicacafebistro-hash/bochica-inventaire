@@ -96,7 +96,7 @@ let monthlyReports = [];
 let reportsViewPeriod = 6;     // 3 | 6 | 12 | "all" | "custom"
 let reportsCustomStart = "";   // YYYY-MM (utilisé si reportsViewPeriod === "custom")
 let reportsCustomEnd = "";     // YYYY-MM (utilisé si reportsViewPeriod === "custom")
-let reportsCompareYoY = false; // true = afficher comparatif vs année précédente
+let reportsCompareYoY = true;  // true = afficher comparatif vs année précédente (par défaut ON)
 
 // ── Simulations paie ──────────────────────────────────
 // Scénarios hypothétiques pour planifier des changements RH :

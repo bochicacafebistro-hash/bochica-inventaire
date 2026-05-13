@@ -394,55 +394,65 @@ function initReportsCharts() {
   const ctxSales = document.getElementById("reports-chart-sales");
   if (ctxSales) {
     const yoyReports = reportsCompareYoY ? getYoYReports(reports) : null;
-    const datasets = [
-      {
-        type: "bar",
-        label: "Ventes totales",
-        data: reports.map(r => Number(r.summary?.total_with_tax) || 0),
-        backgroundColor: REPORT_COLORS.green,
-        borderRadius: 4,
-        yAxisID: "y"
-      }
-    ];
-    // Ajout du dataset YoY si activé
-    if (yoyReports && yoyReports.some(r => r != null)) {
+    const hasYoY = yoyReports && yoyReports.some(r => r != null);
+    // Année courante : on prend l'année max présente dans la sélection (label dynamique)
+    const currentYear = reports.length ? (reports[reports.length - 1].year || new Date().getFullYear()) : new Date().getFullYear();
+    const prevYear = currentYear - 1;
+
+    const datasets = [];
+    // Si YoY actif et données disponibles : l'A-1 vient EN PREMIER (plus pâle, derrière visuellement)
+    if (hasYoY) {
       datasets.push({
         type: "bar",
-        label: "Ventes A-1",
-        data: yoyReports.map(r => r ? (Number(r.summary?.total_with_tax) || 0) : null),
-        backgroundColor: REPORT_COLORS.green + "55",  // 33% opacity
+        label: `Ventes ${prevYear}`,
+        data: yoyReports.map(r => r ? (Number(r.summary?.total_with_tax) || 0) : 0),
+        // Vert plus pâle pour bien distinguer de l'année courante
+        backgroundColor: "rgba(125, 191, 102, 0.35)",
         borderColor: REPORT_COLORS.green,
-        borderWidth: 1,
-        borderDash: [4, 3],
-        borderRadius: 4,
-        yAxisID: "y"
+        borderWidth: 1.5,
+        borderRadius: 3,
+        yAxisID: "y",
+        order: 2
+      });
+    }
+    datasets.push({
+      type: "bar",
+      label: `Ventes ${currentYear}`,
+      data: reports.map(r => Number(r.summary?.total_with_tax) || 0),
+      backgroundColor: REPORT_COLORS.green,
+      borderRadius: 4,
+      yAxisID: "y",
+      order: 1
+    });
+    if (hasYoY) {
+      datasets.push({
+        type: "line",
+        label: `Pourboires ${prevYear}`,
+        data: yoyReports.map(r => r ? (Number(r.total_tips) || 0) : null),
+        borderColor: "rgba(247, 179, 44, 0.55)",
+        backgroundColor: "transparent",
+        borderWidth: 1.8,
+        borderDash: [5, 4],
+        tension: 0.3,
+        pointRadius: 3,
+        pointBackgroundColor: "rgba(247, 179, 44, 0.55)",
+        yAxisID: "y1",
+        order: 0
       });
     }
     datasets.push({
       type: "line",
-      label: "Pourboires",
+      label: `Pourboires ${currentYear}`,
       data: reports.map(r => Number(r.total_tips) || 0),
       borderColor: REPORT_COLORS.primary,
       backgroundColor: REPORT_COLORS.primary,
       borderWidth: 2.5,
       tension: 0.3,
       pointRadius: 4,
-      yAxisID: "y1"
+      yAxisID: "y1",
+      order: 0
     });
-    if (yoyReports && yoyReports.some(r => r != null && r.total_tips)) {
-      datasets.push({
-        type: "line",
-        label: "Pourboires A-1",
-        data: yoyReports.map(r => r ? (Number(r.total_tips) || 0) : null),
-        borderColor: REPORT_COLORS.primary,
-        backgroundColor: "transparent",
-        borderWidth: 1.5,
-        borderDash: [4, 3],
-        tension: 0.3,
-        pointRadius: 3,
-        yAxisID: "y1"
-      });
-    }
+
     _reportChartInstances.sales = new Chart(ctxSales, {
       data: { labels, datasets },
       options: chartCommonOptions(textColor, gridColor, {
