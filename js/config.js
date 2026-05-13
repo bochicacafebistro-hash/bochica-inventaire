@@ -29,9 +29,9 @@ const AUTH_DISPLAY_NAMES = {
 // Permissions par rôle : pages accessibles + pages modifiables (écriture)
 const ROLE_PERMISSIONS = {
   global_admin: {
-    canAccess: ["dashboard", "inventaire", "rapport", "historique", "taches", "employes", "salaires", "simulations",
+    canAccess: ["dashboard", "inventaire", "rapport", "taches", "employes", "salaires", "simulations",
                 "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "fournisseurs", "rapports"],
-    canWrite: ["dashboard", "inventaire", "rapport", "historique", "taches", "employes", "salaires", "simulations",
+    canWrite: ["dashboard", "inventaire", "rapport", "taches", "employes", "salaires", "simulations",
                "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "fournisseurs", "rapports"],
     homePage: "dashboard"
   },

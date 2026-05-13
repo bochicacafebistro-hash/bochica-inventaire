@@ -64,6 +64,8 @@ let isAdmin = false, isLoggedIn = false, darkMode = false;
 let userRole = null; // "global_admin" | "chef" | "employee" | null
 let loggedInUser = null; // { id, name, role } pour traçabilité
 let activeSection = "Toutes", searchQuery = "", sectionsExpanded = false;
+// Mode de tri pour la page À commander : "section" (catégorie inv.) ou "supplier"
+let rapportSortMode = "section";
 let showArchived = false, logFilter = "";
 let activePage = "inventaire";
 let activeMenuCat = "Toutes", activeExpensePeriod = "mois";

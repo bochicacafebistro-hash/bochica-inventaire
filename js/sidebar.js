@@ -13,7 +13,6 @@ function getNavStructure() {
       items: [
         { icon: "package", label: t("nav_inventaire"), page: "inventaire" },
         { icon: "cart", label: t("nav_to_order"), page: "rapport" },
-        { icon: "history", label: t("nav_history"), page: "historique" },
         { icon: "cart", label: "Liste d'ingrédients", page: "shopping" }
       ]
     },
@@ -55,7 +54,7 @@ function getNavStructure() {
 
 // Mapping page → id de section, pour auto-ouvrir la bonne section après une navigation
 const PAGE_TO_SECTION = {
-  inventaire: "inventory", rapport: "inventory", historique: "inventory", shopping: "inventory",
+  inventaire: "inventory", rapport: "inventory", shopping: "inventory",
   employes: "hr", salaires: "hr", simulations: "hr", taches: "hr",
   menu: "kitchen", ingredients: "kitchen", recettes: "kitchen",
   depenses: "finance", taxes: "finance", rapports: "finance",
@@ -199,7 +198,6 @@ function renderPage() {
   const pageMeta = {
     dashboard:   { label: t("nav_dashboard"),   icon: "bar-chart" },
     inventaire:  { label: t("nav_inventaire"),  icon: "package" },
-    historique:  { label: t("nav_history"),     icon: "history" },
     taches:      { label: t("nav_tasks"),       icon: "clipboard" },
     employes:    { label: t("nav_employees"),   icon: "users" },
     salaires:    { label: t("nav_salaires"),    icon: "dollar-sign" },
@@ -251,7 +249,6 @@ function renderPage() {
   }
   else if (activePage === "inventaire") pc.innerHTML = renderInventaire();
   else if (activePage === "rapport") pc.innerHTML = renderRapport();
-  else if (activePage === "historique") pc.innerHTML = renderHistorique();
   else if (activePage === "taches") pc.innerHTML = renderTaches();
   else if (activePage === "employes") {
     pc.innerHTML = renderEmployes();

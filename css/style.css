@@ -1453,15 +1453,15 @@ tr:last-child td{border-bottom:none}
   line-height:1.1;
 }
 .schedule-emp-name{
-  font-family:var(--font-heading);
-  font-size:var(--fs-base);     /* 14px — taille compacte demandée */
+  font-family:var(--font-body);  /* Inter au lieu de Bebas Neue → plus lisible */
+  font-size:var(--fs-base);      /* 14px */
   font-weight:700;
-  letter-spacing:.02em;
+  letter-spacing:0;
   color:var(--text);
   white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
-  line-height:1.1;
+  line-height:1.2;
 }
 .schedule-emp-meta{
   display:flex;
@@ -1727,9 +1727,10 @@ tr:last-child td{border-bottom:none}
   min-width:60px;
   border:none;
   background:transparent;
-  font-family:var(--font-mono);
-  font-size:var(--fs-base);     /* 14px — taille compacte demandée */
-  font-weight:700;              /* gras pour mieux lire les heures */
+  font-family:var(--font-body);   /* Inter au lieu de JetBrains Mono → plus lisible */
+  font-size:var(--fs-base);       /* 14px */
+  font-weight:600;                /* legèrement moins gras avec Inter */
+  font-variant-numeric:tabular-nums; /* chiffres alignés en colonne */
   color:var(--text);            /* noir chaud plein */
   padding:2px 1px;              /* padding minimal pour maximiser la taille des chiffres */
   line-height:1.1;              /* compact pour ne pas gaspiller d'espace vertical */
@@ -1754,27 +1755,27 @@ select.schedule-time{
 .schedule-td--summary{
   width:70px;
   background:var(--surface2);
-  font-family:var(--font-heading);
-  font-size:var(--fs-base);     /* 14px — taille compacte demandée */
+  font-family:var(--font-body);   /* Inter pour meilleure lisibilité */
+  font-size:var(--fs-base);       /* 14px */
   font-weight:700;
   color:var(--text);
   font-variant-numeric:tabular-nums;
-  letter-spacing:.01em;
+  letter-spacing:0;
   border-left:1px solid var(--border);
   padding:6px 4px;
 }
 .schedule-td--total{
   background:rgba(var(--accent-rgb),.18);
-  color:var(--accent-text);     /* noir chaud plutôt que jaune pour meilleur contraste */
-  font-weight:800;              /* extra-bold pour le total */
-  font-size:var(--fs-base);     /* 14px */
+  color:var(--accent-text);
+  font-weight:800;
+  font-size:var(--fs-base);
 }
 
 /* Lignes pied de page (totaux) — chiffres bien visibles aussi */
 .schedule-tfoot-row td{
   background:var(--surface2);
-  font-family:var(--font-heading);
-  font-size:var(--fs-base);     /* 14px — taille compacte demandée */
+  font-family:var(--font-body);   /* Inter pour meilleure lisibilité */
+  font-size:var(--fs-base);       /* 14px */
   font-weight:700;
   color:var(--text);
   border-top:2px solid var(--border-strong);
@@ -1823,10 +1824,10 @@ select.schedule-time{
   white-space:nowrap;
 }
 .schedule-tfoot-row--gap .schedule-tfoot-val{
-  font-family:var(--font-heading);
+  font-family:var(--font-body);
   font-size:var(--fs-md);       /* 16px — un peu plus gros que le reste (KPI) */
-  letter-spacing:.02em;
-  font-weight:400;
+  letter-spacing:0;
+  font-weight:700;
 }
 .schedule-tfoot-row--gap .is-positive{color:var(--status-green);font-weight:700}
 .schedule-tfoot-row--gap .is-negative{color:var(--status-red);font-weight:700}
@@ -6830,6 +6831,112 @@ body.dark .card:hover{
 /* ═══════════════════════════════════════════════════════════════
    RAPPORTS MENSUELS — Graphiques comparatifs multi-mois
    ═══════════════════════════════════════════════════════════════ */
+
+/* ── Page À commander : sélecteur de tri (section / fournisseur) ── */
+.rapport-sort-tabs{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:var(--sp-3) var(--sp-4);
+  margin-bottom:var(--sp-4);
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  flex-wrap:wrap;
+}
+.rapport-sort-tabs__label{
+  font-family:var(--font-mono);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text3);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-right:6px;
+}
+.rapport-sort-tab{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 14px;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--text2);
+  font-size:var(--fs-sm);
+  font-weight:600;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  transition:all var(--transition-fast);
+  font-family:var(--font-body);
+}
+.rapport-sort-tab:hover{
+  background:var(--surface2);
+  color:var(--text);
+}
+.rapport-sort-tab.is-active{
+  background:var(--accent);
+  color:var(--accent-text);
+  border-color:var(--accent);
+  box-shadow:0 2px 6px rgba(var(--accent-rgb),.25);
+}
+
+/* Titre d'un groupe (section ou fournisseur) sur la page À commander */
+.rapport-group-title{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  font-size:var(--fs-md);
+  font-weight:700;
+  color:var(--text);
+  border-bottom:2px solid var(--border);
+  padding-bottom:8px;
+  margin:var(--sp-5) 0 var(--sp-3);
+  text-transform:none;
+  letter-spacing:0;
+}
+.rapport-group-count{
+  background:var(--surface2);
+  color:var(--text2);
+  font-family:var(--font-mono);
+  font-size:11px;
+  font-weight:700;
+  padding:2px 8px;
+  border-radius:var(--radius-pill);
+}
+.rapport-group-badge{
+  font-family:var(--font-mono);
+  font-size:10px;
+  font-weight:700;
+  padding:2px 7px;
+  border-radius:var(--radius-sm);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.rapport-group-badge--red{
+  background:rgba(217,83,79,.15);
+  color:var(--status-red, #d9534f);
+}
+.rapport-group-badge--yellow{
+  background:rgba(180,83,9,.15);
+  color:#b45309;
+}
+.rapport-group-contact{
+  margin-left:auto;
+  font-size:11px;
+  color:var(--text3);
+  font-family:var(--font-mono);
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+}
+.rapport-group-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(280px,1fr));
+  gap:12px;
+  margin-bottom:var(--sp-6);
+}
 
 /* Bloc de contrôles (period tabs + range custom + toggle YoY) */
 .reports-controls{

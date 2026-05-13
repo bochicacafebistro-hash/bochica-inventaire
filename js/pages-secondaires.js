@@ -1,4 +1,9 @@
 // ── Page Rapport ──────────────────────────────────────
+function setRapportSortMode(mode) {
+  rapportSortMode = (mode === "supplier") ? "supplier" : "section";
+  renderPage();
+}
+
 function renderRapport() {
   const activeProducts = products.filter(p => !p.archived);
   const toOrder = activeProducts.filter(p => ["red", "yellow"].includes(getStatus(p)))
@@ -17,26 +22,85 @@ function renderRapport() {
     return h + `<div class="empty"><div style="margin-bottom:12px;color:var(--status-green);display:flex;justify-content:center">${icon("check-circle", 48)}</div>${t("rapport_all_ok")}</div></div>`;
   }
 
+  // Sélecteur de tri (section / fournisseur)
+  h += `<div class="rapport-sort-tabs">
+    <span class="rapport-sort-tabs__label">${icon("layers", 14)} Grouper par :</span>
+    <button class="rapport-sort-tab ${rapportSortMode === "section" ? "is-active" : ""}" onclick="setRapportSortMode('section')">${icon("folder", 13)} Section</button>
+    <button class="rapport-sort-tab ${rapportSortMode === "supplier" ? "is-active" : ""}" onclick="setRapportSortMode('supplier')">${icon("store", 13)} Fournisseur</button>
+  </div>`;
+
   h += `<div class="summary-cards">
     <div class="summary-card" style="border-color:var(--status-red)"><div style="font-weight:700;font-size:22px;color:var(--status-red)">${redCnt}</div><div class="icon-inline" style="font-size:13px;color:var(--status-red)">${icon("alert", 14)} ${t("rapport_immediate")}</div></div>
     <div class="summary-card" style="border-color:var(--status-yellow)"><div style="font-weight:700;font-size:22px;color:var(--status-yellow)">${yelCnt}</div><div class="icon-inline" style="font-size:13px;color:var(--status-yellow)">${icon("clock", 14)} ${t("rapport_soon")}</div></div>
   </div>`;
 
-  getAllSections().filter(s => s !== "Toutes").forEach(section => {
-    const items = toOrder.filter(p => p.section === section);
-    if (!items.length) return;
-    h += `<h3 class="icon-inline" style="font-size:13px;color:var(--text2);border-bottom:2px solid var(--border);padding-bottom:6px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px">${icon("folder", 14)} ${section}</h3>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;margin-bottom:24px">`;
-    items.forEach(p => { h += buildInvCard(p, false, true); });
-    h += `</div>`;
-  });
+  // ─ Mode 1 : Grouper par SECTION (catégorie d'inventaire) ─
+  if (rapportSortMode === "section") {
+    getAllSections().filter(s => s !== "Toutes").forEach(section => {
+      const items = toOrder.filter(p => p.section === section);
+      if (!items.length) return;
+      h += `<h3 class="rapport-group-title">${icon("folder", 14)} ${section} <span class="rapport-group-count">${items.length}</span></h3>
+      <div class="rapport-group-grid">`;
+      items.forEach(p => { h += buildInvCard(p, false, true); });
+      h += `</div>`;
+    });
+  }
+  // ─ Mode 2 : Grouper par FOURNISSEUR ─
+  else if (rapportSortMode === "supplier") {
+    // Construire la liste des fournisseurs présents dans toOrder + une catégorie "Sans fournisseur"
+    const buckets = new Map();   // supplierId → { name, contact, items[] }
+    const noSupplier = { name: "— Sans fournisseur —", contact: "", items: [] };
+    toOrder.forEach(p => {
+      if (!p.supplierId) { noSupplier.items.push(p); return; }
+      const sup = suppliers.find(s => s.id === p.supplierId);
+      const supName = sup ? (sup.name || "Sans nom") : "Fournisseur supprimé";
+      if (!buckets.has(p.supplierId)) {
+        buckets.set(p.supplierId, { name: supName, contact: sup?.contact || "", items: [] });
+      }
+      buckets.get(p.supplierId).items.push(p);
+    });
+    // Trier les buckets par nom alphabétique
+    const sortedBuckets = [...buckets.values()].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    if (noSupplier.items.length) sortedBuckets.push(noSupplier);
+
+    sortedBuckets.forEach(bucket => {
+      const itemsRed = bucket.items.filter(p => getStatus(p) === "red").length;
+      const itemsYel = bucket.items.filter(p => getStatus(p) === "yellow").length;
+      h += `<h3 class="rapport-group-title">
+        ${icon("store", 14)} ${esc(bucket.name)}
+        <span class="rapport-group-count">${bucket.items.length}</span>
+        ${itemsRed > 0 ? `<span class="rapport-group-badge rapport-group-badge--red">${itemsRed} ${t("rapport_immediate").toLowerCase()}</span>` : ""}
+        ${itemsYel > 0 ? `<span class="rapport-group-badge rapport-group-badge--yellow">${itemsYel} ${t("rapport_soon").toLowerCase()}</span>` : ""}
+        ${bucket.contact ? `<span class="rapport-group-contact">${icon("phone", 11)} ${esc(bucket.contact)}</span>` : ""}
+      </h3>
+      <div class="rapport-group-grid">`;
+      bucket.items.forEach(p => { h += buildInvCard(p, false, true); });
+      h += `</div>`;
+    });
+  }
+
   return h + `</div>`;
 }
 
 function printReport() {
   const activeP = products.filter(p => !p.archived);
-  const toOrder = activeP.filter(p => ["red", "yellow"].includes(getStatus(p)))
-    .sort((a, b) => STATUS_ORDER[getStatus(a)] - STATUS_ORDER[getStatus(b)]);
+  const toOrder = activeP.filter(p => ["red", "yellow"].includes(getStatus(p)));
+  // Tri selon le mode actif : par fournisseur (alphabétique) puis statut, ou par section puis statut
+  if (rapportSortMode === "supplier") {
+    toOrder.sort((a, b) => {
+      const supA = (suppliers.find(s => s.id === a.supplierId)?.name || "zz");
+      const supB = (suppliers.find(s => s.id === b.supplierId)?.name || "zz");
+      const c = supA.localeCompare(supB);
+      if (c !== 0) return c;
+      return STATUS_ORDER[getStatus(a)] - STATUS_ORDER[getStatus(b)];
+    });
+  } else {
+    toOrder.sort((a, b) => {
+      const c = (a.section || "").localeCompare(b.section || "");
+      if (c !== 0) return c;
+      return STATUS_ORDER[getStatus(a)] - STATUS_ORDER[getStatus(b)];
+    });
+  }
   const rows = toOrder.map(p => {
     const sup = suppliers.find(s => s.id === p.supplierId), st = getStatus(p), stock = getCurrentStock(p);
     return `<tr style="border-left:4px solid ${st === "red" ? "var(--status-red)" : "var(--status-yellow)"}">
