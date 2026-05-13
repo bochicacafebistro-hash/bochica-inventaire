@@ -194,7 +194,12 @@ db.collection("payrollSimulations").onSnapshot(snap => {
     // — les autres listeners qui matchent la home page le feront déjà.
   }
 }, err => {
-  if (err && err.code !== "permission-denied") console.warn("listener payrollSimulations:", err);
+  // Erreur critique : les règles Firestore /payrollSimulations ne sont pas
+  // publiées dans la console Firebase. Afficher un toast clair côté admin.
+  console.error("listener payrollSimulations:", err);
+  if (err && err.code === "permission-denied" && isAdmin && activePage === "simulations") {
+    toast("⚠ Règles Firestore manquantes pour /payrollSimulations. Va dans Firebase Console → Firestore → Règles et publie le contenu de firestore.rules.", "error", 10000);
+  }
 });
 
 // Note : le listener sur /payroll/{weekId} de la semaine courante est géré

@@ -3970,8 +3970,17 @@ textarea.md-input{
   margin-top:var(--sp-4);
 }
 .payroll-table .schedule-th--summary{
-  min-width:90px;
+  min-width:80px;
 }
+/* Colonnes jour : padding ramené à la portion congrue */
+.payroll-table .schedule-th--day{padding:4px 2px}
+.payroll-table .schedule-td--day-entry,
+.payroll-table .schedule-td--day-exit{padding:2px 1px}
+.payroll-table .payroll-td-cell{vertical-align:middle}
+/* Padding réduit sur summary pour gagner de la place */
+.payroll-table .schedule-td--summary{padding:4px 6px}
+/* Largeur minimale du tableau pour éviter le chevauchement (scroll horizontal au besoin) */
+.payroll-table{min-width:1100px}
 
 /* Indicateur de fenêtre de service dans l'entête de colonne jour */
 .payroll-th-service{
@@ -3987,15 +3996,19 @@ textarea.md-input{
 /* Input time dans le tableau (remplace les selects) */
 .payroll-time-input{
   width:100%;
+  min-width:54px;
   background:transparent;
   border:1px solid transparent;
   border-radius:var(--radius-sm);
-  padding:4px 6px;
-  font-family:var(--font-body);
-  font-size:13px;
+  padding:3px 2px;
+  font-family:var(--font-mono);
+  font-size:var(--fs-sm);              /* 13px — compact */
+  font-weight:600;
   color:var(--text);
   cursor:pointer;
   font-feature-settings:"tnum";
+  text-align:center;
+  letter-spacing:.02em;
   transition:background var(--transition-base), border-color var(--transition-base);
 }
 .payroll-time-input:hover{
@@ -4008,6 +4021,20 @@ textarea.md-input{
   border-color:var(--accent);
   box-shadow:0 0 0 2px rgba(var(--accent-rgb),.2);
 }
+/* Cache l'icône native d'horloge (Webkit/Blink) qui prenait de la place */
+.payroll-time-input::-webkit-calendar-picker-indicator{
+  display:none;
+  -webkit-appearance:none;
+}
+/* Cache aussi les spinners de l'heure/minute pour visuel propre */
+.payroll-time-input::-webkit-inner-spin-button,
+.payroll-time-input::-webkit-outer-spin-button{
+  display:none;
+  -webkit-appearance:none;
+  margin:0;
+}
+/* Firefox : pas d'API directe pour cacher l'icône, mais on cache au moins l'apparence */
+.payroll-time-input::-moz-focus-inner{border:0}
 
 /* Cellule modifiée par rapport au planifié — léger fond ambré */
 .payroll-td-cell.is-modified{
@@ -4086,21 +4113,17 @@ textarea.md-input{
   background:rgba(74,144,226,.12);
 }
 
-/* Pourboire du jour (sous la cellule sortie) */
+/* Pourboire du jour (sous la cellule sortie) — discret, format compact */
 .payroll-day-tip{
-  display:inline-flex;
-  align-items:center;
-  gap:2px;
-  font-family:var(--font-heading);
-  font-size:11px;
+  display:block;
+  font-family:var(--font-mono);
+  font-size:9px;
   color:var(--status-green, #7dbf66);
-  margin-top:2px;
+  margin-top:1px;
   font-weight:600;
   letter-spacing:.02em;
-  background:rgba(125,191,102,.12);
-  padding:1px 5px;
-  border-radius:var(--radius-sm);
   white-space:nowrap;
+  opacity:.85;
 }
 .dark .payroll-day-tip{
   background:rgba(125,191,102,.18);
@@ -4124,42 +4147,42 @@ textarea.md-input{
 }
 .payroll-tip-amount{
   font-family:var(--font-heading);
-  font-size:18px;
+  font-size:var(--fs-base);          /* 14px */
   color:var(--status-green, #7dbf66);
   letter-spacing:.02em;
   line-height:1.1;
-  font-weight:600;
+  font-weight:700;
 }
 .payroll-tip-hours{
   font-family:var(--font-mono, var(--font-body));
-  font-size:10px;
+  font-size:9px;
   color:var(--text3);
   font-weight:500;
   margin-top:1px;
   letter-spacing:.02em;
 }
 
-/* Cellule "Heures réel / planifié" (résumé ligne) */
+/* Cellule "Heures réel / planifié" (résumé ligne) — compacte */
 .payroll-hours-cell{
   display:inline-flex;
   align-items:baseline;
-  gap:3px;
+  gap:2px;
   white-space:nowrap;
 }
 .payroll-hours-actual{
   font-family:var(--font-heading);
-  font-size:18px;
+  font-size:var(--fs-base);            /* 14px */
   color:var(--text);
   letter-spacing:.02em;
+  font-weight:700;
 }
 .payroll-hours-sep{
   color:var(--text3);
-  font-size:14px;
-  margin:0 1px;
+  font-size:11px;
 }
 .payroll-hours-planned{
   font-family:var(--font-mono, var(--font-body));
-  font-size:11px;
+  font-size:10px;
   color:var(--text3);
   font-weight:500;
 }
@@ -4167,8 +4190,15 @@ textarea.md-input{
 /* Cellule Écart (delta heures) */
 .payroll-gap-cell{
   font-family:var(--font-heading);
-  font-size:16px;
+  font-size:var(--fs-base);            /* 14px */
   letter-spacing:.02em;
+  white-space:nowrap;
+}
+.payroll-gap-ok{
+  color:var(--status-green, #7dbf66);
+  font-family:var(--font-mono);
+  font-size:13px;
+  font-weight:700;
 }
 .payroll-gap-cell.is-positive{
   color:var(--status-green, #7dbf66);
@@ -4186,12 +4216,12 @@ textarea.md-input{
 .payroll-group-badge{
   display:inline-flex;
   align-items:center;
-  gap:4px;
+  gap:3px;
   font-family:var(--font-mono, var(--font-body));
-  font-size:10px;
+  font-size:9px;
   font-weight:700;
   letter-spacing:.04em;
-  padding:2px 7px;
+  padding:1px 5px;
   border-radius:var(--radius-sm);
   white-space:nowrap;
 }
@@ -6053,7 +6083,7 @@ textarea.md-input{
 }
 .sim-kpi__value{
   font-family:var(--font-heading);
-  font-size:28px;
+  font-size:22px;
   font-weight:600;
   color:var(--text);
   line-height:1;
@@ -6129,23 +6159,31 @@ textarea.md-input{
 
 /* Tableau de la simulation */
 .sim-table-wrap{margin-bottom:var(--sp-4)}
+.sim-table{min-width:1100px}
 .sim-table .sim-th--emp,
 .sim-table .sim-td--emp{
-  min-width:240px;
-  width:240px;
+  min-width:220px;
+  width:220px;
+  padding:6px 8px;
 }
+/* Tighter row height for sim — la cellule emp doit accueillir nom + taux + section */
+.sim-emp-row td{height:auto;min-height:48px;padding:4px 3px}
+.sim-table .schedule-td--day-entry,
+.sim-table .schedule-td--day-exit{padding:2px 1px}
 .sim-emp-row.is-fictional{
   background:linear-gradient(180deg,rgba(247,179,44,.06),transparent);
 }
 .sim-emp-cell{
   display:flex;
   flex-direction:column;
-  gap:6px;
+  gap:4px;
+  min-width:0;
 }
 .sim-emp-name-row{
   display:flex;
   align-items:center;
   gap:6px;
+  min-width:0;
 }
 .sim-input-name{
   flex:1;
@@ -6166,20 +6204,20 @@ textarea.md-input{
 }
 .sim-emp-fields{
   display:flex;
-  gap:6px;
+  gap:4px;
   align-items:center;
   flex-wrap:wrap;
 }
 .sim-mini-field{
   display:flex;
   align-items:center;
-  gap:4px;
-  font-size:11px;
+  gap:3px;
+  font-size:10px;
   color:var(--text3);
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:var(--radius-sm);
-  padding:3px 6px;
+  padding:2px 5px;
 }
 .sim-mini-field:hover,
 .sim-mini-field:focus-within{border-color:var(--accent)}
@@ -6190,7 +6228,7 @@ textarea.md-input{
   font-size:11px;
   color:var(--text);
   padding:0;
-  width:60px;
+  width:50px;
   min-width:0;
   font-family:inherit;
 }

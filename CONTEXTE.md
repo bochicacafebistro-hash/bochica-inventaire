@@ -424,6 +424,23 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 12 mai 2026 — Refonte UI Salaires & Simulation (v3.10.2) 🎨🔧
+- **Page Salaires & Pourboires** :
+  - **Retrait des badges « Auto-importé »** dans chaque cellule (bruit visuel énorme). L'info reste accessible via le tooltip de la cellule + le fond bleuté discret.
+  - **Inputs `type="time"` compactés** : retrait de l'icône native d'horloge Webkit (`::-webkit-calendar-picker-indicator { display:none }`), retrait des spinners, police 13px mono, centré, padding 3px×2px. Largeur min réduite à 54px.
+  - **Cellule « Réel / Planif » sur une ligne** : `12.5h / 14h` au lieu d'empilé. Police 14px pour le réel, 10px mono pour le planifié.
+  - **Bug visuel « +H » corrigé** : quand l'écart est zéro, on affiche `=` (vert) ou `—` au lieu d'un `+H` orphelin.
+  - **Badges cuisine/service** plus discrets (9px, padding 1×5).
+  - **Pourboire du jour** rendu discret (9px mono, sans fond) — l'info reste lisible sans dominer la cellule.
+  - **Largeur min table** = 1100px → scroll horizontal propre au lieu de chevauchement.
+- **Page Simulation paie** :
+  - **KPI tuiles** : valeur descendue de 28px à 22px pour respiration.
+  - **Cellule employé** compactée : nom 14px, taux+section mini-fields 10-11px avec padding 2×5.
+  - **Hauteur de ligne** auto avec min-height 48px (au lieu de fixe 42px) pour accueillir nom + champs.
+  - **Largeur min table** = 1100px.
+  - **Toast d'erreur clair** si les règles Firestore `/payrollSimulations` ne sont pas publiées (`permission-denied` → message « ⚠ Règles Firestore manquantes… ») : aide l'admin à diagnostiquer le bug « sim disparaît au reload ».
+- **CACHE_VERSION** bumpé à `v3.10.2`
+
 ### 12 mai 2026 — Fix race condition au démarrage + tableaux compacts (v3.10.1) 🐞🔠
 - **Fix bug critique** : à l'ouverture de l'app, les données n'apparaissaient pas tant qu'on ne rechargeait pas la page manuellement. Cause : les listeners Firestore avec filtre `if (isLoggedIn && activePage === "X")` ne déclenchaient pas de render si leur snapshot arrivait APRÈS `applyLogin` et que la page active (souvent `dashboard`) ne matchait pas le filtre. Beaucoup de listeners (`expenses`, `revenues`, `tasks`, `menuItems`, `fixedExpenseTemplates`) étaient concernés.
 - **Solution** : nouveau helper `shouldRender(collKey, ...activePages)` qui retourne toujours `true` au PREMIER snap de chaque collection (peu importe la page), puis applique le filtre habituel pour les snaps suivants. Ajout d'un Set global `_firstSnapshots` dans `state.js`, reset au logout dans `auth.js`.

@@ -410,48 +410,39 @@ function renderSalaires() {
                   const endVal = d.actualShift?.end || "";
                   const empName = esc(row.emp.name || "");
                   const dayName = DAYS_FR[visibleIdx[k]];
-                  const tipHint = (d.tipHours > 0 && Math.abs(d.tipHours - d.hours) > 0.01)
-                    ? `<span class="payroll-tip-hint" title="${fmtHours(d.tipHours)}h dans la fenêtre service">★${fmtHours(d.tipHours)}</span>`
-                    : "";
-                  // Pourboire du jour pour cet employé
+                  // Pourboire du jour pour cet employé — affiché en bas de la cellule sortie
                   const dayTipHint = d.dayTip > 0
-                    ? `<div class="payroll-day-tip" title="Pourboire reçu ce jour (prorata)">${icon("dollar-sign", 9)} ${fmtMoney(d.dayTip)}</div>`
+                    ? `<div class="payroll-day-tip" title="Pourboire reçu ce jour (prorata)">${fmtMoney(d.dayTip)}</div>`
                     : "";
-                  // Trois états visuels possibles :
-                  // 1. d.isOverride && d.isDifferent → modifié manuellement (cellule jaune)
-                  // 2. d.isOverride && !d.isDifferent → confirmé identique au planifié
-                  // 3. !d.isOverride && d.plannedShift → hérité automatique du planifié
+                  // États visuels — pas de texte « Auto-importé », juste le fond bleuté de la cellule
+                  // (la classe `is-auto` ajoute déjà un fond discret, suffisant visuellement)
                   const isAutoFromPlanned = !d.isOverride && d.plannedShift && d.plannedShift.start;
-                  const plannedHint = (d.plannedShift && d.plannedShift.start && d.plannedShift.end && d.isDifferent)
-                    ? `<div class="payroll-planned-hint" title="Heure planifiée originale">${icon("calendar", 9)} Planifié : ${d.plannedShift.start}→${d.plannedShift.end}</div>`
-                    : isAutoFromPlanned
-                      ? `<div class="payroll-planned-hint payroll-planned-hint--auto" title="Importé automatiquement depuis Employés & Horaires">${icon("calendar", 9)} Auto-importé</div>`
+                  // Titre (tooltip) plus riche pour expliquer le contexte sans encombrer le visuel
+                  const cellTitle = isAutoFromPlanned
+                    ? `Auto-importé du planifié (${d.plannedShift.start}→${d.plannedShift.end})`
+                    : d.isDifferent
+                      ? `Modifié — planifié : ${d.plannedShift?.start || "—"}→${d.plannedShift?.end || "—"}`
                       : "";
                   const baseClasses = `schedule-td--cell payroll-td-cell ${filled ? "is-filled" : ""} ${d.isDifferent ? "is-modified" : ""} ${isAutoFromPlanned ? "is-auto" : ""}`;
-                  return `<td class="${baseClasses} schedule-td--day-entry">
+                  return `<td class="${baseClasses} schedule-td--day-entry"${cellTitle ? ` title="${cellTitle}"` : ""}>
                     <input type="time" class="payroll-time-input" value="${startVal}" onchange="updateActualShift('${row.emp.id}','${d.dk}','start',this.value)" aria-label="${empName}, entrée réelle ${dayName}"/>
                   </td>
-                  <td class="${baseClasses} schedule-td--day-exit">
+                  <td class="${baseClasses} schedule-td--day-exit"${cellTitle ? ` title="${cellTitle}"` : ""}>
                     <input type="time" class="payroll-time-input" value="${endVal}" onchange="updateActualShift('${row.emp.id}','${d.dk}','end',this.value)" aria-label="${empName}, sortie réelle ${dayName}"/>
-                    ${tipHint}
                     ${dayTipHint}
-                    ${plannedHint}
                   </td>`;
                 }).join("")}
                 <td class="schedule-td--summary">
-                  <div class="payroll-hours-cell">
+                  <div class="payroll-hours-cell" title="Réel / Planifié">
                     <span class="payroll-hours-actual">${row.totalHours ? fmtHours(row.totalHours) : "0"}h</span>
                     <span class="payroll-hours-sep">/</span>
                     <span class="payroll-hours-planned" title="Heures planifiées">${row.plannedHours ? fmtHours(row.plannedHours) : "0"}h</span>
                   </div>
-                  ${row.tipEligibleHours > 0 && Math.abs(row.tipEligibleHours - row.totalHours) > 0.01
-                    ? `<div class="schedule-fixed-hint" title="Heures éligibles aux pourboires">★ ${fmtHours(row.tipEligibleHours)}h</div>`
-                    : ""}
                 </td>
                 <td class="schedule-td--summary payroll-gap-cell ${gapCls}">
-                  ${row.gap !== 0 || row.totalHours || row.plannedHours
-                    ? `<span class="payroll-gap-arrow">${gapArrow}</span>${(row.gap >= 0 ? "+" : "")}${fmtHours(row.gap)}h`
-                    : "—"}
+                  ${Math.abs(row.gap) < 0.01
+                    ? (row.totalHours || row.plannedHours ? `<span class="payroll-gap-ok" title="Réel = planifié">=</span>` : "—")
+                    : `<span class="payroll-gap-arrow">${gapArrow}</span>${(row.gap > 0 ? "+" : "")}${fmtHours(row.gap)}h`}
                 </td>
                 <td class="schedule-td--summary">${row.grossWage ? fmtMoney(row.grossWage) : "—"}</td>
                 <td class="schedule-td--summary payroll-td-tip ${row.tipShare > 0 ? "has-tip" : ""}">
@@ -478,9 +469,9 @@ function renderSalaires() {
                 </div>
               </td>
               <td class="schedule-tfoot-val payroll-gap-cell ${(sumActualHours - sumPlannedHours) > 0.01 ? "is-positive" : (sumActualHours - sumPlannedHours) < -0.01 ? "is-negative" : ""}">
-                ${(sumActualHours || sumPlannedHours)
-                  ? `${((sumActualHours - sumPlannedHours) >= 0 ? "+" : "")}${fmtHours(sumActualHours - sumPlannedHours)}h`
-                  : "—"}
+                ${Math.abs(sumActualHours - sumPlannedHours) < 0.01
+                  ? (sumActualHours || sumPlannedHours ? "=" : "—")
+                  : `${((sumActualHours - sumPlannedHours) > 0 ? "+" : "")}${fmtHours(sumActualHours - sumPlannedHours)}h`}
               </td>
               <td class="schedule-tfoot-val">${fmtMoney(sumGross)}</td>
               <td class="schedule-tfoot-val">${fmtMoney(sumTips)}</td>
