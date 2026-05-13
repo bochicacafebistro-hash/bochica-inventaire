@@ -49,12 +49,52 @@ function fmtMonthLong(period) {
   return `${months[m - 1] || "?"} ${y}`;
 }
 
-// Filtre les rapports selon reportsViewPeriod (3/6/12/all)
+// Filtre les rapports selon reportsViewPeriod (3/6/12/all/custom)
 function getFilteredReports() {
   const all = [...(monthlyReports || [])].sort((a, b) => (a.period || "").localeCompare(b.period || ""));
+  if (reportsViewPeriod === "all") return all;
+  if (reportsViewPeriod === "custom") {
+    if (!reportsCustomStart || !reportsCustomEnd) return all;
+    return all.filter(r => r.period >= reportsCustomStart && r.period <= reportsCustomEnd);
+  }
   const n = Number(reportsViewPeriod);
-  if (!n || n === 0 || reportsViewPeriod === "all") return all;
+  if (!n || n === 0) return all;
   return all.slice(-n);
+}
+
+// Retourne le rapport de l'année précédente pour un mois donné (ou null).
+// Ex: "2026-04" → cherche "2025-04"
+function getReportForPrevYear(period) {
+  if (!period) return null;
+  const [y, m] = period.split("-");
+  const prevPeriod = `${Number(y) - 1}-${m}`;
+  return (monthlyReports || []).find(r => r.period === prevPeriod) || null;
+}
+
+// Pour une liste de rapports, retourne la liste correspondante de l'année précédente
+// (même mois année-1). Garde la même taille (null si pas trouvé).
+function getYoYReports(reports) {
+  return reports.map(r => getReportForPrevYear(r.period));
+}
+
+// Calcule l'écart % entre deux valeurs (null si pas de référence)
+function pctDelta(curr, prev) {
+  if (prev == null || prev === 0) return null;
+  return ((curr - prev) / prev) * 100;
+}
+
+// Formate un écart % en HTML stylé (vert/rouge/—)
+function fmtPctDelta(pct, opts = {}) {
+  if (pct == null) return `<span class="reports-delta-na">—</span>`;
+  const isUp = pct > 0.5;
+  const isDown = pct < -0.5;
+  const positiveIsBad = !!opts.positiveIsBad;
+  const cls = !isUp && !isDown ? "is-zero"
+    : isUp ? (positiveIsBad ? "is-negative" : "is-positive")
+    : (positiveIsBad ? "is-positive" : "is-negative");
+  const arrow = !isUp && !isDown ? "—" : (isUp ? "▲" : "▼");
+  const sign = isUp ? "+" : "";
+  return `<span class="reports-delta ${cls}">${arrow} ${sign}${pct.toFixed(1)}%</span>`;
 }
 
 // Détruit toutes les instances Chart.js connues
@@ -71,6 +111,10 @@ function renderRapports() {
   const reports = getFilteredReports();
   const totalReports = (monthlyReports || []).length;
 
+  // Rapports correspondants année précédente (pour YoY)
+  const yoyReports = getYoYReports(reports);
+  const yoyAvailable = yoyReports.some(r => r != null);
+
   // KPI agrégés sur la période sélectionnée
   const totalRevenue = reports.reduce((s, r) => s + (Number(r.summary?.total_with_tax) || 0), 0);
   const totalReceipts = reports.reduce((s, r) => s + (Number(r.summary?.receipts) || 0), 0);
@@ -78,6 +122,23 @@ function renderRapports() {
   const totalTips = reports.reduce((s, r) => s + (Number(r.total_tips) || 0), 0);
   const totalHours = reports.reduce((s, r) => s + (Number(r.total_hours) || 0), 0);
   const avgReceipt = totalReceipts > 0 ? (totalRevenue / totalReceipts) : 0;
+
+  // KPI agrégés année précédente (somme uniquement des mois disponibles en YoY)
+  const yoyTotals = { revenue: 0, receipts: 0, clients: 0, tips: 0, hours: 0 };
+  yoyReports.forEach(r => {
+    if (!r) return;
+    yoyTotals.revenue += Number(r.summary?.total_with_tax) || 0;
+    yoyTotals.receipts += Number(r.summary?.receipts) || 0;
+    yoyTotals.clients += Number(r.summary?.clients) || 0;
+    yoyTotals.tips += Number(r.total_tips) || 0;
+    yoyTotals.hours += Number(r.total_hours) || 0;
+  });
+  const yoyAvgReceipt = yoyTotals.receipts > 0 ? (yoyTotals.revenue / yoyTotals.receipts) : 0;
+
+  // Listes des mois disponibles pour les date pickers custom
+  const allPeriods = (monthlyReports || []).map(r => r.period).sort();
+  const minPeriod = allPeriods[0] || "";
+  const maxPeriod = allPeriods[allPeriods.length - 1] || "";
 
   return `<div class="page">
     <div class="toolbar">
@@ -87,16 +148,37 @@ function renderRapports() {
       </div>
     </div>
 
-    <!-- Sélecteur de période -->
-    <div class="reports-period-tabs">
-      <div class="reports-period-tabs__label">${icon("calendar", 14)} Période :</div>
-      ${[
-        { v: 3, l: "3 mois" },
-        { v: 6, l: "6 mois" },
-        { v: 12, l: "12 mois" },
-        { v: "all", l: "Tout" }
-      ].map(p => `<button class="reports-period-tab ${String(reportsViewPeriod) === String(p.v) ? "is-active" : ""}" onclick="setReportsPeriod('${p.v}')">${p.l}</button>`).join("")}
-      <span class="reports-period-tabs__count">${reports.length}/${totalReports} rapports</span>
+    <!-- Sélecteur de période + toggle YoY -->
+    <div class="reports-controls">
+      <div class="reports-period-tabs">
+        <div class="reports-period-tabs__label">${icon("calendar", 14)} Période :</div>
+        ${[
+          { v: 3, l: "3 mois" },
+          { v: 6, l: "6 mois" },
+          { v: 12, l: "12 mois" },
+          { v: "all", l: "Tout" },
+          { v: "custom", l: "Personnalisé" }
+        ].map(p => `<button class="reports-period-tab ${String(reportsViewPeriod) === String(p.v) ? "is-active" : ""}" onclick="setReportsPeriod('${p.v}')">${p.l}</button>`).join("")}
+        <span class="reports-period-tabs__count">${reports.length}/${totalReports} rapports</span>
+      </div>
+      ${reportsViewPeriod === "custom" ? `
+        <div class="reports-custom-range">
+          <label class="reports-custom-range__field">
+            <span>Début</span>
+            <input type="month" value="${reportsCustomStart || minPeriod}" min="${minPeriod}" max="${maxPeriod}" onchange="setReportsCustomRange('start', this.value)"/>
+          </label>
+          <span class="reports-custom-range__sep">→</span>
+          <label class="reports-custom-range__field">
+            <span>Fin</span>
+            <input type="month" value="${reportsCustomEnd || maxPeriod}" min="${minPeriod}" max="${maxPeriod}" onchange="setReportsCustomRange('end', this.value)"/>
+          </label>
+        </div>
+      ` : ""}
+      <label class="reports-yoy-toggle" title="Compare chaque mois avec le même mois de l'année précédente">
+        <input type="checkbox" ${reportsCompareYoY ? "checked" : ""} onchange="toggleReportsYoY(this.checked)"/>
+        <span>${icon("trending-up", 14)} Vs année précédente</span>
+        ${reportsCompareYoY && !yoyAvailable ? `<span class="reports-yoy-warn" title="Aucun rapport de l'année précédente trouvé pour les mois sélectionnés">${icon("alert", 12)}</span>` : ""}
+      </label>
     </div>
 
     ${totalReports === 0 ? renderEmptyState({
@@ -109,12 +191,12 @@ function renderRapports() {
 
     <!-- KPI agrégés -->
     <div class="reports-kpi-row">
-      ${reportsKpi("Ventes totales", fmtMoney(totalRevenue), "wallet", "#7dbf66")}
-      ${reportsKpi("Reçus", totalReceipts.toLocaleString("fr-CA"), "receipt", "#4a90e2")}
-      ${reportsKpi("Clients servis", totalClients.toLocaleString("fr-CA"), "users", "#8b5cf6")}
-      ${reportsKpi("Reçu moyen", fmtMoney(avgReceipt), "trending-up", "#F7B32C")}
-      ${reportsKpi("Pourboires", fmtMoney(totalTips), "dollar-sign", "#e74c3c")}
-      ${reportsKpi("Heures travaillées", fmtHours(totalHours) + " h", "clock", "#14b8a6")}
+      ${reportsKpi("Ventes totales", fmtMoney(totalRevenue), "wallet", "#7dbf66", reportsCompareYoY && yoyAvailable ? pctDelta(totalRevenue, yoyTotals.revenue) : null)}
+      ${reportsKpi("Reçus", totalReceipts.toLocaleString("fr-CA"), "receipt", "#4a90e2", reportsCompareYoY && yoyAvailable ? pctDelta(totalReceipts, yoyTotals.receipts) : null)}
+      ${reportsKpi("Clients servis", totalClients.toLocaleString("fr-CA"), "users", "#8b5cf6", reportsCompareYoY && yoyAvailable ? pctDelta(totalClients, yoyTotals.clients) : null)}
+      ${reportsKpi("Reçu moyen", fmtMoney(avgReceipt), "trending-up", "#F7B32C", reportsCompareYoY && yoyAvailable ? pctDelta(avgReceipt, yoyAvgReceipt) : null)}
+      ${reportsKpi("Pourboires", fmtMoney(totalTips), "dollar-sign", "#e74c3c", reportsCompareYoY && yoyAvailable ? pctDelta(totalTips, yoyTotals.tips) : null)}
+      ${reportsKpi("Heures travaillées", fmtHours(totalHours) + " h", "clock", "#14b8a6", reportsCompareYoY && yoyAvailable ? pctDelta(totalHours, yoyTotals.hours) : null)}
     </div>
 
     <!-- Graphique 1 : Évolution des ventes (barres + ligne pourboires) -->
@@ -196,13 +278,15 @@ function renderRapports() {
 }
 
 // KPI tuile (réutilise le style des KPI du dashboard via .dash-stat-card)
-function reportsKpi(label, value, iconName, color) {
+// Si yoyDelta est fourni (non null), affiche l'écart % vs même période YoY
+function reportsKpi(label, value, iconName, color, yoyDelta = null) {
   return `<div class="dash-stat-card" style="border-left-color:${color}">
     <div class="dash-stat__head">
       <span style="color:${color}">${icon(iconName, 16)}</span>
       <span class="dash-stat__label">${label}</span>
     </div>
     <div class="dash-stat__value" style="color:${color}">${value}</div>
+    ${yoyDelta != null ? `<div class="dash-stat__delta">${fmtPctDelta(yoyDelta)} vs ${reportsViewPeriod === "custom" ? "même période A-1" : "A-1"}</div>` : ""}
   </div>`;
 }
 
@@ -246,10 +330,13 @@ function renderTopProductsTable(reports) {
 function renderMonthlyComparisonTable(reports) {
   const rows = reports.map((r, i) => {
     const prev = i > 0 ? reports[i - 1] : null;
+    const yoy = reportsCompareYoY ? getReportForPrevYear(r.period) : null;
     const totalSales = Number(r.summary?.total_with_tax) || 0;
     const prevSales = prev ? (Number(prev.summary?.total_with_tax) || 0) : 0;
-    const deltaPct = prev && prevSales > 0 ? ((totalSales - prevSales) / prevSales) * 100 : null;
-    return { r, deltaPct };
+    const yoySales = yoy ? (Number(yoy.summary?.total_with_tax) || 0) : null;
+    const deltaPct = pctDelta(totalSales, prevSales);
+    const yoyDeltaPct = yoy ? pctDelta(totalSales, yoySales) : null;
+    return { r, yoy, deltaPct, yoyDeltaPct, yoySales };
   });
   return `<div style="overflow-x:auto">
     <table class="sim-compare-table" style="margin-top:var(--sp-3);font-size:11px">
@@ -262,15 +349,14 @@ function renderMonthlyComparisonTable(reports) {
         <th style="text-align:right">TPS+TVQ</th>
         <th style="text-align:right">Total</th>
         <th style="text-align:right">Δ vs prev.</th>
+        ${reportsCompareYoY ? `<th style="text-align:right" class="reports-yoy-col">Total A-1</th><th style="text-align:right" class="reports-yoy-col">Δ YoY</th>` : ""}
         <th style="text-align:right">Pourboires</th>
         <th style="text-align:right">Heures</th>
         <th style="text-align:right">Corrections</th>
       </tr></thead>
       <tbody>
-        ${rows.map(({ r, deltaPct }) => {
+        ${rows.map(({ r, yoy, deltaPct, yoyDeltaPct, yoySales }) => {
           const s = r.summary || {};
-          const deltaCls = deltaPct == null ? "" : (deltaPct > 0.5 ? "is-positive" : deltaPct < -0.5 ? "is-negative" : "");
-          const deltaTxt = deltaPct == null ? "—" : `${deltaPct > 0 ? "+" : ""}${deltaPct.toFixed(1)}%`;
           return `<tr>
             <td style="text-align:left"><strong>${fmtMonthLong(r.period)}</strong></td>
             <td style="text-align:right;font-family:var(--font-mono)">${(s.receipts || 0).toLocaleString("fr-CA")}</td>
@@ -279,7 +365,11 @@ function renderMonthlyComparisonTable(reports) {
             <td style="text-align:right;font-family:var(--font-mono)">${fmtMoney(s.sales_net || 0)}</td>
             <td style="text-align:right;font-family:var(--font-mono)">${fmtMoney((s.tps || 0) + (s.tvq || 0))}</td>
             <td style="text-align:right;font-family:var(--font-mono);font-weight:700">${fmtMoney(s.total_with_tax || 0)}</td>
-            <td style="text-align:right;font-family:var(--font-mono)" class="${deltaCls}">${deltaTxt}</td>
+            <td style="text-align:right;font-family:var(--font-mono)">${fmtPctDelta(deltaPct)}</td>
+            ${reportsCompareYoY ? `
+              <td style="text-align:right;font-family:var(--font-mono);color:var(--text3)" class="reports-yoy-col">${yoy ? fmtMoney(yoySales) : "—"}</td>
+              <td style="text-align:right;font-family:var(--font-mono)" class="reports-yoy-col">${fmtPctDelta(yoyDeltaPct)}</td>
+            ` : ""}
             <td style="text-align:right;font-family:var(--font-mono)">${fmtMoney(r.total_tips || 0)}</td>
             <td style="text-align:right;font-family:var(--font-mono)">${fmtHours(r.total_hours || 0)} h</td>
             <td style="text-align:right;font-family:var(--font-mono);color:var(--text3)">${fmtMoney(r.corrections?.total_amount || 0)}</td>
@@ -303,31 +393,58 @@ function initReportsCharts() {
   // ─ Chart 1 : Ventes + Pourboires (combo bars + line) ─
   const ctxSales = document.getElementById("reports-chart-sales");
   if (ctxSales) {
+    const yoyReports = reportsCompareYoY ? getYoYReports(reports) : null;
+    const datasets = [
+      {
+        type: "bar",
+        label: "Ventes totales",
+        data: reports.map(r => Number(r.summary?.total_with_tax) || 0),
+        backgroundColor: REPORT_COLORS.green,
+        borderRadius: 4,
+        yAxisID: "y"
+      }
+    ];
+    // Ajout du dataset YoY si activé
+    if (yoyReports && yoyReports.some(r => r != null)) {
+      datasets.push({
+        type: "bar",
+        label: "Ventes A-1",
+        data: yoyReports.map(r => r ? (Number(r.summary?.total_with_tax) || 0) : null),
+        backgroundColor: REPORT_COLORS.green + "55",  // 33% opacity
+        borderColor: REPORT_COLORS.green,
+        borderWidth: 1,
+        borderDash: [4, 3],
+        borderRadius: 4,
+        yAxisID: "y"
+      });
+    }
+    datasets.push({
+      type: "line",
+      label: "Pourboires",
+      data: reports.map(r => Number(r.total_tips) || 0),
+      borderColor: REPORT_COLORS.primary,
+      backgroundColor: REPORT_COLORS.primary,
+      borderWidth: 2.5,
+      tension: 0.3,
+      pointRadius: 4,
+      yAxisID: "y1"
+    });
+    if (yoyReports && yoyReports.some(r => r != null && r.total_tips)) {
+      datasets.push({
+        type: "line",
+        label: "Pourboires A-1",
+        data: yoyReports.map(r => r ? (Number(r.total_tips) || 0) : null),
+        borderColor: REPORT_COLORS.primary,
+        backgroundColor: "transparent",
+        borderWidth: 1.5,
+        borderDash: [4, 3],
+        tension: 0.3,
+        pointRadius: 3,
+        yAxisID: "y1"
+      });
+    }
     _reportChartInstances.sales = new Chart(ctxSales, {
-      data: {
-        labels,
-        datasets: [
-          {
-            type: "bar",
-            label: "Ventes totales",
-            data: reports.map(r => Number(r.summary?.total_with_tax) || 0),
-            backgroundColor: REPORT_COLORS.green,
-            borderRadius: 4,
-            yAxisID: "y"
-          },
-          {
-            type: "line",
-            label: "Pourboires",
-            data: reports.map(r => Number(r.total_tips) || 0),
-            borderColor: REPORT_COLORS.primary,
-            backgroundColor: REPORT_COLORS.primary,
-            borderWidth: 2.5,
-            tension: 0.3,
-            pointRadius: 4,
-            yAxisID: "y1"
-          }
-        ]
-      },
+      data: { labels, datasets },
       options: chartCommonOptions(textColor, gridColor, {
         scales: {
           y: { position: "left", title: { display: true, text: "Ventes ($)", color: textColor }, ticks: { color: textColor, callback: v => v.toLocaleString("fr-CA") }, grid: { color: gridColor } },
@@ -493,7 +610,33 @@ function chartCommonOptions(textColor, gridColor, override = {}) {
 
 // ═ Actions ═════════════════════════════════════════════
 function setReportsPeriod(p) {
-  reportsViewPeriod = p === "all" ? "all" : Number(p);
+  if (p === "all") reportsViewPeriod = "all";
+  else if (p === "custom") {
+    reportsViewPeriod = "custom";
+    // Initialiser les bornes au range complet si pas encore défini
+    const all = (monthlyReports || []).map(r => r.period).sort();
+    if (!reportsCustomStart) reportsCustomStart = all[0] || "";
+    if (!reportsCustomEnd) reportsCustomEnd = all[all.length - 1] || "";
+  } else {
+    reportsViewPeriod = Number(p);
+  }
+  renderPage();
+}
+
+function setReportsCustomRange(which, value) {
+  if (which === "start") reportsCustomStart = value;
+  else if (which === "end") reportsCustomEnd = value;
+  // Garantir start <= end
+  if (reportsCustomStart && reportsCustomEnd && reportsCustomStart > reportsCustomEnd) {
+    const tmp = reportsCustomStart;
+    reportsCustomStart = reportsCustomEnd;
+    reportsCustomEnd = tmp;
+  }
+  renderPage();
+}
+
+function toggleReportsYoY(checked) {
+  reportsCompareYoY = !!checked;
   renderPage();
 }
 

@@ -93,7 +93,10 @@ let _coverageChartInstance = null;
 // Un doc par mois Firestore (id = "YYYY-MM"). Données extraites des PDFs
 // Cluster via parse_reports.py — voir monthly-reports-seed.js pour le seed.
 let monthlyReports = [];
-let reportsViewPeriod = 6;  // Nombre de mois affichés : 3 | 6 | 12 | "all"
+let reportsViewPeriod = 6;     // 3 | 6 | 12 | "all" | "custom"
+let reportsCustomStart = "";   // YYYY-MM (utilisé si reportsViewPeriod === "custom")
+let reportsCustomEnd = "";     // YYYY-MM (utilisé si reportsViewPeriod === "custom")
+let reportsCompareYoY = false; // true = afficher comparatif vs année précédente
 
 // ── Simulations paie ──────────────────────────────────
 // Scénarios hypothétiques pour planifier des changements RH :

@@ -6831,18 +6831,124 @@ body.dark .card:hover{
    RAPPORTS MENSUELS — Graphiques comparatifs multi-mois
    ═══════════════════════════════════════════════════════════════ */
 
+/* Bloc de contrôles (period tabs + range custom + toggle YoY) */
+.reports-controls{
+  display:flex;
+  flex-direction:column;
+  gap:var(--sp-3);
+  margin-bottom:var(--sp-4);
+}
+
 /* Tabs de sélection de période */
 .reports-period-tabs{
   display:flex;
   align-items:center;
   gap:8px;
   padding:var(--sp-3) var(--sp-4);
-  margin-bottom:var(--sp-4);
   background:var(--surface);
   border:1px solid var(--border);
   border-radius:var(--radius-lg);
   flex-wrap:wrap;
 }
+
+/* Range personnalisé (mois début → mois fin) */
+.reports-custom-range{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:var(--sp-3) var(--sp-4);
+  background:var(--accent-soft);
+  border:1px solid rgba(var(--accent-rgb),.3);
+  border-radius:var(--radius-lg);
+  flex-wrap:wrap;
+}
+.reports-custom-range__field{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.reports-custom-range__field span{
+  font-family:var(--font-mono);
+  font-size:10px;
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  color:var(--text3);
+  font-weight:600;
+}
+.reports-custom-range__field input[type="month"]{
+  padding:6px 10px;
+  border:1px solid var(--border-strong);
+  border-radius:var(--radius-md);
+  background:var(--surface);
+  font-family:var(--font-mono);
+  font-size:var(--fs-sm);
+  color:var(--text);
+}
+.reports-custom-range__sep{
+  color:var(--accent-warm);
+  font-weight:700;
+  font-size:18px;
+  margin-top:14px;
+}
+
+/* Toggle YoY (vs année précédente) */
+.reports-yoy-toggle{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:var(--sp-3) var(--sp-4);
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  cursor:pointer;
+  font-size:var(--fs-sm);
+  font-weight:600;
+  color:var(--text2);
+  transition:all var(--transition-fast);
+  align-self:flex-start;
+}
+.reports-yoy-toggle:hover{
+  border-color:var(--accent);
+  color:var(--text);
+}
+.reports-yoy-toggle input{
+  width:16px;
+  height:16px;
+  accent-color:var(--accent);
+  cursor:pointer;
+}
+.reports-yoy-toggle:has(input:checked){
+  background:var(--accent-soft);
+  border-color:var(--accent);
+  color:var(--accent-text);
+}
+.reports-yoy-warn{
+  display:inline-flex;
+  align-items:center;
+  color:var(--status-red, #d9534f);
+  margin-left:4px;
+}
+
+/* Cellules YoY dans tableau */
+.reports-yoy-col{
+  background:rgba(var(--accent-rgb),.06);
+  border-left:2px solid rgba(var(--accent-rgb),.4);
+}
+body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
+
+/* Delta % stylé (réutilisable) */
+.reports-delta{
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  font-family:var(--font-mono);
+  font-weight:700;
+  white-space:nowrap;
+}
+.reports-delta.is-positive{color:var(--status-green, #7dbf66)}
+.reports-delta.is-negative{color:var(--status-red, #d9534f)}
+.reports-delta.is-zero{color:var(--text3)}
+.reports-delta-na{color:var(--text3);font-family:var(--font-mono)}
 .reports-period-tabs__label{
   font-family:var(--font-mono);
   font-size:11px;

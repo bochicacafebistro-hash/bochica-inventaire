@@ -436,6 +436,22 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 13 mai 2026 — Rapports : YoY + période personnalisée + 16 mois (v3.13.1) 📈📆
+- **Comparatif vs année précédente (YoY)** :
+  - Toggle « Vs année précédente » ajouté dans la barre de contrôles
+  - Quand activé, **chaque mois affiché** est mis en parallèle avec le même mois de l'année N-1
+  - **Graphique de ventes** : 2e jeu de barres pour Ventes A-1 (opacité 33% + pointillé) + 2e ligne pour Pourboires A-1
+  - **KPI agrégés** : chaque KPI affiche le delta % vs même période A-1 (vert ▲ / rouge ▼ / —)
+  - **Tableau récap** : 2 nouvelles colonnes (Total A-1, Δ YoY) avec fond ambré pour les démarquer
+  - Helper `getReportForPrevYear(period)` + `pctDelta(curr, prev)` + `fmtPctDelta()` réutilisables
+- **Période personnalisée** :
+  - Nouvelle option « Personnalisé » dans les tabs (3/6/12/Tout/**Personnalisé**)
+  - Quand active, 2 inputs `type="month"` apparaissent (Début → Fin) avec min/max bornés sur les mois disponibles
+  - Filtrage : tous les rapports entre `start` et `end` inclus
+  - Auto-swap si `start > end` (intuitif)
+- **Données seed étendues à 16 mois** : `2025-01` → `2026-04` (parsing automatique des 8 nouveaux PDFs jan-août 2025 reçus). Le YoY fonctionne maintenant pour jan→avril 2026 vs jan→avril 2025.
+- **CACHE_VERSION** → `v3.13.1`
+
 ### 13 mai 2026 — Page Rapports mensuels (v3.13.0) 📊📈
 - **Nouvelle page « Rapports mensuels »** sous Finances dans la sidebar (admin seulement)
 - **Nouvelle collection Firestore** `monthlyReports` (id = `YYYY-MM`) avec règles admin only
