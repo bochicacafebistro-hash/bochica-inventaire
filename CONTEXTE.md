@@ -426,6 +426,31 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 12 mai 2026 — UI Polish : micro-interactions + empty states + dashboard (v3.12.0) ✨📊🎨
+**3 chantiers UX/UI livrés en parallèle :**
+
+**🎬 Micro-interactions**
+- **Skeleton loaders** : classes `.skeleton`, `.skeleton-line`, `.skeleton-block`, `.skeleton-avatar`, `.skeleton-card` avec animation shimmer 1.4s. Respect `prefers-reduced-motion`.
+- **Hover cards plus marqué** : `.card:hover` → bordure accent + double shadow (4px naturel + 1px ring accent). Désactivable via `.card.no-hover`.
+- **`animateNumber(el, from, to, duration, formatter)`** dans utils.js : anime un compteur avec easeOutCubic, respecte `prefers-reduced-motion`, accepte un formatter (ex: `fmtMoney`).
+- **`flashSaveSuccess(btn, duration)`** : feedback ✓ vert sur le bouton save avant fermeture modale. CSS `.btn.is-saved` avec animation `save-success-pulse`.
+
+**🖼️ Empty states illustrés**
+- **10 illustrations SVG inline** dans `EMPTY_ILLUSTRATIONS` (utils.js) : inventaire (boîte), taches (liste à cocher), employes (silhouettes), soumissions (reçu $), menu (assiette), recettes (livre ouvert), shopping (sac), evenements (calendrier étoile), depenses (wallet), fournisseurs (storefront), default (point d'interrogation).
+- **`renderEmptyState({ kind, title, subtitle, cta, hint })`** : helper qui rend une card illustrée avec titre + sous-titre + CTA en pill jaune + hint en uppercase mono.
+- **5 pages utilisent maintenant le nouvel empty state** : Employés (`pages-hr.js`), Tâches (`pages-secondaires.js`), Soumissions (`pages-quotes.js`), Événements (`pages-events.js`), Simulations (`pages-simulations.js`).
+- CSS `.empty-illustrated` avec border dashed, fond surface, padding généreux, illustration 160×140px.
+
+**📊 Dashboard**
+- **Widget « Aujourd'hui »** au-dessus des KPI cards : grosse date du jour + ratio salaires/ventes en cours (avec code couleur < 32% vert, 32-40% jaune, > 40% rouge) + grille 3 colonnes : Employés en shift aujourd'hui (avec pill couleur cuisine/service), Événements du jour, Tâches dues aujourd'hui.
+- **Sparklines dans les KPI cards** : mini-courbe Chart.js sur 30 jours en arrière-plan de chaque card (Revenus vert, Dépenses rouge, Profit jaune). Hauteur 48px, opacité 35%, sous le contenu (z-index).
+- Nouvelles fonctions dans `pages-dashboard.js` : `renderDashTodayWidget(now, todayStr)`, `getWeekStartForDashboard(d)`, `buildSpark30d(items, now)`, `initDashSparklines()`.
+- **`dashStatCard`** étendue pour accepter `sparkData` et `sparkId`.
+- **Init des sparklines** déclenché par `sidebar.js` après le render du dashboard (50ms `setTimeout`).
+- **Couleurs des cards** changées de `var(--status-X)` aux valeurs hexa directes (#7dbf66, #d9534f, #F7B32C) pour que Chart.js puisse les utiliser dans les sparklines.
+
+**CACHE_VERSION** bumpé à `v3.12.0` (minor — chantier UI significatif).
+
 ### 12 mai 2026 — Sidebar en accordéons par domaine (v3.11.0) 🗂️📂
 - **Refonte complète de la sidebar** : les 16 items autrefois listés à plat sont regroupés en **6 sections accordéon par domaine fonctionnel** :
   - 📊 **Dashboard** (lien direct, toujours visible en haut)

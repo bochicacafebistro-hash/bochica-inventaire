@@ -426,6 +426,210 @@ async function duplicateItem(collection, id, nameField = "name") {
 function showModal(html) { document.getElementById("modals").innerHTML = `<div class="modal-overlay" onclick="if(event.target===this)closeModal()">${html}</div>`; }
 function closeModal() { document.getElementById("modals").innerHTML = ""; }
 
+// ── Animation de chiffres (compteur) ──────────────────
+// Anime un texte numérique de `from` à `to` sur `duration` ms.
+// `formatter` transforme le nombre courant en string (ex: fmtMoney).
+// `el` peut être un Element OU un sélecteur (string).
+// Respecte prefers-reduced-motion : si l'utilisateur ne veut pas d'animation,
+// on saute directement à la valeur finale.
+function animateNumber(el, from, to, duration = 600, formatter = String) {
+  const target = (typeof el === "string") ? document.querySelector(el) : el;
+  if (!target) return;
+  const prefersReduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReduced || duration <= 0 || from === to) {
+    target.textContent = formatter(to);
+    return;
+  }
+  const start = performance.now();
+  target.classList.add("is-updating");
+  function tick(now) {
+    const elapsed = now - start;
+    const t = Math.min(1, elapsed / duration);
+    // Easing : easeOutCubic (départ rapide, arrivée douce)
+    const eased = 1 - Math.pow(1 - t, 3);
+    const value = from + (to - from) * eased;
+    target.textContent = formatter(value);
+    if (t < 1) {
+      requestAnimationFrame(tick);
+    } else {
+      target.textContent = formatter(to);
+      target.classList.remove("is-updating");
+    }
+  }
+  requestAnimationFrame(tick);
+}
+
+// ── Empty states illustrés ─────────────────────────────
+// Mini illustrations SVG inline, charmantes mais minimalistes.
+// Toutes utilisent currentColor + accent pour s'adapter au thème.
+const EMPTY_ILLUSTRATIONS = {
+  // Boîte ouverte avec rayons — pour Inventaire vide
+  inventaire: `<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="55" y="65" width="90" height="65" rx="4" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.08)"/>
+    <path d="M55 80h90" stroke="var(--accent)"/>
+    <path d="M95 80v50M105 80v50" stroke="var(--accent)" opacity=".4"/>
+    <path d="M70 55l30-15 30 15" stroke="var(--accent)" stroke-dasharray="3 4"/>
+    <circle cx="40" cy="40" r="3" fill="var(--accent)"/>
+    <circle cx="160" cy="50" r="2.5" fill="var(--accent)" opacity=".6"/>
+    <circle cx="170" cy="100" r="2" fill="var(--accent)" opacity=".4"/>
+    <path d="M30 95l8-3M170 130l-8-3" stroke="var(--text3)" opacity=".5"/>
+  </svg>`,
+
+  // Liste avec checkmarks — pour Tâches vides
+  taches: `<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="50" y="35" width="100" height="100" rx="6" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.05)"/>
+    <rect x="62" y="50" width="14" height="14" rx="3" stroke="var(--accent)"/>
+    <path d="M65 57l3 3 5-5" stroke="#7dbf66"/>
+    <line x1="82" y1="57" x2="135" y2="57" stroke="var(--text3)" opacity=".6"/>
+    <rect x="62" y="72" width="14" height="14" rx="3" stroke="var(--accent)"/>
+    <path d="M65 79l3 3 5-5" stroke="#7dbf66"/>
+    <line x1="82" y1="79" x2="125" y2="79" stroke="var(--text3)" opacity=".6"/>
+    <rect x="62" y="94" width="14" height="14" rx="3" stroke="var(--accent)" stroke-dasharray="3 3"/>
+    <line x1="82" y1="101" x2="130" y2="101" stroke="var(--text3)" opacity=".3"/>
+    <rect x="62" y="116" width="14" height="14" rx="3" stroke="var(--accent)" stroke-dasharray="3 3"/>
+    <line x1="82" y1="123" x2="120" y2="123" stroke="var(--text3)" opacity=".3"/>
+  </svg>`,
+
+  // Silhouettes d'employés — pour Employés vides
+  employes: `<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="100" cy="55" r="18" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.1)"/>
+    <path d="M70 130c0-16 13-30 30-30s30 14 30 30" stroke="var(--accent)"/>
+    <circle cx="55" cy="68" r="13" stroke="var(--accent)" opacity=".5" fill="rgba(var(--accent-rgb),.05)"/>
+    <path d="M35 130c0-12 9-22 20-22" stroke="var(--accent)" opacity=".5"/>
+    <circle cx="145" cy="68" r="13" stroke="var(--accent)" opacity=".5" fill="rgba(var(--accent-rgb),.05)"/>
+    <path d="M165 130c0-12-9-22-20-22" stroke="var(--accent)" opacity=".5"/>
+    <circle cx="40" cy="35" r="2" fill="var(--accent)"/>
+    <circle cx="165" cy="40" r="2.5" fill="var(--accent)" opacity=".7"/>
+  </svg>`,
+
+  // Reçu avec dollars — pour Soumissions vides
+  soumissions: `<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M70 30h60v110l-15-8-15 8-15-8-15 8z" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.06)"/>
+    <line x1="80" y1="55" x2="120" y2="55" stroke="var(--text3)" opacity=".5"/>
+    <line x1="80" y1="70" x2="115" y2="70" stroke="var(--text3)" opacity=".5"/>
+    <line x1="80" y1="85" x2="120" y2="85" stroke="var(--accent)"/>
+    <circle cx="100" cy="110" r="13" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.12)"/>
+    <text x="100" y="115" text-anchor="middle" font-family="Inter, sans-serif" font-size="14" font-weight="700" fill="var(--accent-warm)" stroke="none">$</text>
+    <circle cx="40" cy="40" r="2.5" fill="#e74c3c"/>
+    <circle cx="160" cy="50" r="2" fill="#4a90e2"/>
+    <circle cx="40" cy="130" r="2" fill="#4a90e2"/>
+  </svg>`,
+
+  // Plat / fourchette croisée — pour Menu vide
+  menu: `<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="100" cy="85" r="45" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.06)"/>
+    <circle cx="100" cy="85" r="30" stroke="var(--accent)" opacity=".5" stroke-dasharray="4 4"/>
+    <path d="M60 30l-5 25h10z" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.15)"/>
+    <line x1="60" y1="55" x2="60" y2="135" stroke="var(--accent)"/>
+    <path d="M140 30v25c0 3 2 5 5 5s5-2 5-5V30M145 60v75" stroke="var(--accent)"/>
+    <circle cx="100" cy="85" r="6" fill="var(--accent)" stroke="none"/>
+  </svg>`,
+
+  // Livre ouvert — pour Recettes vides
+  recettes: `<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M30 50c0-3 2-5 5-5h60v90H35c-3 0-5-2-5-5z" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.08)"/>
+    <path d="M170 50c0-3-2-5-5-5h-60v90h60c3 0 5-2 5-5z" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.08)"/>
+    <line x1="45" y1="65" x2="85" y2="65" stroke="var(--text3)" opacity=".7"/>
+    <line x1="45" y1="78" x2="80" y2="78" stroke="var(--text3)" opacity=".5"/>
+    <line x1="45" y1="91" x2="85" y2="91" stroke="var(--text3)" opacity=".5"/>
+    <line x1="45" y1="104" x2="75" y2="104" stroke="var(--text3)" opacity=".5"/>
+    <line x1="115" y1="65" x2="155" y2="65" stroke="var(--text3)" opacity=".7"/>
+    <line x1="115" y1="78" x2="150" y2="78" stroke="var(--text3)" opacity=".5"/>
+    <line x1="115" y1="91" x2="155" y2="91" stroke="var(--text3)" opacity=".5"/>
+    <line x1="115" y1="104" x2="145" y2="104" stroke="var(--text3)" opacity=".5"/>
+  </svg>`,
+
+  // Sac de courses — pour Liste d'ingrédients vide
+  shopping: `<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M60 60h80l-7 75H67z" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.08)"/>
+    <path d="M78 60V45c0-12 10-22 22-22s22 10 22 22v15" stroke="var(--accent)"/>
+    <circle cx="85" cy="85" r="2.5" fill="var(--accent)"/>
+    <circle cx="115" cy="85" r="2.5" fill="var(--accent)"/>
+    <path d="M80 105c5 5 12 8 20 8s15-3 20-8" stroke="var(--accent)" opacity=".7"/>
+  </svg>`,
+
+  // Calendrier avec étoile — pour Événements vides
+  evenements: `<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="45" y="45" width="110" height="90" rx="6" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.05)"/>
+    <line x1="45" y1="65" x2="155" y2="65" stroke="var(--accent)"/>
+    <line x1="70" y1="35" x2="70" y2="55" stroke="var(--accent)"/>
+    <line x1="130" y1="35" x2="130" y2="55" stroke="var(--accent)"/>
+    <path d="M100 82l4 9 10 1-7 7 2 10-9-5-9 5 2-10-7-7 10-1z" fill="var(--accent)" stroke="var(--accent)"/>
+    <circle cx="65" cy="80" r="2" fill="var(--text3)"/>
+    <circle cx="80" cy="80" r="2" fill="var(--text3)"/>
+    <circle cx="65" cy="105" r="2" fill="var(--text3)"/>
+    <circle cx="135" cy="80" r="2" fill="var(--text3)"/>
+    <circle cx="135" cy="105" r="2" fill="var(--text3)"/>
+  </svg>`,
+
+  // Wallet — pour Dépenses vides
+  depenses: `<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="40" y="55" width="120" height="75" rx="8" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.06)"/>
+    <path d="M40 75h120" stroke="var(--accent)"/>
+    <rect x="130" y="85" width="35" height="22" rx="4" fill="rgba(var(--accent-rgb),.15)" stroke="var(--accent)"/>
+    <circle cx="145" cy="96" r="3" fill="var(--accent)" stroke="none"/>
+    <path d="M55 50V40c0-3 2-5 5-5h75c3 0 5 2 5 5v15" stroke="var(--accent)"/>
+  </svg>`,
+
+  // Fournisseurs — store
+  fournisseurs: `<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M40 70h120v65H40z" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.06)"/>
+    <path d="M35 55l8-20h114l8 20" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.12)"/>
+    <line x1="35" y1="55" x2="165" y2="55" stroke="var(--accent)"/>
+    <line x1="60" y1="55" x2="60" y2="70" stroke="var(--accent)" opacity=".5"/>
+    <line x1="85" y1="55" x2="85" y2="70" stroke="var(--accent)" opacity=".5"/>
+    <line x1="115" y1="55" x2="115" y2="70" stroke="var(--accent)" opacity=".5"/>
+    <line x1="140" y1="55" x2="140" y2="70" stroke="var(--accent)" opacity=".5"/>
+    <rect x="85" y="95" width="30" height="40" stroke="var(--accent)" fill="none"/>
+    <circle cx="105" cy="115" r="1.5" fill="var(--accent)"/>
+  </svg>`,
+
+  // Générique — pour fallback
+  default: `<svg viewBox="0 0 200 160" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="100" cy="80" r="40" stroke="var(--accent)" fill="rgba(var(--accent-rgb),.06)"/>
+    <path d="M85 75c0-6 7-12 15-12s15 6 15 12-7 8-15 12v6" stroke="var(--accent)"/>
+    <circle cx="100" cy="105" r="2.5" fill="var(--accent)" stroke="none"/>
+  </svg>`
+};
+
+// Rendu d'un empty state illustré.
+// Usage : renderEmptyState({ kind: "inventaire", title: "...", subtitle: "...", cta: { label, onClick } })
+function renderEmptyState({ kind = "default", title = "Rien à afficher", subtitle = "", cta = null, hint = "" } = {}) {
+  const svg = EMPTY_ILLUSTRATIONS[kind] || EMPTY_ILLUSTRATIONS.default;
+  const ctaHtml = cta && cta.label
+    ? `<button class="empty-illustrated__cta" onclick="${cta.onClick || ''}">${cta.icon ? icon(cta.icon, 16) : ''} ${cta.label}</button>`
+    : "";
+  return `<div class="empty-illustrated">
+    <div class="empty-illustrated__svg">${svg}</div>
+    <h3 class="empty-illustrated__title">${title}</h3>
+    ${subtitle ? `<p class="empty-illustrated__subtitle">${subtitle}</p>` : ""}
+    ${ctaHtml}
+    ${hint ? `<div class="empty-illustrated__hint">${hint}</div>` : ""}
+  </div>`;
+}
+
+// ── Confirmation visuelle après save sur un bouton ────
+// Usage typique : await saveData(); flashSaveSuccess(btn); closeModal();
+// Le bouton prend brièvement un état "saved" (✓ vert) avant que la modale
+// ne se ferme. Donne un feedback rassurant à l'utilisateur.
+function flashSaveSuccess(btnOrSelector, duration = 600) {
+  const btn = (typeof btnOrSelector === "string") ? document.querySelector(btnOrSelector) : btnOrSelector;
+  if (!btn) return Promise.resolve();
+  const original = btn.innerHTML;
+  const originalLabel = btn.textContent.trim();
+  btn.classList.add("is-saved");
+  // On garde le label original mais on ajoute le ✓ via CSS ::before
+  btn.dataset.originalHtml = original;
+  return new Promise(resolve => {
+    setTimeout(() => {
+      btn.classList.remove("is-saved");
+      btn.innerHTML = original;
+      delete btn.dataset.originalHtml;
+      resolve();
+    }, duration);
+  });
+}
+
 // ── Toasts (remplacent les alert() natifs) ────────────
 // Usage :
 //   toast("Produit enregistré")              → info (défaut)

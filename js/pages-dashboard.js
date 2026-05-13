@@ -191,13 +191,24 @@ function renderDashboard() {
   const taxes = computeTaxesForPeriod(q.startDate, q.endDate);
   const daysToDeadline = Math.ceil((new Date(q.dueDate) - now) / (1000 * 60 * 60 * 24));
 
+  // Sparklines (séries 30 jours) pour les KPI cards
+  const sparkRevs = buildSpark30d(revenues, new Date(now));
+  const sparkExps = buildSpark30d(expenses, new Date(now));
+  // Profit jour par jour = revenus - dépenses du jour
+  const sparkProfit = sparkRevs.map((r, i) => r - sparkExps[i]);
+
   const userName = loggedInUser?.name || t("role_admin");
+
+  // ─ Widget Aujourd'hui : employés en shift + événements + tâches dues + ratio ─
+  const todayWidget = renderDashTodayWidget(now, todayStr);
 
   let h = `<div class="page">
     <div class="dash-greeting">
       <h2 class="dash-greeting__title">${icon("crown", 22)} ${t("dash_title")}</h2>
       <p class="dash-greeting__sub">${t("dash_welcome", { name: userName })}</p>
     </div>
+
+    ${todayWidget}
 
     <!-- Stats principales avec comparaison -->
     <div class="dash-stats-grid">
@@ -207,8 +218,10 @@ function renderDashboard() {
         value: fmtMoney(totalRevs),
         delta: revChange,
         deltaLabel: t("dash_vs_last_month"),
-        color: "var(--status-green)",
-        positive: true
+        color: "#7dbf66",
+        positive: true,
+        sparkData: sparkRevs,
+        sparkId: "dash-spark-rev"
       })}
       ${dashStatCard({
         icon: "trending-down",
@@ -216,8 +229,10 @@ function renderDashboard() {
         value: fmtMoney(totalExps),
         delta: expChange,
         deltaLabel: t("dash_vs_last_month"),
-        color: "var(--status-red)",
-        positive: false
+        color: "#d9534f",
+        positive: false,
+        sparkData: sparkExps,
+        sparkId: "dash-spark-exp"
       })}
       ${dashStatCard({
         icon: profit >= 0 ? "trending-up" : "trending-down",
@@ -225,8 +240,10 @@ function renderDashboard() {
         value: fmtMoney(Math.abs(profit)) + (profit < 0 ? " (déficit)" : ""),
         delta: profitChange,
         deltaLabel: t("dash_vs_last_month"),
-        color: profit >= 0 ? "var(--accent)" : "var(--status-red)",
-        positive: true
+        color: profit >= 0 ? "#F7B32C" : "#d9534f",
+        positive: true,
+        sparkData: sparkProfit,
+        sparkId: "dash-spark-profit"
       })}
       ${itemsWithRecipe.length > 0 ? dashStatCard({
         icon: "utensils",
@@ -252,8 +269,8 @@ function renderDashboard() {
   return h;
 }
 
-// Carte stat avec delta % et flèche
-function dashStatCard({ icon: iconName, label, value, delta, deltaLabel, color, positive }) {
+// Carte stat avec delta % et flèche + sparkline optionnelle en arrière-plan
+function dashStatCard({ icon: iconName, label, value, delta, deltaLabel, color, positive, sparkData = null, sparkId = null }) {
   let deltaHtml = "";
   if (delta !== null && delta !== undefined && Number.isFinite(delta) && Math.abs(delta) >= 0.1) {
     const isUp = delta > 0;
@@ -267,7 +284,13 @@ function dashStatCard({ icon: iconName, label, value, delta, deltaLabel, color, 
     deltaHtml = `<div class="dash-stat__delta text-muted">${deltaLabel}</div>`;
   }
 
+  // Sparkline : canvas en arrière-plan (CSS positionne en absolu)
+  const sparkHtml = (sparkData && sparkData.length > 0 && sparkId)
+    ? `<canvas class="dash-stat-card__spark" id="${sparkId}" data-color="${color}" data-values='${JSON.stringify(sparkData)}'></canvas>`
+    : "";
+
   return `<div class="dash-stat-card" style="border-left-color:${color}">
+    ${sparkHtml}
     <div class="dash-stat__head">
       <span style="color:${color}">${icon(iconName, 16)}</span>
       <span class="dash-stat__label">${label}</span>
@@ -275,6 +298,215 @@ function dashStatCard({ icon: iconName, label, value, delta, deltaLabel, color, 
     <div class="dash-stat__value" style="color:${color}">${value}</div>
     ${deltaHtml}
   </div>`;
+}
+
+// Construit une série de 30 jours pour les sparklines : somme par jour de
+// `items` (revenus ou dépenses) avec champ `date` au format YYYY-MM-DD.
+// Retourne un tableau de 30 nombres (du plus ancien au plus récent, jour J = aujourd'hui).
+function buildSpark30d(items, now) {
+  const series = new Array(30).fill(0);
+  const todayMs = now.setHours(0, 0, 0, 0);
+  items.forEach(it => {
+    const d = it.dateStart || it.date;
+    if (!d) return;
+    const dt = new Date(d).setHours(0, 0, 0, 0);
+    const diffDays = Math.floor((todayMs - dt) / 86400000);
+    if (diffDays >= 0 && diffDays < 30) {
+      series[29 - diffDays] += Number(it.amount || 0);
+    }
+  });
+  return series;
+}
+
+// Initialise les sparklines Chart.js dans les KPI cards
+function initDashSparklines() {
+  if (typeof Chart === "undefined") return;
+  document.querySelectorAll(".dash-stat-card__spark").forEach(canvas => {
+    let data;
+    try { data = JSON.parse(canvas.dataset.values || "[]"); } catch (_) { return; }
+    if (!data.length) return;
+    const color = canvas.dataset.color || "var(--accent)";
+    // Détruire instance précédente si présente (data attribute)
+    if (canvas._sparkInstance) {
+      try { canvas._sparkInstance.destroy(); } catch (_) {}
+    }
+    canvas._sparkInstance = new Chart(canvas, {
+      type: "line",
+      data: {
+        labels: data.map((_, i) => i),
+        datasets: [{
+          data,
+          borderColor: color,
+          backgroundColor: color,
+          borderWidth: 1.8,
+          pointRadius: 0,
+          tension: 0.35,
+          fill: {
+            target: "origin",
+            above: color.startsWith("var(") ? color : color
+          }
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: {
+          x: { display: false },
+          y: { display: false, beginAtZero: true }
+        },
+        elements: {
+          line: {
+            borderJoinStyle: "round"
+          }
+        }
+      }
+    });
+    // Forcer un fond très transparent pour l'aire (le CSS gère l'opacité globale)
+    canvas._sparkInstance.data.datasets[0].backgroundColor = (() => {
+      // On laisse Chart.js utiliser couleur de borderColor mais à 30% via filter
+      return color;
+    })();
+  });
+}
+
+// ═ Widget Aujourd'hui : vue d'ensemble de la journée en cours ════════════
+function renderDashTodayWidget(now, todayStr) {
+  // Date formatée en français québécois
+  const dayName = now.toLocaleDateString("fr-CA", { weekday: "long" });
+  const dateLong = now.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+  // Capitaliser le jour
+  const dayDisplay = dayName.charAt(0).toUpperCase() + dayName.slice(1);
+
+  // Employés en shift aujourd'hui (depuis employees.shifts indexés par date YYYY-MM-DD)
+  const shiftsToday = (typeof employees !== "undefined" ? employees : [])
+    .map(emp => {
+      const s = (emp.shifts || {})[todayStr];
+      if (!s || !s.start) return null;
+      return { name: emp.name || "—", start: s.start, end: s.end || "", section: emp.section || "service" };
+    })
+    .filter(Boolean)
+    .sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+
+  // Événements du jour (non annulés)
+  const eventsToday = (typeof events !== "undefined" ? events : [])
+    .filter(e => e.date === todayStr && e.status !== "annule")
+    .sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99"));
+
+  // Tâches dues aujourd'hui (non complétées)
+  const tasksToday = (typeof tasks !== "undefined" ? tasks : [])
+    .filter(tk => tk.status !== "Complété" && tk.dueDate === todayStr)
+    .slice(0, 5);
+
+  // Ratio salaires/ventes : utilise les ventes réelles + heures planifiées de la semaine courante
+  // (même logique que la page Salaires : sumGross hebdo ÷ ventes hebdo)
+  const weekStartDate = getWeekStartForDashboard(now);
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStartDate); d.setDate(d.getDate() + i);
+    return d.toISOString().slice(0, 10);
+  });
+  let weekGross = 0;
+  let weekSales = 0;
+  if (typeof employees !== "undefined") {
+    employees.forEach(emp => {
+      const rate = Number(emp.hourlyRate) || 0;
+      if (emp.isSalaried) {
+        weekGross += (Number(emp.fixedWeeklyHours) || 0) * rate;
+      } else {
+        weekDates.forEach(dk => {
+          const s = (emp.shifts || {})[dk];
+          if (s && s.start && s.end) {
+            const [sh, sm] = String(s.start).split(":").map(Number);
+            const [eh, em] = String(s.end).split(":").map(Number);
+            let diff = (eh * 60 + (em || 0)) - (sh * 60 + (sm || 0));
+            if (diff < 0) diff += 24 * 60;
+            weekGross += (diff / 60) * rate;
+          }
+        });
+      }
+    });
+  }
+  const actualSales = (typeof scheduleSettings !== "undefined" && scheduleSettings.actualSales) || {};
+  weekDates.forEach(dk => { weekSales += Number(actualSales[dk] || 0); });
+  const ratio = weekSales > 0 ? (weekGross / weekSales) * 100 : 0;
+  const ratioCls = weekSales === 0 ? "is-empty"
+    : ratio < 32 ? "is-good"
+    : ratio < 40 ? "is-warn"
+    : "is-bad";
+
+  // Couleurs par section pour les pills employés
+  const sectionColor = (sec) => sec === "cuisine" ? "#7dbf66" : sec === "service" ? "#4a90e2" : "#94a3b8";
+
+  return `<div class="dash-today-widget">
+    <div class="dash-today-widget__head">
+      <div>
+        <h2 class="dash-today-widget__date">${dayDisplay}<small>${dateLong}</small></h2>
+      </div>
+      <div class="dash-today-widget__ratio">
+        <div class="dash-today-widget__ratio-pct ${ratioCls}">
+          ${weekSales > 0 ? ratio.toFixed(1) + "<small>%</small>" : "—"}
+        </div>
+        <div class="dash-today-widget__ratio-label">Ratio salaires/ventes (sem.)</div>
+      </div>
+    </div>
+    <div class="dash-today-widget__grid">
+      <!-- Employés en shift aujourd'hui -->
+      <div class="dash-today-block">
+        <div class="dash-today-block__title">${icon("users", 12)} En shift aujourd'hui (${shiftsToday.length})</div>
+        <div class="dash-today-block__list">
+          ${shiftsToday.length === 0
+            ? `<div class="dash-today-empty">Aucun shift planifié</div>`
+            : shiftsToday.slice(0, 5).map(s => `<div class="dash-today-item">
+                <span style="width:6px;height:6px;border-radius:50%;background:${sectionColor(s.section)};flex-shrink:0"></span>
+                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</span>
+                <span class="dash-today-item__time">${s.start}${s.end ? "–" + s.end : ""}</span>
+              </div>`).join("")
+              + (shiftsToday.length > 5 ? `<div class="dash-today-empty">+ ${shiftsToday.length - 5} autres</div>` : "")
+          }
+        </div>
+      </div>
+
+      <!-- Événements du jour -->
+      <div class="dash-today-block">
+        <div class="dash-today-block__title">${icon("calendar", 12)} Événements (${eventsToday.length})</div>
+        <div class="dash-today-block__list">
+          ${eventsToday.length === 0
+            ? `<div class="dash-today-empty">Aucun événement aujourd'hui</div>`
+            : eventsToday.slice(0, 5).map(e => `<div class="dash-today-item" onclick="navTo('evenements')" style="cursor:pointer">
+                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.name || "Sans nom")}</span>
+                ${e.time ? `<span class="dash-today-item__time">${e.time}</span>` : ""}
+              </div>`).join("")
+          }
+        </div>
+      </div>
+
+      <!-- Tâches dues aujourd'hui -->
+      <div class="dash-today-block">
+        <div class="dash-today-block__title">${icon("clipboard", 12)} Tâches dues (${tasksToday.length})</div>
+        <div class="dash-today-block__list">
+          ${tasksToday.length === 0
+            ? `<div class="dash-today-empty">Tout est à jour ✨</div>`
+            : tasksToday.map(tk => `<div class="dash-today-item" onclick="navTo('taches')" style="cursor:pointer">
+                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(tk.title || "Sans titre")}</span>
+                ${tk.priority === "haute" ? `<span class="dash-today-item__time" style="color:var(--status-red, #d9534f)">URGENT</span>` : ""}
+              </div>`).join("")
+          }
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// Helper : début de la semaine ISO (lundi) — duplique getWeekStart de pages-hr.js
+// pour éviter une dépendance sur le scheduleWeekOffset (ici on veut toujours
+// la semaine courante).
+function getWeekStartForDashboard(d) {
+  const dd = new Date(d);
+  const day = dd.getDay();
+  const diff = dd.getDate() - day + (day === 0 ? -6 : 1);
+  dd.setDate(diff); dd.setHours(0, 0, 0, 0);
+  return dd;
 }
 
 function renderDashTaxCard(q, taxes, daysToDeadline) {

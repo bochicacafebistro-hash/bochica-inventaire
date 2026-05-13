@@ -170,11 +170,13 @@ function renderSimulations() {
       </div>
     </div>
 
-    ${sims.length === 0 ? `
-      <div class="empty"><div class="empty-state-icon">${icon("trending-up", 36)}</div>
-        Aucune simulation pour l'instant. Crée-en une à partir de l'horaire planifié courant pour tester un scénario.
-      </div>
-    ` : `
+    ${sims.length === 0 ? renderEmptyState({
+      kind: "default",
+      title: "Aucune simulation pour l'instant",
+      subtitle: "Crée un scénario hypothétique à partir de l'horaire planifié courant : changer un taux, ajouter une future embauche, retirer un employé, ajuster les pourboires… puis compare avec le réel.",
+      cta: { label: "Créer ma première simulation", icon: "plus", onClick: "createSimFromPlanned()" },
+      hint: "Compare en $ et % vs réel"
+    }) : `
       <div class="sim-grid">
         ${sims.map(s => renderSimCard(s)).join("")}
       </div>

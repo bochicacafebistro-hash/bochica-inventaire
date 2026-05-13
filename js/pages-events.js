@@ -186,10 +186,13 @@ function renderEvents() {
 
   // Empty state global
   if (events.length === 0) {
-    h += `<div class="empty">
-      <div class="empty-state-icon">${icon("calendar", 48)}</div>
-      Aucun événement enregistré. ${writable ? "Cliquez sur « Ajouter » pour créer votre premier événement." : ""}
-    </div>`;
+    h += renderEmptyState({
+      kind: "evenements",
+      title: "Aucun événement encore",
+      subtitle: "Note les réservations privées, soirées karaoké, spectacles, jours fériés et événements internes. Ils s'affichent sur le calendrier mensuel et le dashboard.",
+      cta: writable ? { label: "Ajouter un événement", icon: "plus", onClick: "openEventModal()" } : null,
+      hint: "6 types · 3 statuts · calendrier mensuel"
+    });
     return h + `</div>`;
   }
 

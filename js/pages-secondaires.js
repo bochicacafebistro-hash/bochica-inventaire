@@ -85,6 +85,21 @@ function renderHistorique() {
 function renderTaches() {
   const prioColor = { haute: "var(--status-red)", moyenne: "var(--status-yellow)", basse: "var(--status-green)" };
   const pendingTasks = tasks.filter(tk => tk.status !== "Complété").length;
+  // Empty state global si aucune tâche du tout
+  if (tasks.length === 0) {
+    return `<div class="page">
+      <div class="toolbar">
+        <div><h2 style="font-size:18px">${t("tasks_title")}</h2></div>
+      </div>
+      ${renderEmptyState({
+        kind: "taches",
+        title: "Aucune tâche pour le moment",
+        subtitle: "Crée des tâches pour ton équipe — à faire, en cours, complétées. Tout le monde voit le Kanban et peut faire avancer une tâche d'une colonne à l'autre.",
+        cta: isAdmin ? { label: "Créer une tâche", icon: "plus", onClick: "openTaskModal()" } : null,
+        hint: "Kanban simple · drag & drop"
+      })}
+    </div>`;
+  }
   return `<div class="page">
     <div class="toolbar">
       <div><h2 style="font-size:18px">${t("tasks_title")}</h2>

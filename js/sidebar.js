@@ -242,7 +242,11 @@ function renderPage() {
     </div></div>`;
     return;
   }
-  if (activePage === "dashboard") pc.innerHTML = renderDashboard();
+  if (activePage === "dashboard") {
+    pc.innerHTML = renderDashboard();
+    // Init sparklines après l'injection DOM
+    setTimeout(() => { if (typeof initDashSparklines === "function") initDashSparklines(); }, 50);
+  }
   else if (activePage === "inventaire") pc.innerHTML = renderInventaire();
   else if (activePage === "rapport") pc.innerHTML = renderRapport();
   else if (activePage === "historique") pc.innerHTML = renderHistorique();

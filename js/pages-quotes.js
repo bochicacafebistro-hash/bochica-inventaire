@@ -218,11 +218,13 @@ function renderQuotes() {
     </div>`;
 
   if (quotes.length === 0) {
-    h += `<div class="empty">
-      <div class="empty-state-icon">${icon("receipt", 48)}</div>
-      Aucune soumission enregistrée.<br/>
-      ${writable ? "Cliquez sur « Nouvelle soumission » pour créer votre premier devis." : ""}
-    </div>`;
+    h += renderEmptyState({
+      kind: "soumissions",
+      title: "Aucune soumission pour le moment",
+      subtitle: "Crée des devis professionnels pour tes clients : forfait, suppléments, dépôt et taxes calculés automatiquement, exportés en PDF style Bochica.",
+      cta: writable ? { label: "Créer une soumission", icon: "plus", onClick: "openQuoteModal()" } : null,
+      hint: "PDF généré · numérotation auto"
+    });
     return h + `</div>`;
   }
 

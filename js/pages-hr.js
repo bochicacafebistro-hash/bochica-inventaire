@@ -128,7 +128,13 @@ function renderEmployes() {
     </div>
 
     ${employees.length === 0
-      ? `<div class="empty"><div class="empty-state-icon">${icon("users", 36)}</div>Aucun employé enregistré. Ajoutez-en un pour commencer.</div>`
+      ? renderEmptyState({
+          kind: "employes",
+          title: "Aucun employé encore",
+          subtitle: "Commence par ajouter ton équipe — leur taux horaire et leur section (cuisine/service) servent ensuite à calculer les horaires, les salaires et la répartition des pourboires.",
+          cta: { label: "Ajouter un employé", icon: "plus", onClick: "openEmployeeModal()" },
+          hint: "Premier pas vers une équipe organisée"
+        })
       : `
       <!-- ══ Sélecteur de semaine + ratio + boutons ══ -->
       <div class="schedule-header">
