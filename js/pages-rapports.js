@@ -191,12 +191,24 @@ function renderRapports() {
 
     <!-- KPI agrégés -->
     <div class="reports-kpi-row">
-      ${reportsKpi("Ventes totales", fmtMoney(totalRevenue), "wallet", "#7dbf66", reportsCompareYoY && yoyAvailable ? pctDelta(totalRevenue, yoyTotals.revenue) : null)}
-      ${reportsKpi("Reçus", totalReceipts.toLocaleString("fr-CA"), "receipt", "#4a90e2", reportsCompareYoY && yoyAvailable ? pctDelta(totalReceipts, yoyTotals.receipts) : null)}
-      ${reportsKpi("Clients servis", totalClients.toLocaleString("fr-CA"), "users", "#8b5cf6", reportsCompareYoY && yoyAvailable ? pctDelta(totalClients, yoyTotals.clients) : null)}
-      ${reportsKpi("Reçu moyen", fmtMoney(avgReceipt), "trending-up", "#F7B32C", reportsCompareYoY && yoyAvailable ? pctDelta(avgReceipt, yoyAvgReceipt) : null)}
-      ${reportsKpi("Pourboires", fmtMoney(totalTips), "dollar-sign", "#e74c3c", reportsCompareYoY && yoyAvailable ? pctDelta(totalTips, yoyTotals.tips) : null)}
-      ${reportsKpi("Heures travaillées", fmtHours(totalHours) + " h", "clock", "#14b8a6", reportsCompareYoY && yoyAvailable ? pctDelta(totalHours, yoyTotals.hours) : null)}
+      ${reportsKpi("Ventes totales", fmtMoney(totalRevenue), "wallet", "#7dbf66",
+        reportsCompareYoY && yoyAvailable ? pctDelta(totalRevenue, yoyTotals.revenue) : null,
+        reportsCompareYoY && yoyAvailable ? fmtMoney(yoyTotals.revenue) : null)}
+      ${reportsKpi("Reçus", totalReceipts.toLocaleString("fr-CA"), "receipt", "#4a90e2",
+        reportsCompareYoY && yoyAvailable ? pctDelta(totalReceipts, yoyTotals.receipts) : null,
+        reportsCompareYoY && yoyAvailable ? yoyTotals.receipts.toLocaleString("fr-CA") : null)}
+      ${reportsKpi("Clients servis", totalClients.toLocaleString("fr-CA"), "users", "#8b5cf6",
+        reportsCompareYoY && yoyAvailable ? pctDelta(totalClients, yoyTotals.clients) : null,
+        reportsCompareYoY && yoyAvailable ? yoyTotals.clients.toLocaleString("fr-CA") : null)}
+      ${reportsKpi("Reçu moyen", fmtMoney(avgReceipt), "trending-up", "#F7B32C",
+        reportsCompareYoY && yoyAvailable ? pctDelta(avgReceipt, yoyAvgReceipt) : null,
+        reportsCompareYoY && yoyAvailable ? fmtMoney(yoyAvgReceipt) : null)}
+      ${reportsKpi("Pourboires", fmtMoney(totalTips), "dollar-sign", "#e74c3c",
+        reportsCompareYoY && yoyAvailable ? pctDelta(totalTips, yoyTotals.tips) : null,
+        reportsCompareYoY && yoyAvailable ? fmtMoney(yoyTotals.tips) : null)}
+      ${reportsKpi("Heures travaillées", fmtHours(totalHours) + " h", "clock", "#14b8a6",
+        reportsCompareYoY && yoyAvailable ? pctDelta(totalHours, yoyTotals.hours) : null,
+        reportsCompareYoY && yoyAvailable ? fmtHours(yoyTotals.hours) + " h" : null)}
     </div>
 
     <!-- Graphique 1 : Évolution des ventes (barres + ligne pourboires) -->
@@ -279,14 +291,20 @@ function renderRapports() {
 
 // KPI tuile (réutilise le style des KPI du dashboard via .dash-stat-card)
 // Si yoyDelta est fourni (non null), affiche l'écart % vs même période YoY
-function reportsKpi(label, value, iconName, color, yoyDelta = null) {
-  return `<div class="dash-stat-card" style="border-left-color:${color}">
+// Si yoyValueStr est fourni, affiche le comparatif chiffré "X vs Y A-1"
+function reportsKpi(label, value, iconName, color, yoyDelta = null, yoyValueStr = null) {
+  return `<div class="dash-stat-card reports-kpi-card" style="border-left-color:${color}">
     <div class="dash-stat__head">
       <span style="color:${color}">${icon(iconName, 16)}</span>
       <span class="dash-stat__label">${label}</span>
     </div>
     <div class="dash-stat__value" style="color:${color}">${value}</div>
-    ${yoyDelta != null ? `<div class="dash-stat__delta">${fmtPctDelta(yoyDelta)} vs ${reportsViewPeriod === "custom" ? "même période A-1" : "A-1"}</div>` : ""}
+    ${yoyDelta != null ? `
+      <div class="reports-kpi-yoy">
+        <div class="reports-kpi-yoy__pct">${fmtPctDelta(yoyDelta)}</div>
+        ${yoyValueStr != null ? `<div class="reports-kpi-yoy__compare"><strong>${value}</strong> <span>vs</span> <strong>${yoyValueStr}</strong> <span class="reports-kpi-yoy__year">A-1</span></div>` : ""}
+      </div>
+    ` : ""}
   </div>`;
 }
 

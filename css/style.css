@@ -6934,6 +6934,52 @@ body.dark .card:hover{
   margin-left:4px;
 }
 
+/* KPI YoY : delta % + comparatif chiffré */
+.reports-kpi-card{
+  padding-bottom: var(--sp-3);
+}
+.reports-kpi-yoy{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin-top:6px;
+  padding-top:8px;
+  border-top:1px solid var(--border);
+}
+.reports-kpi-yoy__pct{
+  font-size:var(--fs-sm);
+  display:flex;
+  align-items:center;
+  gap:6px;
+}
+.reports-kpi-yoy__compare{
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--text2);
+  line-height:1.4;
+  display:flex;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:4px;
+}
+.reports-kpi-yoy__compare strong{
+  color:var(--text);
+  font-weight:700;
+}
+.reports-kpi-yoy__compare span{
+  color:var(--text3);
+  font-weight:500;
+}
+.reports-kpi-yoy__year{
+  background:rgba(var(--accent-rgb),.15);
+  color:var(--accent-warm);
+  padding:1px 5px;
+  border-radius:var(--radius-sm);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.04em;
+}
+
 /* Cellules YoY dans tableau */
 .reports-yoy-col{
   background:rgba(var(--accent-rgb),.06);
