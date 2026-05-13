@@ -424,6 +424,17 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 12 mai 2026 — Sim : Mt/jour + Ventes prévues + Ratio salaires (v3.10.5) 💰📊
+- **Nouveau tfoot dans le tableau de simulation** (3 lignes, comme dans Employés & Horaires) :
+  - **Heures / jour** : total des heures travaillées chaque jour ouvert
+  - **Mt / jour** : coût salarial brut par jour (salariés au prorata du nb de jours ouverts, horaires × taux pour les autres)
+  - **Ventes prévues** : Mt/jour ÷ ratio salaires/ventes — sert à projeter les ventes nécessaires pour respecter le ratio cible
+- **Nouveau paramètre dans « Paramètres globaux »** : champ `Ratio salaires / ventes (%)` (défaut 32%, modifiable) avec hint « Base : X% · Cible <32% ». Stocké dans `simulation.salesRatio` + `baseline.salesRatio` (snapshot du `scheduleSettings.salesRatio` lors de la création).
+- **`computeSimScenario`** étendu pour retourner `dayTotalsHours[7]` et `dayTotalsCost[7]` (indexés 0=Lun..6=Dim, 0 pour jours non ouverts). Logique salariés alignée avec `pages-hr.js` (coût hebdo fixe réparti sur les jours ouverts).
+- **`createSimFromPlanned`** snapshoote maintenant aussi `salesRatio` dans le baseline.
+- Nouvelle fonction `updateSimSalesRatio(simId, percentStr)`.
+- **CACHE_VERSION** bumpé à `v3.10.5`
+
 ### 12 mai 2026 — Hauteur uniforme taux/section (v3.10.4) 📏
 - **Sim** : `height:24px` + `box-sizing:border-box` + `line-height:1` forcés sur `.sim-rate-input` ET `.sim-section-select` pour qu'ils s'alignent parfaitement côte à côte (avant : hauteur dépendait du browser/UA-styles).
 - **CACHE_VERSION** bumpé à `v3.10.4`

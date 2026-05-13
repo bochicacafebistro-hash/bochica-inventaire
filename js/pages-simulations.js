@@ -60,12 +60,21 @@ function computeSimScenario(scenario) {
   const totalTips = Number(scenario.totalTips) || 0;
 
   // Pré-calcul des heures éligibles pourboires par groupe (sur tous les jours ouverts)
+  // ET des totaux par jour (heures + coût salaire) pour le tfoot.
   let totalHrsCuisine = 0;
   let totalHrsService = 0;
+  const nbOpenDays = openDays.length || 1;
+  // Index 0..6 (Lun..Dim). Pour les jours non ouverts, valeur reste 0.
+  const dayTotalsHours = new Array(7).fill(0);
+  const dayTotalsCost = new Array(7).fill(0);
+
   const empCalc = scenario.employees.map(emp => {
     const rate = Number(emp.hourlyRate) || 0;
     const isSal = !!emp.isSalaried;
     const fixedHours = Number(emp.fixedWeeklyHours) || 0;
+    // Salariés : coût hebdo fixe réparti à parts égales sur les jours ouverts
+    const weeklyFixedPay = isSal ? fixedHours * rate : null;
+    const dailyFixedCost = isSal ? weeklyFixedPay / nbOpenDays : null;
     const group = simTipGroupOf(emp);
     let totalHours = 0;
     let tipEligibleHours = 0;
@@ -76,13 +85,16 @@ function computeSimScenario(scenario) {
       const hours = hoursFromShift(shift);
       const win = serviceHours[dow];
       const tipHrs = win ? intersectShiftHours(shift, win) : 0;
+      const cost = isSal ? dailyFixedCost : hours * rate;
       totalHours += hours;
       tipEligibleHours += tipHrs;
-      daily.push({ shift, hours, tipHrs });
+      dayTotalsHours[dow] += hours;
+      dayTotalsCost[dow] += cost;
+      daily.push({ shift, hours, tipHrs, cost });
     }
     if (group === "cuisine") totalHrsCuisine += tipEligibleHours;
     else totalHrsService += tipEligibleHours;
-    const grossWage = isSal ? (fixedHours * rate) : (totalHours * rate);
+    const grossWage = isSal ? weeklyFixedPay : totalHours * rate;
     return { emp, rate, isSal, fixedHours, group, daily, totalHours, tipEligibleHours, grossWage };
   });
 
@@ -108,7 +120,9 @@ function computeSimScenario(scenario) {
   return {
     rows, totals,
     pools: { cuisine: poolCuisine, service: poolService },
-    totalsHours: { cuisine: totalHrsCuisine, service: totalHrsService }
+    totalsHours: { cuisine: totalHrsCuisine, service: totalHrsService },
+    dayTotalsHours,                    // tableau 7 (par dow 0..6, 0 si jour non ouvert)
+    dayTotalsCost                      // idem pour coût salaire
   };
 }
 
@@ -306,13 +320,16 @@ async function confirmCreateSimFromPlanned() {
     totalTips = Number(payrollWeekData.totalTips) || 0;
   }
   const openDays = Array.isArray(scheduleSettings.openDays) ? [...scheduleSettings.openDays] : [0,1,2,3,4,5,6];
+  // Snapshot du ratio salaires/ventes (sert au calcul des ventes prévues dans la sim)
+  const salesRatio = Number(scheduleSettings.salesRatio) || 0.32;
 
   const baseline = {
     employees: empSnapshots,
     serviceHours,
     tipShares,
     totalTips,
-    openDays
+    openDays,
+    salesRatio
   };
   // Simulation = copie initiale identique au baseline
   const simulation = JSON.parse(JSON.stringify(baseline));
@@ -452,6 +469,13 @@ function renderSimulationEditorHTML(sim) {
   const tipShares = sim.simulation?.tipShares || { cuisine: 0.25, service: 0.75 };
   const totalTips = Number(sim.simulation?.totalTips) || 0;
   const baseTotalTips = Number(sim.baseline?.totalTips) || 0;
+  // Ratio salaires/ventes pour le calcul des ventes prévues du tfoot
+  const salesRatio = Number(sim.simulation?.salesRatio) || 0.32;
+  const baseSalesRatio = Number(sim.baseline?.salesRatio) || 0.32;
+  // Totaux par jour (heures + coûts) pour le tfoot
+  const weekTotalHours = visibleIdx.reduce((s, dow) => s + (cur.dayTotalsHours[dow] || 0), 0);
+  const weekTotalCost = visibleIdx.reduce((s, dow) => s + (cur.dayTotalsCost[dow] || 0), 0);
+  const weekTotalSales = salesRatio > 0 ? weekTotalCost / salesRatio : 0;
 
   return `<div class="page sim-editor">
     <div class="toolbar">
@@ -494,6 +518,13 @@ function renderSimulationEditorHTML(sim) {
           </div>
           <span class="field-hint">${icon("info", 11)} Service+autre = ${(100 - Math.round(tipShares.cuisine * 100))}%</span>
         </label>
+        <label>Ratio salaires / ventes (%)
+          <div class="sim-input-money">
+            <input type="number" min="1" max="100" step="0.5" value="${(salesRatio * 100).toFixed(1)}" onchange="updateSimSalesRatio('${sim.id}', this.value)"/>
+            <span>%</span>
+          </div>
+          <span class="field-hint">${icon("info", 11)} Base : ${(baseSalesRatio * 100).toFixed(1)}% · Cible &lt;32%</span>
+        </label>
         <label>Pool cuisine
           <div class="sim-readonly">${fmtMoney(cur.pools.cuisine)}</div>
           <span class="field-hint">${fmtHours(cur.totalsHours.cuisine)}h éligibles</span>
@@ -529,6 +560,36 @@ function renderSimulationEditorHTML(sim) {
         <tbody>
           ${cur.rows.map((row, rowIdx) => renderSimEmpRow(sim, row, rowIdx, visibleIdx, base.rows)).join("")}
         </tbody>
+        <tfoot>
+          <!-- Ligne Heures / jour -->
+          <tr class="schedule-tfoot-row">
+            <td class="schedule-tfoot-label">Heures / jour</td>
+            ${visibleIdx.map(dow => {
+              const h = cur.dayTotalsHours[dow] || 0;
+              return `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">${h ? fmtHours(h) : ""}</td>`;
+            }).join("")}
+            <td class="schedule-tfoot-val schedule-td--total" colspan="5">${fmtHours(weekTotalHours)} h</td>
+          </tr>
+          <!-- Ligne Mt / jour (coût salaires) -->
+          <tr class="schedule-tfoot-row">
+            <td class="schedule-tfoot-label">Mt / jour</td>
+            ${visibleIdx.map(dow => {
+              const c = cur.dayTotalsCost[dow] || 0;
+              return `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">${c ? fmtMoney(c) : ""}</td>`;
+            }).join("")}
+            <td class="schedule-tfoot-val schedule-td--total" colspan="5">${fmtMoney(weekTotalCost)}</td>
+          </tr>
+          <!-- Ligne Ventes prévues (Mt/jour ÷ ratio) -->
+          <tr class="schedule-tfoot-row schedule-tfoot-row--predicted">
+            <td class="schedule-tfoot-label">Ventes prévues</td>
+            ${visibleIdx.map(dow => {
+              const c = cur.dayTotalsCost[dow] || 0;
+              const predicted = salesRatio > 0 ? c / salesRatio : 0;
+              return `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">${predicted ? fmtMoney(predicted) : ""}</td>`;
+            }).join("")}
+            <td class="schedule-tfoot-val schedule-td--total" colspan="5">${fmtMoney(weekTotalSales)}</td>
+          </tr>
+        </tfoot>
       </table>
     </div>
 
@@ -739,6 +800,14 @@ async function updateSimTipShare(simId, group, percentStr) {
     ? { cuisine: newShare, service: 1 - newShare }
     : { cuisine: 1 - newShare, service: newShare };
   await persistSim(simId, { ...sim.simulation, tipShares });
+}
+
+async function updateSimSalesRatio(simId, percentStr) {
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) return;
+  const pct = Math.max(1, Math.min(100, Number(percentStr) || 32));
+  const salesRatio = pct / 100;
+  await persistSim(simId, { ...sim.simulation, salesRatio });
 }
 
 async function persistSim(simId, simulation) {
