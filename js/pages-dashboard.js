@@ -7,40 +7,101 @@
 // FRAIS FIXES AUTOMATIQUES
 // ══════════════════════════════════════════════════════
 
+// Applique les frais fixes (templates) pour le mois courant ET rattrape
+// les mois manqués depuis le premier mois où des frais fixes ont été appliqués
+// (max 12 mois en arrière pour limiter le rattrapage rétroactif).
+//
+// Logique :
+//   1. Trouve le mois le plus ancien où on a déjà des expenses isFixedAuto
+//      → c'est notre point de départ
+//   2. Si aucun frais fixe encore appliqué : commence au mois courant
+//   3. Pour chaque mois entre ce point et aujourd'hui, vérifie si les frais
+//      fixes ont été créés. Si non, les crée avec date = 1er du mois.
+//
+// Garantit que les frais fixes se reportent automatiquement chaque mois,
+// même si l'admin ne se connecte qu'occasionnellement.
 async function autoApplyFixedExpenses() {
   if (!isAdmin) return;
-  const now = new Date();
-  const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const firstOfMonth = `${currentMonthKey}-01`;
-
-  // Vérifier si déjà appliqué ce mois-ci
-  const alreadyApplied = expenses.some(e =>
-    e.isFixedAuto && e.date && e.date.startsWith(currentMonthKey)
-  );
-  if (alreadyApplied) return;
-
-  // Copier tous les templates de frais fixes
   const templates = fixedExpenseTemplates;
   if (!templates.length) return;
 
+  const now = new Date();
+  const currentMonthKey = monthKeyFromDate(now);
+
+  // 1. Trouver le mois le plus ancien où on a appliqué des frais fixes
+  const fixedExpenseDates = expenses
+    .filter(e => e.isFixedAuto && e.date)
+    .map(e => e.date.slice(0, 7))  // YYYY-MM
+    .sort();
+  const oldestApplied = fixedExpenseDates[0] || currentMonthKey;
+
+  // 2. Construire la liste des mois à vérifier (limite 12 mois rétro max)
+  const monthsToCheck = monthsBetween(oldestApplied, currentMonthKey, 12);
+  if (!monthsToCheck.length) return;
+
+  // 3. Pour chaque mois, créer les frais fixes manquants
   const batch = db.batch();
-  templates.forEach(tpl => {
-    const nid = genId();
-    const ref = db.collection("expenses").doc(nid);
-    batch.set(ref, {
-      id: nid,
-      supplier: tpl.supplier || "",
-      description: tpl.supplier || tpl.description || "",
-      amount: tpl.amount || 0,
-      tps: tpl.tps || 0,
-      tvq: tpl.tvq || 0,
-      category: tpl.category || "",
-      date: firstOfMonth,
-      notes: tpl.notes || "",
-      isFixedAuto: true
+  let createdCount = 0;
+  monthsToCheck.forEach(monthKey => {
+    const alreadyApplied = expenses.some(e =>
+      e.isFixedAuto && e.date && e.date.startsWith(monthKey)
+    );
+    if (alreadyApplied) return;
+    const firstOfMonth = `${monthKey}-01`;
+    templates.forEach(tpl => {
+      const nid = genId();
+      const ref = db.collection("expenses").doc(nid);
+      batch.set(ref, {
+        id: nid,
+        supplier: tpl.supplier || "",
+        description: tpl.supplier || tpl.description || "",
+        amount: tpl.amount || 0,
+        tps: tpl.tps || 0,
+        tvq: tpl.tvq || 0,
+        category: tpl.category || "",
+        date: firstOfMonth,
+        notes: tpl.notes || "",
+        isFixedAuto: true
+      });
+      createdCount++;
     });
   });
-  await batch.commit();
+
+  if (createdCount === 0) return;
+
+  try {
+    await batch.commit();
+    // Toast de feedback si rattrapage > 1 mois
+    const monthsCovered = monthsToCheck.length;
+    if (monthsCovered > 1 && typeof toast === "function") {
+      toast(`Frais fixes appliqués : ${createdCount} entrée${createdCount > 1 ? "s" : ""} sur ${monthsCovered} mois`, "success", 4000);
+    }
+  } catch (err) {
+    console.error("autoApplyFixedExpenses:", err);
+  }
+}
+
+// Helper : YYYY-MM à partir d'une Date
+function monthKeyFromDate(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+// Helper : tableau de mois (YYYY-MM) entre start et end inclus, max maxBack mois en arrière
+function monthsBetween(startKey, endKey, maxBack = 12) {
+  const [sy, sm] = startKey.split("-").map(Number);
+  const [ey, em] = endKey.split("-").map(Number);
+  if (!sy || !sm || !ey || !em) return [endKey];
+  const months = [];
+  let y = sy, m = sm;
+  while (y < ey || (y === ey && m <= em)) {
+    months.push(`${y}-${String(m).padStart(2, "0")}`);
+    m++;
+    if (m > 12) { m = 1; y++; }
+    if (months.length > 24) break; // safety
+  }
+  // Limite : au plus maxBack mois en arrière depuis endKey
+  if (months.length > maxBack) return months.slice(-maxBack);
+  return months;
 }
 
 // ═══════════════════════════════════════════════════════════════
