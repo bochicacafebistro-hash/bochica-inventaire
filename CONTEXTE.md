@@ -1,5 +1,7 @@
 # 📋 CONTEXTE — Projet Bochica Inventaire
 
+> 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
+
 > ⚠️ **Dernière mise à jour : 12 mai 2026** — nouvelle page **Simulation paie** (v3.10.0) : scénarios hypothétiques RH (admin seulement). Création d'une simulation à partir de l'horaire planifié courant → copie figée (baseline) + version modifiable. Modification libre des noms, taux horaires, sections, heures par jour, pourboires totaux, parts cuisine/service. Ajout d'employés fictifs (futures embauches) et retrait d'employés (départs). Comparaison côte à côte du réel vs la simulation avec écart $ et % par employé + totaux (heures, masse salariale, pourboires, total à payer). Persistance Firestore (`payrollSimulations`) → plusieurs scénarios sauvegardables.
 
 ## 🏠 Description
@@ -423,6 +425,28 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 12 mai 2026 — Sidebar en accordéons par domaine (v3.11.0) 🗂️📂
+- **Refonte complète de la sidebar** : les 16 items autrefois listés à plat sont regroupés en **6 sections accordéon par domaine fonctionnel** :
+  - 📊 **Dashboard** (lien direct, toujours visible en haut)
+  - 📦 **Inventaire** : Inventaire · À commander · Historique · Liste d'ingrédients
+  - 👥 **RH & Horaires** : Employés · Salaires · Simulation paie · Tâches
+  - 🍽️ **Cuisine** : Menu · Ingrédients · Recettes
+  - 💰 **Finances** : Dépenses · TPS/TVQ
+  - 📅 **Clients & Événements** : Événements · Soumissions
+  - 🏪 **Fournisseurs** (lien direct, hors accordéon)
+- **Comportement** :
+  - Au login et après chaque `navTo()`, la section contenant la page active est **automatiquement ouverte** (mapping `PAGE_TO_SECTION`)
+  - Les autres sections restent fermées (état initial épuré)
+  - Clic sur un header de section pour ouvrir/fermer
+  - Reset des sections ouvertes au logout (chaque login repart propre)
+- **Promotion d'item unique** : si une section ne contient qu'un seul item après filtrage par permission (ex: chef qui n'a accès qu'à Événements dans Clients), elle est automatiquement promue en lien direct (pas d'accordéon inutile)
+- **Indicateur visuel "page active dans section fermée"** : le header de section prend une teinte jaune discrète quand la page active est cachée à l'intérieur, pour ne pas perdre l'utilisateur
+- **Chevron animé** : `▶` qui pivote de 90° à l'ouverture
+- **Animation max-height** pour le pliage (transition fluide)
+- **Nouveau dans `state.js`** : `let expandedNavSections = new Set();` (reset au logout)
+- **Nouveau dans `sidebar.js`** : `getNavStructure()`, `PAGE_TO_SECTION`, `autoExpandSectionFor(page)`, `toggleNavSection(id)`
+- **CACHE_VERSION** bumpé à `v3.11.0` (nouvelle minor — refonte UI significative)
 
 ### 12 mai 2026 — Sim : Graphique de couverture (v3.10.6) 📈📊
 - **Nouveau graphique de couverture dans la simulation** : carte « Couverture — employés sur le plancher » placée après les boutons d'action, identique visuellement à celui de la page Employés & Horaires (barres Chart.js, un dataset par jour ouvert, hauteur 280px).

@@ -604,6 +604,88 @@ svg{flex-shrink:0;vertical-align:middle}
 }
 .nav-item .icon{font-size:var(--fs-md);width:20px;text-align:center}
 
+/* ── Accordéons de navigation (sections regroupées par domaine) ── */
+.nav-section-wrap{
+  display:flex;
+  flex-direction:column;
+}
+.nav-section-toggle{
+  display:flex;
+  align-items:center;
+  gap:var(--sp-3);
+  width:100%;
+  padding:9px var(--sp-4);
+  border:none;
+  background:transparent;
+  color:rgba(245,241,232,.7);
+  cursor:pointer;
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  font-weight:500;
+  text-align:left;
+  border-left:3px solid transparent;
+  transition:background var(--transition-fast), color var(--transition-fast);
+}
+.nav-section-toggle:hover{
+  background:rgba(255,255,255,.07);
+  color:#f5f1e8;
+}
+.nav-section-toggle:focus-visible{
+  outline:2px solid var(--accent);
+  outline-offset:-2px;
+}
+.nav-section-toggle .icon{
+  font-size:var(--fs-md);
+  width:20px;
+  text-align:center;
+  flex-shrink:0;
+}
+.nav-section-label{
+  flex:1;
+  min-width:0;
+}
+.nav-section-chevron{
+  flex-shrink:0;
+  opacity:.5;
+  transition:transform var(--transition-base), opacity var(--transition-fast);
+  display:flex;
+  align-items:center;
+}
+.nav-section-wrap.is-open > .nav-section-toggle .nav-section-chevron{
+  transform:rotate(90deg);
+  opacity:.9;
+}
+/* État "contient la page active" : on met une discrète teinte jaune sur le header
+   même quand la section est fermée, pour indiquer où on est. */
+.nav-section-wrap.has-active:not(.is-open) > .nav-section-toggle{
+  color:var(--yellow);
+  background:rgba(247,179,44,.04);
+}
+.nav-section-wrap.has-active:not(.is-open) > .nav-section-toggle .nav-section-chevron{
+  opacity:.9;
+}
+
+/* Conteneur des sous-items : animation de pliage par max-height */
+.nav-section-items{
+  max-height:0;
+  overflow:hidden;
+  transition:max-height var(--transition-base);
+}
+.nav-section-wrap.is-open > .nav-section-items{
+  /* 500px = assez large pour 5-6 items (4 max actuellement) */
+  max-height:500px;
+}
+
+/* Sous-items : indent + icône légèrement plus petite */
+.nav-subitem{
+  padding-left:calc(var(--sp-4) + 26px) !important;
+  font-size:var(--fs-sm);
+}
+.nav-subitem .icon{
+  width:18px;
+  opacity:.85;
+}
+
 .sidebar-bottom{
   padding:var(--sp-3) var(--sp-4);
   border-top:1px solid rgba(245,241,232,.08);

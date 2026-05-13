@@ -1,57 +1,119 @@
 // ── Sidebar & Navigation ──────────────────────────────
+
+// Structure de la navigation — organisée en groupes (accordéons) par domaine.
+// Chaque entrée est soit :
+//   - { type: "link", icon, label, page } : lien direct (Dashboard, Fournisseurs)
+//   - { type: "section", id, icon, label, items: [...] } : accordéon avec sous-items
+// L'ordre est important (affichage de haut en bas).
+function getNavStructure() {
+  return [
+    { type: "link", icon: "bar-chart", label: t("nav_dashboard"), page: "dashboard" },
+    {
+      type: "section", id: "inventory", icon: "package", label: "Inventaire",
+      items: [
+        { icon: "package", label: t("nav_inventaire"), page: "inventaire" },
+        { icon: "cart", label: t("nav_to_order"), page: "rapport" },
+        { icon: "history", label: t("nav_history"), page: "historique" },
+        { icon: "cart", label: "Liste d'ingrédients", page: "shopping" }
+      ]
+    },
+    {
+      type: "section", id: "hr", icon: "users", label: "RH & Horaires",
+      items: [
+        { icon: "users", label: t("nav_employees"), page: "employes" },
+        { icon: "dollar-sign", label: t("nav_salaires"), page: "salaires" },
+        { icon: "trending-up", label: "Simulation paie", page: "simulations" },
+        { icon: "clipboard", label: t("nav_tasks"), page: "taches" }
+      ]
+    },
+    {
+      type: "section", id: "kitchen", icon: "utensils", label: "Cuisine",
+      items: [
+        { icon: "utensils", label: t("nav_menu"), page: "menu" },
+        { icon: "tag", label: t("nav_ingredients"), page: "ingredients" },
+        { icon: "file-text", label: t("nav_recipes"), page: "recettes" }
+      ]
+    },
+    {
+      type: "section", id: "finance", icon: "wallet", label: "Finances",
+      items: [
+        { icon: "wallet", label: t("nav_expenses"), page: "depenses" },
+        { icon: "shield-check", label: "TPS/TVQ", page: "taxes" }
+      ]
+    },
+    {
+      type: "section", id: "clients", icon: "calendar", label: "Clients & Événements",
+      items: [
+        { icon: "calendar", label: "Événements", page: "evenements" },
+        { icon: "receipt", label: "Soumissions", page: "soumissions" }
+      ]
+    },
+    { type: "link", icon: "store", label: t("nav_suppliers"), page: "fournisseurs" }
+  ];
+}
+
+// Mapping page → id de section, pour auto-ouvrir la bonne section après une navigation
+const PAGE_TO_SECTION = {
+  inventaire: "inventory", rapport: "inventory", historique: "inventory", shopping: "inventory",
+  employes: "hr", salaires: "hr", simulations: "hr", taches: "hr",
+  menu: "kitchen", ingredients: "kitchen", recettes: "kitchen",
+  depenses: "finance", taxes: "finance",
+  evenements: "clients", soumissions: "clients"
+};
+
+// Auto-ouvre la section contenant cette page (utilisé à navigate + login)
+function autoExpandSectionFor(page) {
+  const sec = PAGE_TO_SECTION[page];
+  if (sec) expandedNavSections.add(sec);
+}
+
+// Toggle ouverture/fermeture d'un accordéon
+function toggleNavSection(id) {
+  if (expandedNavSections.has(id)) expandedNavSections.delete(id);
+  else expandedNavSections.add(id);
+  buildSidebar();
+}
+
 function buildSidebar() {
   const nav = document.getElementById("sidebar-nav"); if (!nav) return;
 
-  // Menu complet avec sections — filtré ensuite selon le rôle via canAccess()
-  const fullNav = [
-    { icon: "bar-chart", label: t("nav_dashboard"), page: "dashboard" },
-    { section: t("nav_section_inventory") },
-    { icon: "package", label: t("nav_inventaire"), page: "inventaire" },
-    { icon: "cart", label: t("nav_to_order"), page: "rapport" },
-    { icon: "history", label: t("nav_history"), page: "historique" },
-    { section: t("nav_section_dashboard") },
-    { icon: "clipboard", label: t("nav_tasks"), page: "taches" },
-    { icon: "users", label: t("nav_employees"), page: "employes" },
-    { icon: "dollar-sign", label: t("nav_salaires"), page: "salaires" },
-    { icon: "trending-up", label: "Simulation paie", page: "simulations" },
-    { icon: "wallet", label: t("nav_expenses"), page: "depenses" },
-    { icon: "shield-check", label: "TPS/TVQ", page: "taxes" },
-    { icon: "utensils", label: t("nav_menu"), page: "menu" },
-    { icon: "tag", label: t("nav_ingredients"), page: "ingredients" },
-    { icon: "file-text", label: t("nav_recipes"), page: "recettes" },
-    { icon: "cart", label: "Liste d'ingrédients", page: "shopping" },
-    { icon: "calendar", label: "Événements", page: "evenements" },
-    { icon: "receipt", label: "Soumissions", page: "soumissions" },
-    { section: t("nav_section_management") },
-    { icon: "store", label: t("nav_suppliers"), page: "fournisseurs" },
-  ];
+  // Filtrer la structure selon les permissions du rôle courant.
+  // Pour les sections, on filtre les sous-items ; si une section finit avec 0
+  // item, on la masque ; si elle finit avec 1 seul item, on le promeut en
+  // lien direct (évite un accordéon ouvert pour rien).
+  const filtered = getNavStructure().map(g => {
+    if (g.type === "link") return canAccess(g.page) ? g : null;
+    const items = g.items.filter(it => canAccess(it.page));
+    if (items.length === 0) return null;
+    if (items.length === 1) {
+      // Promouvoir l'item unique en lien direct
+      return { type: "link", icon: items[0].icon, label: items[0].label, page: items[0].page };
+    }
+    return { ...g, items };
+  }).filter(Boolean);
 
-  // Filtrer par permission : on garde les items dont la page est autorisée,
-  // et les sections seulement si au moins un item après elles est autorisé.
-  const filtered = [];
-  fullNav.forEach((item, i) => {
-    if (item.section) {
-      // Ne pas ajouter la section tout de suite, on décidera après avoir vu ses enfants
-      filtered.push({ ...item, _isSection: true });
-    } else if (canAccess(item.page)) {
-      filtered.push(item);
+  nav.innerHTML = filtered.map(g => {
+    if (g.type === "link") {
+      return `<div class="nav-item ${activePage === g.page ? "active" : ""}" onclick="navTo('${g.page}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navTo('${g.page}')}">
+        <span class="icon">${icon(g.icon, 18)}</span>
+        <span>${g.label}</span>
+      </div>`;
     }
-  });
-  // Retirer les sections vides (suivies d'une autre section ou de rien)
-  const items = filtered.filter((item, i) => {
-    if (!item._isSection) return true;
-    // Chercher le prochain item non-section
-    for (let j = i + 1; j < filtered.length; j++) {
-      if (!filtered[j]._isSection) return true; // il y a au moins un item après
-      if (filtered[j]._isSection) break; // section suivante → section actuelle vide
-    }
-    return false;
-  });
-  nav.innerHTML = items.map(item => {
-    if (item.section) return `<div class="nav-section">${item.section}</div>`;
-    return `<div class="nav-item ${activePage === item.page ? "active" : ""}" onclick="navTo('${item.page}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navTo('${item.page}')}">
-      <span class="icon">${icon(item.icon, 18)}</span>
-      <span>${item.label}</span>
+    // Section accordéon
+    const isOpen = expandedNavSections.has(g.id);
+    const hasActive = g.items.some(it => it.page === activePage);
+    return `<div class="nav-section-wrap ${isOpen ? "is-open" : ""} ${hasActive ? "has-active" : ""}">
+      <button class="nav-section-toggle" onclick="toggleNavSection('${g.id}')" aria-expanded="${isOpen}" type="button">
+        <span class="icon">${icon(g.icon, 16)}</span>
+        <span class="nav-section-label">${g.label}</span>
+        <span class="nav-section-chevron">${icon("chevron-right", 14)}</span>
+      </button>
+      <div class="nav-section-items" role="region">
+        ${g.items.map(it => `<div class="nav-item nav-subitem ${activePage === it.page ? "active" : ""}" onclick="navTo('${it.page}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navTo('${it.page}')}">
+          <span class="icon">${icon(it.icon, 16)}</span>
+          <span>${it.label}</span>
+        </div>`).join("")}
+      </div>
     </div>`;
   }).join("");
   // Rôle utilisateur avec icône + nom
@@ -105,6 +167,8 @@ function navTo(page) {
   // pas par navTo), donc reset systématique sans risque.
   if (typeof _editingSimId !== "undefined") _editingSimId = null;
   activePage = page; searchQuery = "";
+  // Auto-ouvrir la section contenant la nouvelle page active (accordéon UX)
+  autoExpandSectionFor(page);
   buildSidebar(); renderPage();
   if (window.innerWidth <= 768) {
     document.getElementById("sidebar").classList.remove("mobile-open");

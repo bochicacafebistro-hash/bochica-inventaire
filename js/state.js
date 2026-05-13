@@ -53,6 +53,13 @@ let quotesSearchQuery = "";              // recherche (numéro, nom client, cont
 //             le 1er template fait foi à l'affichage)
 let quoteTemplates = [];
 
+// Sections de la sidebar actuellement ouvertes (accordéons).
+// Au login, on auto-ouvre la section contenant la home page. L'utilisateur
+// peut ensuite ouvrir/fermer comme il veut pendant la session. Pas persisté
+// entre sessions (intentionnel — on respecte le choix d'avoir seulement la
+// section pertinente ouverte au démarrage).
+let expandedNavSections = new Set();
+
 let isAdmin = false, isLoggedIn = false, darkMode = false;
 let userRole = null; // "global_admin" | "chef" | "employee" | null
 let loggedInUser = null; // { id, name, role } pour traçabilité

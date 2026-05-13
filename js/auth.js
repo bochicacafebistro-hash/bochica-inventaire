@@ -31,6 +31,8 @@ function initAuth() {
       // Reset du tracker de premier snapshot pour que le prochain login
       // force à nouveau un render quand chaque collection arrive
       if (typeof _firstSnapshots !== "undefined") _firstSnapshots = new Set();
+      // Reset des accordéons sidebar (chaque login reprend depuis l'état fermé)
+      if (typeof expandedNavSections !== "undefined") expandedNavSections = new Set();
       document.getElementById("app-shell").style.display = "none";
       showLogin();
       return;
@@ -72,6 +74,8 @@ function applyLogin(role, user) {
   isLoggedIn = true;
   loggedInUser = user;
   activePage = getHomePage();
+  // Auto-ouvrir la section de la home page pour que l'item courant soit visible
+  if (typeof autoExpandSectionFor === "function") autoExpandSectionFor(activePage);
   document.getElementById("login-screen").style.display = "none";
   document.getElementById("app-shell").style.display = "block";
   buildSidebar();
