@@ -2,7 +2,12 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 12 mai 2026** — nouvelle page **Simulation paie** (v3.10.0) : scénarios hypothétiques RH (admin seulement). Création d'une simulation à partir de l'horaire planifié courant → copie figée (baseline) + version modifiable. Modification libre des noms, taux horaires, sections, heures par jour, pourboires totaux, parts cuisine/service. Ajout d'employés fictifs (futures embauches) et retrait d'employés (départs). Comparaison côte à côte du réel vs la simulation avec écart $ et % par employé + totaux (heures, masse salariale, pourboires, total à payer). Persistance Firestore (`payrollSimulations`) → plusieurs scénarios sauvegardables.
+> ⚠️ **Dernière mise à jour : 12 mai 2026 — v3.12.0** — gros chantier UI/UX en 3 volets :
+> 1. **Simulation paie** (v3.10.0–3.10.6) : nouvelle page admin pour scénarios RH hypothétiques (baseline figé + version modifiable, ajout/retrait employés, comparaison côte à côte $ et %, tableau avec tfoot Heures/jour/Mt/jour/Ventes prévues, graphique de couverture).
+> 2. **Sidebar en accordéons** (v3.11.0) : 6 sections par domaine (Inventaire, RH, Cuisine, Finances, Clients, Fournisseurs), Dashboard hors accordéon en haut, section active auto-ouverte, promotion d'item unique en lien direct.
+> 3. **UI Polish** (v3.12.0) : micro-interactions (skeleton loaders, hover cards renforcé, `animateNumber()`, `flashSaveSuccess()`), 10 empty states illustrés SVG inline (`renderEmptyState()`), widget « Aujourd'hui » du dashboard (employés en shift + événements + tâches dues + ratio salaires/ventes) et sparklines 30 jours dans les KPI cards.
+>
+> Voir le **CHANGELOG** plus bas pour le détail complet, et **`TODO.md`** pour les chantiers à venir (sécurité prioritaire, food cost auto, photos menu, bottom nav mobile, etc.).
 
 ## 🏠 Description
 Application web de **gestion interne** pour le restaurant colombien Bochica.
@@ -41,6 +46,7 @@ bochica-inventaire/
 ├── sw.js                   ← Service Worker (cache offline)
 ├── favicon.ico
 ├── CONTEXTE.md             ← ce fichier
+├── TODO.md                 ← Liste vivante des améliorations à venir (sécurité, food cost, etc.)
 ├── README.md
 ├── firestore.rules         ← Règles Firestore (à publier dans la console Firebase)
 ├── FIREBASE_AUTH_SETUP.md  ← Procédure migration vers Firebase Auth
