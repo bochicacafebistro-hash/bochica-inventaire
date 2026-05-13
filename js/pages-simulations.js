@@ -451,6 +451,8 @@ function renderSimulationEditor() {
     return;
   }
   pc.innerHTML = renderSimulationEditorHTML(sim);
+  // Initialiser/rafraîchir le graphique de couverture après l'injection du DOM
+  setTimeout(() => { if (typeof initSimCoverageChart === "function") initSimCoverageChart(); }, 50);
 }
 
 function renderSimulationEditorHTML(sim) {
@@ -600,6 +602,25 @@ function renderSimulationEditorHTML(sim) {
       <button class="btn-secondary" onclick="openSimOpenDaysModal('${sim.id}')">${icon("calendar", 14)} Jours ouverts (${visibleIdx.length}/7)</button>
     </div>
 
+    <!-- ═ Graphique de couverture (employés sur le plancher) ═ -->
+    <div class="card coverage-card" style="margin-top:var(--sp-5)">
+      <div class="coverage-header">
+        <div>
+          <h3 class="coverage-title">Couverture — employés sur le plancher</h3>
+          <div class="coverage-subtitle">Nombre d'employés présents par heure, pour chaque jour de la semaine (selon la simulation)</div>
+        </div>
+        <div class="coverage-filter" role="tablist" aria-label="Filtrer par section">
+          <button class="coverage-tab ${_simCoverageSection === "all" ? "is-active" : ""}" onclick="setSimCoverageSection('all')" role="tab" aria-selected="${_simCoverageSection === "all"}">Tous</button>
+          <button class="coverage-tab ${_simCoverageSection === "service" ? "is-active" : ""}" onclick="setSimCoverageSection('service')" role="tab" aria-selected="${_simCoverageSection === "service"}">${icon("users", 12)} Service</button>
+          <button class="coverage-tab ${_simCoverageSection === "cuisine" ? "is-active" : ""}" onclick="setSimCoverageSection('cuisine')" role="tab" aria-selected="${_simCoverageSection === "cuisine"}">${icon("utensils", 12)} Cuisine</button>
+          <button class="coverage-tab ${_simCoverageSection === "other" ? "is-active" : ""}" onclick="setSimCoverageSection('other')" role="tab" aria-selected="${_simCoverageSection === "other"}">Autre</button>
+        </div>
+      </div>
+      <div class="coverage-canvas-wrap">
+        <canvas id="sim-coverage-chart" height="280"></canvas>
+      </div>
+    </div>
+
     <!-- ═ Comparaison détaillée côte à côte ═════════ -->
     <div class="card sim-compare-card">
       <h3 class="section-title" style="margin:0 0 14px 0">${icon("bar-chart", 16)} Comparaison réel ↔ simulation</h3>
@@ -740,6 +761,179 @@ function renderSimCompareRows(baseRows, simRows) {
       <td class="sim-col-gap">${simGapCell(sTotal, bTotal)}</td>
     </tr>`;
   }).join("");
+}
+
+// ═ Graphique de couverture (adapté de pages-hr.js pour la sim) ════
+// État local : instance Chart.js + filtre section actif
+let _simCoverageChartInstance = null;
+let _simCoverageSection = "all";    // "all" | "cuisine" | "service" | "other"
+
+function setSimCoverageSection(section) {
+  _simCoverageSection = section;
+  renderSimulationEditor();   // re-render pour mettre à jour les tabs actifs + le graphique
+}
+
+// Compte le nombre d'employés présents à l'heure H pour un jour de la semaine
+// dans une simulation (shifts par dow 0..6, pas par date).
+function countSimCoverageAtHour(simEmployees, dow, H, sectionFilter) {
+  let count = 0;
+  for (const emp of simEmployees) {
+    if (sectionFilter !== "all") {
+      const empSection = emp.section || "service";
+      if (empSection !== sectionFilter) continue;
+    }
+    const s = (emp.shifts || {})[dow];
+    if (!s || !s.start || !s.end) continue;
+    let start = parseTimeToFloat(s.start);
+    let end = parseTimeToFloat(s.end);
+    if (start == null || end == null) continue;
+    if (end <= start) end += 24;       // shift qui passe minuit
+    if (H >= start && H < end) count++;
+    else if (H + 24 >= start && H + 24 < end) count++;
+  }
+  return count;
+}
+
+// Construit et affiche le graphique pour la simulation courante
+function initSimCoverageChart() {
+  const sim = (payrollSimulations || []).find(s => s.id === _editingSimId);
+  if (!sim) return;
+  const canvas = document.getElementById("sim-coverage-chart");
+  if (!canvas) return;
+  if (typeof Chart === "undefined") {
+    canvas.parentNode.innerHTML = `<div class="empty" style="padding:var(--sp-5)">Chargement du graphique...</div>`;
+    return;
+  }
+
+  // Détruire l'instance précédente (évite fuites + superposition)
+  if (_simCoverageChartInstance) {
+    try { _simCoverageChartInstance.destroy(); } catch (_) {}
+    _simCoverageChartInstance = null;
+  }
+
+  const simEmployees = sim.simulation?.employees || [];
+  const openDays = Array.isArray(sim.simulation?.openDays) && sim.simulation.openDays.length
+    ? sim.simulation.openDays
+    : [0, 1, 2, 3, 4, 5, 6];
+  const visibleIdx = [0, 1, 2, 3, 4, 5, 6].filter(i => openDays.includes(i));
+  const section = _simCoverageSection;
+
+  // Plage X dynamique : min start → max end parmi tous les shifts (après filtre)
+  let minH = 24, maxH = 0;
+  let anyShift = false;
+  visibleIdx.forEach(dow => {
+    for (const emp of simEmployees) {
+      if (section !== "all") {
+        const empSection = emp.section || "service";
+        if (empSection !== section) continue;
+      }
+      const s = (emp.shifts || {})[dow];
+      if (!s || !s.start || !s.end) continue;
+      const sh = parseTimeToFloat(s.start);
+      let eh = parseTimeToFloat(s.end);
+      if (sh == null || eh == null) continue;
+      if (eh <= sh) eh += 24;
+      minH = Math.min(minH, Math.floor(sh));
+      maxH = Math.max(maxH, Math.ceil(eh));
+      anyShift = true;
+    }
+  });
+
+  if (!anyShift) {
+    const wrap = canvas.parentNode;
+    wrap.innerHTML = `<div class="empty coverage-empty">
+      <div class="empty-state-icon">${icon("bar-chart", 36)}</div>
+      Aucun quart saisi dans cette simulation ${section !== "all" ? `(section ${section})` : ""}.<br>
+      <span style="font-size:13px;color:var(--text3)">Ajoute des horaires dans le tableau ci-dessus pour voir le graphique.</span>
+    </div>`;
+    return;
+  }
+
+  // Labels heures
+  const labels = [];
+  for (let h = minH; h < maxH; h++) labels.push((h % 24) + "h");
+
+  // Un dataset par jour ouvert (couleurs cohérentes avec le graphique d'horaire)
+  const DAY_COLORS = {
+    0: "#8b5cf6", 1: "#14b8a6", 2: "#4a90e2",
+    3: "#e74c3c", 4: "#F7B32C", 5: "#7dbf66", 6: "#f97316"
+  };
+  const datasets = visibleIdx.map(dow => {
+    const data = [];
+    for (let h = minH; h < maxH; h++) {
+      data.push(countSimCoverageAtHour(simEmployees, dow, h, section));
+    }
+    const color = DAY_COLORS[dow];
+    return {
+      label: DAYS_FR[dow],
+      data,
+      backgroundColor: color,
+      borderColor: color,
+      borderWidth: 0,
+      borderRadius: 3,
+      barPercentage: 0.85,
+      categoryPercentage: 0.85
+    };
+  });
+
+  const textColor   = darkMode ? "rgba(245,241,232,.72)" : "rgba(14,13,12,.72)";
+  const gridColor   = darkMode ? "rgba(245,241,232,.08)" : "rgba(14,13,12,.08)";
+  const tooltipBg   = darkMode ? "#25201d" : "#ffffff";
+  const tooltipText = darkMode ? "#f5f1e8" : "#0e0d0c";
+
+  _simCoverageChartInstance = new Chart(canvas, {
+    type: "bar",
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: {
+          position: "top",
+          labels: {
+            color: textColor,
+            font: { family: "Inter, sans-serif", size: 12, weight: 500 },
+            usePointStyle: true,
+            pointStyle: "rectRounded",
+            padding: 14
+          }
+        },
+        tooltip: {
+          backgroundColor: tooltipBg,
+          titleColor: tooltipText,
+          bodyColor: tooltipText,
+          borderColor: gridColor,
+          borderWidth: 1,
+          padding: 12,
+          cornerRadius: 8,
+          titleFont: { size: 13, weight: 700 },
+          bodyFont: { size: 12 },
+          callbacks: {
+            label: ctx => `${ctx.dataset.label} : ${ctx.parsed.y} employé${ctx.parsed.y > 1 ? "s" : ""}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: "Heure", color: textColor, font: { size: 11, weight: 600 } },
+          grid: { display: false },
+          ticks: { color: textColor, font: { family: "Inter, sans-serif", size: 11 } }
+        },
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: "Employés", color: textColor, font: { size: 11, weight: 600 } },
+          grid: { color: gridColor },
+          ticks: {
+            color: textColor,
+            font: { family: "Inter, sans-serif", size: 11 },
+            stepSize: 1,
+            precision: 0
+          }
+        }
+      }
+    }
+  });
 }
 
 // ═ Mutations Firestore ═════════════════════════════════

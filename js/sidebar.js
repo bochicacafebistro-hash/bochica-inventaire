@@ -199,6 +199,8 @@ function renderPage() {
       const sim = (payrollSimulations || []).find(s => s.id === _editingSimId);
       if (sim) {
         pc.innerHTML = renderSimulationEditorHTML(sim);
+        // Init du graphique de couverture après injection DOM
+        setTimeout(() => { if (typeof initSimCoverageChart === "function") initSimCoverageChart(); }, 50);
       } else {
         _editingSimId = null;
         pc.innerHTML = renderSimulations();

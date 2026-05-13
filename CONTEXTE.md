@@ -424,6 +424,17 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 12 mai 2026 — Sim : Graphique de couverture (v3.10.6) 📈📊
+- **Nouveau graphique de couverture dans la simulation** : carte « Couverture — employés sur le plancher » placée après les boutons d'action, identique visuellement à celui de la page Employés & Horaires (barres Chart.js, un dataset par jour ouvert, hauteur 280px).
+- **Filtre par section** : 4 onglets (Tous / Service / Cuisine / Autre) avec compteur d'employés par section.
+- **Adapté à la structure de la sim** : nouveau helper `countSimCoverageAtHour(simEmployees, dow, H, sectionFilter)` qui prend les shifts indexés par dow (0..6) au lieu de par date.
+- **Variables d'état locales** dans `pages-simulations.js` :
+  - `_simCoverageChartInstance` : référence à l'instance Chart.js pour destruction propre avant ré-init
+  - `_simCoverageSection` : filtre actif (par défaut `"all"`)
+- **`initSimCoverageChart()`** appelé automatiquement après chaque render de l'éditeur (dans `renderSimulationEditor()` ET dans le routing `sidebar.js`) → le graphique se met à jour live à chaque modification d'horaire dans la sim.
+- **Couleurs cohérentes** avec le graphique de l'horaire : Lun violet, Mar teal, Mer bleu, Jeu rouge, Ven jaune, Sam vert, Dim orange.
+- **CACHE_VERSION** bumpé à `v3.10.6`
+
 ### 12 mai 2026 — Sim : Mt/jour + Ventes prévues + Ratio salaires (v3.10.5) 💰📊
 - **Nouveau tfoot dans le tableau de simulation** (3 lignes, comme dans Employés & Horaires) :
   - **Heures / jour** : total des heures travaillées chaque jour ouvert
