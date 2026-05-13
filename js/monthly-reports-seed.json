@@ -1,0 +1,5018 @@
+[
+  {
+    "period": "2025-09",
+    "year": 2025,
+    "month": 9,
+    "summary": {
+      "receipts": 985,
+      "clients": 1044,
+      "items_sold": 4234,
+      "avg_receipt": 37.65,
+      "avg_client": 35.52,
+      "sales_items": 33330.05,
+      "sales_extra": 3841.5,
+      "sales_extra_pct": 10.36,
+      "sales_gross": 37171.55,
+      "refunds": -89.0,
+      "discounts": -89.0,
+      "sales_net": 37082.55,
+      "tps": 1835.06,
+      "tvq": 3657.99,
+      "rounding": 0.6,
+      "total_with_tax": 42576.2,
+      "gift_card": 0.0,
+      "non_taxable": 413.98
+    },
+    "channels": {
+      "tables": {
+        "receipts": 562,
+        "clients": 621,
+        "items_sold": 3027,
+        "avg_receipt": 51.11,
+        "avg_client": 46.25,
+        "sales_items": 26239.11,
+        "sales_extra": 2548.0,
+        "sales_extra_pct": 8.87,
+        "sales_gross": 28787.11,
+        "refunds": -63.0,
+        "discounts": -63.0,
+        "sales_net": 28724.11,
+        "tps": 1429.03,
+        "tvq": 2848.95,
+        "rounding": 0.24,
+        "total_with_tax": 33002.33,
+        "gift_card": 0.0,
+        "non_taxable": 162.84
+      },
+      "comptoir": {
+        "receipts": 375,
+        "clients": 375,
+        "items_sold": 1051,
+        "avg_receipt": 17.62,
+        "avg_client": 17.62,
+        "sales_items": 5682.54,
+        "sales_extra": 951.0,
+        "sales_extra_pct": 14.39,
+        "sales_gross": 6633.54,
+        "refunds": -26.0,
+        "discounts": -26.0,
+        "sales_net": 6607.54,
+        "tps": 318.39,
+        "tvq": 634.44,
+        "rounding": 0.34,
+        "total_with_tax": 7560.71,
+        "gift_card": 0.0,
+        "non_taxable": 251.14
+      },
+      "emporter": {
+        "receipts": 16,
+        "clients": 16,
+        "items_sold": 77,
+        "avg_receipt": 36.84,
+        "avg_client": 36.84,
+        "sales_items": 514.9,
+        "sales_extra": 74.5,
+        "sales_extra_pct": 12.64,
+        "sales_gross": 589.4,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 589.4,
+        "tps": 29.49,
+        "tvq": 58.8,
+        "rounding": 0.02,
+        "total_with_tax": 677.71,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "ramassage": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_ramassage": {
+        "receipts": 9,
+        "clients": 9,
+        "items_sold": 19,
+        "avg_receipt": 35.72,
+        "avg_client": 35.72,
+        "sales_items": 223.0,
+        "sales_extra": 98.5,
+        "sales_extra_pct": 30.64,
+        "sales_gross": 321.5,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 321.5,
+        "tps": 16.09,
+        "tvq": 32.07,
+        "rounding": 0.0,
+        "total_with_tax": 369.66,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_livraison": {
+        "receipts": 23,
+        "clients": 23,
+        "items_sold": 60,
+        "avg_receipt": 36.52,
+        "avg_client": 36.52,
+        "sales_items": 670.5,
+        "sales_extra": 169.5,
+        "sales_extra_pct": 20.18,
+        "sales_gross": 840.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 840.0,
+        "tps": 42.06,
+        "tvq": 83.73,
+        "rounding": 0.0,
+        "total_with_tax": 965.79,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_comptoir": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      }
+    },
+    "payments": [
+      {
+        "type": "CAR",
+        "qt": 805,
+        "amount": 36545.73,
+        "tips": 3759.35,
+        "total": 40305.08
+      },
+      {
+        "type": "COM",
+        "qt": 147,
+        "amount": 4717.48,
+        "tips": 0.0,
+        "total": 4717.48
+      },
+      {
+        "type": "CRE",
+        "qt": 13,
+        "amount": 586.34,
+        "tips": 18.75,
+        "total": 605.09
+      },
+      {
+        "type": "DOO",
+        "qt": 11,
+        "amount": 427.12,
+        "tips": 0.0,
+        "total": 427.12
+      },
+      {
+        "type": "UBE",
+        "qt": 8,
+        "amount": 349.54,
+        "tips": 0.0,
+        "total": 349.54
+      }
+    ],
+    "total_tips": 3778.1,
+    "grand_total_with_tips": 46404.31,
+    "top_categories": [
+      {
+        "qty": 601,
+        "name": "ENTRÉES",
+        "total": 2053.0
+      },
+      {
+        "qty": 442,
+        "name": "Deppaneur",
+        "total": 2644.23
+      },
+      {
+        "qty": 345,
+        "name": "Promotions",
+        "total": 1212.01
+      },
+      {
+        "qty": 336,
+        "name": "Deppaneur manuel",
+        "total": 757.85
+      },
+      {
+        "qty": 332,
+        "name": "Jus",
+        "total": 1829.99
+      },
+      {
+        "qty": 317,
+        "name": "REPAS",
+        "total": 7763.0
+      },
+      {
+        "qty": 299,
+        "name": "BOLS",
+        "total": 5618.0
+      },
+      {
+        "qty": 254,
+        "name": "Boissons",
+        "total": 875.75
+      },
+      {
+        "qty": 247,
+        "name": "Arepas",
+        "total": 2530.49
+      },
+      {
+        "qty": 220,
+        "name": "biere",
+        "total": 2169.0
+      },
+      {
+        "qty": 213,
+        "name": "Desserts",
+        "total": 1136.51
+      },
+      {
+        "qty": 172,
+        "name": "Panes",
+        "total": 519.0
+      },
+      {
+        "qty": 149,
+        "name": "Cocktails",
+        "total": 1690.5
+      },
+      {
+        "qty": 134,
+        "name": "Extras",
+        "total": 351.76
+      },
+      {
+        "qty": 63,
+        "name": "Boissons chaud",
+        "total": 232.2
+      },
+      {
+        "qty": 58,
+        "name": "Assiettes",
+        "total": 1184.0
+      },
+      {
+        "qty": 34,
+        "name": "Shooter",
+        "total": 132.75
+      },
+      {
+        "qty": 8,
+        "name": "Bouteilles",
+        "total": 538.0
+      },
+      {
+        "qty": 7,
+        "name": "Café alcoolisé",
+        "total": 72.0
+      },
+      {
+        "qty": 3,
+        "name": "On the rock",
+        "total": 20.01
+      }
+    ],
+    "top_items": [
+      {
+        "qty": 328,
+        "name": "Empanadas",
+        "total": 0.0
+      },
+      {
+        "qty": 290,
+        "name": "empanada mercredi",
+        "total": 580.0
+      },
+      {
+        "qty": 205,
+        "name": "Bol Medellin",
+        "total": 3931.0
+      },
+      {
+        "qty": 111,
+        "name": "Pandebono",
+        "total": 333.0
+      },
+      {
+        "qty": 100,
+        "name": "Pony malta botella",
+        "total": 355.0
+      },
+      {
+        "qty": 96,
+        "name": "Soupe du jour",
+        "total": 528.0
+      },
+      {
+        "qty": 95,
+        "name": "Picada",
+        "total": 3067.0
+      },
+      {
+        "qty": 91,
+        "name": "Bombonbum unit",
+        "total": 45.5
+      },
+      {
+        "qty": 83,
+        "name": "maracuya",
+        "total": 456.49
+      },
+      {
+        "qty": 72,
+        "name": "Pinte",
+        "total": 648.0
+      },
+      {
+        "qty": 69,
+        "name": "Chocolatina jet Unit",
+        "total": 55.2
+      },
+      {
+        "qty": 66,
+        "name": "Salchipapas",
+        "total": 990.0
+      },
+      {
+        "qty": 65,
+        "name": "Arepa au boeuf",
+        "total": 914.0
+      },
+      {
+        "qty": 62,
+        "name": "Carib",
+        "total": 403.0
+      },
+      {
+        "qty": 58,
+        "name": "mango",
+        "total": 319.0
+      },
+      {
+        "qty": 58,
+        "name": "Pan queso",
+        "total": 174.0
+      },
+      {
+        "qty": 53,
+        "name": "mora",
+        "total": 291.5
+      },
+      {
+        "qty": 53,
+        "name": "Patacones 2",
+        "total": 451.0
+      },
+      {
+        "qty": 49,
+        "name": "Alpinito Arequipe",
+        "total": 73.5
+      },
+      {
+        "qty": 47,
+        "name": "SALPICON",
+        "total": 282.0
+      },
+      {
+        "qty": 46,
+        "name": "Patacon montanero",
+        "total": 690.0
+      },
+      {
+        "qty": 45,
+        "name": "coke",
+        "total": 149.25
+      },
+      {
+        "qty": 43,
+        "name": "Colombiana postobon",
+        "total": 153.5
+      },
+      {
+        "qty": 43,
+        "name": "Patacones de la casa",
+        "total": 387.0
+      },
+      {
+        "qty": 40,
+        "name": "Arepa con queso",
+        "total": 200.0
+      },
+      {
+        "qty": 40,
+        "name": "guanabana",
+        "total": 220.0
+      },
+      {
+        "qty": 39,
+        "name": "Bochica Burger",
+        "total": 780.0
+      },
+      {
+        "qty": 39,
+        "name": "Bol Cali",
+        "total": 705.5
+      },
+      {
+        "qty": 39,
+        "name": "lulo",
+        "total": 214.5
+      },
+      {
+        "qty": 38,
+        "name": "Ejecutivo au boeuf",
+        "total": 874.0
+      },
+      {
+        "qty": 36,
+        "name": "Arepa con chicharron",
+        "total": 251.99
+      },
+      {
+        "qty": 36,
+        "name": "Frites de Yuca",
+        "total": 254.0
+      },
+      {
+        "qty": 36,
+        "name": "Queso panela",
+        "total": 305.1
+      },
+      {
+        "qty": 32,
+        "name": "Cafe",
+        "total": 112.0
+      },
+      {
+        "qty": 32,
+        "name": "Flan",
+        "total": 160.0
+      },
+      {
+        "qty": 31,
+        "name": "Extra Chorizo",
+        "total": 108.5
+      },
+      {
+        "qty": 30,
+        "name": "Arepa au poulet",
+        "total": 390.0
+      },
+      {
+        "qty": 30,
+        "name": "Estrella",
+        "total": 225.0
+      },
+      {
+        "qty": 29,
+        "name": "Brazo de reina",
+        "total": 145.0
+      },
+      {
+        "qty": 28,
+        "name": "BUBBALOO ADAMS",
+        "total": 14.0
+      },
+      {
+        "qty": 27,
+        "name": "Bol Bogota",
+        "total": 489.5
+      },
+      {
+        "qty": 27,
+        "name": "Bonbonbum con tajin",
+        "total": 53.73
+      },
+      {
+        "qty": 27,
+        "name": "Torta 3 leches",
+        "total": 175.51
+      },
+      {
+        "qty": 26,
+        "name": "Arepa con chorizo",
+        "total": 182.0
+      },
+      {
+        "qty": 26,
+        "name": "guayaba",
+        "total": 143.0
+      },
+      {
+        "qty": 26,
+        "name": "Margarita",
+        "total": 312.0
+      },
+      {
+        "qty": 26,
+        "name": "rifa",
+        "total": 75.0
+      },
+      {
+        "qty": 25,
+        "name": "Arepa au porc effiloché",
+        "total": 325.0
+      },
+      {
+        "qty": 25,
+        "name": "Mojito",
+        "total": 300.0
+      },
+      {
+        "qty": 24,
+        "name": "colombiana 1.5l",
+        "total": 168.0
+      }
+    ],
+    "total_hours": 441.05,
+    "corrections": {
+      "by_reason": [
+        {
+          "qty": 101,
+          "reason": "training mode",
+          "total": 846.46
+        },
+        {
+          "qty": 12,
+          "reason": "waiter mistake",
+          "total": 135.5
+        },
+        {
+          "qty": 3,
+          "reason": "customer disatisfaction",
+          "total": 23.0
+        },
+        {
+          "qty": 2,
+          "reason": "other",
+          "total": 9.0
+        },
+        {
+          "qty": 2,
+          "reason": "over punch",
+          "total": 0.0
+        },
+        {
+          "qty": 1,
+          "reason": "kitchen mistake",
+          "total": 0.0
+        }
+      ],
+      "total_qty": 121,
+      "total_amount": 1013.96
+    },
+    "discounts_summary": {
+      "by_type": [],
+      "total": 0.0
+    },
+    "source_file": "Rapportutilisateurpersonnalisé_01-09-202500_00_30-09-202523_59.pdf"
+  },
+  {
+    "period": "2025-10",
+    "year": 2025,
+    "month": 10,
+    "summary": {
+      "receipts": 1001,
+      "clients": 1035,
+      "items_sold": 4358,
+      "avg_receipt": 41.55,
+      "avg_client": 40.19,
+      "sales_items": 37534.2,
+      "sales_extra": 4464.75,
+      "sales_extra_pct": 10.73,
+      "sales_gross": 41998.95,
+      "refunds": -403.45,
+      "discounts": -403.45,
+      "sales_net": 41595.5,
+      "tps": 2066.18,
+      "tvq": 4119.54,
+      "rounding": 0.32,
+      "total_with_tax": 47781.54,
+      "gift_card": 0.0,
+      "non_taxable": 300.19
+    },
+    "channels": {
+      "tables": {
+        "receipts": 623,
+        "clients": 657,
+        "items_sold": 3259,
+        "avg_receipt": 50.63,
+        "avg_client": 48.01,
+        "sales_items": 29066.55,
+        "sales_extra": 2875.0,
+        "sales_extra_pct": 9.12,
+        "sales_gross": 31941.55,
+        "refunds": -401.45,
+        "discounts": -401.45,
+        "sales_net": 31540.1,
+        "tps": 1573.15,
+        "tvq": 3136.77,
+        "rounding": 0.07,
+        "total_with_tax": 36250.09,
+        "gift_card": 0.0,
+        "non_taxable": 94.18
+      },
+      "comptoir": {
+        "receipts": 333,
+        "clients": 333,
+        "items_sold": 937,
+        "avg_receipt": 23.51,
+        "avg_client": 23.51,
+        "sales_items": 6623.78,
+        "sales_extra": 1205.5,
+        "sales_extra_pct": 15.4,
+        "sales_gross": 7829.28,
+        "refunds": -2.0,
+        "discounts": -2.0,
+        "sales_net": 7827.28,
+        "tps": 381.54,
+        "tvq": 760.53,
+        "rounding": 0.24,
+        "total_with_tax": 8969.59,
+        "gift_card": 0.0,
+        "non_taxable": 206.01
+      },
+      "emporter": {
+        "receipts": 8,
+        "clients": 8,
+        "items_sold": 60,
+        "avg_receipt": 43.55,
+        "avg_client": 43.55,
+        "sales_items": 315.87,
+        "sales_extra": 32.5,
+        "sales_extra_pct": 9.33,
+        "sales_gross": 348.37,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 348.37,
+        "tps": 17.43,
+        "tvq": 34.76,
+        "rounding": 0.01,
+        "total_with_tax": 400.57,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "ramassage": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_ramassage": {
+        "receipts": 9,
+        "clients": 9,
+        "items_sold": 28,
+        "avg_receipt": 50.58,
+        "avg_client": 50.58,
+        "sales_items": 346.0,
+        "sales_extra": 109.25,
+        "sales_extra_pct": 24.0,
+        "sales_gross": 455.25,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 455.25,
+        "tps": 22.77,
+        "tvq": 45.4,
+        "rounding": 0.0,
+        "total_with_tax": 523.42,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_livraison": {
+        "receipts": 28,
+        "clients": 28,
+        "items_sold": 74,
+        "avg_receipt": 50.88,
+        "avg_client": 50.88,
+        "sales_items": 1182.0,
+        "sales_extra": 242.5,
+        "sales_extra_pct": 17.02,
+        "sales_gross": 1424.5,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 1424.5,
+        "tps": 71.29,
+        "tvq": 142.08,
+        "rounding": 0.0,
+        "total_with_tax": 1637.87,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_comptoir": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      }
+    },
+    "payments": [
+      {
+        "type": "CAR",
+        "qt": 818,
+        "amount": 41143.9,
+        "tips": 4336.05,
+        "total": 45479.95
+      },
+      {
+        "type": "COM",
+        "qt": 139,
+        "amount": 4376.35,
+        "tips": 0.0,
+        "total": 4376.35
+      },
+      {
+        "type": "UBE",
+        "qt": 19,
+        "amount": 1057.81,
+        "tips": 0.0,
+        "total": 1057.81
+      },
+      {
+        "type": "CRE",
+        "qt": 18,
+        "amount": 1159.07,
+        "tips": 36.02,
+        "total": 1195.09
+      },
+      {
+        "type": "BAR",
+        "qt": 2,
+        "amount": -1.0,
+        "tips": 0.0,
+        "total": -1.0
+      },
+      {
+        "type": "BAR",
+        "qt": 1,
+        "amount": 100.0,
+        "tips": 0.0,
+        "total": 100.0
+      },
+      {
+        "type": "BAR",
+        "qt": 1,
+        "amount": 1.0,
+        "tips": 0.0,
+        "total": 1.0
+      }
+    ],
+    "total_tips": 4372.07,
+    "grand_total_with_tips": 52209.2,
+    "top_categories": [
+      {
+        "qty": 676,
+        "name": "ENTRÉES",
+        "total": 2325.97
+      },
+      {
+        "qty": 413,
+        "name": "Jus",
+        "total": 2276.99
+      },
+      {
+        "qty": 383,
+        "name": "Deppaneur",
+        "total": 2705.2
+      },
+      {
+        "qty": 353,
+        "name": "REPAS",
+        "total": 9456.52
+      },
+      {
+        "qty": 340,
+        "name": "Deppaneur manuel",
+        "total": 711.4
+      },
+      {
+        "qty": 317,
+        "name": "Promotions",
+        "total": 2581.61
+      },
+      {
+        "qty": 316,
+        "name": "BOLS",
+        "total": 5952.5
+      },
+      {
+        "qty": 252,
+        "name": "Boissons",
+        "total": 920.52
+      },
+      {
+        "qty": 217,
+        "name": "Arepas",
+        "total": 2289.51
+      },
+      {
+        "qty": 200,
+        "name": "biere",
+        "total": 2133.0
+      },
+      {
+        "qty": 189,
+        "name": "Desserts",
+        "total": 1009.47
+      },
+      {
+        "qty": 181,
+        "name": "Panes",
+        "total": 559.0
+      },
+      {
+        "qty": 150,
+        "name": "Extras",
+        "total": 434.5
+      },
+      {
+        "qty": 147,
+        "name": "Cocktails",
+        "total": 1654.0
+      },
+      {
+        "qty": 71,
+        "name": "Assiettes",
+        "total": 1439.0
+      },
+      {
+        "qty": 69,
+        "name": "Boissons chaud",
+        "total": 250.16
+      },
+      {
+        "qty": 68,
+        "name": "Shooter",
+        "total": 259.77
+      },
+      {
+        "qty": 8,
+        "name": "Café alcoolisé",
+        "total": 72.0
+      },
+      {
+        "qty": 7,
+        "name": "Bouteilles",
+        "total": 497.0
+      },
+      {
+        "qty": 1,
+        "name": "On the rock",
+        "total": 6.09
+      }
+    ],
+    "top_items": [
+      {
+        "qty": 366,
+        "name": "Empanadas",
+        "total": 0.0
+      },
+      {
+        "qty": 262,
+        "name": "empanada mercredi",
+        "total": 524.0
+      },
+      {
+        "qty": 227,
+        "name": "Bol Medellin",
+        "total": 4365.5
+      },
+      {
+        "qty": 129,
+        "name": "maracuya",
+        "total": 709.5
+      },
+      {
+        "qty": 120,
+        "name": "Pandebono",
+        "total": 360.0
+      },
+      {
+        "qty": 111,
+        "name": "Sancochito",
+        "total": 666.0
+      },
+      {
+        "qty": 99,
+        "name": "Picada",
+        "total": 3216.02
+      },
+      {
+        "qty": 87,
+        "name": "Salchipapas",
+        "total": 1315.0
+      },
+      {
+        "qty": 86,
+        "name": "Bombonbum unit",
+        "total": 43.0
+      },
+      {
+        "qty": 70,
+        "name": "Alpinito Arequipe",
+        "total": 105.0
+      },
+      {
+        "qty": 69,
+        "name": "Pony malta botella",
+        "total": 264.5
+      },
+      {
+        "qty": 63,
+        "name": "mango",
+        "total": 346.5
+      },
+      {
+        "qty": 62,
+        "name": "Patacones de la casa",
+        "total": 558.0
+      },
+      {
+        "qty": 59,
+        "name": "mora",
+        "total": 324.5
+      },
+      {
+        "qty": 58,
+        "name": "guanabana",
+        "total": 319.0
+      },
+      {
+        "qty": 54,
+        "name": "Colombiana postobon",
+        "total": 193.0
+      },
+      {
+        "qty": 54,
+        "name": "Pinte",
+        "total": 486.0
+      },
+      {
+        "qty": 52,
+        "name": "Chocolatina jet Unit",
+        "total": 41.6
+      },
+      {
+        "qty": 51,
+        "name": "Arepa au boeuf",
+        "total": 714.0
+      },
+      {
+        "qty": 50,
+        "name": "Bochica Burger",
+        "total": 1003.5
+      },
+      {
+        "qty": 46,
+        "name": "Carib",
+        "total": 299.0
+      },
+      {
+        "qty": 46,
+        "name": "lulo",
+        "total": 253.0
+      },
+      {
+        "qty": 45,
+        "name": "Pan queso",
+        "total": 135.0
+      },
+      {
+        "qty": 44,
+        "name": "coke",
+        "total": 143.0
+      },
+      {
+        "qty": 44,
+        "name": "Picada Suprema",
+        "total": 2728.0
+      },
+      {
+        "qty": 43,
+        "name": "Ejecutivo au boeuf",
+        "total": 989.0
+      },
+      {
+        "qty": 42,
+        "name": "Extra Chicharron (80g)",
+        "total": 147.0
+      },
+      {
+        "qty": 40,
+        "name": "Tequila",
+        "total": 152.36
+      },
+      {
+        "qty": 39,
+        "name": "nouevo producto tax",
+        "total": 158.21
+      },
+      {
+        "qty": 38,
+        "name": "Estrella",
+        "total": 285.0
+      },
+      {
+        "qty": 37,
+        "name": "Patacon montanero",
+        "total": 555.0
+      },
+      {
+        "qty": 36,
+        "name": "Arepa con chicharron",
+        "total": 282.5
+      },
+      {
+        "qty": 36,
+        "name": "salchipapas vendredi",
+        "total": 468.0
+      },
+      {
+        "qty": 33,
+        "name": "Bol Cali",
+        "total": 594.0
+      },
+      {
+        "qty": 33,
+        "name": "Frites de Yuca",
+        "total": 231.0
+      },
+      {
+        "qty": 32,
+        "name": "SALPICON",
+        "total": 192.0
+      },
+      {
+        "qty": 31,
+        "name": "Soupe du jour",
+        "total": 170.47
+      },
+      {
+        "qty": 30,
+        "name": "Arepa au poulet",
+        "total": 390.0
+      },
+      {
+        "qty": 30,
+        "name": "Extra Chorizo",
+        "total": 105.0
+      },
+      {
+        "qty": 29,
+        "name": "Queso panela",
+        "total": 248.76
+      },
+      {
+        "qty": 28,
+        "name": "Mango loco",
+        "total": 336.0
+      },
+      {
+        "qty": 27,
+        "name": "Alfajores 2",
+        "total": 148.5
+      },
+      {
+        "qty": 27,
+        "name": "Cafe",
+        "total": 83.0
+      },
+      {
+        "qty": 27,
+        "name": "Manzana postobon",
+        "total": 95.5
+      },
+      {
+        "qty": 26,
+        "name": "Arepa au porc effiloché",
+        "total": 338.0
+      },
+      {
+        "qty": 26,
+        "name": "Panela Fraccionada (8 panelas)",
+        "total": 169.0
+      },
+      {
+        "qty": 25,
+        "name": "Arepa con queso",
+        "total": 125.0
+      },
+      {
+        "qty": 25,
+        "name": "Carib 5 x 25",
+        "total": 625.0
+      },
+      {
+        "qty": 25,
+        "name": "Gelatina de colores",
+        "total": 125.0
+      },
+      {
+        "qty": 25,
+        "name": "Mojito",
+        "total": 300.0
+      }
+    ],
+    "total_hours": 381.73,
+    "corrections": {
+      "by_reason": [
+        {
+          "qty": 62,
+          "reason": "training mode",
+          "total": 705.24
+        },
+        {
+          "qty": 39,
+          "reason": "kitchen mistake",
+          "total": 349.75
+        },
+        {
+          "qty": 6,
+          "reason": "waiter mistake",
+          "total": 68.0
+        },
+        {
+          "qty": 3,
+          "reason": "over punch",
+          "total": 14.0
+        },
+        {
+          "qty": 1,
+          "reason": "customer disatisfaction",
+          "total": 5.0
+        }
+      ],
+      "total_qty": 111,
+      "total_amount": 1141.99
+    },
+    "discounts_summary": {
+      "by_type": [],
+      "total": 0.0
+    },
+    "source_file": "Rapportutilisateurpersonnalisé_01-10-202500_00_31-10-202523_59.pdf"
+  },
+  {
+    "period": "2025-11",
+    "year": 2025,
+    "month": 11,
+    "summary": {
+      "receipts": 1039,
+      "clients": 1065,
+      "items_sold": 4396,
+      "avg_receipt": 40.49,
+      "avg_client": 39.5,
+      "sales_items": 39339.9,
+      "sales_extra": 3663.0,
+      "sales_extra_pct": 8.71,
+      "sales_gross": 43002.9,
+      "refunds": -152.5,
+      "discounts": -937.94,
+      "sales_net": 42064.96,
+      "tps": 2077.35,
+      "tvq": 4141.87,
+      "rounding": 0.44,
+      "total_with_tax": 48284.62,
+      "gift_card": 0.0,
+      "non_taxable": 570.68
+    },
+    "channels": {
+      "tables": {
+        "receipts": 644,
+        "clients": 670,
+        "items_sold": 3332,
+        "avg_receipt": 52.5,
+        "avg_client": 50.46,
+        "sales_items": 31607.32,
+        "sales_extra": 2567.0,
+        "sales_extra_pct": 7.59,
+        "sales_gross": 34174.32,
+        "refunds": -133.5,
+        "discounts": -366.07,
+        "sales_net": 33808.25,
+        "tps": 1686.66,
+        "tvq": 3363.02,
+        "rounding": -0.04,
+        "total_with_tax": 38857.89,
+        "gift_card": 0.0,
+        "non_taxable": 102.24
+      },
+      "comptoir": {
+        "receipts": 327,
+        "clients": 327,
+        "items_sold": 893,
+        "avg_receipt": 16.79,
+        "avg_client": 16.79,
+        "sales_items": 5339.83,
+        "sales_extra": 715.5,
+        "sales_extra_pct": 13.03,
+        "sales_gross": 6055.33,
+        "refunds": -19.0,
+        "discounts": -564.52,
+        "sales_net": 5490.81,
+        "tps": 252.3,
+        "tvq": 503.0,
+        "rounding": 0.48,
+        "total_with_tax": 6246.59,
+        "gift_card": 0.0,
+        "non_taxable": 468.12
+      },
+      "emporter": {
+        "receipts": 5,
+        "clients": 5,
+        "items_sold": 14,
+        "avg_receipt": 17.03,
+        "avg_client": 17.03,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 92.5,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 85.15,
+        "tps": 4.24,
+        "tvq": 8.47,
+        "rounding": 0.0,
+        "total_with_tax": 97.86,
+        "gift_card": 0.0,
+        "non_taxable": 0.32
+      },
+      "ramassage": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_ramassage": {
+        "receipts": 13,
+        "clients": 13,
+        "items_sold": 34,
+        "avg_receipt": 43.71,
+        "avg_client": 43.71,
+        "sales_items": 445.25,
+        "sales_extra": 123.0,
+        "sales_extra_pct": 21.65,
+        "sales_gross": 568.25,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 568.25,
+        "tps": 28.42,
+        "tvq": 56.68,
+        "rounding": 0.0,
+        "total_with_tax": 653.35,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_livraison": {
+        "receipts": 50,
+        "clients": 50,
+        "items_sold": 123,
+        "avg_receipt": 42.25,
+        "avg_client": 42.25,
+        "sales_items": 1855.0,
+        "sales_extra": 257.5,
+        "sales_extra_pct": 12.19,
+        "sales_gross": 2112.5,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 2112.5,
+        "tps": 105.73,
+        "tvq": 210.7,
+        "rounding": 0.0,
+        "total_with_tax": 2428.93,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_comptoir": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      }
+    },
+    "payments": [
+      {
+        "type": "CAR",
+        "qt": 457,
+        "amount": 22199.25,
+        "tips": 2353.41,
+        "total": 24552.66
+      },
+      {
+        "type": "COM",
+        "qt": 185,
+        "amount": 6462.65,
+        "tips": 0.0,
+        "total": 6462.65
+      },
+      {
+        "type": "INT",
+        "qt": 146,
+        "amount": 7565.34,
+        "tips": 724.59,
+        "total": 8289.93
+      },
+      {
+        "type": "MAS",
+        "qt": 100,
+        "amount": 5294.37,
+        "tips": 587.07,
+        "total": 5881.44
+      },
+      {
+        "type": "VIS",
+        "qt": 80,
+        "amount": 3702.43,
+        "tips": 421.88,
+        "total": 4124.31
+      },
+      {
+        "type": "UBE",
+        "qt": 33,
+        "amount": 1679.55,
+        "tips": 0.0,
+        "total": 1679.55
+      },
+      {
+        "type": "CRE",
+        "qt": 30,
+        "amount": 1519.77,
+        "tips": 34.04,
+        "total": 1553.81
+      },
+      {
+        "type": "GIF",
+        "qt": 1,
+        "amount": 40.82,
+        "tips": 0.0,
+        "total": 40.82
+      }
+    ],
+    "total_tips": 4120.99,
+    "grand_total_with_tips": 52585.17,
+    "top_categories": [
+      {
+        "qty": 636,
+        "name": "ENTRÉES",
+        "total": 2480.0
+      },
+      {
+        "qty": 450,
+        "name": "Deppaneur",
+        "total": 3082.96
+      },
+      {
+        "qty": 397,
+        "name": "Jus",
+        "total": 2188.04
+      },
+      {
+        "qty": 346,
+        "name": "BOLS",
+        "total": 6532.0
+      },
+      {
+        "qty": 338,
+        "name": "Promotions",
+        "total": 1772.0
+      },
+      {
+        "qty": 337,
+        "name": "REPAS",
+        "total": 9829.02
+      },
+      {
+        "qty": 275,
+        "name": "Boissons",
+        "total": 1088.3
+      },
+      {
+        "qty": 247,
+        "name": "Deppaneur manuel",
+        "total": 974.65
+      },
+      {
+        "qty": 243,
+        "name": "AREPAS",
+        "total": 2589.0
+      },
+      {
+        "qty": 198,
+        "name": "Panes",
+        "total": 669.37
+      },
+      {
+        "qty": 185,
+        "name": "Cocktails",
+        "total": 2122.0
+      },
+      {
+        "qty": 170,
+        "name": "biere",
+        "total": 1652.5
+      },
+      {
+        "qty": 143,
+        "name": "Desserts",
+        "total": 800.52
+      },
+      {
+        "qty": 132,
+        "name": "Extras",
+        "total": 359.02
+      },
+      {
+        "qty": 115,
+        "name": "Boissons chaud",
+        "total": 411.58
+      },
+      {
+        "qty": 83,
+        "name": "Assiettes",
+        "total": 1621.0
+      },
+      {
+        "qty": 65,
+        "name": "Shooter",
+        "total": 254.75
+      },
+      {
+        "qty": 19,
+        "name": "Bouteilles",
+        "total": 748.0
+      },
+      {
+        "qty": 13,
+        "name": "Café alcoolisé",
+        "total": 144.0
+      },
+      {
+        "qty": 2,
+        "name": "On the rock",
+        "total": 13.92
+      }
+    ],
+    "top_items": [
+      {
+        "qty": 276,
+        "name": "empanada mercredi",
+        "total": 552.0
+      },
+      {
+        "qty": 247,
+        "name": "Bol Medellin",
+        "total": 4745.5
+      },
+      {
+        "qty": 166,
+        "name": "Sancochito",
+        "total": 996.0
+      },
+      {
+        "qty": 121,
+        "name": "maracuya",
+        "total": 665.5
+      },
+      {
+        "qty": 119,
+        "name": "Pandebono",
+        "total": 357.0
+      },
+      {
+        "qty": 100,
+        "name": "Bombonbum unit",
+        "total": 50.0
+      },
+      {
+        "qty": 86,
+        "name": "Picada",
+        "total": 2782.0
+      },
+      {
+        "qty": 77,
+        "name": "Pony malta botella",
+        "total": 310.0
+      },
+      {
+        "qty": 70,
+        "name": "Patacones de la casa",
+        "total": 636.0
+      },
+      {
+        "qty": 69,
+        "name": "Arepa au boeuf",
+        "total": 966.0
+      },
+      {
+        "qty": 68,
+        "name": "Salchipapas",
+        "total": 1027.5
+      },
+      {
+        "qty": 65,
+        "name": "mango",
+        "total": 357.5
+      },
+      {
+        "qty": 60,
+        "name": "Picada Suprema",
+        "total": 3786.02
+      },
+      {
+        "qty": 59,
+        "name": "guanabana",
+        "total": 324.52
+      },
+      {
+        "qty": 57,
+        "name": "coke",
+        "total": 185.28
+      },
+      {
+        "qty": 56,
+        "name": "mora",
+        "total": 308.0
+      },
+      {
+        "qty": 54,
+        "name": "Bochica Burger",
+        "total": 1080.0
+      },
+      {
+        "qty": 54,
+        "name": "Cafe",
+        "total": 162.0
+      },
+      {
+        "qty": 50,
+        "name": "Bol Cali",
+        "total": 907.0
+      },
+      {
+        "qty": 49,
+        "name": "Carib",
+        "total": 318.5
+      },
+      {
+        "qty": 47,
+        "name": "Ejecutivo au boeuf",
+        "total": 1081.0
+      },
+      {
+        "qty": 46,
+        "name": "Arepa con chicharron",
+        "total": 368.0
+      },
+      {
+        "qty": 43,
+        "name": "lulo",
+        "total": 236.5
+      },
+      {
+        "qty": 43,
+        "name": "Mojito",
+        "total": 516.0
+      },
+      {
+        "qty": 43,
+        "name": "Pinte",
+        "total": 387.0
+      },
+      {
+        "qty": 37,
+        "name": "Extra Chicharron (80g)",
+        "total": 129.5
+      },
+      {
+        "qty": 37,
+        "name": "Margarita",
+        "total": 444.0
+      },
+      {
+        "qty": 36,
+        "name": "Estrella",
+        "total": 270.0
+      },
+      {
+        "qty": 33,
+        "name": "Brazo de reina",
+        "total": 178.0
+      },
+      {
+        "qty": 33,
+        "name": "Frites de Yuca",
+        "total": 233.49
+      },
+      {
+        "qty": 32,
+        "name": "Patacon montanero",
+        "total": 482.5
+      },
+      {
+        "qty": 31,
+        "name": "Colombiana postobon",
+        "total": 113.5
+      },
+      {
+        "qty": 30,
+        "name": "Arepa antiquena don maiz",
+        "total": 299.7
+      },
+      {
+        "qty": 30,
+        "name": "gaseosa 15",
+        "total": 210.0
+      },
+      {
+        "qty": 30,
+        "name": "Tamal con arepa",
+        "total": 510.0
+      },
+      {
+        "qty": 29,
+        "name": "Pan queso",
+        "total": 112.75
+      },
+      {
+        "qty": 28,
+        "name": "Arepa con queso",
+        "total": 140.0
+      },
+      {
+        "qty": 28,
+        "name": "Bochica de la passion",
+        "total": 336.0
+      },
+      {
+        "qty": 28,
+        "name": "Extra Chorizo",
+        "total": 98.0
+      },
+      {
+        "qty": 27,
+        "name": "Manzana postobon",
+        "total": 96.5
+      },
+      {
+        "qty": 27,
+        "name": "nouevo producto tax",
+        "total": 244.07
+      },
+      {
+        "qty": 27,
+        "name": "Pan queso y bocadillo",
+        "total": 107.73
+      },
+      {
+        "qty": 26,
+        "name": "Arepa antiquena con sal don maiz",
+        "total": 259.74
+      },
+      {
+        "qty": 26,
+        "name": "Arepa au porc effiloché",
+        "total": 340.5
+      },
+      {
+        "qty": 25,
+        "name": "Arepa con chorizo",
+        "total": 201.0
+      },
+      {
+        "qty": 25,
+        "name": "Bol Bogota",
+        "total": 453.5
+      },
+      {
+        "qty": 25,
+        "name": "Cappuccino",
+        "total": 99.76
+      },
+      {
+        "qty": 25,
+        "name": "guayaba",
+        "total": 137.5
+      },
+      {
+        "qty": 25,
+        "name": "Mantecada",
+        "total": 99.89
+      },
+      {
+        "qty": 25,
+        "name": "Patacones 2",
+        "total": 212.52
+      }
+    ],
+    "total_hours": 440.72,
+    "corrections": {
+      "by_reason": [
+        {
+          "qty": 112,
+          "reason": "training mode",
+          "total": 1061.03
+        },
+        {
+          "qty": 22,
+          "reason": "kitchen mistake",
+          "total": 139.99
+        },
+        {
+          "qty": 7,
+          "reason": "over punch",
+          "total": 69.24
+        },
+        {
+          "qty": 5,
+          "reason": "waiter mistake",
+          "total": 95.0
+        },
+        {
+          "qty": 2,
+          "reason": "other",
+          "total": 8.0
+        }
+      ],
+      "total_qty": 148,
+      "total_amount": 1373.26
+    },
+    "discounts_summary": {
+      "by_type": [
+        {
+          "type": "30%",
+          "total": 412.98
+        },
+        {
+          "type": "50%",
+          "total": 370.01
+        },
+        {
+          "type": "35%",
+          "total": 2.45
+        }
+      ],
+      "total": 785.44
+    },
+    "source_file": "Rapportutilisateurpersonnalisé_01-11-202500_00_30-11-202523_59.pdf"
+  },
+  {
+    "period": "2025-12",
+    "year": 2025,
+    "month": 12,
+    "summary": {
+      "receipts": 766,
+      "clients": 793,
+      "items_sold": 3212,
+      "avg_receipt": 46.18,
+      "avg_client": 44.61,
+      "sales_items": 32552.29,
+      "sales_extra": 3167.5,
+      "sales_extra_pct": 8.95,
+      "sales_gross": 35719.79,
+      "refunds": -155.25,
+      "discounts": -346.1,
+      "sales_net": 35373.69,
+      "tps": 1746.95,
+      "tvq": 3483.03,
+      "rounding": 0.16,
+      "total_with_tax": 40603.83,
+      "gift_card": 0.0,
+      "non_taxable": 468.29
+    },
+    "channels": {
+      "tables": {
+        "receipts": 524,
+        "clients": 551,
+        "items_sold": 2488,
+        "avg_receipt": 51.69,
+        "avg_client": 49.16,
+        "sales_items": 25431.98,
+        "sales_extra": 1836.0,
+        "sales_extra_pct": 6.78,
+        "sales_gross": 27267.98,
+        "refunds": -118.0,
+        "discounts": -182.43,
+        "sales_net": 27085.55,
+        "tps": 1354.99,
+        "tvq": 2701.77,
+        "rounding": 0.07,
+        "total_with_tax": 31142.38,
+        "gift_card": 0.0,
+        "non_taxable": 0.01
+      },
+      "comptoir": {
+        "receipts": 196,
+        "clients": 196,
+        "items_sold": 550,
+        "avg_receipt": 31.32,
+        "avg_client": 31.32,
+        "sales_items": 5506.52,
+        "sales_extra": 770.0,
+        "sales_extra_pct": 12.54,
+        "sales_gross": 6276.52,
+        "refunds": -37.25,
+        "discounts": -137.69,
+        "sales_net": 6138.83,
+        "tps": 284.41,
+        "tvq": 566.92,
+        "rounding": 0.07,
+        "total_with_tax": 6990.23,
+        "gift_card": 0.0,
+        "non_taxable": 468.28
+      },
+      "emporter": {
+        "receipts": 7,
+        "clients": 7,
+        "items_sold": 68,
+        "avg_receipt": 39.33,
+        "avg_client": 39.33,
+        "sales_items": 250.29,
+        "sales_extra": 51.0,
+        "sales_extra_pct": 18.52,
+        "sales_gross": 301.29,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 275.31,
+        "tps": 13.77,
+        "tvq": 27.45,
+        "rounding": 0.02,
+        "total_with_tax": 316.55,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "ramassage": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_ramassage": {
+        "receipts": 9,
+        "clients": 9,
+        "items_sold": 21,
+        "avg_receipt": 40.83,
+        "avg_client": 40.83,
+        "sales_items": 212.0,
+        "sales_extra": 155.5,
+        "sales_extra_pct": 42.31,
+        "sales_gross": 367.5,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 367.5,
+        "tps": 18.4,
+        "tvq": 36.65,
+        "rounding": 0.0,
+        "total_with_tax": 422.55,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_livraison": {
+        "receipts": 30,
+        "clients": 30,
+        "items_sold": 85,
+        "avg_receipt": 50.22,
+        "avg_client": 50.22,
+        "sales_items": 1151.5,
+        "sales_extra": 355.0,
+        "sales_extra_pct": 23.56,
+        "sales_gross": 1506.5,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 1506.5,
+        "tps": 75.38,
+        "tvq": 150.24,
+        "rounding": 0.0,
+        "total_with_tax": 1732.12,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_comptoir": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      }
+    },
+    "payments": [
+      {
+        "type": "INT",
+        "qt": 251,
+        "amount": 11444.92,
+        "tips": 1200.79,
+        "total": 12645.71
+      },
+      {
+        "type": "MAS",
+        "qt": 217,
+        "amount": 13490.98,
+        "tips": 1590.33,
+        "total": 15081.31
+      },
+      {
+        "type": "VIS",
+        "qt": 143,
+        "amount": 9913.05,
+        "tips": 1138.42,
+        "total": 11051.47
+      },
+      {
+        "type": "COM",
+        "qt": 110,
+        "amount": 3514.55,
+        "tips": -9.45,
+        "total": 3505.1
+      },
+      {
+        "type": "UBE",
+        "qt": 21,
+        "amount": 1296.65,
+        "tips": 0.0,
+        "total": 1296.65
+      },
+      {
+        "type": "CRE",
+        "qt": 18,
+        "amount": 920.0,
+        "tips": 27.44,
+        "total": 947.44
+      },
+      {
+        "type": "CAR",
+        "qt": 1,
+        "amount": 85.66,
+        "tips": 13.41,
+        "total": 99.07
+      }
+    ],
+    "total_tips": 3960.94,
+    "grand_total_with_tips": 44626.75,
+    "top_categories": [
+      {
+        "qty": 486,
+        "name": "ENTRÉES",
+        "total": 1633.76
+      },
+      {
+        "qty": 323,
+        "name": "Panes",
+        "total": 1011.57
+      },
+      {
+        "qty": 284,
+        "name": "BOLS",
+        "total": 5331.0
+      },
+      {
+        "qty": 283,
+        "name": "Jus",
+        "total": 1559.47
+      },
+      {
+        "qty": 266,
+        "name": "REPAS",
+        "total": 7642.52
+      },
+      {
+        "qty": 192,
+        "name": "Boissons",
+        "total": 754.74
+      },
+      {
+        "qty": 192,
+        "name": "Promotions",
+        "total": 1644.0
+      },
+      {
+        "qty": 180,
+        "name": "AREPAS",
+        "total": 1837.5
+      },
+      {
+        "qty": 156,
+        "name": "Desserts",
+        "total": 835.0
+      },
+      {
+        "qty": 149,
+        "name": "biere",
+        "total": 1537.5
+      },
+      {
+        "qty": 148,
+        "name": "Cocktails",
+        "total": 1658.0
+      },
+      {
+        "qty": 131,
+        "name": "Deppaneur manuel",
+        "total": 4231.53
+      },
+      {
+        "qty": 115,
+        "name": "Extras",
+        "total": 328.0
+      },
+      {
+        "qty": 98,
+        "name": "Boissons chaud",
+        "total": 442.23
+      },
+      {
+        "qty": 84,
+        "name": "Deppaneur",
+        "total": 360.16
+      },
+      {
+        "qty": 60,
+        "name": "Shooter",
+        "total": 255.0
+      },
+      {
+        "qty": 41,
+        "name": "Assiettes",
+        "total": 826.5
+      },
+      {
+        "qty": 11,
+        "name": "Bouteilles",
+        "total": 553.01
+      },
+      {
+        "qty": 8,
+        "name": "On the rock",
+        "total": 54.81
+      },
+      {
+        "qty": 5,
+        "name": "Café alcoolisé",
+        "total": 56.0
+      }
+    ],
+    "top_items": [
+      {
+        "qty": 271,
+        "name": "Empanadas",
+        "total": 0.01
+      },
+      {
+        "qty": 192,
+        "name": "Bol Medellin",
+        "total": 3672.5
+      },
+      {
+        "qty": 180,
+        "name": "Bunuelo",
+        "total": 540.0
+      },
+      {
+        "qty": 136,
+        "name": "empanada mercredi",
+        "total": 272.0
+      },
+      {
+        "qty": 105,
+        "name": "Sancochito",
+        "total": 630.0
+      },
+      {
+        "qty": 100,
+        "name": "maracuya",
+        "total": 550.0
+      },
+      {
+        "qty": 100,
+        "name": "Pandebono",
+        "total": 300.0
+      },
+      {
+        "qty": 81,
+        "name": "Picada",
+        "total": 2616.01
+      },
+      {
+        "qty": 71,
+        "name": "Bombonbum unit",
+        "total": 35.49
+      },
+      {
+        "qty": 64,
+        "name": "mora",
+        "total": 351.99
+      },
+      {
+        "qty": 50,
+        "name": "Salchipapas",
+        "total": 752.5
+      },
+      {
+        "qty": 48,
+        "name": "Carib",
+        "total": 312.0
+      },
+      {
+        "qty": 48,
+        "name": "Pinte",
+        "total": 432.0
+      },
+      {
+        "qty": 45,
+        "name": "mango",
+        "total": 247.48
+      },
+      {
+        "qty": 45,
+        "name": "Pony malta botella",
+        "total": 181.49
+      },
+      {
+        "qty": 42,
+        "name": "coke",
+        "total": 136.5
+      },
+      {
+        "qty": 40,
+        "name": "Bol Cali",
+        "total": 723.5
+      },
+      {
+        "qty": 40,
+        "name": "Patacones de la casa",
+        "total": 361.5
+      },
+      {
+        "qty": 40,
+        "name": "Picada Suprema",
+        "total": 2524.01
+      },
+      {
+        "qty": 40,
+        "name": "Souper SOIT Quebec",
+        "total": 680.0
+      },
+      {
+        "qty": 39,
+        "name": "Arepa con queso",
+        "total": 195.0
+      },
+      {
+        "qty": 38,
+        "name": "Arepa au boeuf",
+        "total": 532.0
+      },
+      {
+        "qty": 38,
+        "name": "lulo",
+        "total": 209.0
+      },
+      {
+        "qty": 37,
+        "name": "Extra Chorizo",
+        "total": 129.5
+      },
+      {
+        "qty": 33,
+        "name": "Manzana postobon",
+        "total": 120.5
+      },
+      {
+        "qty": 32,
+        "name": "Flan de maracuya",
+        "total": 176.0
+      },
+      {
+        "qty": 31,
+        "name": "Tequila",
+        "total": 131.75
+      },
+      {
+        "qty": 30,
+        "name": "Chocolat chaud",
+        "total": 135.0
+      },
+      {
+        "qty": 30,
+        "name": "nouevo producto pas taxe",
+        "total": 418.29
+      },
+      {
+        "qty": 29,
+        "name": "Bol Bogota",
+        "total": 529.0
+      },
+      {
+        "qty": 29,
+        "name": "Extra Chicharron (80g)",
+        "total": 101.5
+      },
+      {
+        "qty": 29,
+        "name": "Mojito",
+        "total": 348.0
+      },
+      {
+        "qty": 28,
+        "name": "Bochica Burger",
+        "total": 560.0
+      },
+      {
+        "qty": 28,
+        "name": "Colombiana postobon",
+        "total": 101.0
+      },
+      {
+        "qty": 27,
+        "name": "Arepa au poulet",
+        "total": 351.0
+      },
+      {
+        "qty": 27,
+        "name": "Patacon montanero",
+        "total": 405.0
+      },
+      {
+        "qty": 25,
+        "name": "Bochica de la passion",
+        "total": 300.0
+      },
+      {
+        "qty": 25,
+        "name": "Margarita",
+        "total": 300.0
+      },
+      {
+        "qty": 24,
+        "name": "nouevo producto tax",
+        "total": 3772.45
+      },
+      {
+        "qty": 23,
+        "name": "Antioqueno",
+        "total": 97.75
+      },
+      {
+        "qty": 23,
+        "name": "Patacones 2",
+        "total": 199.0
+      },
+      {
+        "qty": 22,
+        "name": "Arepa au porc effiloché",
+        "total": 286.0
+      },
+      {
+        "qty": 22,
+        "name": "Brazo de reina",
+        "total": 132.0
+      },
+      {
+        "qty": 22,
+        "name": "Frites de Yuca",
+        "total": 155.25
+      },
+      {
+        "qty": 22,
+        "name": "Pan queso y bocadillo",
+        "total": 87.78
+      },
+      {
+        "qty": 21,
+        "name": "Arepa con chorizo",
+        "total": 169.0
+      },
+      {
+        "qty": 21,
+        "name": "Ejecutivo au boeuf",
+        "total": 483.0
+      },
+      {
+        "qty": 21,
+        "name": "Natilla con buenuelo",
+        "total": 115.5
+      },
+      {
+        "qty": 21,
+        "name": "Pan queso",
+        "total": 83.79
+      },
+      {
+        "qty": 20,
+        "name": "Cafe",
+        "total": 60.0
+      }
+    ],
+    "total_hours": 499.85,
+    "corrections": {
+      "by_reason": [
+        {
+          "qty": 118,
+          "reason": "training mode",
+          "total": 1354.89
+        },
+        {
+          "qty": 9,
+          "reason": "over punch",
+          "total": 49.0
+        },
+        {
+          "qty": 9,
+          "reason": "waiter mistake",
+          "total": 84.0
+        },
+        {
+          "qty": 8,
+          "reason": "kitchen mistake",
+          "total": 110.0
+        },
+        {
+          "qty": 5,
+          "reason": "other",
+          "total": 41.0
+        }
+      ],
+      "total_qty": 149,
+      "total_amount": 1638.89
+    },
+    "discounts_summary": {
+      "by_type": [
+        {
+          "type": "50%",
+          "total": 190.85
+        }
+      ],
+      "total": 190.85
+    },
+    "source_file": "Rapportutilisateurpersonnalisé_01-12-202500_00_31-12-202523_59.pdf"
+  },
+  {
+    "period": "2026-01",
+    "year": 2026,
+    "month": 1,
+    "summary": {
+      "receipts": 661,
+      "clients": 698,
+      "items_sold": 2906,
+      "avg_receipt": 50.38,
+      "avg_client": 47.71,
+      "sales_items": 29937.54,
+      "sales_extra": 3380.5,
+      "sales_extra_pct": 10.15,
+      "sales_gross": 33318.04,
+      "refunds": 0.0,
+      "discounts": 0.0,
+      "sales_net": 33298.29,
+      "tps": 1649.99,
+      "tvq": 3289.67,
+      "rounding": 0.1,
+      "total_with_tax": 38238.05,
+      "gift_card": 0.0,
+      "non_taxable": 318.2
+    },
+    "channels": {
+      "tables": {
+        "receipts": 490,
+        "clients": 527,
+        "items_sold": 2479,
+        "avg_receipt": 57.18,
+        "avg_client": 53.17,
+        "sales_items": 25640.35,
+        "sales_extra": 2379.75,
+        "sales_extra_pct": 8.49,
+        "sales_gross": 28020.1,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 28020.1,
+        "tps": 1396.93,
+        "tvq": 2785.18,
+        "rounding": -0.15,
+        "total_with_tax": 32202.06,
+        "gift_card": 0.0,
+        "non_taxable": 97.38
+      },
+      "comptoir": {
+        "receipts": 112,
+        "clients": 112,
+        "items_sold": 271,
+        "avg_receipt": 22.54,
+        "avg_client": 22.54,
+        "sales_items": 1861.19,
+        "sales_extra": 663.75,
+        "sales_extra_pct": 26.29,
+        "sales_gross": 2524.94,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 2524.94,
+        "tps": 115.64,
+        "tvq": 230.5,
+        "rounding": 0.25,
+        "total_with_tax": 2871.33,
+        "gift_card": 0.0,
+        "non_taxable": 214.82
+      },
+      "emporter": {
+        "receipts": 2,
+        "clients": 2,
+        "items_sold": 3,
+        "avg_receipt": 11.0,
+        "avg_client": 11.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 22.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 22.0,
+        "tps": 1.1,
+        "tvq": 2.19,
+        "rounding": 0.0,
+        "total_with_tax": 25.29,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "ramassage": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_ramassage": {
+        "receipts": 12,
+        "clients": 12,
+        "items_sold": 38,
+        "avg_receipt": 60.17,
+        "avg_client": 60.17,
+        "sales_items": 631.0,
+        "sales_extra": 91.0,
+        "sales_extra_pct": 12.6,
+        "sales_gross": 722.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 722.0,
+        "tps": 35.81,
+        "tvq": 71.41,
+        "rounding": 0.0,
+        "total_with_tax": 829.22,
+        "gift_card": 0.0,
+        "non_taxable": 6.0
+      },
+      "el_livraison": {
+        "receipts": 45,
+        "clients": 45,
+        "items_sold": 115,
+        "avg_receipt": 44.65,
+        "avg_client": 44.65,
+        "sales_items": 1783.0,
+        "sales_extra": 246.0,
+        "sales_extra_pct": 12.24,
+        "sales_gross": 2029.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 2009.25,
+        "tps": 100.51,
+        "tvq": 200.39,
+        "rounding": 0.0,
+        "total_with_tax": 2310.15,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_comptoir": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      }
+    },
+    "payments": [
+      {
+        "type": "INT",
+        "qt": 243,
+        "amount": 13465.78,
+        "tips": 1417.58,
+        "total": 14883.36
+      },
+      {
+        "type": "MAS",
+        "qt": 147,
+        "amount": 9917.88,
+        "tips": 1195.64,
+        "total": 11113.52
+      },
+      {
+        "type": "VIS",
+        "qt": 122,
+        "amount": 7310.19,
+        "tips": 822.18,
+        "total": 8132.37
+      },
+      {
+        "type": "COM",
+        "qt": 90,
+        "amount": 4311.1,
+        "tips": 0.0,
+        "total": 4311.1
+      },
+      {
+        "type": "UBE",
+        "qt": 34,
+        "amount": 1549.26,
+        "tips": 0.0,
+        "total": 1549.26
+      },
+      {
+        "type": "GIF",
+        "qt": 28,
+        "amount": 233.15,
+        "tips": 0.01,
+        "total": 233.16
+      },
+      {
+        "type": "CRE",
+        "qt": 23,
+        "amount": 1515.6,
+        "tips": 66.51,
+        "total": 1582.11
+      }
+    ],
+    "total_tips": 3501.92,
+    "grand_total_with_tips": 41804.88,
+    "top_categories": [
+      {
+        "qty": 506,
+        "name": "ENTRÉES",
+        "total": 2116.04
+      },
+      {
+        "qty": 357,
+        "name": "BOLS",
+        "total": 7338.5
+      },
+      {
+        "qty": 351,
+        "name": "REPAS",
+        "total": 9889.5
+      },
+      {
+        "qty": 347,
+        "name": "Jus",
+        "total": 2100.5
+      },
+      {
+        "qty": 231,
+        "name": "Boissons",
+        "total": 863.75
+      },
+      {
+        "qty": 161,
+        "name": "AREPAS",
+        "total": 2006.0
+      },
+      {
+        "qty": 156,
+        "name": "Desserts",
+        "total": 910.5
+      },
+      {
+        "qty": 152,
+        "name": "Panes",
+        "total": 514.41
+      },
+      {
+        "qty": 123,
+        "name": "Cocktails",
+        "total": 1427.0
+      },
+      {
+        "qty": 122,
+        "name": "Extras",
+        "total": 334.54
+      },
+      {
+        "qty": 113,
+        "name": "Deppaneur manuel",
+        "total": 787.09
+      },
+      {
+        "qty": 104,
+        "name": "Promotions",
+        "total": 296.75
+      },
+      {
+        "qty": 84,
+        "name": "Boissons chaud",
+        "total": 331.46
+      },
+      {
+        "qty": 60,
+        "name": "biere",
+        "total": 559.0
+      },
+      {
+        "qty": 22,
+        "name": "Shooter",
+        "total": 94.0
+      },
+      {
+        "qty": 10,
+        "name": "Café alcoolisé",
+        "total": 80.0
+      },
+      {
+        "qty": 3,
+        "name": "Bouteilles",
+        "total": 199.0
+      },
+      {
+        "qty": 2,
+        "name": "Bière 2x1",
+        "total": 19.5
+      },
+      {
+        "qty": 2,
+        "name": "Vin et spiritueux",
+        "total": 70.0
+      }
+    ],
+    "top_items": [
+      {
+        "qty": 262,
+        "name": "Bol Medellin",
+        "total": 5470.5
+      },
+      {
+        "qty": 242,
+        "name": "Empanadas",
+        "total": 0.0
+      },
+      {
+        "qty": 142,
+        "name": "Sancochito",
+        "total": 968.0
+      },
+      {
+        "qty": 93,
+        "name": "maracuya",
+        "total": 575.5
+      },
+      {
+        "qty": 93,
+        "name": "Pandebono",
+        "total": 279.0
+      },
+      {
+        "qty": 84,
+        "name": "Picada",
+        "total": 2990.0
+      },
+      {
+        "qty": 78,
+        "name": "Bombonbum unit",
+        "total": 39.0
+      },
+      {
+        "qty": 60,
+        "name": "Salchipapas",
+        "total": 948.0
+      },
+      {
+        "qty": 59,
+        "name": "empanada mercredi Boeuf",
+        "total": 132.75
+      },
+      {
+        "qty": 59,
+        "name": "Patacones de la casa",
+        "total": 563.02
+      },
+      {
+        "qty": 59,
+        "name": "Pony malta botella",
+        "total": 236.5
+      },
+      {
+        "qty": 57,
+        "name": "Colombiana postobon",
+        "total": 210.75
+      },
+      {
+        "qty": 57,
+        "name": "mora",
+        "total": 330.0
+      },
+      {
+        "qty": 53,
+        "name": "guanabana",
+        "total": 344.5
+      },
+      {
+        "qty": 53,
+        "name": "Manzana postobon",
+        "total": 198.0
+      },
+      {
+        "qty": 52,
+        "name": "lulo",
+        "total": 307.5
+      },
+      {
+        "qty": 50,
+        "name": "mango",
+        "total": 295.5
+      },
+      {
+        "qty": 46,
+        "name": "Bol Cali",
+        "total": 902.0
+      },
+      {
+        "qty": 44,
+        "name": "Picada Suprema",
+        "total": 2975.0
+      },
+      {
+        "qty": 42,
+        "name": "Brazo de reina",
+        "total": 252.0
+      },
+      {
+        "qty": 41,
+        "name": "Patacon montanero",
+        "total": 638.5
+      },
+      {
+        "qty": 40,
+        "name": "Cafe",
+        "total": 137.0
+      },
+      {
+        "qty": 40,
+        "name": "Flan de maracuya",
+        "total": 220.0
+      },
+      {
+        "qty": 40,
+        "name": "Pan queso y bocadillo",
+        "total": 159.6
+      },
+      {
+        "qty": 36,
+        "name": "Arepa au boeuf",
+        "total": 568.0
+      },
+      {
+        "qty": 36,
+        "name": "Ejecutivo boeuf",
+        "total": 832.0
+      },
+      {
+        "qty": 32,
+        "name": "coke",
+        "total": 104.0
+      },
+      {
+        "qty": 29,
+        "name": "Extra Chicharron (80g)",
+        "total": 115.0
+      },
+      {
+        "qty": 28,
+        "name": "Arepa au poulet",
+        "total": 408.0
+      },
+      {
+        "qty": 28,
+        "name": "Bol Bogota",
+        "total": 591.0
+      },
+      {
+        "qty": 28,
+        "name": "Extra Aji",
+        "total": 14.0
+      },
+      {
+        "qty": 27,
+        "name": "Torta 3 leches",
+        "total": 175.5
+      },
+      {
+        "qty": 26,
+        "name": "guayaba",
+        "total": 153.0
+      },
+      {
+        "qty": 26,
+        "name": "hot-dog",
+        "total": 388.0
+      },
+      {
+        "qty": 24,
+        "name": "Arepa au porc effiloché",
+        "total": 356.5
+      },
+      {
+        "qty": 24,
+        "name": "Blonde–Light Lager",
+        "total": 226.5
+      },
+      {
+        "qty": 24,
+        "name": "nouevo producto pas taxe",
+        "total": 232.34
+      },
+      {
+        "qty": 23,
+        "name": "empanada mercredi Poulet",
+        "total": 51.75
+      },
+      {
+        "qty": 23,
+        "name": "Extra Chorizo",
+        "total": 89.0
+      },
+      {
+        "qty": 23,
+        "name": "Frites de Yuca",
+        "total": 171.52
+      },
+      {
+        "qty": 23,
+        "name": "Gelatina de colores",
+        "total": 115.0
+      },
+      {
+        "qty": 22,
+        "name": "Bochica Burger",
+        "total": 457.0
+      },
+      {
+        "qty": 22,
+        "name": "Mojito",
+        "total": 274.0
+      },
+      {
+        "qty": 21,
+        "name": "empanada mercredi",
+        "total": 47.25
+      },
+      {
+        "qty": 21,
+        "name": "Margarita",
+        "total": 261.5
+      },
+      {
+        "qty": 20,
+        "name": "Patacones 2",
+        "total": 192.0
+      },
+      {
+        "qty": 19,
+        "name": "Arepa con chicharron",
+        "total": 175.5
+      },
+      {
+        "qty": 19,
+        "name": "Bol Amazonas",
+        "total": 339.0
+      },
+      {
+        "qty": 19,
+        "name": "Pan queso",
+        "total": 75.81
+      },
+      {
+        "qty": 17,
+        "name": "Arepa con queso",
+        "total": 95.0
+      }
+    ],
+    "total_hours": 363.3,
+    "corrections": {
+      "by_reason": [
+        {
+          "qty": 124,
+          "reason": "training mode",
+          "total": 1123.49
+        },
+        {
+          "qty": 20,
+          "reason": "other",
+          "total": 128.25
+        },
+        {
+          "qty": 6,
+          "reason": "kitchen mistake",
+          "total": 48.5
+        },
+        {
+          "qty": 3,
+          "reason": "over punch",
+          "total": 31.25
+        }
+      ],
+      "total_qty": 153,
+      "total_amount": 1331.49
+    },
+    "discounts_summary": {
+      "by_type": [
+        {
+          "type": "Promotion - Uber",
+          "total": 19.75
+        }
+      ],
+      "total": 19.75
+    },
+    "source_file": "Rapportutilisateurpersonnalisé_01-01-202600_00_31-01-202623_59.pdf"
+  },
+  {
+    "period": "2026-02",
+    "year": 2026,
+    "month": 2,
+    "summary": {
+      "receipts": 765,
+      "clients": 830,
+      "items_sold": 3293,
+      "avg_receipt": 50.92,
+      "avg_client": 46.94,
+      "sales_items": 35079.6,
+      "sales_extra": 4228.25,
+      "sales_extra_pct": 10.85,
+      "sales_gross": 39307.85,
+      "refunds": -292.25,
+      "discounts": -350.45,
+      "sales_net": 38957.4,
+      "tps": 1893.71,
+      "tvq": 3775.66,
+      "rounding": 0.19,
+      "total_with_tax": 44626.96,
+      "gift_card": 0.0,
+      "non_taxable": 1105.3
+    },
+    "channels": {
+      "tables": {
+        "receipts": 541,
+        "clients": 606,
+        "items_sold": 2753,
+        "avg_receipt": 61.75,
+        "avg_client": 55.12,
+        "sales_items": 30488.68,
+        "sales_extra": 3190.25,
+        "sales_extra_pct": 9.55,
+        "sales_gross": 33678.93,
+        "refunds": -272.25,
+        "discounts": -274.45,
+        "sales_net": 33404.48,
+        "tps": 1648.02,
+        "tvq": 3286.0,
+        "rounding": 0.04,
+        "total_with_tax": 38338.54,
+        "gift_card": 0.0,
+        "non_taxable": 461.43
+      },
+      "comptoir": {
+        "receipts": 159,
+        "clients": 159,
+        "items_sold": 350,
+        "avg_receipt": 18.55,
+        "avg_client": 18.55,
+        "sales_items": 2494.67,
+        "sales_extra": 475.25,
+        "sales_extra_pct": 16.11,
+        "sales_gross": 2969.92,
+        "refunds": -20.0,
+        "discounts": -20.0,
+        "sales_net": 2949.92,
+        "tps": 116.58,
+        "tvq": 232.3,
+        "rounding": 0.15,
+        "total_with_tax": 3298.95,
+        "gift_card": 0.0,
+        "non_taxable": 621.87
+      },
+      "emporter": {
+        "receipts": 1,
+        "clients": 1,
+        "items_sold": 8,
+        "avg_receipt": 61.0,
+        "avg_client": 61.0,
+        "sales_items": 49.0,
+        "sales_extra": 12.0,
+        "sales_extra_pct": 19.67,
+        "sales_gross": 61.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 61.0,
+        "tps": 3.05,
+        "tvq": 6.08,
+        "rounding": 0.0,
+        "total_with_tax": 70.13,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "ramassage": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_ramassage": {
+        "receipts": 11,
+        "clients": 11,
+        "items_sold": 29,
+        "avg_receipt": 49.05,
+        "avg_client": 49.05,
+        "sales_items": 389.0,
+        "sales_extra": 150.5,
+        "sales_extra_pct": 27.9,
+        "sales_gross": 539.5,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 539.5,
+        "tps": 26.69,
+        "tvq": 53.2,
+        "rounding": 0.0,
+        "total_with_tax": 619.39,
+        "gift_card": 0.0,
+        "non_taxable": 6.0
+      },
+      "el_livraison": {
+        "receipts": 53,
+        "clients": 53,
+        "items_sold": 153,
+        "avg_receipt": 37.78,
+        "avg_client": 37.78,
+        "sales_items": 1658.25,
+        "sales_extra": 400.25,
+        "sales_extra_pct": 19.99,
+        "sales_gross": 2058.5,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 2002.5,
+        "tps": 99.37,
+        "tvq": 198.08,
+        "rounding": 0.0,
+        "total_with_tax": 2299.95,
+        "gift_card": 0.0,
+        "non_taxable": 16.0
+      },
+      "el_comptoir": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      }
+    },
+    "payments": [
+      {
+        "type": "INT",
+        "qt": 263,
+        "amount": 15266.38,
+        "tips": 1651.53,
+        "total": 16917.91
+      },
+      {
+        "type": "MAS",
+        "qt": 183,
+        "amount": 13278.08,
+        "tips": 1609.97,
+        "total": 14888.05
+      },
+      {
+        "type": "VIS",
+        "qt": 128,
+        "amount": 8493.28,
+        "tips": 1029.04,
+        "total": 9522.32
+      },
+      {
+        "type": "COM",
+        "qt": 107,
+        "amount": 4444.95,
+        "tips": 0.0,
+        "total": 4444.95
+      },
+      {
+        "type": "UBE",
+        "qt": 45,
+        "amount": 1737.94,
+        "tips": 0.0,
+        "total": 1737.94
+      },
+      {
+        "type": "GIF",
+        "qt": 39,
+        "amount": 108.56,
+        "tips": 0.0,
+        "total": 108.56
+      },
+      {
+        "type": "CRE",
+        "qt": 19,
+        "amount": 1063.32,
+        "tips": 34.28,
+        "total": 1097.6
+      },
+      {
+        "type": "BAR",
+        "qt": 1,
+        "amount": 133.15,
+        "tips": 0.0,
+        "total": 133.15
+      },
+      {
+        "type": "BAR",
+        "qt": 1,
+        "amount": 154.93,
+        "tips": 0.0,
+        "total": 154.93
+      }
+    ],
+    "total_tips": 4324.82,
+    "grand_total_with_tips": 49005.41,
+    "top_categories": [
+      {
+        "qty": 518,
+        "name": "ENTRÉES",
+        "total": 2380.98
+      },
+      {
+        "qty": 457,
+        "name": "REPAS",
+        "total": 12460.02
+      },
+      {
+        "qty": 394,
+        "name": "Jus",
+        "total": 2449.5
+      },
+      {
+        "qty": 312,
+        "name": "BOLS",
+        "total": 6586.0
+      },
+      {
+        "qty": 306,
+        "name": "Boissons",
+        "total": 1124.28
+      },
+      {
+        "qty": 264,
+        "name": "Panes",
+        "total": 857.38
+      },
+      {
+        "qty": 182,
+        "name": "Cocktails",
+        "total": 2121.5
+      },
+      {
+        "qty": 144,
+        "name": "AREPAS",
+        "total": 1745.5
+      },
+      {
+        "qty": 137,
+        "name": "Desserts",
+        "total": 788.5
+      },
+      {
+        "qty": 131,
+        "name": "Deppaneur manuel",
+        "total": 1083.62
+      },
+      {
+        "qty": 95,
+        "name": "Promotions",
+        "total": 1308.29
+      },
+      {
+        "qty": 93,
+        "name": "Bière",
+        "total": 891.0
+      },
+      {
+        "qty": 92,
+        "name": "Boissons chaud",
+        "total": 367.5
+      },
+      {
+        "qty": 83,
+        "name": "Extras",
+        "total": 241.75
+      },
+      {
+        "qty": 51,
+        "name": "Shooter",
+        "total": 218.76
+      },
+      {
+        "qty": 14,
+        "name": "Comidas",
+        "total": 61.0
+      },
+      {
+        "qty": 10,
+        "name": "Bière 2x1",
+        "total": 96.0
+      },
+      {
+        "qty": 5,
+        "name": "Vin et spiritueux",
+        "total": 175.0
+      },
+      {
+        "qty": 4,
+        "name": "Café alcoolisé",
+        "total": 36.0
+      },
+      {
+        "qty": 1,
+        "name": "Bouteilles",
+        "total": 79.0
+      }
+    ],
+    "top_items": [
+      {
+        "qty": 268,
+        "name": "Empanadas",
+        "total": 0.0
+      },
+      {
+        "qty": 243,
+        "name": "Bol Medellin",
+        "total": 5190.0
+      },
+      {
+        "qty": 112,
+        "name": "maracuya",
+        "total": 728.0
+      },
+      {
+        "qty": 111,
+        "name": "Pandebono",
+        "total": 334.0
+      },
+      {
+        "qty": 104,
+        "name": "Sancochito",
+        "total": 728.0
+      },
+      {
+        "qty": 101,
+        "name": "Bunuelo",
+        "total": 301.0
+      },
+      {
+        "qty": 91,
+        "name": "Churrasco",
+        "total": 2485.0
+      },
+      {
+        "qty": 91,
+        "name": "Pony malta botella",
+        "total": 364.0
+      },
+      {
+        "qty": 88,
+        "name": "Colombiana postobon",
+        "total": 330.01
+      },
+      {
+        "qty": 83,
+        "name": "Picada",
+        "total": 3008.0
+      },
+      {
+        "qty": 70,
+        "name": "mango",
+        "total": 420.0
+      },
+      {
+        "qty": 67,
+        "name": "empanada mercredi Boeuf",
+        "total": 150.79
+      },
+      {
+        "qty": 66,
+        "name": "Salchipapas",
+        "total": 1061.02
+      },
+      {
+        "qty": 62,
+        "name": "mora",
+        "total": 372.0
+      },
+      {
+        "qty": 59,
+        "name": "guanabana",
+        "total": 383.5
+      },
+      {
+        "qty": 51,
+        "name": "coke",
+        "total": 165.76
+      },
+      {
+        "qty": 50,
+        "name": "lulo",
+        "total": 300.0
+      },
+      {
+        "qty": 50,
+        "name": "Mojito",
+        "total": 625.0
+      },
+      {
+        "qty": 48,
+        "name": "Patacones de la casa",
+        "total": 460.48
+      },
+      {
+        "qty": 48,
+        "name": "Picada Suprema",
+        "total": 3312.0
+      },
+      {
+        "qty": 44,
+        "name": "Patacon montanero",
+        "total": 684.0
+      },
+      {
+        "qty": 41,
+        "name": "Arepa au boeuf",
+        "total": 656.0
+      },
+      {
+        "qty": 40,
+        "name": "Aguardiente",
+        "total": 170.0
+      },
+      {
+        "qty": 40,
+        "name": "Brazo de reina",
+        "total": 240.0
+      },
+      {
+        "qty": 39,
+        "name": "Cafe",
+        "total": 136.5
+      },
+      {
+        "qty": 34,
+        "name": "Manzana postobon",
+        "total": 127.5
+      },
+      {
+        "qty": 34,
+        "name": "Repas enfant",
+        "total": 40.0
+      },
+      {
+        "qty": 33,
+        "name": "Bochica Burger",
+        "total": 693.0
+      },
+      {
+        "qty": 31,
+        "name": "Blonde–Light Lager",
+        "total": 294.5
+      },
+      {
+        "qty": 30,
+        "name": "Bombonbum Tajin",
+        "total": 45.0
+      },
+      {
+        "qty": 30,
+        "name": "Pan queso",
+        "total": 125.68
+      },
+      {
+        "qty": 29,
+        "name": "Canastica",
+        "total": 280.0
+      },
+      {
+        "qty": 28,
+        "name": "Bol Cali",
+        "total": 568.0
+      },
+      {
+        "qty": 27,
+        "name": "Arepa con queso",
+        "total": 162.0
+      },
+      {
+        "qty": 27,
+        "name": "Bombonbum unit",
+        "total": 13.5
+      },
+      {
+        "qty": 27,
+        "name": "Flan de maracuya",
+        "total": 148.5
+      },
+      {
+        "qty": 26,
+        "name": "Bol Bogota",
+        "total": 558.0
+      },
+      {
+        "qty": 26,
+        "name": "nouevo producto tax",
+        "total": 785.95
+      },
+      {
+        "qty": 25,
+        "name": "Gelatina de colores",
+        "total": 125.0
+      },
+      {
+        "qty": 25,
+        "name": "Torta 3 leches",
+        "total": 162.5
+      },
+      {
+        "qty": 24,
+        "name": "Pan queso y bocadillo",
+        "total": 100.7
+      },
+      {
+        "qty": 23,
+        "name": "Michelada",
+        "total": 230.0
+      },
+      {
+        "qty": 23,
+        "name": "nouevo producto pas taxe",
+        "total": 187.17
+      },
+      {
+        "qty": 22,
+        "name": "Arepa con chicharron",
+        "total": 199.5
+      },
+      {
+        "qty": 21,
+        "name": "Bochica de la passion",
+        "total": 262.5
+      },
+      {
+        "qty": 21,
+        "name": "pina",
+        "total": 126.0
+      },
+      {
+        "qty": 20,
+        "name": "guayaba",
+        "total": 120.0
+      },
+      {
+        "qty": 20,
+        "name": "hot-dog",
+        "total": 300.0
+      },
+      {
+        "qty": 19,
+        "name": "Dessert de la semaine",
+        "total": 106.0
+      },
+      {
+        "qty": 17,
+        "name": "Arepa au poulet",
+        "total": 255.0
+      }
+    ],
+    "total_hours": 249.17,
+    "corrections": {
+      "by_reason": [
+        {
+          "qty": 145,
+          "reason": "training mode",
+          "total": 1619.24
+        },
+        {
+          "qty": 26,
+          "reason": "over punch",
+          "total": 260.75
+        },
+        {
+          "qty": 9,
+          "reason": "other",
+          "total": 35.5
+        },
+        {
+          "qty": 7,
+          "reason": "customer disatisfaction",
+          "total": 107.5
+        },
+        {
+          "qty": 7,
+          "reason": "kitchen mistake",
+          "total": 35.0
+        },
+        {
+          "qty": 3,
+          "reason": "waiter mistake",
+          "total": 45.5
+        }
+      ],
+      "total_qty": 197,
+      "total_amount": 2103.49
+    },
+    "discounts_summary": {
+      "by_type": [
+        {
+          "type": "Promotion - Uber",
+          "total": 56.0
+        },
+        {
+          "type": "20%",
+          "total": 2.2
+        }
+      ],
+      "total": 58.2
+    },
+    "source_file": "Rapportutilisateurpersonnalisé_01-02-202600_00_28-02-202623_59.pdf"
+  },
+  {
+    "period": "2026-03",
+    "year": 2026,
+    "month": 3,
+    "summary": {
+      "receipts": 854,
+      "clients": 882,
+      "items_sold": 3492,
+      "avg_receipt": 46.39,
+      "avg_client": 44.91,
+      "sales_items": 35809.07,
+      "sales_extra": 4483.5,
+      "sales_extra_pct": 11.32,
+      "sales_gross": 40292.57,
+      "refunds": -500.72,
+      "discounts": -678.75,
+      "sales_net": 39613.82,
+      "tps": 1966.97,
+      "tvq": 3921.71,
+      "rounding": 0.13,
+      "total_with_tax": 45502.63,
+      "gift_card": 0.0,
+      "non_taxable": 299.45
+    },
+    "channels": {
+      "tables": {
+        "receipts": 612,
+        "clients": 640,
+        "items_sold": 2842,
+        "avg_receipt": 54.84,
+        "avg_client": 52.44,
+        "sales_items": 30238.37,
+        "sales_extra": 3712.5,
+        "sales_extra_pct": 11.06,
+        "sales_gross": 33950.87,
+        "refunds": -330.35,
+        "discounts": -387.75,
+        "sales_net": 33563.12,
+        "tps": 1679.14,
+        "tvq": 3347.88,
+        "rounding": -0.08,
+        "total_with_tax": 38590.06,
+        "gift_card": 0.0,
+        "non_taxable": 0.5
+      },
+      "comptoir": {
+        "receipts": 179,
+        "clients": 179,
+        "items_sold": 414,
+        "avg_receipt": 16.28,
+        "avg_client": 16.28,
+        "sales_items": 2606.95,
+        "sales_extra": 486.75,
+        "sales_extra_pct": 16.7,
+        "sales_gross": 3093.7,
+        "refunds": -170.37,
+        "discounts": -179.17,
+        "sales_net": 2914.53,
+        "tps": 130.96,
+        "tvq": 260.97,
+        "rounding": 0.21,
+        "total_with_tax": 3306.67,
+        "gift_card": 0.0,
+        "non_taxable": 298.95
+      },
+      "emporter": {
+        "receipts": 8,
+        "clients": 8,
+        "items_sold": 23,
+        "avg_receipt": 22.09,
+        "avg_client": 22.09,
+        "sales_items": 153.25,
+        "sales_extra": 23.5,
+        "sales_extra_pct": 13.3,
+        "sales_gross": 176.75,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 176.75,
+        "tps": 8.85,
+        "tvq": 17.63,
+        "rounding": 0.0,
+        "total_with_tax": 203.23,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "ramassage": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_ramassage": {
+        "receipts": 10,
+        "clients": 10,
+        "items_sold": 96,
+        "avg_receipt": 99.92,
+        "avg_client": 99.92,
+        "sales_items": 941.75,
+        "sales_extra": 57.5,
+        "sales_extra_pct": 5.75,
+        "sales_gross": 999.25,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 999.25,
+        "tps": 49.98,
+        "tvq": 99.68,
+        "rounding": 0.0,
+        "total_with_tax": 1148.91,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_livraison": {
+        "receipts": 45,
+        "clients": 45,
+        "items_sold": 117,
+        "avg_receipt": 43.56,
+        "avg_client": 43.56,
+        "sales_items": 1868.75,
+        "sales_extra": 203.25,
+        "sales_extra_pct": 10.37,
+        "sales_gross": 2072.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 1960.17,
+        "tps": 98.04,
+        "tvq": 195.55,
+        "rounding": 0.0,
+        "total_with_tax": 2253.76,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_comptoir": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      }
+    },
+    "payments": [
+      {
+        "type": "INT",
+        "qt": 297,
+        "amount": 15494.93,
+        "tips": 1787.26,
+        "total": 17282.19
+      },
+      {
+        "type": "MAS",
+        "qt": 205,
+        "amount": 12545.31,
+        "tips": 1538.06,
+        "total": 14083.37
+      },
+      {
+        "type": "VIS",
+        "qt": 162,
+        "amount": 9111.29,
+        "tips": 1114.55,
+        "total": 10225.84
+      },
+      {
+        "type": "COM",
+        "qt": 126,
+        "amount": 4482.02,
+        "tips": 0.0,
+        "total": 4482.02
+      },
+      {
+        "type": "UBE",
+        "qt": 34,
+        "amount": 1646.04,
+        "tips": 0.0,
+        "total": 1646.04
+      },
+      {
+        "type": "CRE",
+        "qt": 21,
+        "amount": 1832.37,
+        "tips": 137.29,
+        "total": 1969.66
+      },
+      {
+        "type": "GIF",
+        "qt": 5,
+        "amount": 384.51,
+        "tips": 0.0,
+        "total": 384.51
+      },
+      {
+        "type": "AME",
+        "qt": 3,
+        "amount": 94.56,
+        "tips": 12.33,
+        "total": 106.89
+      },
+      {
+        "type": "?",
+        "qt": 2,
+        "amount": -1.27,
+        "tips": -0.17,
+        "total": -1.44
+      }
+    ],
+    "total_tips": 4589.32,
+    "grand_total_with_tips": 50179.08,
+    "top_categories": [
+      {
+        "qty": 570,
+        "name": "ENTRÉES",
+        "total": 2692.53
+      },
+      {
+        "qty": 479,
+        "name": "REPAS",
+        "total": 12769.49
+      },
+      {
+        "qty": 358,
+        "name": "Jus",
+        "total": 2213.0
+      },
+      {
+        "qty": 327,
+        "name": "PANES",
+        "total": 1099.25
+      },
+      {
+        "qty": 298,
+        "name": "BOLS",
+        "total": 6246.0
+      },
+      {
+        "qty": 283,
+        "name": "Boissons",
+        "total": 1039.51
+      },
+      {
+        "qty": 222,
+        "name": "Promotions",
+        "total": 978.75
+      },
+      {
+        "qty": 221,
+        "name": "Cocktails",
+        "total": 2542.5
+      },
+      {
+        "qty": 176,
+        "name": "Desserts",
+        "total": 995.1
+      },
+      {
+        "qty": 143,
+        "name": "AREPAS",
+        "total": 1883.0
+      },
+      {
+        "qty": 121,
+        "name": "Bière",
+        "total": 1149.0
+      },
+      {
+        "qty": 74,
+        "name": "Boissons chaud",
+        "total": 286.5
+      },
+      {
+        "qty": 56,
+        "name": "EXTRAS",
+        "total": 173.75
+      },
+      {
+        "qty": 52,
+        "name": "Deppaneur manuel",
+        "total": 542.7
+      },
+      {
+        "qty": 42,
+        "name": "Comidas",
+        "total": 176.5
+      },
+      {
+        "qty": 41,
+        "name": "Shooter",
+        "total": 174.75
+      },
+      {
+        "qty": 13,
+        "name": "Café alcoolisé",
+        "total": 116.02
+      },
+      {
+        "qty": 7,
+        "name": "Bouteilles",
+        "total": 558.0
+      },
+      {
+        "qty": 6,
+        "name": "Bière 2x1",
+        "total": 57.0
+      },
+      {
+        "qty": 2,
+        "name": "Vin et spiritueux",
+        "total": 70.0
+      },
+      {
+        "qty": 1,
+        "name": "Bebidas",
+        "total": 5.0
+      }
+    ],
+    "top_items": [
+      {
+        "qty": 299,
+        "name": "Empanadas",
+        "total": 4.0
+      },
+      {
+        "qty": 216,
+        "name": "Bol Medellin",
+        "total": 4584.0
+      },
+      {
+        "qty": 147,
+        "name": "empanada mercredi Boeuf",
+        "total": 330.75
+      },
+      {
+        "qty": 138,
+        "name": "Pandebono",
+        "total": 417.5
+      },
+      {
+        "qty": 114,
+        "name": "Sancochito",
+        "total": 798.0
+      },
+      {
+        "qty": 103,
+        "name": "Bunuelo",
+        "total": 303.0
+      },
+      {
+        "qty": 87,
+        "name": "Picada",
+        "total": 3104.0
+      },
+      {
+        "qty": 83,
+        "name": "Churrasco",
+        "total": 2169.0
+      },
+      {
+        "qty": 78,
+        "name": "maracuya",
+        "total": 507.0
+      },
+      {
+        "qty": 75,
+        "name": "Colombiana postobon",
+        "total": 281.26
+      },
+      {
+        "qty": 70,
+        "name": "Pony malta botella",
+        "total": 280.0
+      },
+      {
+        "qty": 69,
+        "name": "Salchipapas",
+        "total": 1106.5
+      },
+      {
+        "qty": 67,
+        "name": "mora",
+        "total": 402.0
+      },
+      {
+        "qty": 62,
+        "name": "Patacon montanero",
+        "total": 961.0
+      },
+      {
+        "qty": 60,
+        "name": "lulo",
+        "total": 360.0
+      },
+      {
+        "qty": 54,
+        "name": "mango",
+        "total": 324.0
+      },
+      {
+        "qty": 52,
+        "name": "guanabana",
+        "total": 338.0
+      },
+      {
+        "qty": 52,
+        "name": "Manzana postobon",
+        "total": 195.0
+      },
+      {
+        "qty": 51,
+        "name": "Flan de maracuya",
+        "total": 280.5
+      },
+      {
+        "qty": 48,
+        "name": "Pan queso",
+        "total": 204.0
+      },
+      {
+        "qty": 47,
+        "name": "Picada Suprema",
+        "total": 3270.0
+      },
+      {
+        "qty": 44,
+        "name": "empanada mercredi Poulet",
+        "total": 99.0
+      },
+      {
+        "qty": 43,
+        "name": "Mojito",
+        "total": 537.5
+      },
+      {
+        "qty": 43,
+        "name": "Pan queso y bocadillo",
+        "total": 182.75
+      },
+      {
+        "qty": 42,
+        "name": "Cafe",
+        "total": 147.0
+      },
+      {
+        "qty": 41,
+        "name": "coke",
+        "total": 133.25
+      },
+      {
+        "qty": 40,
+        "name": "Blonde–Light Lager",
+        "total": 380.0
+      },
+      {
+        "qty": 40,
+        "name": "Patacones de la casa",
+        "total": 380.01
+      },
+      {
+        "qty": 37,
+        "name": "Torta 3 leches",
+        "total": 240.5
+      },
+      {
+        "qty": 35,
+        "name": "Bol Bogota",
+        "total": 747.0
+      },
+      {
+        "qty": 33,
+        "name": "Margarita",
+        "total": 412.5
+      },
+      {
+        "qty": 32,
+        "name": "Gelatina de colores",
+        "total": 160.0
+      },
+      {
+        "qty": 32,
+        "name": "Repas enfant",
+        "total": 0.0
+      },
+      {
+        "qty": 30,
+        "name": "Bochica Burger",
+        "total": 630.0
+      },
+      {
+        "qty": 30,
+        "name": "Pollo asaso",
+        "total": 630.0
+      },
+      {
+        "qty": 29,
+        "name": "Bochica de la passion",
+        "total": 362.5
+      },
+      {
+        "qty": 29,
+        "name": "Michelada",
+        "total": 290.0
+      },
+      {
+        "qty": 28,
+        "name": "Brazo de reina",
+        "total": 169.5
+      },
+      {
+        "qty": 28,
+        "name": "Frites de Yuca",
+        "total": 210.0
+      },
+      {
+        "qty": 27,
+        "name": "Bol Cali",
+        "total": 552.0
+      },
+      {
+        "qty": 27,
+        "name": "Picadita",
+        "total": 648.0
+      },
+      {
+        "qty": 27,
+        "name": "Salchipapas SOIT",
+        "total": 459.0
+      },
+      {
+        "qty": 24,
+        "name": "Canastica",
+        "total": 228.0
+      },
+      {
+        "qty": 24,
+        "name": "guayaba",
+        "total": 144.0
+      },
+      {
+        "qty": 23,
+        "name": "Aguardiente",
+        "total": 97.75
+      },
+      {
+        "qty": 23,
+        "name": "pina",
+        "total": 138.0
+      },
+      {
+        "qty": 22,
+        "name": "Arepa végé",
+        "total": 308.0
+      },
+      {
+        "qty": 22,
+        "name": "Guacamole entrée",
+        "total": 210.52
+      },
+      {
+        "qty": 22,
+        "name": "Rousse - 3 de pique INOX",
+        "total": 209.0
+      },
+      {
+        "qty": 21,
+        "name": "hot-dog",
+        "total": 323.0
+      }
+    ],
+    "total_hours": 310.97,
+    "corrections": {
+      "by_reason": [
+        {
+          "qty": 82,
+          "reason": "training mode",
+          "total": 626.0
+        },
+        {
+          "qty": 31,
+          "reason": "over punch",
+          "total": 390.25
+        },
+        {
+          "qty": 10,
+          "reason": "customer disatisfaction",
+          "total": 94.0
+        },
+        {
+          "qty": 7,
+          "reason": "waiter mistake",
+          "total": 80.0
+        },
+        {
+          "qty": 5,
+          "reason": "other",
+          "total": 23.0
+        },
+        {
+          "qty": 2,
+          "reason": "kitchen mistake",
+          "total": 9.0
+        }
+      ],
+      "total_qty": 137,
+      "total_amount": 1222.25
+    },
+    "discounts_summary": {
+      "by_type": [
+        {
+          "type": "Jeudi bol Medellin",
+          "total": 8.4
+        },
+        {
+          "type": "10% sur première",
+          "total": 14.0
+        },
+        {
+          "type": "Promotion - Uber",
+          "total": 93.63
+        },
+        {
+          "type": "20%",
+          "total": 49.4
+        },
+        {
+          "type": "jeudi de Bol Mede",
+          "total": 4.2
+        },
+        {
+          "type": "30%",
+          "total": 8.4
+        }
+      ],
+      "total": 178.03
+    },
+    "source_file": "Rapportutilisateurpersonnalisé_01-03-202600_00_31-03-202623_59.pdf"
+  },
+  {
+    "period": "2026-04",
+    "year": 2026,
+    "month": 4,
+    "summary": {
+      "receipts": 880,
+      "clients": 959,
+      "items_sold": 3576,
+      "avg_receipt": 46.72,
+      "avg_client": 42.87,
+      "sales_items": 36452.36,
+      "sales_extra": 5011.25,
+      "sales_extra_pct": 12.19,
+      "sales_gross": 41463.61,
+      "refunds": -159.5,
+      "discounts": -347.2,
+      "sales_net": 41116.41,
+      "tps": 2044.18,
+      "tvq": 4075.63,
+      "rounding": 0.25,
+      "total_with_tax": 47236.47,
+      "gift_card": 0.0,
+      "non_taxable": 259.01
+    },
+    "channels": {
+      "tables": {
+        "receipts": 650,
+        "clients": 729,
+        "items_sold": 2995,
+        "avg_receipt": 54.83,
+        "avg_client": 48.89,
+        "sales_items": 31690.59,
+        "sales_extra": 4073.25,
+        "sales_extra_pct": 11.43,
+        "sales_gross": 35763.84,
+        "refunds": -78.5,
+        "discounts": -126.1,
+        "sales_net": 35637.74,
+        "tps": 1782.96,
+        "tvq": 3554.88,
+        "rounding": 0.02,
+        "total_with_tax": 40975.6,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "comptoir": {
+        "receipts": 168,
+        "clients": 168,
+        "items_sold": 379,
+        "avg_receipt": 15.4,
+        "avg_client": 15.4,
+        "sales_items": 2198.77,
+        "sales_extra": 469.25,
+        "sales_extra_pct": 18.14,
+        "sales_gross": 2668.02,
+        "refunds": -81.0,
+        "discounts": -81.0,
+        "sales_net": 2587.02,
+        "tps": 116.57,
+        "tvq": 232.3,
+        "rounding": 0.2,
+        "total_with_tax": 2936.09,
+        "gift_card": 0.0,
+        "non_taxable": 259.01
+      },
+      "emporter": {
+        "receipts": 3,
+        "clients": 3,
+        "items_sold": 13,
+        "avg_receipt": 46.08,
+        "avg_client": 46.08,
+        "sales_items": 103.5,
+        "sales_extra": 34.75,
+        "sales_extra_pct": 25.14,
+        "sales_gross": 138.25,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 138.25,
+        "tps": 6.92,
+        "tvq": 13.79,
+        "rounding": 0.03,
+        "total_with_tax": 158.99,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "ramassage": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_ramassage": {
+        "receipts": 15,
+        "clients": 15,
+        "items_sold": 44,
+        "avg_receipt": 42.86,
+        "avg_client": 42.86,
+        "sales_items": 589.0,
+        "sales_extra": 66.5,
+        "sales_extra_pct": 10.34,
+        "sales_gross": 655.5,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 642.9,
+        "tps": 32.16,
+        "tvq": 64.13,
+        "rounding": 0.0,
+        "total_with_tax": 739.19,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_livraison": {
+        "receipts": 44,
+        "clients": 44,
+        "items_sold": 145,
+        "avg_receipt": 47.97,
+        "avg_client": 47.97,
+        "sales_items": 1870.5,
+        "sales_extra": 367.5,
+        "sales_extra_pct": 17.41,
+        "sales_gross": 2238.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 2110.5,
+        "tps": 105.57,
+        "tvq": 210.53,
+        "rounding": 0.0,
+        "total_with_tax": 2426.6,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      },
+      "el_comptoir": {
+        "receipts": 0,
+        "clients": 0,
+        "items_sold": 0,
+        "avg_receipt": 0.0,
+        "avg_client": 0.0,
+        "sales_items": 0.0,
+        "sales_extra": 0.0,
+        "sales_extra_pct": 0.0,
+        "sales_gross": 0.0,
+        "refunds": 0.0,
+        "discounts": 0.0,
+        "sales_net": 0.0,
+        "tps": 0.0,
+        "tvq": 0.0,
+        "rounding": 0.0,
+        "total_with_tax": 0.0,
+        "gift_card": 0.0,
+        "non_taxable": 0.0
+      }
+    },
+    "payments": [
+      {
+        "type": "INT",
+        "qt": 291,
+        "amount": 16028.62,
+        "tips": 1760.84,
+        "total": 17789.46
+      },
+      {
+        "type": "MAS",
+        "qt": 214,
+        "amount": 12880.98,
+        "tips": 1398.43,
+        "total": 14279.41
+      },
+      {
+        "type": "VIS",
+        "qt": 192,
+        "amount": 10709.63,
+        "tips": 1296.96,
+        "total": 12006.59
+      },
+      {
+        "type": "COM",
+        "qt": 118,
+        "amount": 4432.5,
+        "tips": -13.35,
+        "total": 4419.15
+      },
+      {
+        "type": "UBE",
+        "qt": 36,
+        "amount": 2061.32,
+        "tips": 0.0,
+        "total": 2061.32
+      },
+      {
+        "type": "CRE",
+        "qt": 23,
+        "amount": 1159.58,
+        "tips": 57.89,
+        "total": 1217.47
+      },
+      {
+        "type": "?",
+        "qt": 2,
+        "amount": -1.16,
+        "tips": 0.0,
+        "total": -1.16
+      },
+      {
+        "type": "AME",
+        "qt": 1,
+        "amount": 42.54,
+        "tips": 5.55,
+        "total": 48.09
+      },
+      {
+        "type": "GIF",
+        "qt": 1,
+        "amount": -22.45,
+        "tips": -2.9,
+        "total": -25.35
+      }
+    ],
+    "total_tips": 4503.42,
+    "grand_total_with_tips": 51794.98,
+    "top_categories": [
+      {
+        "qty": 633,
+        "name": "ENTRÉES",
+        "total": 3007.51
+      },
+      {
+        "qty": 469,
+        "name": "REPAS",
+        "total": 12414.0
+      },
+      {
+        "qty": 436,
+        "name": "Jus",
+        "total": 2701.51
+      },
+      {
+        "qty": 358,
+        "name": "BOLS",
+        "total": 7525.0
+      },
+      {
+        "qty": 305,
+        "name": "Boissons",
+        "total": 1121.04
+      },
+      {
+        "qty": 244,
+        "name": "PANES",
+        "total": 849.51
+      },
+      {
+        "qty": 187,
+        "name": "Promotions",
+        "total": 559.0
+      },
+      {
+        "qty": 182,
+        "name": "AREPAS",
+        "total": 2503.0
+      },
+      {
+        "qty": 168,
+        "name": "Desserts",
+        "total": 973.51
+      },
+      {
+        "qty": 156,
+        "name": "Bière",
+        "total": 1411.01
+      },
+      {
+        "qty": 155,
+        "name": "Cocktails",
+        "total": 1781.01
+      },
+      {
+        "qty": 89,
+        "name": "Boissons chaud",
+        "total": 356.5
+      },
+      {
+        "qty": 75,
+        "name": "EXTRAS",
+        "total": 228.98
+      },
+      {
+        "qty": 32,
+        "name": "Deppaneur manuel",
+        "total": 167.02
+      },
+      {
+        "qty": 30,
+        "name": "Bière 2x1",
+        "total": 293.5
+      },
+      {
+        "qty": 26,
+        "name": "Comidas",
+        "total": 146.0
+      },
+      {
+        "qty": 21,
+        "name": "Shooter",
+        "total": 89.25
+      },
+      {
+        "qty": 5,
+        "name": "Vin et spiritueux",
+        "total": 175.0
+      },
+      {
+        "qty": 3,
+        "name": "Café alcoolisé",
+        "total": 28.0
+      },
+      {
+        "qty": 2,
+        "name": "Bouteilles",
+        "total": 158.0
+      }
+    ],
+    "top_items": [
+      {
+        "qty": 323,
+        "name": "Empanadas",
+        "total": 0.0
+      },
+      {
+        "qty": 269,
+        "name": "Bol Medellin",
+        "total": 5700.0
+      },
+      {
+        "qty": 135,
+        "name": "empanada mercredi Boeuf",
+        "total": 303.75
+      },
+      {
+        "qty": 127,
+        "name": "Sancochito",
+        "total": 889.0
+      },
+      {
+        "qty": 113,
+        "name": "maracuya",
+        "total": 734.51
+      },
+      {
+        "qty": 102,
+        "name": "Pandebono",
+        "total": 306.0
+      },
+      {
+        "qty": 88,
+        "name": "Colombiana postobon",
+        "total": 330.03
+      },
+      {
+        "qty": 84,
+        "name": "Picada",
+        "total": 3030.0
+      },
+      {
+        "qty": 83,
+        "name": "mango",
+        "total": 498.0
+      },
+      {
+        "qty": 83,
+        "name": "Pony malta botella",
+        "total": 332.0
+      },
+      {
+        "qty": 79,
+        "name": "Churrasco",
+        "total": 2113.0
+      },
+      {
+        "qty": 72,
+        "name": "AREPA MIXTE",
+        "total": 1240.0
+      },
+      {
+        "qty": 69,
+        "name": "lulo",
+        "total": 414.0
+      },
+      {
+        "qty": 62,
+        "name": "Patacones de la casa",
+        "total": 592.01
+      },
+      {
+        "qty": 60,
+        "name": "mora",
+        "total": 360.0
+      },
+      {
+        "qty": 60,
+        "name": "Salchipapas",
+        "total": 977.5
+      },
+      {
+        "qty": 58,
+        "name": "guanabana",
+        "total": 377.0
+      },
+      {
+        "qty": 53,
+        "name": "Pan queso",
+        "total": 225.26
+      },
+      {
+        "qty": 51,
+        "name": "Manzana postobon",
+        "total": 191.25
+      },
+      {
+        "qty": 50,
+        "name": "AREPA CASSIQUE",
+        "total": 708.0
+      },
+      {
+        "qty": 50,
+        "name": "Bunuelo",
+        "total": 148.0
+      },
+      {
+        "qty": 50,
+        "name": "Flan de maracuya",
+        "total": 275.0
+      },
+      {
+        "qty": 49,
+        "name": "Bol Cali",
+        "total": 984.0
+      },
+      {
+        "qty": 49,
+        "name": "coke",
+        "total": 159.26
+      },
+      {
+        "qty": 49,
+        "name": "empanada mercredi Poulet",
+        "total": 110.25
+      },
+      {
+        "qty": 49,
+        "name": "Patacon montanero",
+        "total": 761.5
+      },
+      {
+        "qty": 45,
+        "name": "Pollo asado",
+        "total": 945.0
+      },
+      {
+        "qty": 45,
+        "name": "Torta 3 leches",
+        "total": 292.51
+      },
+      {
+        "qty": 41,
+        "name": "Pan queso y bocadillo",
+        "total": 174.25
+      },
+      {
+        "qty": 41,
+        "name": "Picada Suprema",
+        "total": 2838.0
+      },
+      {
+        "qty": 40,
+        "name": "Cafe",
+        "total": 140.0
+      },
+      {
+        "qty": 38,
+        "name": "CLUB BOCHICA",
+        "total": 276.0
+      },
+      {
+        "qty": 37,
+        "name": "pina",
+        "total": 222.0
+      },
+      {
+        "qty": 35,
+        "name": "Bochica Burger",
+        "total": 738.0
+      },
+      {
+        "qty": 32,
+        "name": "Bochica",
+        "total": 328.01
+      },
+      {
+        "qty": 32,
+        "name": "Brazo de reina",
+        "total": 192.0
+      },
+      {
+        "qty": 32,
+        "name": "hot-dog",
+        "total": 490.0
+      },
+      {
+        "qty": 32,
+        "name": "Repas enfant",
+        "total": 0.0
+      },
+      {
+        "qty": 31,
+        "name": "Frites de Yuca",
+        "total": 236.5
+      },
+      {
+        "qty": 29,
+        "name": "Bol Bogota",
+        "total": 624.0
+      },
+      {
+        "qty": 29,
+        "name": "Michelada",
+        "total": 290.0
+      },
+      {
+        "qty": 27,
+        "name": "Picadita",
+        "total": 648.0
+      },
+      {
+        "qty": 26,
+        "name": "Gelatina de colores",
+        "total": 130.0
+      },
+      {
+        "qty": 25,
+        "name": "Guacamole entrée",
+        "total": 243.5
+      },
+      {
+        "qty": 23,
+        "name": "Mojito",
+        "total": 287.5
+      },
+      {
+        "qty": 21,
+        "name": "Arepa con queso",
+        "total": 126.0
+      },
+      {
+        "qty": 21,
+        "name": "Blonde–Light Lager",
+        "total": 199.5
+      },
+      {
+        "qty": 21,
+        "name": "nouevo producto pas taxe",
+        "total": 160.01
+      },
+      {
+        "qty": 20,
+        "name": "Nachos",
+        "total": 440.0
+      },
+      {
+        "qty": 19,
+        "name": "Canastica",
+        "total": 183.51
+      }
+    ],
+    "total_hours": 282.33,
+    "corrections": {
+      "by_reason": [
+        {
+          "qty": 88,
+          "reason": "training mode",
+          "total": 719.51
+        },
+        {
+          "qty": 45,
+          "reason": "over punch",
+          "total": 415.25
+        },
+        {
+          "qty": 35,
+          "reason": "customer disatisfaction",
+          "total": 315.0
+        },
+        {
+          "qty": 16,
+          "reason": "kitchen mistake",
+          "total": 85.76
+        },
+        {
+          "qty": 13,
+          "reason": "other",
+          "total": 108.5
+        },
+        {
+          "qty": 12,
+          "reason": "waiter mistake",
+          "total": 101.0
+        }
+      ],
+      "total_qty": 209,
+      "total_amount": 1745.02
+    },
+    "discounts_summary": {
+      "by_type": [
+        {
+          "type": "Promotion - Uber",
+          "total": 119.7
+        },
+        {
+          "type": "20%",
+          "total": 41.3
+        },
+        {
+          "type": "10% sur première",
+          "total": 7.8
+        },
+        {
+          "type": "jeudi de Bol Mede",
+          "total": 12.6
+        },
+        {
+          "type": "30%",
+          "total": 6.3
+        }
+      ],
+      "total": 187.7
+    },
+    "source_file": "Rapportutilisateurpersonnalisé_01-04-202600_00_30-04-202623_59.pdf"
+  }
+]

@@ -89,6 +89,12 @@ let scheduleCoverageSection = "all";
 // Instance Chart.js (détruit/recréé à chaque render pour éviter les fuites)
 let _coverageChartInstance = null;
 
+// ── Rapports mensuels (admin only) ────────────────────
+// Un doc par mois Firestore (id = "YYYY-MM"). Données extraites des PDFs
+// Cluster via parse_reports.py — voir monthly-reports-seed.js pour le seed.
+let monthlyReports = [];
+let reportsViewPeriod = 6;  // Nombre de mois affichés : 3 | 6 | 12 | "all"
+
 // ── Simulations paie ──────────────────────────────────
 // Scénarios hypothétiques pour planifier des changements RH :
 // copie figée de l'horaire planifié + version modifiable (nom, taux,

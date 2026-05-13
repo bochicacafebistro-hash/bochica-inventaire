@@ -202,6 +202,15 @@ db.collection("payrollSimulations").onSnapshot(snap => {
   }
 });
 
+// Rapports mensuels (admin only — agrégation des PDFs Cluster)
+db.collection("monthlyReports").onSnapshot(snap => {
+  monthlyReports = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.period || "").localeCompare(b.period || ""));
+  if (shouldRender("monthlyReports", "rapports")) renderPage();
+}, err => {
+  if (err && err.code !== "permission-denied") console.warn("listener monthlyReports:", err);
+});
+
 // Note : le listener sur /payroll/{weekId} de la semaine courante est géré
 // dynamiquement par subscribePayrollWeek() (dans pages-payroll.js) pour ne
 // charger qu'un seul document à la fois. On l'abonne au login et à chaque

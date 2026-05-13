@@ -138,6 +138,13 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // ── /monthlyReports : rapports mensuels Cluster (admin seul) ──
+    // Un doc par mois (id = "YYYY-MM"). Contient ventes, paiements, top
+    // catégories/articles, heures, corrections. Source : PDFs Cluster parsés.
+    match /monthlyReports/{doc=**} {
+      allow read, write: if isAdmin();
+    }
+
     // ── /expenses, /revenues, /expenseCategories,
     //    /fixedExpenseTemplates : finances (admin seul) ──
     match /expenses/{doc=**} {

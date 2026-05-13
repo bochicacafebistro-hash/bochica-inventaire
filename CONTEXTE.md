@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 12 mai 2026 — v3.12.0** — gros chantier UI/UX en 3 volets :
+> ⚠️ **Dernière mise à jour : 13 mai 2026 — v3.13.0** — nouvelle page **Rapports mensuels** (admin only, sous Finances). Importe et visualise les PDFs Cluster mensuels : ventes totales, par canal, par mode de paiement, top catégories, top produits, heures, corrections — tout en graphiques comparatifs avec sélecteur de période (3/6/12 mois/tout) et tableau récapitulatif mois par mois. 8 rapports pré-parsés inclus en seed.
+>
+> ⚠️ **12 mai 2026 — v3.12.0** — gros chantier UI/UX en 3 volets :
 > 1. **Simulation paie** (v3.10.0–3.10.6) : nouvelle page admin pour scénarios RH hypothétiques (baseline figé + version modifiable, ajout/retrait employés, comparaison côte à côte $ et %, tableau avec tfoot Heures/jour/Mt/jour/Ventes prévues, graphique de couverture).
 > 2. **Sidebar en accordéons** (v3.11.0) : 6 sections par domaine (Inventaire, RH, Cuisine, Finances, Clients, Fournisseurs), Dashboard hors accordéon en haut, section active auto-ouverte, promotion d'item unique en lien direct.
 > 3. **UI Polish** (v3.12.0) : micro-interactions (skeleton loaders, hover cards renforcé, `animateNumber()`, `flashSaveSuccess()`), 10 empty states illustrés SVG inline (`renderEmptyState()`), widget « Aujourd'hui » du dashboard (employés en shift + événements + tâches dues + ratio salaires/ventes) et sparklines 30 jours dans les KPI cards.
@@ -70,6 +72,8 @@ bochica-inventaire/
 │   ├── pages-events.js     ← Événements / calendrier (réservations, soirées, etc.)
 │   ├── pages-quotes.js     ← Soumissions (devis clients + génération PDF jsPDF)
 │   ├── pages-dashboard.js  ← Dashboard, taxes, helpers taxes, autoApplyFixedExpenses
+│   ├── pages-rapports.js   ← Rapports mensuels (visualisations multi-mois depuis PDFs Cluster)
+│   ├── monthly-reports-seed.js ← Données seed des rapports (8 mois pré-parsés, ~63 KB)
 │   ├── sidebar.js          ← Navigation, sidebar, renderPage(), goHome()
 │   ├── auth.js             ← Firebase Auth, login/logout, session, rôles
 │   └── firebase-listeners.js ← Listeners Firestore temps réel
@@ -431,6 +435,32 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 13 mai 2026 — Page Rapports mensuels (v3.13.0) 📊📈
+- **Nouvelle page « Rapports mensuels »** sous Finances dans la sidebar (admin seulement)
+- **Nouvelle collection Firestore** `monthlyReports` (id = `YYYY-MM`) avec règles admin only
+- **Source des données** : PDFs Cluster mensuels (rapport util. Manager) parsés via script Python (`parse_reports.py` avec pypdf + regex). 8 mois pré-parsés inclus dans le seed (`monthly-reports-seed.js`, ~63 KB).
+- **Données extraites par mois** :
+  - Sommaire global : reçus, clients, articles vendus, reçu moy., ventes nettes, TPS, TVQ, total, non-taxable
+  - 7 canaux de vente : tables, comptoir, emporter, ramassage, E-L. livraison/ramassage/comptoir
+  - Modes de paiement (INT/MAS/VIS/COM/UBE/CRE/AME/GIF/CAS/CAR/DOO) avec qté, montant, pourboires, total
+  - Top 20 catégories (qté + total $)
+  - Top 50 articles (qté + total $)
+  - Total heures travaillées
+  - Corrections par raison (training mode, over punch, customer disatisfaction, etc.)
+  - Rabais par type
+- **Visualisations** dans `js/pages-rapports.js` (~530 lignes) :
+  - Sélecteur de période : 3 / 6 / 12 mois / Tout (`reportsViewPeriod` dans state.js)
+  - 6 KPI agrégés en haut : ventes totales, reçus, clients, reçu moyen, pourboires, heures
+  - Graphique 1 (combo) : Évolution des ventes (barres) + Pourboires (ligne) par mois
+  - Graphique 2 : Ventes par canal (barres empilées)
+  - Graphique 3 : Modes de paiement (barres groupées par mois)
+  - Graphique 4 : Top catégories agrégées sur la période (doughnut)
+  - Tableau top 15 produits agrégés (qté + ventes cumulées)
+  - Tableau récapitulatif mois par mois avec écart % vs mois précédent
+- **Import seed** : bouton « Importer seed » dans la toolbar → modale liste les 8 mois → batch write Firestore
+- **Routing & permissions** : `"rapports"` ajouté à `global_admin.canAccess/canWrite` dans config.js + mapping dans `PAGE_TO_SECTION` (section finance) + `pageMeta`
+- **CACHE_VERSION** bumpé à `v3.13.0` (minor bump — nouvelle feature complète)
 
 ### 12 mai 2026 — UI Polish : micro-interactions + empty states + dashboard (v3.12.0) ✨📊🎨
 **3 chantiers UX/UI livrés en parallèle :**

@@ -6826,3 +6826,102 @@ body.dark .card:hover{
   .dash-today-widget__ratio-pct{font-size: 22px}
   .dash-today-widget__grid{grid-template-columns: 1fr 1fr}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   RAPPORTS MENSUELS — Graphiques comparatifs multi-mois
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Tabs de sélection de période */
+.reports-period-tabs{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:var(--sp-3) var(--sp-4);
+  margin-bottom:var(--sp-4);
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  flex-wrap:wrap;
+}
+.reports-period-tabs__label{
+  font-family:var(--font-mono);
+  font-size:11px;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text3);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  margin-right:6px;
+}
+.reports-period-tab{
+  padding:6px 14px;
+  border:1px solid var(--border);
+  background:transparent;
+  color:var(--text2);
+  font-size:var(--fs-sm);
+  font-weight:600;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  transition:all var(--transition-fast);
+  font-family:var(--font-body);
+}
+.reports-period-tab:hover{
+  background:var(--surface2);
+  color:var(--text);
+}
+.reports-period-tab.is-active{
+  background:var(--accent);
+  color:var(--accent-text);
+  border-color:var(--accent);
+  box-shadow:0 2px 6px rgba(var(--accent-rgb),.25);
+}
+.reports-period-tabs__count{
+  margin-left:auto;
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--text3);
+}
+
+/* Grille des KPI agrégés (réutilise dash-stat-card via dash-stats-grid pattern) */
+.reports-kpi-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(160px,1fr));
+  gap:var(--sp-3);
+  margin-bottom:var(--sp-5);
+}
+
+/* Carte de graphique */
+.reports-chart-card{
+  margin-bottom:var(--sp-5);
+}
+.reports-chart-card__head{
+  margin-bottom:var(--sp-4);
+}
+.reports-chart-card__title{
+  font-family:var(--font-heading);
+  font-size:18px;
+  font-weight:600;
+  color:var(--text);
+  margin:0;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+}
+.reports-chart-card__sub{
+  font-size:11px;
+  color:var(--text3);
+  margin-top:4px;
+  font-family:var(--font-mono);
+}
+.reports-chart-wrap{
+  position:relative;
+  width:100%;
+}
+
+/* Mobile : KPI plus compacts */
+@media (max-width:640px){
+  .reports-kpi-row{grid-template-columns:1fr 1fr}
+  .reports-period-tabs__count{width:100%;text-align:right;margin-top:4px}
+  .reports-chart-card__title{font-size:16px}
+}

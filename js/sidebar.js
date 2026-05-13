@@ -38,7 +38,8 @@ function getNavStructure() {
       type: "section", id: "finance", icon: "wallet", label: "Finances",
       items: [
         { icon: "wallet", label: t("nav_expenses"), page: "depenses" },
-        { icon: "shield-check", label: "TPS/TVQ", page: "taxes" }
+        { icon: "shield-check", label: "TPS/TVQ", page: "taxes" },
+        { icon: "bar-chart", label: "Rapports mensuels", page: "rapports" }
       ]
     },
     {
@@ -57,7 +58,7 @@ const PAGE_TO_SECTION = {
   inventaire: "inventory", rapport: "inventory", historique: "inventory", shopping: "inventory",
   employes: "hr", salaires: "hr", simulations: "hr", taches: "hr",
   menu: "kitchen", ingredients: "kitchen", recettes: "kitchen",
-  depenses: "finance", taxes: "finance",
+  depenses: "finance", taxes: "finance", rapports: "finance",
   evenements: "clients", soumissions: "clients"
 };
 
@@ -205,6 +206,7 @@ function renderPage() {
     simulations: { label: "Simulation paie",    icon: "trending-up" },
     depenses:    { label: t("nav_expenses"),    icon: "wallet" },
     taxes:       { label: "TPS/TVQ",            icon: "shield-check" },
+    rapports:    { label: "Rapports mensuels",  icon: "bar-chart" },
     menu:        { label: t("nav_menu"),        icon: "utensils" },
     ingredients: { label: t("nav_ingredients"), icon: "tag" },
     recettes:    { label: t("nav_recipes"),     icon: "file-text" },
@@ -282,6 +284,10 @@ function renderPage() {
     setTimeout(() => { if (typeof initExpenseCharts === "function") initExpenseCharts(); }, 50);
   }
   else if (activePage === "taxes") pc.innerHTML = renderTaxes();
+  else if (activePage === "rapports") {
+    pc.innerHTML = renderRapports();
+    setTimeout(() => { if (typeof initReportsCharts === "function") initReportsCharts(); }, 50);
+  }
   else if (activePage === "menu") pc.innerHTML = renderMenu();
   else if (activePage === "ingredients") pc.innerHTML = renderIngredients();
   else if (activePage === "recettes") pc.innerHTML = renderRecettes();
