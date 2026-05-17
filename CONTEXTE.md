@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 13 mai 2026 — v3.13.0** — nouvelle page **Rapports mensuels** (admin only, sous Finances). Importe et visualise les PDFs Cluster mensuels : ventes totales, par canal, par mode de paiement, top catégories, top produits, heures, corrections — tout en graphiques comparatifs avec sélecteur de période (3/6/12 mois/tout) et tableau récapitulatif mois par mois. 8 rapports pré-parsés inclus en seed.
+> ⚠️ **Dernière mise à jour : 13 mai 2026 — v3.13.8** — itérations sur les **Rapports mensuels** (16 mois pré-parsés, comparatif YoY visible par défaut avec valeurs absolues comparées, période personnalisée), **frais fixes** qui se reportent automatiquement chaque mois (rattrapage des mois manqués), **événements semaine** dans le dashboard, **tri par fournisseur** sur page À commander, typo horaire **Inter** plus lisible, page **Historique retirée**.
+>
+> ⚠️ **13 mai 2026 — v3.13.0** — nouvelle page **Rapports mensuels** (admin only, sous Finances). Importe et visualise les PDFs Cluster mensuels : ventes totales, par canal, par mode de paiement, top catégories, top produits, heures, corrections — tout en graphiques comparatifs avec sélecteur de période (3/6/12 mois/tout) et tableau récapitulatif mois par mois. 8 rapports pré-parsés inclus en seed.
 >
 > ⚠️ **12 mai 2026 — v3.12.0** — gros chantier UI/UX en 3 volets :
 > 1. **Simulation paie** (v3.10.0–3.10.6) : nouvelle page admin pour scénarios RH hypothétiques (baseline figé + version modifiable, ajout/retrait employés, comparaison côte à côte $ et %, tableau avec tfoot Heures/jour/Mt/jour/Ventes prévues, graphique de couverture).
@@ -62,7 +64,7 @@ bochica-inventaire/
 │   ├── utils.js            ← Utils, markdown parser, toolbar, duplicateItem, dropdowns, toast()
 │   ├── inventaire.js       ← Page inventaire, stock, drag & drop produits
 │   ├── modals-produits.js  ← Modals produit, note, catégorie (drag & drop), réception
-│   ├── pages-secondaires.js ← Pages rapport, historique, tâches
+│   ├── pages-secondaires.js ← Pages À commander (tri section/fournisseur), tâches (Kanban), + renderHistorique() en mort code
 │   ├── pages-hr.js         ← Employés, horaires, coverage chart, salaires fixes
 │   ├── pages-payroll.js    ← Salaires & Pourboires (heures réelles, fenêtre service, prorata)
 │   ├── pages-simulations.js ← Simulation paie (scénarios RH hypothétiques, comparaison côte à côte)
@@ -234,8 +236,10 @@ bochica-inventaire/
 - **Recherche fluide** : focus restauré après chaque frappe (plus de bug de saisie mot par mot)
 - Vue tableau desktop, vue cartes mobile
 
-### 📋 Rapport / Historique / Tâches
-- Rapport imprimable, log d'actions, Kanban 3 colonnes (drag & drop)
+### 📋 À commander / Tâches
+- **Page À commander** : liste des produits en statut rouge/jaune avec sélecteur de tri (📁 Par section · 🏪 Par fournisseur). Mode fournisseur : groupes par nom alphabétique avec compteurs immédiats/bientôt et téléphone du fournisseur à côté du titre. Items orphelins regroupés sous « — Sans fournisseur — ». PDF imprimable suit le tri actif.
+- **Kanban Tâches** : 3 colonnes (À faire / En cours / Complété) avec drag & drop.
+- **Log d'actions** : la collection `/logs` continue d'enregistrer les actions (création/modif/suppression). Pas de page UI pour les consulter — l'admin peut accéder via la console Firebase si besoin.
 
 ### 👥 Employés & Horaires
 - Fiche employé + grille horaire semaine (Matin/Soir/Journée/Congé)
@@ -287,9 +291,20 @@ bochica-inventaire/
 - Reset automatique à la liste quand on clique sur « Simulation paie » dans la sidebar (sortie propre de l'éditeur)
 
 ### 💰 Dépenses & Revenus
-- Calcul TPS/TVQ auto, catégories personnalisables, frais fixes auto
+- Calcul TPS/TVQ auto, catégories personnalisables
+- **Frais fixes auto-rattrapés** : `autoApplyFixedExpenses()` génère les expenses à partir des `fixedExpenseTemplates` au login de l'admin. **Rattrape automatiquement les mois manqués** (max 12 mois rétro) — si l'admin ne se connecte pas pendant un mois, les frais fixes seront créés au prochain login. Garde-fou anti-doublons (vérifie si au moins une expense `isFixedAuto` existe pour chaque mois).
 - Stats : revenus, dépenses, taxes, profit/déficit
 - Graphiques : barres 6 mois (revenus/dépenses/profit) + doughnut par catégorie
+
+### 📈 Rapports mensuels (admin only, sous Finances)
+- Page d'agrégation et de visualisation des rapports POS Cluster (PDFs mensuels parsés en JSON).
+- **Collection Firestore** `monthlyReports` (id = `YYYY-MM`), admin only, peuplée via bouton « Importer seed » depuis `monthly-reports-seed.js` (16 mois inclus actuellement).
+- **Données par mois** : sommaire global (reçus, clients, ventes, TPS/TVQ, total), 7 canaux de vente (tables/comptoir/emporter/livraison/etc.), modes de paiement avec pourboires, top catégories, top 50 articles, heures travaillées, corrections par raison, rabais par type.
+- **Sélecteur de période** : 3 / 6 / 12 mois / Tout / **Personnalisé** (deux date pickers `type="month"` avec min/max bornés).
+- **Comparatif vs année précédente (YoY)** : toggle pill jaune (actif par défaut). Barres côte à côte vert pâle (A-1) + vert plein (année courante) avec labels dynamiques. Tableau récap avec 2 colonnes ambrées `Total A-1` et `Δ YoY`. KPI agrégés avec **delta % + valeurs absolues comparées** (« 137 366 $ vs 112 250 $ A-1 »).
+- **6 KPI agrégés** en haut : ventes totales, reçus, clients, reçu moyen, pourboires, heures.
+- **5 visualisations** : combo barres+lignes ventes/pourboires, barres empilées par canal, barres groupées modes de paiement, doughnut top catégories, tableau top 15 produits + tableau récap mois par mois.
+- **Stratégie de parsing** : `parse_reports.py` préfère `Rapportdevente*.pdf` (vrais totaux resto) sur `Rapportutilisateur*.pdf` (ventes d'un seul user) si les deux existent pour la même période.
 
 ### 🍽️ Menu / 🏪 Fournisseurs
 - Items par catégorie avec toggle disponible
@@ -436,6 +451,42 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 13 mai 2026 — Frais fixes auto-rattrapage (v3.13.8) 🔁💰
+- **`autoApplyFixedExpenses()`** modifiée pour rattraper automatiquement les mois manqués (avant : ne traitait que le mois courant — si l'admin ne se connectait pas au début d'un mois, les frais fixes étaient perdus).
+- **Logique** : trouve le mois le plus ancien où on a des expenses `isFixedAuto`, boucle entre ce mois et le mois courant, crée les expenses manquantes pour chaque template avec `date = 1er du mois`.
+- **Garde-fou 12 mois** : pas de rattrapage rétroactif au-delà d'1 an.
+- **Toast de feedback** si rattrapage > 1 mois (« Frais fixes appliqués : N entrées sur M mois »).
+- **Helpers** ajoutés : `monthKeyFromDate(d)` + `monthsBetween(start, end, maxBack)`.
+- **CACHE_VERSION** → `v3.13.8`
+
+### 13 mai 2026 — Événements de la semaine au dashboard (v3.13.7) 📅
+- **Bloc « Événements »** du widget Aujourd'hui élargi de 1 jour → 7 jours (lundi → dimanche en cours).
+- Titre actualisé : « Événements cette semaine (N) ».
+- Tri par date puis heure. Chaque ligne affiche un **pill de jour court** : `Auj.` (en fond jaune accent), `Demain`, ou `Lun 12` / `Mer 14`, etc.
+- **Highlight visuel** des events d'aujourd'hui : fond ambré + bordure jaune.
+- Limite 6 items affichés directement, surplus avec « + N autres… ».
+- **CACHE_VERSION** → `v3.13.7`
+
+### 13 mai 2026 — Tri rapport + retrait Historique + typo horaire (v3.13.5–3.13.6) 🗂️🔤
+- **Page À commander** : nouveau sélecteur de tri à 2 onglets `📁 Par section` / `🏪 Par fournisseur`. État `rapportSortMode` dans `state.js`. Pour le mode fournisseur, chaque groupe affiche : nom + nombre d'items + badges « X immédiats / X bientôt » + téléphone du fournisseur. Items sans fournisseur regroupés sous « — Sans fournisseur — » à la fin. Le PDF imprimable suit aussi le tri actif.
+- **Page Historique retirée** : item enlevé de la sidebar, du routing et des permissions admin. La fonction `renderHistorique()` reste en mort code, et le listener `/logs` continue d'écrire les actions.
+- **Typo du tableau horaire employés** : remplacement de **Bebas Neue** (condensée, peu lisible en petit) et **JetBrains Mono** par **Inter** (`var(--font-body)`) avec `font-variant-numeric: tabular-nums` pour préserver l'alignement vertical des chiffres. Touché : `.schedule-emp-name`, `.schedule-time`, `.schedule-td--summary`, `.schedule-tfoot-row td`, `.schedule-tfoot-row--gap .schedule-tfoot-val`.
+- **CACHE_VERSION** → `v3.13.5` puis `v3.13.6`
+
+### 13 mai 2026 — KPI Rapports : valeurs comparées en chiffres absolus (v3.13.4) 💯
+- `reportsKpi(...)` accepte maintenant un 6e paramètre `yoyValueStr` (string déjà formatée).
+- Quand YoY actif, chaque KPI affiche en plus du delta % le **comparatif chiffré** : `137 366 $ vs 112 250 $` avec un badge ambré `A-1`.
+- Pour chaque KPI, format adapté : `fmtMoney()` pour les $ / `toLocaleString("fr-CA")` pour les compteurs / `fmtHours()` pour les heures.
+- Nouveau CSS `.reports-kpi-yoy` + `.reports-kpi-yoy__pct` + `.reports-kpi-yoy__compare` + `.reports-kpi-yoy__year`.
+- **CACHE_VERSION** → `v3.13.4`
+
+### 13 mai 2026 — YoY visible par défaut + bons chiffres 2025 (v3.13.2–3.13.3) 📊✅
+- **YoY activé par défaut** (`reportsCompareYoY = true` au lieu de `false`).
+- **Barres côte à côte** dans le graphique de ventes : vert pâle pour l'année précédente, vert plein pour l'année courante. Labels dynamiques (« Ventes 2025 », « Ventes 2026 »).
+- **Toggle YoY restylé** : pill arrondie avec bordure 2px épaisse, effet hover lift+shadow, fond jaune accent quand actif.
+- **Seed corrigé pour 2025** : les 8 PDFs `Rapportutilisateur*` pour jan-août 2025 (ventes du Manager seulement, sous-évalués) remplacés par les `Rapportdevente*` (vrais totaux du resto, jusqu'à 4× plus élevés). Script `parse_reports.py` étendu pour préférer `Rapportdevente*` quand les deux types existent pour la même période.
+- **CACHE_VERSION** → `v3.13.2` puis `v3.13.3`
+
 ### 13 mai 2026 — Rapports : YoY + période personnalisée + 16 mois (v3.13.1) 📈📆
 - **Comparatif vs année précédente (YoY)** :
   - Toggle « Vs année précédente » ajouté dans la barre de contrôles
@@ -506,7 +557,7 @@ bochica-inventaire/
 ### 12 mai 2026 — Sidebar en accordéons par domaine (v3.11.0) 🗂️📂
 - **Refonte complète de la sidebar** : les 16 items autrefois listés à plat sont regroupés en **6 sections accordéon par domaine fonctionnel** :
   - 📊 **Dashboard** (lien direct, toujours visible en haut)
-  - 📦 **Inventaire** : Inventaire · À commander · Historique · Liste d'ingrédients
+  - 📦 **Inventaire** : Inventaire · À commander · Liste d'ingrédients <small>(Historique retiré dans v3.13.6)</small>
   - 👥 **RH & Horaires** : Employés · Salaires · Simulation paie · Tâches
   - 🍽️ **Cuisine** : Menu · Ingrédients · Recettes
   - 💰 **Finances** : Dépenses · TPS/TVQ
