@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 13 mai 2026 — v3.13.8** — itérations sur les **Rapports mensuels** (16 mois pré-parsés, comparatif YoY visible par défaut avec valeurs absolues comparées, période personnalisée), **frais fixes** qui se reportent automatiquement chaque mois (rattrapage des mois manqués), **événements semaine** dans le dashboard, **tri par fournisseur** sur page À commander, typo horaire **Inter** plus lisible, page **Historique retirée**.
+> ⚠️ **Dernière mise à jour : 17 mai 2026 — v3.14.0** — **Soumissions multi-options** : on peut maintenant proposer plusieurs forfaits dans une même soumission. Le client coche son option préférée sur le PDF. Chaque option a ses propres add-ons (bière, suppléments/rabais, dépôt) — le nombre de personnes reste commun. Le PDF passe automatiquement à une nouvelle page si une option ne tient pas, ajoute un bandeau d'intro « N options proposées » et une case à cocher par option. La liste affiche un badge « N options de forfait » et une fourchette de totaux (ex. 595 $ – 750 $). Rétrocompat complète avec les soumissions à un seul forfait.
+>
+> ⚠️ **13 mai 2026 — v3.13.8** — itérations sur les **Rapports mensuels** (16 mois pré-parsés, comparatif YoY visible par défaut avec valeurs absolues comparées, période personnalisée), **frais fixes** qui se reportent automatiquement chaque mois (rattrapage des mois manqués), **événements semaine** dans le dashboard, **tri par fournisseur** sur page À commander, typo horaire **Inter** plus lisible, page **Historique retirée**.
 >
 > ⚠️ **13 mai 2026 — v3.13.0** — nouvelle page **Rapports mensuels** (admin only, sous Finances). Importe et visualise les PDFs Cluster mensuels : ventes totales, par canal, par mode de paiement, top catégories, top produits, heures, corrections — tout en graphiques comparatifs avec sélecteur de période (3/6/12 mois/tout) et tableau récapitulatif mois par mois. 8 rapports pré-parsés inclus en seed.
 >
@@ -129,7 +131,9 @@ bochica-inventaire/
     - Champs : `id`, `name`, `date` (ISO YYYY-MM-DD), `time` (HH:MM, optionnel), `type` (∈ `reservation`/`karaoke`/`spectacle`/`hors_bochica`/`ferie`/`interne`), `status` (∈ `confirme`/`attente`/`annule`), `capacity`, `contactName`, `contactPhone`, `contactEmail`, `notes`, `createdAt`, `updatedAt`
     - Accès : admin + chef
   - `quotes` — **soumissions** (devis pour clients) — admin uniquement :
-    - Champs : `id`, `quoteNumber` (YYYY-NNN), `clientName`, `clientCompany`, `clientPhone`, `clientEmail`, `eventDate`, `eventTime`, `eventVenue` (∈ `bochica`/`client`/`autre`), `eventAddress`, `guestCount`, `packageId`, `packageSnapshot` (copie figée du forfait), `beerAddon`, `customLines[]` ({description, amount}), `depositAmount`, `depositPaid`, `validUntil`, `notes`, `status` (∈ `brouillon`/`envoyee`/`acceptee`/`refusee`/`expiree`), `createdAt`, `updatedAt`, `createdBy`
+    - Champs communs : `id`, `quoteNumber` (YYYY-NNN), `clientName`, `clientCompany`, `clientPhone`, `clientEmail`, `eventDate`, `eventTime`, `eventVenue` (∈ `bochica`/`client`/`autre`), `eventAddress`, `guestCount` (commun à toutes les options), `validUntil`, `notes`, `status` (∈ `brouillon`/`envoyee`/`acceptee`/`refusee`/`expiree`), `createdAt`, `updatedAt`, `createdBy`
+    - **`packageOptions[]`** (v3.14.0) — liste des options de forfait proposées au client. Chaque option : `{ id (local), packageId, packageSnapshot (copie figée), beerAddon, customLines[] ({description, amount}), depositAmount, depositPaid }`. Le client coche celle qu'il choisit sur le PDF.
+    - **Champs legacy** (rétrocompat) : `packageId`, `packageSnapshot`, `beerAddon`, `customLines[]`, `depositAmount`, `depositPaid` — toujours écrits à plat à partir de la PREMIÈRE option pour que les anciens lecteurs continuent de fonctionner. La lecture passe par `getQuoteOptions(qt)` qui retourne TOUJOURS un array (nouveau format prioritaire, fallback sur le legacy).
   - `quoteTemplates` — **forfaits par défaut** (base des soumissions) — admin écriture, admin+chef lecture :
     - Champs : `id`, `name`, `label`, `pricePerPerson`, `accentColor` (∈ `yellow`/`red`/`blue`/`green`), `entree`, `plat`, `boisson`, `beerPrice`, `sortOrder`
     - Seed automatique au 1er lancement (Essentiel 22$ + Gourmand 27$) via `DEFAULT_QUOTE_TEMPLATES` dans `config.js`
@@ -320,23 +324,24 @@ bochica-inventaire/
 - **Numérotation auto** : format `YYYY-NNN` (ex. `2026-001`) calculé à partir des soumissions existantes
 - **Champs client** : nom, entreprise, téléphone, courriel
 - **Champs événement** : date, heure, lieu (Bochica / chez le client / autre), adresse, nombre de personnes
-- **Choix de forfait** : cartes radio interactives (couleur d'accent visible) → sélection d'un des forfaits configurés
-- **Add-on bière** : toggle qui ajoute le prix bière du forfait × nombre de personnes
-- **Lignes personnalisées** : ajout dynamique de suppléments (ex. « Décor 100$ ») ou rabais (montants négatifs)
-- **Dépôt** : montant exigé + case « déjà versé », solde calculé automatiquement
+- **Multi-options de forfait (v3.14.0)** : on peut proposer **plusieurs options** dans une même soumission. Le client choisit celle qui lui convient. Bouton « + Ajouter une option de forfait », chaque option a un badge OPTION A/B/C... et un bouton de retrait. Le nombre de personnes est commun à toutes les options (cas le plus courant : « 25 pers, vous préférez le forfait à 22$ ou à 27$ ? »).
+- **Choix de forfait par option** : cartes radio interactives (couleur d'accent visible) → sélection d'un des forfaits configurés
+- **Add-on bière (par option)** : toggle qui remplace la boisson par une bière. Prix surchargeable par option (rabais éventuel).
+- **Lignes personnalisées (par option)** : ajout dynamique de suppléments (ex. « Décor 100$ ») ou rabais (montants négatifs). Chaque option a son propre set de lignes.
+- **Dépôt (par option)** : montant exigé + case « déjà versé », solde calculé automatiquement par option
 - **Date de validité** : par défaut +30 jours, affichée sur le PDF
 - **5 statuts** : Brouillon · Envoyée · Acceptée · Refusée · Expirée — changement rapide via dropdown ⋯
-- **Snapshot du forfait** : copie figée des données du forfait au moment de la création (les PDF anciens restent corrects même si on modifie un template par la suite)
+- **Snapshot du forfait par option** : copie figée des données du forfait au moment de la création (les PDF anciens restent corrects même si on modifie un template par la suite)
+- **Liste des soumissions** : badge « N options de forfait » au lieu du nom unique quand multi. Total affiché en fourchette « 595 $ – 750 $ » si plusieurs options.
 - **Génération PDF (jsPDF)** : design fidèle à `Menu_Forfaits.pdf` :
   - Logo BOCHICA + sous-titre « Restaurant Colombien » + tricolore jaune/bleu/rouge
   - Titre « Soumission » + numéro centré
   - Bloc Client + Bloc Événement (2 colonnes, fond crème)
-  - Carte forfait avec barre latérale colorée (selon `accentColor`), prix en rouge, séparateur pointillé, bullets bleus pour Entrée / Plat / Boisson
-  - Section bière sur fond jaune si activée
-  - Liste des suppléments (rabais en vert)
-  - Sous-total → TPS 5% → TVQ 9,975% → TOTAL en gras
-  - Si dépôt : ligne « Dépôt versé/exigé » + « Solde à payer »
-  - Notes + footer « Soumission valide jusqu'au … »
+  - **Bandeau d'intro multi-options (v3.14.0)** si N > 1 : « N options proposées — choisissez celle qui vous convient »
+  - **Une section par option** : badge OPTION A/B/C + carte forfait avec barre latérale colorée (selon `accentColor`), prix en rouge, séparateur pointillé, bullets bleus pour Entrée / Plat / Boisson, bière en jaune si activée, suppléments, totaux par option (sous-total → TPS → TVQ → TOTAL OPTION A), dépôt si présent
+  - **Case à cocher « Je choisis l'OPTION X — Nom »** sous chaque option en mode multi
+  - **Multi-pages auto (v3.14.0)** : si une option ne tient pas sur la page courante, passe automatiquement à une nouvelle page avec en-tête compact (BOCHICA · n° soumission · client) + ligne accent. Numérotation « Page N / Total » en bas si > 1 page.
+  - Notes + footer « Soumission valide jusqu'au … » + bloc QR code menu
   - Nom de fichier : `Bochica_Soumission_{numéro}_{client}.pdf`
 - **Forfaits éditables** : modale « Gérer les forfaits » accessible via toolbar
   - Modifier nom, étiquette, prix/personne, couleur d'accent (jaune/rouge/bleu/vert), contenu (entrée/plat/boisson), prix bière
@@ -450,6 +455,25 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 17 mai 2026 — Soumissions multi-options (v3.14.0) 🧾📋
+- **Nouveau modèle de données** : chaque soumission a maintenant un array `packageOptions[]` au lieu d'un forfait unique. Chaque option contient `{ id, packageId, packageSnapshot, beerAddon, customLines[], depositAmount, depositPaid }`.
+- **Rétrocompat complète** : nouveau helper `getQuoteOptions(qt)` qui normalise toujours en array — soit `packageOptions[]` si présent, soit reconstruit une option unique à partir des anciens champs à plat. Les soumissions existantes en BD continuent de fonctionner sans migration.
+- **Champs legacy écrits en parallèle** : à chaque save, les champs `packageId`/`packageSnapshot`/`beerAddon`/`customLines`/`depositAmount`/`depositPaid` sont copiés à plat depuis la 1ère option pour que tout vieux lecteur affiche encore quelque chose de cohérent.
+- **Formulaire refondu** : bloc « Options de forfait » avec bouton « + Ajouter une option de forfait ». Chaque option = bloc badge `Option A/B/C...` + choix de forfait (radios) + add-on bière (avec prix surchargeable) + suppléments/rabais propres à l'option + dépôt propre à l'option. Bouton trash pour retirer une option (minimum 1).
+- **État du formulaire en mémoire** : nouveau global `_editingQuoteOptions` dans `state.js` — permet d'ajouter/retirer des options dynamiquement sans perdre la saisie. Helper `syncEditingOptionsFromDOM()` re-lit toujours le DOM avant un re-render.
+- **Le nombre de personnes (`guestCount`) reste commun** à toutes les options (cas le plus courant : « 25 pers, vous préférez Essentiel ou Gourmand ? »).
+- **Calcul** : `computeQuoteOptionTotal(opt, guestCount)` calcule les totaux par option. `computeQuoteRange(qt)` retourne `{ min, max, count }` pour l'affichage en fourchette dans la liste.
+- **Liste des soumissions** : badge « N options de forfait » (au lieu du nom unique) quand multi. Total affiché en fourchette « 595 $ – 750 $ » quand min ≠ max.
+- **PDF refondu multi-pages** :
+  - Bandeau d'intro accent jaune « N options proposées — choisissez celle qui vous convient » + sous-texte « Cochez l'option retenue dans la case en bas de chaque carte »
+  - Une section par option : badge OPTION A/B/C + trait coloré + carte forfait + bière (si activée) + suppléments + totaux complets (sous-total → TPS → TVQ → TOTAL OPTION A) + dépôt + case à cocher « Je choisis l'OPTION X — Nom »
+  - **Saut de page intelligent** : helper `ensureSpace(needed)` qui passe à une nouvelle page si l'option ne tient pas (estimation de hauteur par option avec custom lines + bière + dépôt)
+  - **En-tête compact** sur les pages suivantes : BOCHICA + n° soumission + nom client + ligne accent jaune
+  - **Numérotation « Page N / Total »** en bas si > 1 page
+  - Footer (QR code menu + mentions légales) toujours sur la dernière page
+- **CSS** : nouvelle classe `.quote-option-block` avec badge `.quote-option-block__badge`, sous-sections `.quote-option-subsection`, bouton d'ajout `.quote-add-option-btn` (dashed border qui devient solide au hover), `.quote-card__meta-item--multi` (pill ambré pour le badge multi-options dans la liste), `.quote-card__total-range` (taille réduite pour la fourchette).
+- **CACHE_VERSION** bumpé à `v3.14.0` (minor — feature significative)
 
 ### 13 mai 2026 — Frais fixes auto-rattrapage (v3.13.8) 🔁💰
 - **`autoApplyFixedExpenses()`** modifiée pour rattraper automatiquement les mois manqués (avant : ne traitait que le mois courant — si l'admin ne se connectait pas au début d'un mois, les frais fixes étaient perdus).

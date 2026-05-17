@@ -137,25 +137,81 @@ function generateQuoteNumber() {
   return `${prefix}${String(maxN + 1).padStart(3, "0")}`;
 }
 
+// ─── Normalisation rétrocompat ────────────────────────
+// Retourne TOUJOURS un array d'options de forfait, peu importe le format
+// du quote en BD (nouveau format `packageOptions[]` ou ancien format à plat
+// avec packageId / packageSnapshot / beerAddon / customLines / depositAmount).
+function getQuoteOptions(quote) {
+  if (Array.isArray(quote?.packageOptions) && quote.packageOptions.length > 0) {
+    return quote.packageOptions.map((opt, i) => ({
+      id: opt.id || `opt-${i}`,
+      packageId: opt.packageId,
+      packageSnapshot: opt.packageSnapshot || null,
+      beerAddon: !!opt.beerAddon,
+      customLines: Array.isArray(opt.customLines) ? opt.customLines : [],
+      depositAmount: Math.max(0, Number(opt.depositAmount || 0)),
+      depositPaid: !!opt.depositPaid
+    }));
+  }
+  // Rétrocompat : ancienne soumission single-forfait
+  if (quote?.packageId || quote?.packageSnapshot) {
+    return [{
+      id: "legacy",
+      packageId: quote.packageId,
+      packageSnapshot: quote.packageSnapshot || null,
+      beerAddon: !!quote.beerAddon,
+      customLines: Array.isArray(quote.customLines) ? quote.customLines : [],
+      depositAmount: Math.max(0, Number(quote.depositAmount || 0)),
+      depositPaid: !!quote.depositPaid
+    }];
+  }
+  return [];
+}
+
 // ─── Calculs ──────────────────────────────────────────
+// Calcule les totaux pour UNE option (forfait + bière + custom + taxes + dépôt).
+// guestCount est commun à toutes les options d'une soumission.
 // Retourne { subtotal, beerSubtotal, customSubtotal, preTaxTotal, tps, tvq, total, deposit, balance }
-function computeQuoteTotal(quote) {
-  const tpl = quote.packageSnapshot || quoteTemplates.find(t => t.id === quote.packageId) || {};
-  const guests = Math.max(0, Number(quote.guestCount || 0));
+function computeQuoteOptionTotal(opt, guestCount) {
+  const tpl = opt.packageSnapshot || quoteTemplates.find(t => t.id === opt.packageId) || {};
+  const guests = Math.max(0, Number(guestCount || 0));
   const pricePer = Number(tpl.pricePerPerson || 0);
   const subtotal = guests * pricePer;
   const beerPrice = Number(tpl.beerPrice || 0);
-  const beerSubtotal = quote.beerAddon ? guests * beerPrice : 0;
-  const customSubtotal = Array.isArray(quote.customLines)
-    ? quote.customLines.reduce((s, l) => s + Number(l.amount || 0), 0)
+  const beerSubtotal = opt.beerAddon ? guests * beerPrice : 0;
+  const customSubtotal = Array.isArray(opt.customLines)
+    ? opt.customLines.reduce((s, l) => s + Number(l.amount || 0), 0)
     : 0;
   const preTaxTotal = subtotal + beerSubtotal + customSubtotal;
   const tps = preTaxTotal * TPS_RATE;
   const tvq = preTaxTotal * TVQ_RATE;
   const total = preTaxTotal + tps + tvq;
-  const deposit = Math.max(0, Number(quote.depositAmount || 0));
-  const balance = Math.max(0, total - (quote.depositPaid ? deposit : 0));
+  const deposit = Math.max(0, Number(opt.depositAmount || 0));
+  const balance = Math.max(0, total - (opt.depositPaid ? deposit : 0));
   return { subtotal, beerSubtotal, customSubtotal, preTaxTotal, tps, tvq, total, deposit, balance };
+}
+
+// Rétrocompat : ancien helper. Retourne les totaux de la PREMIÈRE option
+// (utilisé surtout dans la liste pour afficher un montant indicatif).
+function computeQuoteTotal(quote) {
+  const opts = getQuoteOptions(quote);
+  if (opts.length === 0) {
+    return { subtotal: 0, beerSubtotal: 0, customSubtotal: 0, preTaxTotal: 0, tps: 0, tvq: 0, total: 0, deposit: 0, balance: 0 };
+  }
+  return computeQuoteOptionTotal(opts[0], quote.guestCount);
+}
+
+// Retourne la fourchette de totaux pour une soumission multi-options.
+// Utile pour la liste : « 595 $ – 750 $ » quand il y a plusieurs options.
+function computeQuoteRange(quote) {
+  const opts = getQuoteOptions(quote);
+  if (opts.length === 0) return { min: 0, max: 0, count: 0 };
+  const totals = opts.map(o => computeQuoteOptionTotal(o, quote.guestCount).total);
+  return {
+    min: Math.min(...totals),
+    max: Math.max(...totals),
+    count: opts.length
+  };
 }
 
 // ─── Setters de filtre ────────────────────────────────
@@ -260,10 +316,30 @@ function renderQuotes() {
 function renderQuoteCards(items, writable) {
   let h = `<div class="quote-list">`;
   items.forEach(qt => {
-    const totals = computeQuoteTotal(qt);
+    const options = getQuoteOptions(qt);
+    const range = computeQuoteRange(qt);
     const status = qt.status || "brouillon";
-    const tpl = qt.packageSnapshot || quoteTemplates.find(t => t.id === qt.packageId);
-    const tplName = tpl ? `${tpl.label || ""} · ${tpl.name || ""}`.trim().replace(/^·\s*/, "") : "—";
+
+    // Affichage du(des) forfait(s) : pill simple si 1, plusieurs pills si N
+    let pkgMeta = "";
+    if (options.length === 1) {
+      const opt = options[0];
+      const tpl = opt.packageSnapshot || quoteTemplates.find(t => t.id === opt.packageId);
+      const tplName = tpl ? `${tpl.label || ""} · ${tpl.name || ""}`.trim().replace(/^·\s*/, "") : "—";
+      if (tplName !== "—") {
+        pkgMeta = `<span class="quote-card__meta-item">${icon("utensils", 12)} ${esc(tplName)}</span>`;
+      }
+    } else if (options.length > 1) {
+      pkgMeta = `<span class="quote-card__meta-item quote-card__meta-item--multi">${icon("utensils", 12)} ${options.length} options de forfait</span>`;
+    }
+
+    // Total affiché : valeur si 1 option, fourchette si plusieurs (sauf si tous égaux)
+    let totalHtml;
+    if (range.count <= 1 || range.min === range.max) {
+      totalHtml = fmtMoney(range.max);
+    } else {
+      totalHtml = `<span class="quote-card__total-range">${fmtMoney(range.min)} – ${fmtMoney(range.max)}</span>`;
+    }
 
     h += `<article class="quote-card quote-card--${status}">
       <div class="quote-card__head">
@@ -271,7 +347,7 @@ function renderQuoteCards(items, writable) {
           <span class="quote-card__num">${esc(qt.quoteNumber || "—")}</span>
           <span class="quote-status-pill quote-status-pill--${status}">${tQuoteStatus(status)}</span>
         </div>
-        <div class="quote-card__total">${fmtMoney(totals.total)}</div>
+        <div class="quote-card__total">${totalHtml}</div>
       </div>
       <div class="quote-card__body">
         <div class="quote-card__client">
@@ -281,7 +357,7 @@ function renderQuoteCards(items, writable) {
         <div class="quote-card__meta">
           ${qt.eventDate ? `<span class="quote-card__meta-item">${icon("calendar", 12)} ${esc(qt.eventDate)}${qt.eventTime ? " · " + esc(qt.eventTime) : ""}</span>` : ""}
           ${qt.guestCount ? `<span class="quote-card__meta-item">${icon("users", 12)} ${esc(String(qt.guestCount))} pers.</span>` : ""}
-          ${tplName !== "—" ? `<span class="quote-card__meta-item">${icon("utensils", 12)} ${esc(tplName)}</span>` : ""}
+          ${pkgMeta}
           ${qt.eventVenue ? `<span class="quote-card__meta-item">${icon("map-pin", 12)} ${esc(tQuoteVenue(qt.eventVenue))}</span>` : ""}
         </div>
         ${qt.validUntil ? `<div class="quote-card__validity">Valide jusqu'au ${esc(qt.validUntil)}</div>` : ""}
@@ -338,16 +414,36 @@ function openQuoteModal(id) {
     return;
   }
 
-  const today = (typeof todayISO === "function" ? todayISO() : new Date().toISOString().slice(0, 10));
   const defaultValid = new Date();
   defaultValid.setDate(defaultValid.getDate() + 30);
   const defaultValidIso = defaultValid.toISOString().slice(0, 10);
 
-  const defaultPackageId = qt?.packageId || quoteTemplates[0]?.id || "";
-  const defaultTpl = quoteTemplates.find(t => t.id === defaultPackageId) || quoteTemplates[0] || {};
-  // Prix bière initial : valeur du snapshot si édition (peut avoir été surchargée), sinon prix par défaut du forfait sélectionné
-  const initialBeerPrice = qt?.packageSnapshot?.beerPrice ?? defaultTpl.beerPrice ?? 7;
-  const customLines = Array.isArray(qt?.customLines) ? qt.customLines.slice() : [];
+  // Initialisation de l'état d'édition des options
+  // - Si édition d'une soumission existante : charger ses options (avec rétrocompat)
+  // - Si nouvelle soumission : initialiser avec 1 option vide pointant sur le 1er forfait dispo
+  if (qt) {
+    _editingQuoteOptions = getQuoteOptions(qt).map(o => ({ ...o }));
+  } else {
+    const firstTpl = quoteTemplates[0];
+    _editingQuoteOptions = [{
+      id: "opt-" + genId(),
+      packageId: firstTpl?.id || "",
+      packageSnapshot: null, // construit à la sauvegarde
+      beerAddon: false,
+      customLines: [],
+      depositAmount: 0,
+      depositPaid: false,
+      beerPriceOverride: firstTpl?.beerPrice ?? 7
+    }];
+  }
+  // Pour les options chargées d'une soumission existante, on hydrate `beerPriceOverride`
+  // depuis le snapshot (qui contient le prix saisi à la création)
+  _editingQuoteOptions.forEach(o => {
+    if (o.beerPriceOverride == null) {
+      const tpl = o.packageSnapshot || quoteTemplates.find(t => t.id === o.packageId);
+      o.beerPriceOverride = o.packageSnapshot?.beerPrice ?? tpl?.beerPrice ?? 7;
+    }
+  });
 
   showModal(`<div class="modal modal-quote">
     <div class="modal-header">
@@ -380,57 +476,19 @@ function openQuoteModal(id) {
     </div>
     <label>Adresse / précisions sur le lieu <input id="q-event-address" value="${attrEsc(pdfStr(qt?.eventAddress))}" placeholder="ex: 123 rue Principale, Montréal"/></label>
 
-    <!-- Bloc FORFAIT -->
-    <h4 class="quote-modal-section">${icon("utensils", 14)} Forfait</h4>
-    <div class="quote-package-choices">
-      ${quoteTemplates.map(tpl => `<label class="quote-package-card quote-package-card--${tpl.accentColor || "yellow"}">
-        <input type="radio" name="q-package" value="${attrEsc(tpl.id)}" data-beer-price="${attrEsc(String(tpl.beerPrice || 0))}" onchange="onPackageChange(this)" ${tpl.id === defaultPackageId ? "checked" : ""}/>
-        <div class="quote-package-card__body">
-          <div class="quote-package-card__label">${attrEsc(pdfStr(tpl.label))}</div>
-          <div class="quote-package-card__name">${attrEsc(pdfStr(tpl.name))}</div>
-          <div class="quote-package-card__price">${fmtMoney(tpl.pricePerPerson || 0)} / pers.</div>
-          <div class="quote-package-card__details">
-            <div><strong>Entrée :</strong> ${attrEsc(pdfStr(tpl.entree) || "—")}</div>
-            <div><strong>Plat :</strong> ${attrEsc(pdfStr(tpl.plat) || "—")}</div>
-            <div><strong>Boisson :</strong> ${attrEsc(pdfStr(tpl.boisson) || "—")}</div>
-          </div>
-        </div>
-      </label>`).join("")}
+    <!-- Bloc OPTIONS DE FORFAIT -->
+    <h4 class="quote-modal-section">${icon("utensils", 14)} Options de forfait
+      <span class="quote-modal-section__hint">— le client pourra choisir celle qui lui convient</span>
+    </h4>
+    <div id="q-options-container">
+      ${renderQuoteOptionsForm()}
     </div>
-    <div class="quote-beer-block">
-      <label class="quote-beer-toggle">
-        <input type="checkbox" id="q-beer-addon" ${qt?.beerAddon ? "checked" : ""}/>
-        <span>🍺 Remplacer la boisson par une bière (en supplément, par personne)</span>
-      </label>
-      <label class="quote-beer-price">
-        <span class="quote-beer-price__label">Prix de la bière par personne ($)</span>
-        <input id="q-beer-price" type="number" min="0" step="0.01" value="${attrEsc(String(initialBeerPrice))}" data-touched="false" oninput="this.dataset.touched='true'"/>
-        <span class="quote-beer-price__hint">Modifiable pour offrir un rabais (ex. 5,00 $ au lieu de 7,00 $)</span>
-      </label>
-    </div>
-
-    <!-- Bloc LIGNES PERSONNALISÉES -->
-    <h4 class="quote-modal-section">${icon("plus", 14)} Suppléments / rabais</h4>
-    <div id="q-custom-lines">
-      ${renderCustomLinesInputs(customLines)}
-    </div>
-    <button type="button" class="btn-cancel" onclick="addCustomLineInput()" style="margin-top:8px">
-      ${icon("plus", 12)} Ajouter une ligne
+    <button type="button" class="btn-cancel quote-add-option-btn" onclick="addQuoteOption()">
+      ${icon("plus", 14)} Ajouter une option de forfait
     </button>
 
-    <!-- Bloc PAIEMENT -->
-    <h4 class="quote-modal-section">${icon("dollar-sign", 14)} Dépôt</h4>
-    <div class="form-row">
-      <label>Montant dépôt exigé ($) <input id="q-deposit" type="number" min="0" step="0.01" value="${attrEsc(qt?.depositAmount != null ? String(qt.depositAmount) : "")}" placeholder="ex: 250.00"/></label>
-      <div style="display:flex;flex-direction:column;justify-content:flex-end">
-        <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:8px 0">
-          <input type="checkbox" id="q-deposit-paid" ${qt?.depositPaid ? "checked" : ""}/>
-          <span>Dépôt déjà versé</span>
-        </label>
-      </div>
-    </div>
-
     <!-- Bloc VALIDITÉ + NOTES -->
+    <h4 class="quote-modal-section">${icon("clock", 14)} Validité & notes</h4>
     <div class="form-row">
       <label>Valide jusqu'au <input id="q-valid-until" type="date" value="${attrEsc(qt?.validUntil || defaultValidIso)}"/></label>
       <label>Statut
@@ -455,91 +513,258 @@ function openQuoteModal(id) {
   }, 50);
 }
 
-// Quand l'utilisateur change de forfait, on met à jour le prix bière par défaut
-// — sauf si l'utilisateur a déjà modifié manuellement le champ (data-touched=true)
-function onPackageChange(radioEl) {
-  const beerInput = document.getElementById("q-beer-price");
+// ═══════════════════════════════════════════════════════════════
+// GESTION DES OPTIONS DE FORFAIT (multi-options, dynamique)
+// ═══════════════════════════════════════════════════════════════
+
+// Rend tout le bloc d'options (un par un). Re-rendu intégralement à chaque
+// ajout/retrait d'option ou de ligne custom — on re-lit la saisie DOM d'abord
+// dans `syncEditingOptionsFromDOM()` pour ne pas perdre les valeurs en cours.
+function renderQuoteOptionsForm() {
+  if (!Array.isArray(_editingQuoteOptions) || _editingQuoteOptions.length === 0) {
+    return `<div class="quote-custom-empty text-muted" style="font-size:13px;padding:14px">Aucune option de forfait. Cliquez sur « Ajouter une option » pour commencer.</div>`;
+  }
+  return _editingQuoteOptions.map((opt, idx) => renderQuoteOptionBlock(opt, idx)).join("");
+}
+
+// Lettre A, B, C... pour identifier visuellement chaque option
+function optionLetter(idx) {
+  return String.fromCharCode(65 + (idx % 26));
+}
+
+function renderQuoteOptionBlock(opt, idx) {
+  const letter = optionLetter(idx);
+  const optId = opt.id;
+  const canRemove = _editingQuoteOptions.length > 1;
+  return `<div class="quote-option-block" data-opt-id="${attrEsc(optId)}">
+    <div class="quote-option-block__head">
+      <span class="quote-option-block__badge">Option ${letter}</span>
+      ${canRemove ? `<button type="button" class="btn-icon-only text-danger" onclick="removeQuoteOption('${esc(optId)}')" aria-label="Retirer cette option" title="Retirer">${icon("trash", 14)}</button>` : ""}
+    </div>
+
+    <div class="quote-package-choices">
+      ${quoteTemplates.map(tpl => `<label class="quote-package-card quote-package-card--${tpl.accentColor || "yellow"}">
+        <input type="radio" name="q-package-${attrEsc(optId)}" value="${attrEsc(tpl.id)}" data-beer-price="${attrEsc(String(tpl.beerPrice || 0))}" onchange="onOptionPackageChange(this, '${esc(optId)}')" ${tpl.id === opt.packageId ? "checked" : ""}/>
+        <div class="quote-package-card__body">
+          <div class="quote-package-card__label">${attrEsc(pdfStr(tpl.label))}</div>
+          <div class="quote-package-card__name">${attrEsc(pdfStr(tpl.name))}</div>
+          <div class="quote-package-card__price">${fmtMoney(tpl.pricePerPerson || 0)} / pers.</div>
+          <div class="quote-package-card__details">
+            <div><strong>Entrée :</strong> ${attrEsc(pdfStr(tpl.entree) || "—")}</div>
+            <div><strong>Plat :</strong> ${attrEsc(pdfStr(tpl.plat) || "—")}</div>
+            <div><strong>Boisson :</strong> ${attrEsc(pdfStr(tpl.boisson) || "—")}</div>
+          </div>
+        </div>
+      </label>`).join("")}
+    </div>
+
+    <div class="quote-beer-block">
+      <label class="quote-beer-toggle">
+        <input type="checkbox" class="q-beer-addon" ${opt.beerAddon ? "checked" : ""}/>
+        <span>🍺 Remplacer la boisson par une bière (en supplément, par personne)</span>
+      </label>
+      <label class="quote-beer-price">
+        <span class="quote-beer-price__label">Prix de la bière par personne ($)</span>
+        <input class="q-beer-price" type="number" min="0" step="0.01" value="${attrEsc(String(opt.beerPriceOverride ?? 7))}" data-touched="${opt._beerTouched ? "true" : "false"}" oninput="this.dataset.touched='true'"/>
+        <span class="quote-beer-price__hint">Modifiable pour offrir un rabais (ex. 5,00 $ au lieu de 7,00 $)</span>
+      </label>
+    </div>
+
+    <div class="quote-option-subsection">
+      <div class="quote-option-subsection__label">${icon("plus", 12)} Suppléments / rabais (cette option)</div>
+      <div class="q-custom-lines">
+        ${renderCustomLinesInputs(opt.customLines, optId)}
+      </div>
+      <button type="button" class="btn-cancel btn-sm" onclick="addCustomLineInput('${esc(optId)}')" style="margin-top:6px">
+        ${icon("plus", 12)} Ajouter une ligne
+      </button>
+    </div>
+
+    <div class="quote-option-subsection">
+      <div class="quote-option-subsection__label">${icon("dollar-sign", 12)} Dépôt (cette option)</div>
+      <div class="form-row">
+        <label>Montant exigé ($) <input type="number" class="q-deposit" min="0" step="0.01" value="${attrEsc(opt.depositAmount ? String(opt.depositAmount) : "")}" placeholder="ex: 250.00"/></label>
+        <div style="display:flex;flex-direction:column;justify-content:flex-end">
+          <label style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:8px 0">
+            <input type="checkbox" class="q-deposit-paid" ${opt.depositPaid ? "checked" : ""}/>
+            <span>Dépôt déjà versé</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+// Quand l'utilisateur coche un forfait dans une option, on met à jour le prix
+// bière par défaut de CETTE option — sauf si l'utilisateur l'a déjà modifié.
+function onOptionPackageChange(radioEl, optId) {
+  const block = document.querySelector(`[data-opt-id="${optId}"]`);
+  if (!block) return;
+  const beerInput = block.querySelector(".q-beer-price");
   if (!beerInput) return;
   if (beerInput.dataset.touched === "true") return;
   const newPrice = radioEl.getAttribute("data-beer-price");
   if (newPrice != null) beerInput.value = newPrice;
 }
 
-// ─── Lignes personnalisées (ajout dynamique) ──────────
-function renderCustomLinesInputs(lines) {
+// Lit toutes les options depuis le DOM et met à jour `_editingQuoteOptions`.
+// Appelé avant chaque re-render (ajout/retrait option ou ligne custom) pour
+// préserver la saisie en cours.
+function syncEditingOptionsFromDOM() {
+  const container = document.getElementById("q-options-container");
+  if (!container) return;
+  const blocks = container.querySelectorAll(".quote-option-block");
+  const newOpts = [];
+  blocks.forEach(block => {
+    const optId = block.getAttribute("data-opt-id");
+    // Retrouver l'option dans le state pour préserver les champs non-DOM (ex: packageSnapshot)
+    const stateOpt = _editingQuoteOptions.find(o => o.id === optId) || {};
+    const checkedRadio = block.querySelector(`input[name="q-package-${optId}"]:checked`);
+    const packageId = checkedRadio?.value || stateOpt.packageId || "";
+    const beerAddon = block.querySelector(".q-beer-addon")?.checked || false;
+    const beerPriceInput = block.querySelector(".q-beer-price");
+    const beerPriceOverride = Math.max(0, Number(beerPriceInput?.value) || 0);
+    const beerTouched = beerPriceInput?.dataset.touched === "true";
+    const depositAmount = Math.max(0, Number(block.querySelector(".q-deposit")?.value) || 0);
+    const depositPaid = block.querySelector(".q-deposit-paid")?.checked || false;
+    // Lignes custom
+    const customLines = [];
+    block.querySelectorAll(".quote-custom-line").forEach(row => {
+      const desc = row.querySelector(".quote-custom-desc")?.value.trim() || "";
+      const amt = row.querySelector(".quote-custom-amount")?.value || "";
+      if (desc || amt) customLines.push({ description: desc, amount: Number(amt) || 0 });
+    });
+    newOpts.push({
+      id: optId,
+      packageId,
+      packageSnapshot: stateOpt.packageSnapshot || null,
+      beerAddon,
+      beerPriceOverride,
+      _beerTouched: beerTouched,
+      customLines,
+      depositAmount,
+      depositPaid
+    });
+  });
+  _editingQuoteOptions = newOpts;
+}
+
+function rerenderOptionsForm() {
+  const container = document.getElementById("q-options-container");
+  if (container) container.innerHTML = renderQuoteOptionsForm();
+}
+
+function addQuoteOption() {
+  syncEditingOptionsFromDOM();
+  if (quoteTemplates.length === 0) {
+    toast("Aucun forfait disponible. Créez d'abord des forfaits.", "warning");
+    return;
+  }
+  const firstTpl = quoteTemplates[0];
+  _editingQuoteOptions.push({
+    id: "opt-" + genId(),
+    packageId: firstTpl.id,
+    packageSnapshot: null,
+    beerAddon: false,
+    beerPriceOverride: firstTpl.beerPrice ?? 7,
+    customLines: [],
+    depositAmount: 0,
+    depositPaid: false
+  });
+  rerenderOptionsForm();
+}
+
+function removeQuoteOption(optId) {
+  syncEditingOptionsFromDOM();
+  if (_editingQuoteOptions.length <= 1) {
+    toast("Au moins une option de forfait est requise.", "warning");
+    return;
+  }
+  _editingQuoteOptions = _editingQuoteOptions.filter(o => o.id !== optId);
+  rerenderOptionsForm();
+}
+
+// ─── Lignes personnalisées (par option) ──────────────
+// Chaque option a son propre conteneur de lignes custom. Le 2e paramètre
+// `optId` est utilisé pour cibler le bon bloc d'option dans le DOM.
+function renderCustomLinesInputs(lines, optId) {
   if (!Array.isArray(lines) || lines.length === 0) {
-    return `<div class="quote-custom-empty text-muted" style="font-size:12px">Aucun supplément. Cliquez sur « Ajouter une ligne » pour en créer.</div>`;
+    return `<div class="quote-custom-empty text-muted" style="font-size:12px">Aucun supplément pour cette option.</div>`;
   }
   return lines.map((l, i) => `<div class="quote-custom-line" data-idx="${i}">
     <input type="text" class="quote-custom-desc" value="${attrEsc(pdfStr(l.description))}" placeholder="ex: Décor spécial, Service après minuit, Rabais 10%..." />
     <input type="number" step="0.01" class="quote-custom-amount" value="${attrEsc(l.amount != null ? String(l.amount) : "")}" placeholder="0.00" />
-    <button type="button" class="btn-icon-only" onclick="removeCustomLineInput(${i})" aria-label="Retirer">${icon("trash", 14)}</button>
+    <button type="button" class="btn-icon-only" onclick="removeCustomLineInput('${esc(optId || "")}', ${i})" aria-label="Retirer">${icon("trash", 14)}</button>
   </div>`).join("");
 }
 
-function readCustomLinesFromDOM() {
-  const container = document.getElementById("q-custom-lines");
-  if (!container) return [];
-  const rows = container.querySelectorAll(".quote-custom-line");
-  const lines = [];
-  rows.forEach(row => {
-    const desc = row.querySelector(".quote-custom-desc").value.trim();
-    const amt = row.querySelector(".quote-custom-amount").value;
-    if (desc || amt) lines.push({ description: desc, amount: Number(amt) || 0 });
-  });
-  return lines;
+function addCustomLineInput(optId) {
+  syncEditingOptionsFromDOM();
+  const opt = _editingQuoteOptions.find(o => o.id === optId);
+  if (!opt) return;
+  opt.customLines.push({ description: "", amount: 0 });
+  rerenderOptionsForm();
 }
 
-function addCustomLineInput() {
-  const lines = readCustomLinesFromDOM();
-  lines.push({ description: "", amount: 0 });
-  document.getElementById("q-custom-lines").innerHTML = renderCustomLinesInputs(lines);
-}
-
-function removeCustomLineInput(idx) {
-  const lines = readCustomLinesFromDOM();
-  lines.splice(idx, 1);
-  document.getElementById("q-custom-lines").innerHTML = renderCustomLinesInputs(lines);
+function removeCustomLineInput(optId, idx) {
+  syncEditingOptionsFromDOM();
+  const opt = _editingQuoteOptions.find(o => o.id === optId);
+  if (!opt) return;
+  opt.customLines.splice(idx, 1);
+  rerenderOptionsForm();
 }
 
 // ─── Sauvegarde soumission ────────────────────────────
 async function saveQuote(id) {
   const name = pdfStr(document.getElementById("q-client-name").value.trim());
   if (!name) return toast("Veuillez saisir le nom du client.", "error");
-  const packageId = document.querySelector("input[name='q-package']:checked")?.value;
-  if (!packageId) return toast("Veuillez sélectionner un forfait.", "error");
-  const tpl = quoteTemplates.find(x => x.id === packageId);
-  if (!tpl) return toast("Forfait introuvable.", "error");
 
   const guestCount = Math.max(0, Math.floor(Number(document.getElementById("q-guest-count").value) || 0));
   if (guestCount < 1) return toast("Veuillez saisir le nombre de personnes (minimum 1).", "error");
-  const depositAmount = Math.max(0, Number(document.getElementById("q-deposit").value) || 0);
 
-  // Prix bière saisi dans le formulaire (peut être différent du prix par défaut
-  // du forfait — ex. rabais accordé à un client fidèle)
-  const beerPriceFromForm = Math.max(0, Number(document.getElementById("q-beer-price")?.value) || 0);
+  // Synchroniser le state avec la dernière saisie DOM avant de construire le payload
+  syncEditingOptionsFromDOM();
 
-  // Snapshot du forfait au moment du devis (pour ne pas casser les anciens
-  // PDFs si on modifie un template par la suite). Le beerPrice du snapshot
-  // est celui SAISI dans le formulaire (peut être un rabais).
-  // On nettoie les \' parasites laissés par esc() dans les inputs.
-  const packageSnapshot = {
-    id: tpl.id,
-    name: pdfStr(tpl.name),
-    label: pdfStr(tpl.label),
-    pricePerPerson: Number(tpl.pricePerPerson || 0),
-    accentColor: tpl.accentColor || "yellow",
-    entree: pdfStr(tpl.entree || ""),
-    plat:   pdfStr(tpl.plat || ""),
-    boisson:pdfStr(tpl.boisson || ""),
-    beerPrice: beerPriceFromForm
-  };
+  if (!Array.isArray(_editingQuoteOptions) || _editingQuoteOptions.length === 0) {
+    return toast("Veuillez ajouter au moins une option de forfait.", "error");
+  }
 
-  // Lignes personnalisées : nettoyer aussi les apostrophes
-  const customLines = readCustomLinesFromDOM().map(l => ({
-    description: pdfStr(l.description || ""),
-    amount: Number(l.amount || 0)
-  }));
+  // Construire les snapshots de chaque option (copie figée des forfaits + saisies)
+  const packageOptions = [];
+  for (const opt of _editingQuoteOptions) {
+    if (!opt.packageId) {
+      return toast("Chaque option doit avoir un forfait sélectionné.", "error");
+    }
+    const tpl = quoteTemplates.find(x => x.id === opt.packageId);
+    if (!tpl) {
+      return toast(`Forfait introuvable pour une option (${opt.packageId}).`, "error");
+    }
+    const beerPrice = Math.max(0, Number(opt.beerPriceOverride) || 0);
+    const packageSnapshot = {
+      id: tpl.id,
+      name: pdfStr(tpl.name),
+      label: pdfStr(tpl.label),
+      pricePerPerson: Number(tpl.pricePerPerson || 0),
+      accentColor: tpl.accentColor || "yellow",
+      entree: pdfStr(tpl.entree || ""),
+      plat:   pdfStr(tpl.plat || ""),
+      boisson:pdfStr(tpl.boisson || ""),
+      beerPrice
+    };
+    const customLines = (opt.customLines || []).map(l => ({
+      description: pdfStr(l.description || ""),
+      amount: Number(l.amount || 0)
+    }));
+    packageOptions.push({
+      id: opt.id,
+      packageId: opt.packageId,
+      packageSnapshot,
+      beerAddon: !!opt.beerAddon,
+      customLines,
+      depositAmount: Math.max(0, Number(opt.depositAmount) || 0),
+      depositPaid: !!opt.depositPaid
+    });
+  }
 
   const data = {
     clientName: name,
@@ -551,23 +776,31 @@ async function saveQuote(id) {
     eventVenue:   document.getElementById("q-event-venue").value,
     eventAddress: pdfStr(document.getElementById("q-event-address").value.trim()),
     guestCount,
-    packageId,
-    packageSnapshot,
-    beerAddon: document.getElementById("q-beer-addon").checked,
-    customLines,
-    depositAmount,
-    depositPaid:    document.getElementById("q-deposit-paid").checked,
+    packageOptions,
+    // Champs legacy : on les écrit aussi avec la première option, pour que les
+    // anciennes vues qui lisent encore qt.packageId / packageSnapshot / etc.
+    // affichent quelque chose de cohérent. Le nouveau code préfère
+    // `packageOptions[]` via `getQuoteOptions()`.
+    packageId: packageOptions[0].packageId,
+    packageSnapshot: packageOptions[0].packageSnapshot,
+    beerAddon: packageOptions[0].beerAddon,
+    customLines: packageOptions[0].customLines,
+    depositAmount: packageOptions[0].depositAmount,
+    depositPaid: packageOptions[0].depositPaid,
     validUntil: document.getElementById("q-valid-until").value || "",
     notes:      pdfStr(document.getElementById("q-notes").value.trim()),
     status:     document.getElementById("q-status").value,
     updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
   };
 
+  // Libellé descriptif pour les logs : « Essentiel + Gourmand » ou juste « Essentiel »
+  const optsLabel = packageOptions.map(o => o.packageSnapshot.name).join(" + ");
+
   try {
     if (id) {
       await db.collection("quotes").doc(id).update(data);
       const q = quotes.find(x => x.id === id);
-      await addLog(q?.quoteNumber || id, "Soumission — modifiée", `${name} · ${packageSnapshot.name}`);
+      await addLog(q?.quoteNumber || id, "Soumission — modifiée", `${name} · ${optsLabel}`);
       toast("Soumission modifiée.", "success");
     } else {
       const nid = genId();
@@ -579,9 +812,10 @@ async function saveQuote(id) {
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         createdBy: loggedInUser?.name || "Admin"
       });
-      await addLog(quoteNumber, "Soumission — créée", `${name} · ${packageSnapshot.name}`);
-      toast(`Soumission ${quoteNumber} créée.`, "success");
+      await addLog(quoteNumber, "Soumission — créée", `${name} · ${optsLabel}`);
+      toast(`Soumission ${quoteNumber} créée${packageOptions.length > 1 ? ` (${packageOptions.length} options)` : ""}.`, "success");
     }
+    _editingQuoteOptions = [];
     closeModal();
   } catch (err) {
     console.error("saveQuote:", err);
@@ -742,14 +976,15 @@ function generateQuotePDF(quoteId) {
   const W = 215.9, H = 279.4;
   const M = 18;       // marge latérale
   const contentW = W - 2 * M;
+  const FOOTER_RESERVE = 60; // mm réservés en bas pour le QR + mentions
 
   // ─── Palette (RGB) ───────────────────────────
-  const COLOR_CREAM       = [253, 246, 231];  // fond
-  const COLOR_TEXT        = [14, 13, 12];     // noir chaud
-  const COLOR_TEXT_LIGHT  = [110, 95, 80];    // gris-brun
-  const COLOR_ACCENT      = [247, 179, 44];   // jaune
-  const COLOR_BLUE        = [74, 144, 226];   // bleu Colombie
-  const COLOR_RED         = [231, 76, 60];    // rouge Colombie
+  const COLOR_CREAM       = [253, 246, 231];
+  const COLOR_TEXT        = [14, 13, 12];
+  const COLOR_TEXT_LIGHT  = [110, 95, 80];
+  const COLOR_ACCENT      = [247, 179, 44];
+  const COLOR_BLUE        = [74, 144, 226];
+  const COLOR_RED         = [231, 76, 60];
   const COLOR_GREEN       = [125, 191, 102];
 
   const accentByColor = {
@@ -765,51 +1000,99 @@ function generateQuotePDF(quoteId) {
     green:  [232, 244, 224]
   };
 
-  // ─── Fond crème pleine page ────────────────
-  doc.setFillColor(...COLOR_CREAM);
-  doc.rect(0, 0, W, H, "F");
+  // ─── Helpers de mise en page multi-pages ────────────
+  // y : position verticale courante (mise à jour par chaque bloc)
+  // currentPage : pour afficher « Page N » et savoir si on est en première page
+  let y = 0;
+  let currentPage = 1;
 
-  // ═══ EN-TÊTE — Logo BOCHICA + tricolore ═══
-  let y = 20;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(32);
-  doc.setTextColor(...COLOR_TEXT);
-  doc.text("BOCHICA", W / 2, y, { align: "center" });
-  y += 6;
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
-  doc.setTextColor(...COLOR_TEXT_LIGHT);
-  doc.text("Restaurant Colombien", W / 2, y, { align: "center" });
+  function paintBackground() {
+    doc.setFillColor(...COLOR_CREAM);
+    doc.rect(0, 0, W, H, "F");
+  }
 
-  // Tricolore (jaune / bleu / rouge) sous le sous-titre
-  y += 3;
-  const triW = 56;
-  const triX0 = (W - triW) / 2;
-  const triH = 1.4;
-  doc.setFillColor(...COLOR_ACCENT);
-  doc.rect(triX0, y, triW / 3, triH, "F");
-  doc.setFillColor(...COLOR_BLUE);
-  doc.rect(triX0 + triW / 3, y, triW / 3, triH, "F");
-  doc.setFillColor(...COLOR_RED);
-  doc.rect(triX0 + 2 * triW / 3, y, triW / 3, triH, "F");
-  y += 12;
+  function drawTricolore(cy) {
+    const triW = 56;
+    const triX0 = (W - triW) / 2;
+    const triH = 1.4;
+    doc.setFillColor(...COLOR_ACCENT);
+    doc.rect(triX0, cy, triW / 3, triH, "F");
+    doc.setFillColor(...COLOR_BLUE);
+    doc.rect(triX0 + triW / 3, cy, triW / 3, triH, "F");
+    doc.setFillColor(...COLOR_RED);
+    doc.rect(triX0 + 2 * triW / 3, cy, triW / 3, triH, "F");
+  }
 
-  // ═══ Titre SOUMISSION ═══
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(24);
-  doc.setTextColor(...COLOR_TEXT);
-  doc.text("Soumission", W / 2, y, { align: "center" });
-  y += 6;
-  doc.setFont("helvetica", "italic");
-  doc.setFontSize(10);
-  doc.setTextColor(...COLOR_TEXT_LIGHT);
-  doc.text(`N° ${qt.quoteNumber || "—"}`, W / 2, y, { align: "center" });
-  y += 10;
+  // En-tête complet (1ère page) : logo BOCHICA + sous-titre + tricolore + titre
+  function drawFullHeader() {
+    y = 20;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(32);
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text("BOCHICA", W / 2, y, { align: "center" });
+    y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(11);
+    doc.setTextColor(...COLOR_TEXT_LIGHT);
+    doc.text("Restaurant Colombien", W / 2, y, { align: "center" });
+    y += 3;
+    drawTricolore(y);
+    y += 12;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(24);
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text("Soumission", W / 2, y, { align: "center" });
+    y += 6;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(10);
+    doc.setTextColor(...COLOR_TEXT_LIGHT);
+    doc.text(`N° ${qt.quoteNumber || "—"}`, W / 2, y, { align: "center" });
+    y += 10;
+  }
 
-  // ═══ Bloc CLIENT + ÉVÉNEMENT (2 colonnes) ═══
+  // En-tête compact pour les pages suivantes (réf. soumission + client)
+  function drawCompactHeader() {
+    y = 16;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(16);
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text("BOCHICA", M, y);
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLOR_TEXT_LIGHT);
+    doc.text(`Soumission ${qt.quoteNumber || ""} · ${pdfStr(qt.clientName) || ""}`, W - M, y, { align: "right" });
+    y += 3;
+    doc.setDrawColor(...COLOR_ACCENT);
+    doc.setLineWidth(0.8);
+    doc.line(M, y, W - M, y);
+    y += 8;
+  }
+
+  // Passe à une nouvelle page et redessine fond + en-tête compact
+  function newPage() {
+    doc.addPage();
+    currentPage++;
+    paintBackground();
+    drawCompactHeader();
+  }
+
+  // Garantit qu'il reste au moins `needed` mm dispo sur la page courante,
+  // sinon passe à une nouvelle page. À appeler avant chaque bloc d'option.
+  function ensureSpace(needed) {
+    if (y + needed > H - FOOTER_RESERVE) {
+      newPage();
+    }
+  }
+
+  // ═══════════════════════════════════════════
+  // PAGE 1 — En-tête + Client/Événement + Intro
+  // ═══════════════════════════════════════════
+  paintBackground();
+  drawFullHeader();
+
+  // Bloc CLIENT + ÉVÉNEMENT (2 colonnes)
   const colW = (contentW - 6) / 2;
 
-  // Helper : encadré info
   function infoBox(x, yStart, w, title, lines) {
     let yy = yStart;
     doc.setFillColor(...cardFillByColor.yellow);
@@ -850,154 +1133,225 @@ function generateQuotePDF(quoteId) {
   const yAfterEvent  = infoBox(M + colW + 6, y, colW, "Événement", eventLines);
   y = Math.max(yAfterClient, yAfterEvent) + 8;
 
-  // ═══ Carte FORFAIT choisi (style Menu_Forfaits.pdf) ═══
-  const tpl = qt.packageSnapshot || quoteTemplates.find(t => t.id === qt.packageId) || {};
-  const accent = accentByColor[tpl.accentColor || "yellow"];
-  const cardFill = cardFillByColor[tpl.accentColor || "yellow"];
+  // ═══════════════════════════════════════════
+  // OPTIONS DE FORFAIT
+  // ═══════════════════════════════════════════
+  const options = getQuoteOptions(qt);
+  const multi = options.length > 1;
 
-  const cardX = M;
-  const cardY = y;
-  const cardH = 60;
-
-  doc.setFillColor(...cardFill);
-  doc.roundedRect(cardX, cardY, contentW, cardH, 3, 3, "F");
-  // Barre latérale colorée gauche
-  doc.setFillColor(...accent);
-  doc.roundedRect(cardX, cardY, 3, cardH, 1.5, 1.5, "F");
-  doc.rect(cardX, cardY, 3, cardH, "F"); // assurer le rendu plein
-
-  // Texte du forfait
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(...COLOR_TEXT_LIGHT);
-  doc.text(pdfStr(tpl.label || "FORFAIT").toUpperCase(), cardX + 9, cardY + 8);
-
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.setTextColor(...COLOR_TEXT);
-  doc.text(pdfStr(tpl.name) || "—", cardX + 9, cardY + 18);
-
-  // Prix par personne — à droite
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(22);
-  doc.setTextColor(...COLOR_RED);
-  doc.text(`${fmtMoney(tpl.pricePerPerson || 0).replace(" $", "")} $`, cardX + contentW - 6, cardY + 14, { align: "right" });
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(8);
-  doc.setTextColor(...COLOR_TEXT_LIGHT);
-  doc.text("PAR PERSONNE", cardX + contentW - 6, cardY + 20, { align: "right" });
-
-  // Séparateur pointillé
-  doc.setDrawColor(...COLOR_TEXT_LIGHT);
-  doc.setLineDashPattern([1, 1], 0);
-  doc.line(cardX + 9, cardY + 24, cardX + contentW - 6, cardY + 24);
-  doc.setLineDashPattern([], 0);
-
-  // 3 lignes : Entrée / Plat / Boisson (bullets bleus)
-  const items = [
-    ["ENTRÉE", pdfStr(tpl.entree)],
-    ["PLAT PRINCIPAL", pdfStr(tpl.plat)],
-    ["BOISSON", pdfStr(tpl.boisson)]
-  ];
-  let itemY = cardY + 30;
-  items.forEach(([label, content]) => {
-    doc.setFillColor(...COLOR_BLUE);
-    doc.circle(cardX + 11, itemY - 0.8, 1, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(8);
-    doc.setTextColor(...COLOR_BLUE);
-    doc.text(label, cardX + 15, itemY);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(...COLOR_TEXT);
-    doc.text(content || "—", cardX + 15, itemY + 4);
-    itemY += 10;
-  });
-  y = cardY + cardH + 6;
-
-  // ═══ Substitution bière (si activée) ═══
-  // ⚠️ jsPDF helvetica ne supporte pas les emojis Unicode (ex. 🍺) — ils
-  // s'affichent comme "Ø<ßz". On utilise uniquement du texte ASCII/Latin-1.
-  if (qt.beerAddon) {
-    const beerH = 14;
+  // Bandeau d'intro : invitation à choisir une option (si plusieurs)
+  if (multi) {
+    const bannerH = 16;
+    ensureSpace(bannerH + 6);
     doc.setFillColor(...COLOR_ACCENT);
-    doc.roundedRect(M, y, contentW, beerH, 2, 2, "F");
-    // Petit cercle décoratif (remplace l'emoji bière)
-    doc.setFillColor(...COLOR_TEXT);
-    doc.circle(M + 6, y + 7, 1.8, "F");
+    doc.roundedRect(M, y, contentW, bannerH, 2, 2, "F");
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
+    doc.setFontSize(11);
     doc.setTextColor(...COLOR_TEXT);
-    doc.text(`Boisson remplacée par une bière`, M + 11, y + 6);
-    doc.setFont("helvetica", "normal");
+    doc.text(`${options.length} options proposées — choisissez celle qui vous convient`, W / 2, y + 7, { align: "center" });
+    doc.setFont("helvetica", "italic");
     doc.setFontSize(8);
     doc.setTextColor(...COLOR_TEXT);
-    doc.text(`(supplément par personne)`, M + 11, y + 10.5);
-    // Prix en rouge à droite
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(...COLOR_RED);
-    doc.setFontSize(12);
-    doc.text(`+ ${fmtMoney(tpl.beerPrice || 0).replace(" $", "")} $ / pers.`, M + contentW - 4, y + 8.5, { align: "right" });
-    y += beerH + 4;
+    doc.text("Cochez l'option retenue dans la case en bas de chaque carte et retournez la soumission signée.", W / 2, y + 12, { align: "center" });
+    y += bannerH + 6;
   }
 
-  // ═══ Lignes personnalisées ═══
-  if (Array.isArray(qt.customLines) && qt.customLines.length > 0) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(10);
-    doc.setTextColor(...COLOR_TEXT);
-    doc.text("Suppléments et ajustements", M, y);
-    y += 4;
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    qt.customLines.forEach(line => {
-      doc.setTextColor(...COLOR_TEXT);
-      doc.text(pdfStr(line.description) || "—", M, y + 4);
-      const amt = Number(line.amount || 0);
-      doc.setTextColor(amt < 0 ? COLOR_GREEN[0] : COLOR_TEXT[0], amt < 0 ? COLOR_GREEN[1] : COLOR_TEXT[1], amt < 0 ? COLOR_GREEN[2] : COLOR_TEXT[2]);
-      doc.text(`${amt >= 0 ? "+" : ""}${fmtMoney(amt).replace(" $", "")} $`, M + contentW, y + 4, { align: "right" });
+  // ─── Rendu d'UNE option (carte forfait + bière + custom + totaux) ────
+  // Retourne true si tout a tenu sur la page courante, false si on a basculé.
+  function renderOption(opt, idx) {
+    const tpl = opt.packageSnapshot || quoteTemplates.find(t => t.id === opt.packageId) || {};
+    const accent = accentByColor[tpl.accentColor || "yellow"];
+    const cardFill = cardFillByColor[tpl.accentColor || "yellow"];
+    const totals = computeQuoteOptionTotal(opt, qt.guestCount);
+
+    // Estimer la hauteur totale pour décider si on passe à une nouvelle page
+    // Carte forfait : 60mm + intro option : 8mm + bière : 18mm si activée
+    // + custom lines : 5mm/ligne + 6mm header + totaux : ~40mm + checkbox : 12mm
+    let estHeight = 60 + 8 + 4 + 40 + 12;
+    if (opt.beerAddon) estHeight += 18;
+    if (Array.isArray(opt.customLines) && opt.customLines.length > 0) {
+      estHeight += 6 + opt.customLines.length * 5 + 4;
+    }
+    if (opt.depositAmount > 0) estHeight += 10;
+
+    ensureSpace(estHeight);
+
+    // Badge « OPTION A » au-dessus de la carte
+    if (multi) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(...accent);
+      doc.text(`OPTION ${optionLetter(idx)}`, M, y);
+      // Trait coloré à droite du badge
+      doc.setDrawColor(...accent);
+      doc.setLineWidth(1.2);
+      const badgeTextW = doc.getTextWidth(`OPTION ${optionLetter(idx)}`);
+      doc.line(M + badgeTextW + 4, y - 1, W - M, y - 1);
       y += 5;
-    });
-    y += 4;
-  }
+    }
 
-  // ═══ Totaux ═══
-  const totals = computeQuoteTotal(qt);
-  doc.setDrawColor(...COLOR_TEXT_LIGHT);
-  doc.setLineWidth(0.3);
-  doc.line(M, y, M + contentW, y);
-  y += 5;
+    // Carte forfait (style Menu_Forfaits.pdf)
+    const cardX = M;
+    const cardY = y;
+    const cardH = 60;
 
-  function totalLine(label, value, bold) {
-    doc.setFont("helvetica", bold ? "bold" : "normal");
-    doc.setFontSize(bold ? 12 : 10);
-    doc.setTextColor(...(bold ? COLOR_TEXT : COLOR_TEXT_LIGHT));
-    doc.text(label, M + contentW * 0.55, y, { align: "right" });
+    doc.setFillColor(...cardFill);
+    doc.roundedRect(cardX, cardY, contentW, cardH, 3, 3, "F");
+    // Barre latérale colorée gauche
+    doc.setFillColor(...accent);
+    doc.roundedRect(cardX, cardY, 3, cardH, 1.5, 1.5, "F");
+    doc.rect(cardX, cardY, 3, cardH, "F");
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLOR_TEXT_LIGHT);
+    doc.text(pdfStr(tpl.label || "FORFAIT").toUpperCase(), cardX + 9, cardY + 8);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(20);
     doc.setTextColor(...COLOR_TEXT);
-    doc.text(value, M + contentW, y, { align: "right" });
-    y += bold ? 7 : 5;
+    doc.text(pdfStr(tpl.name) || "—", cardX + 9, cardY + 18);
+
+    // Prix par personne — à droite
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(...COLOR_RED);
+    doc.text(`${fmtMoney(tpl.pricePerPerson || 0).replace(" $", "")} $`, cardX + contentW - 6, cardY + 14, { align: "right" });
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLOR_TEXT_LIGHT);
+    doc.text("PAR PERSONNE", cardX + contentW - 6, cardY + 20, { align: "right" });
+
+    // Séparateur pointillé
+    doc.setDrawColor(...COLOR_TEXT_LIGHT);
+    doc.setLineDashPattern([1, 1], 0);
+    doc.line(cardX + 9, cardY + 24, cardX + contentW - 6, cardY + 24);
+    doc.setLineDashPattern([], 0);
+
+    // 3 lignes : Entrée / Plat / Boisson
+    const items = [
+      ["ENTRÉE", pdfStr(tpl.entree)],
+      ["PLAT PRINCIPAL", pdfStr(tpl.plat)],
+      ["BOISSON", pdfStr(tpl.boisson)]
+    ];
+    let itemY = cardY + 30;
+    items.forEach(([label, content]) => {
+      doc.setFillColor(...COLOR_BLUE);
+      doc.circle(cardX + 11, itemY - 0.8, 1, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
+      doc.setTextColor(...COLOR_BLUE);
+      doc.text(label, cardX + 15, itemY);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(content || "—", cardX + 15, itemY + 4);
+      itemY += 10;
+    });
+    y = cardY + cardH + 6;
+
+    // Substitution bière (si activée pour cette option)
+    if (opt.beerAddon) {
+      const beerH = 14;
+      doc.setFillColor(...COLOR_ACCENT);
+      doc.roundedRect(M, y, contentW, beerH, 2, 2, "F");
+      doc.setFillColor(...COLOR_TEXT);
+      doc.circle(M + 6, y + 7, 1.8, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(`Boisson remplacée par une bière`, M + 11, y + 6);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(`(supplément par personne)`, M + 11, y + 10.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...COLOR_RED);
+      doc.setFontSize(12);
+      doc.text(`+ ${fmtMoney(tpl.beerPrice || 0).replace(" $", "")} $ / pers.`, M + contentW - 4, y + 8.5, { align: "right" });
+      y += beerH + 4;
+    }
+
+    // Lignes personnalisées pour cette option
+    if (Array.isArray(opt.customLines) && opt.customLines.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text("Suppléments et ajustements", M, y);
+      y += 4;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      opt.customLines.forEach(line => {
+        doc.setTextColor(...COLOR_TEXT);
+        doc.text(pdfStr(line.description) || "—", M, y + 4);
+        const amt = Number(line.amount || 0);
+        doc.setTextColor(amt < 0 ? COLOR_GREEN[0] : COLOR_TEXT[0], amt < 0 ? COLOR_GREEN[1] : COLOR_TEXT[1], amt < 0 ? COLOR_GREEN[2] : COLOR_TEXT[2]);
+        doc.text(`${amt >= 0 ? "+" : ""}${fmtMoney(amt).replace(" $", "")} $`, M + contentW, y + 4, { align: "right" });
+        y += 5;
+      });
+      y += 4;
+    }
+
+    // Totaux pour cette option
+    doc.setDrawColor(...COLOR_TEXT_LIGHT);
+    doc.setLineWidth(0.3);
+    doc.line(M, y, M + contentW, y);
+    y += 5;
+
+    function totalLine(label, value, bold) {
+      doc.setFont("helvetica", bold ? "bold" : "normal");
+      doc.setFontSize(bold ? 12 : 10);
+      doc.setTextColor(...(bold ? COLOR_TEXT : COLOR_TEXT_LIGHT));
+      doc.text(label, M + contentW * 0.55, y, { align: "right" });
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(value, M + contentW, y, { align: "right" });
+      y += bold ? 7 : 5;
+    }
+
+    totalLine(`Forfait (${qt.guestCount || 0} × ${fmtMoney(tpl.pricePerPerson || 0)})`, fmtMoney(totals.subtotal));
+    if (totals.beerSubtotal > 0) {
+      totalLine(`Bière en remplacement (${qt.guestCount || 0} × ${fmtMoney(tpl.beerPrice || 0)})`, fmtMoney(totals.beerSubtotal));
+    }
+    if (totals.customSubtotal !== 0) {
+      totalLine("Suppléments", fmtMoney(totals.customSubtotal));
+    }
+    totalLine("Sous-total", fmtMoney(totals.preTaxTotal));
+    totalLine(`TPS (${(TPS_RATE * 100).toFixed(0)} %)`, fmtMoney(totals.tps));
+    totalLine(`TVQ (${(TVQ_RATE * 100).toFixed(3)} %)`, fmtMoney(totals.tvq));
+    y += 1;
+    totalLine(multi ? `TOTAL — OPTION ${optionLetter(idx)}` : "TOTAL", fmtMoney(totals.total), true);
+    if (totals.deposit > 0) {
+      totalLine(`Dépôt ${opt.depositPaid ? "(versé)" : "exigé"}`, fmtMoney(totals.deposit));
+      totalLine("Solde à payer", fmtMoney(totals.balance), true);
+    }
+    y += 4;
+
+    // Case à cocher « Je choisis cette option » (seulement si multi-options)
+    if (multi) {
+      const cbY = y;
+      const cbSize = 6;
+      doc.setDrawColor(...accent);
+      doc.setLineWidth(0.8);
+      doc.setFillColor(255, 255, 255);
+      doc.rect(M, cbY, cbSize, cbSize, "FD");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(`Je choisis l'OPTION ${optionLetter(idx)} — ${pdfStr(tpl.name) || ""}`, M + cbSize + 4, cbY + 4.5);
+      y += cbSize + 8;
+    } else {
+      y += 4;
+    }
   }
 
-  totalLine(`Forfait (${qt.guestCount || 0} × ${fmtMoney(tpl.pricePerPerson || 0)})`, fmtMoney(totals.subtotal));
-  if (totals.beerSubtotal > 0) {
-    totalLine(`Bière en remplacement (${qt.guestCount || 0} × ${fmtMoney(tpl.beerPrice || 0)})`, fmtMoney(totals.beerSubtotal));
-  }
-  if (totals.customSubtotal !== 0) {
-    totalLine("Suppléments", fmtMoney(totals.customSubtotal));
-  }
-  totalLine("Sous-total", fmtMoney(totals.preTaxTotal));
-  totalLine(`TPS (${(TPS_RATE * 100).toFixed(0)} %)`, fmtMoney(totals.tps));
-  totalLine(`TVQ (${(TVQ_RATE * 100).toFixed(3)} %)`, fmtMoney(totals.tvq));
-  y += 1;
-  totalLine("TOTAL", fmtMoney(totals.total), true);
-  if (totals.deposit > 0) {
-    totalLine(`Dépôt ${qt.depositPaid ? "(versé)" : "exigé"}`, fmtMoney(totals.deposit));
-    totalLine("Solde à payer", fmtMoney(totals.balance), true);
-  }
-  y += 4;
+  // Boucler sur chaque option
+  options.forEach((opt, idx) => renderOption(opt, idx));
 
-  // ═══ Notes ═══
+  // ═══════════════════════════════════════════
+  // NOTES (après toutes les options)
+  // ═══════════════════════════════════════════
   if (qt.notes && qt.notes.trim()) {
+    ensureSpace(20);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(9);
     doc.setTextColor(...COLOR_TEXT);
@@ -1007,19 +1361,25 @@ function generateQuotePDF(quoteId) {
     doc.setFontSize(9);
     doc.setTextColor(...COLOR_TEXT_LIGHT);
     const split = doc.splitTextToSize(pdfStr(qt.notes), contentW);
+    // Si les notes ne tiennent pas, passer à la page suivante
+    if (y + split.length * 4 > H - FOOTER_RESERVE) newPage();
     doc.text(split, M, y);
     y += split.length * 4 + 4;
   }
 
-  // ═══ Bloc QR code + invitation menu ═══
-  // Positionné au-dessus du footer texte. QR à gauche, texte à droite.
+  // ═══════════════════════════════════════════
+  // FOOTER (QR code + mentions légales) — sur la DERNIÈRE page seulement
+  // ═══════════════════════════════════════════
+  // Si on est trop bas pour caser le footer, ajouter une page dédiée
+  if (y > H - FOOTER_RESERVE - 5) newPage();
+
+  // Bloc QR code
   const qrSize = 26;
   const qrY = H - 56;
   const qrX = M;
   const menuUrl = "https://bochicacafebistro.ca/";
   const qrDrawn = drawQRCode(doc, menuUrl, qrX, qrY, qrSize);
 
-  // Texte à droite du QR
   const textX = qrX + qrSize + 8;
   let textY = qrY + 4;
   doc.setFont("helvetica", "bold");
@@ -1034,31 +1394,26 @@ function generateQuotePDF(quoteId) {
   textY += 4;
   doc.text("ou visitez :", textX, textY);
   textY += 5;
-  // URL en jaune/accent, soulignée pour cliquabilité
   doc.setFont("helvetica", "bold");
   doc.setFontSize(10);
   doc.setTextColor(...COLOR_ACCENT);
   doc.textWithLink(menuUrl, textX, textY, { url: menuUrl });
   textY += 6;
-  // Petite note sympathique
   doc.setFont("helvetica", "italic");
   doc.setFontSize(8);
   doc.setTextColor(...COLOR_TEXT_LIGHT);
   doc.text("Découvrez tous nos plats colombiens authentiques.", textX, textY);
 
-  // Ligne séparatrice avant le footer légal
   doc.setDrawColor(...COLOR_TEXT_LIGHT);
   doc.setLineWidth(0.2);
   doc.line(M, H - 24, W - M, H - 24);
 
-  // ═══ Footer : validité + mentions légales ═══
   const footerY = H - 19;
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
   doc.setTextColor(...COLOR_RED);
   doc.text("Le service (pourboire) n'est pas inclus dans les montants ci-dessus.", W / 2, footerY, { align: "center" });
 
-  // Mentions légales standard
   doc.setFont("helvetica", "italic");
   doc.setFontSize(8);
   doc.setTextColor(...COLOR_TEXT_LIGHT);
@@ -1067,9 +1422,21 @@ function generateQuotePDF(quoteId) {
     doc.text(`Soumission valide jusqu'au ${qt.validUntil}.`, W / 2, footerY + 10, { align: "center" });
   }
 
-  // Téléchargement (on nettoie aussi le nom pour le filename)
+  // Numérotation de pages en bas (toutes les pages)
+  const totalPages = doc.internal.getNumberOfPages();
+  if (totalPages > 1) {
+    for (let p = 1; p <= totalPages; p++) {
+      doc.setPage(p);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(...COLOR_TEXT_LIGHT);
+      doc.text(`Page ${p} / ${totalPages}`, W - M, H - 4, { align: "right" });
+    }
+  }
+
+  // Téléchargement
   const cleanClient = pdfStr(qt.clientName || "client").replace(/[^a-z0-9]/gi, "_");
   const filename = `Bochica_Soumission_${qt.quoteNumber || "draft"}_${cleanClient}.pdf`;
   doc.save(filename);
-  toast("PDF généré et téléchargé.", "success");
+  toast(`PDF généré et téléchargé${options.length > 1 ? ` (${options.length} options)` : ""}.`, "success");
 }

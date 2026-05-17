@@ -38,13 +38,18 @@ let eventsSearchQuery = "";             // recherche texte (nom, contact, notes)
 // Soumissions (devis pour clients) — admin uniquement
 // Chaque soumission : { id, quoteNumber ("2026-001"), clientName, clientPhone, clientEmail, clientCompany,
 //                       eventDate, eventTime, eventVenue ("bochica"/"client"/"autre"), eventAddress, guestCount,
-//                       packageId (ref vers quoteTemplates), packageSnapshot (copie figée du forfait au moment du devis),
-//                       beerAddon (bool), customLines[] (liste de {description, amount}),
-//                       depositAmount, depositPaid, depositPaidDate, validUntil (YYYY-MM-DD),
-//                       notes, status ("brouillon"/"envoyee"/"acceptee"/"refusee"/"expiree"), createdAt, updatedAt }
+//                       packageOptions[] (NOUVEAU v3.14.0 — liste d'options de forfait que le client peut choisir),
+//                         chaque option : { id (local), packageId, packageSnapshot (copie figée),
+//                                           beerAddon (bool), customLines[], depositAmount, depositPaid }
+//                       validUntil (YYYY-MM-DD), notes,
+//                       status ("brouillon"/"envoyee"/"acceptee"/"refusee"/"expiree"), createdAt, updatedAt
+//                       // RÉTROCOMPAT : si packageOptions absent, lit packageId/packageSnapshot/beerAddon/customLines/depositAmount/depositPaid à plat }
 let quotes = [];
 let quotesFilterStatus = "all";          // "all" | "brouillon" | "envoyee" | "acceptee" | "refusee" | "expiree"
 let quotesSearchQuery = "";              // recherche (numéro, nom client, contact)
+// État du formulaire d'édition des options de forfait (in-memory, perdu à la fermeture du modal)
+// Permet d'ajouter/retirer des options dynamiquement sans perdre la saisie en cours.
+let _editingQuoteOptions = [];
 
 // Templates de forfaits (offres tarifaires) — sert de base pour les soumissions
 // Chaque template : { id, name ("L'Essentiel"), label ("Forfait Un"), pricePerPerson, accentColor ("yellow"/"red"/"blue"/"green"),
