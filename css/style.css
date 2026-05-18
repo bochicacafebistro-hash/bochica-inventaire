@@ -6311,6 +6311,28 @@ textarea.md-input{
   min-width:0;
 }
 .sim-input-money input:focus{outline:none}
+.sim-input-money select{
+  flex:1;
+  border:none;
+  background:transparent;
+  padding:8px 28px 8px 10px;
+  font-family:var(--font-heading);
+  font-size:18px;
+  color:var(--text);
+  min-width:0;
+  cursor:pointer;
+  -webkit-appearance:none;
+  -moz-appearance:none;
+  appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%230e0d0c' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 8px center;
+}
+.sim-input-money select:focus{outline:none}
+.sim-input-money select:hover{background-color:var(--accent-soft)}
+.dark .sim-input-money select{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23f5f1e8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+}
 .sim-input-money span{
   padding:0 10px;
   color:var(--text3);

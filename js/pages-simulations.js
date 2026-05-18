@@ -524,7 +524,22 @@ function renderSimulationEditorHTML(sim) {
         </label>
         <label>Ratio salaires / ventes (%)
           <div class="sim-input-money">
-            <input type="number" min="1" max="100" step="0.5" value="${(salesRatio * 100).toFixed(1)}" onchange="updateSimSalesRatio('${sim.id}', this.value)"/>
+            <select class="sim-ratio-select" onchange="updateSimSalesRatio('${sim.id}', this.value)">
+              ${(() => {
+                const curPct = salesRatio * 100;
+                const opts = Array.from({ length: 11 }, (_, i) => 30 + i); // 30..40
+                const inRange = opts.some(v => Math.abs(v - curPct) < 0.001);
+                const lines = [];
+                if (!inRange) {
+                  lines.push(`<option value="${curPct.toFixed(1)}" selected>${curPct.toFixed(1)} (actuel)</option>`);
+                }
+                opts.forEach(v => {
+                  const sel = inRange && Math.abs(v - curPct) < 0.001 ? "selected" : "";
+                  lines.push(`<option value="${v}" ${sel}>${v}</option>`);
+                });
+                return lines.join("");
+              })()}
+            </select>
             <span>%</span>
           </div>
           <span class="field-hint">${icon("info", 11)} Base : ${(baseSalesRatio * 100).toFixed(1)}% · Cible &lt;32%</span>
