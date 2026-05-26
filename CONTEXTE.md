@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 17 mai 2026 — v3.14.0** — **Soumissions multi-options** : on peut maintenant proposer plusieurs forfaits dans une même soumission. Le client coche son option préférée sur le PDF. Chaque option a ses propres add-ons (bière, suppléments/rabais, dépôt) — le nombre de personnes reste commun. Le PDF passe automatiquement à une nouvelle page si une option ne tient pas, ajoute un bandeau d'intro « N options proposées » et une case à cocher par option. La liste affiche un badge « N options de forfait » et une fourchette de totaux (ex. 595 $ – 750 $). Rétrocompat complète avec les soumissions à un seul forfait.
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.14.2** — **Salaires & Pourboires : heures éditables via dropdown 15 min**. Les `<input type="time">` natifs étaient quasi inutilisables sur certains navigateurs (impossible d'ouvrir le picker une fois les spinners cachés). Remplacés par un `<select>` aux **15 min** (00:00 → 23:45, 96 crans) — cohérent avec la grille Employés & Horaires (qui reste aux 30 min). Les anciennes saisies à la minute près sont préservées via une option « (saisie libre) » insérée en tête.
+>
+> ⚠️ **17 mai 2026 — v3.14.0** — **Soumissions multi-options** : on peut maintenant proposer plusieurs forfaits dans une même soumission. Le client coche son option préférée sur le PDF. Chaque option a ses propres add-ons (bière, suppléments/rabais, dépôt) — le nombre de personnes reste commun. Le PDF passe automatiquement à une nouvelle page si une option ne tient pas, ajoute un bandeau d'intro « N options proposées » et une case à cocher par option. La liste affiche un badge « N options de forfait » et une fourchette de totaux (ex. 595 $ – 750 $). Rétrocompat complète avec les soumissions à un seul forfait.
 >
 > ⚠️ **13 mai 2026 — v3.13.8** — itérations sur les **Rapports mensuels** (16 mois pré-parsés, comparatif YoY visible par défaut avec valeurs absolues comparées, période personnalisée), **frais fixes** qui se reportent automatiquement chaque mois (rattrapage des mois manqués), **événements semaine** dans le dashboard, **tri par fournisseur** sur page À commander, typo horaire **Inter** plus lisible, page **Historique retirée**.
 >
@@ -455,6 +457,17 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Salaires : dropdown 15 min sur les heures réelles (v3.14.2) ⏱️
+- **Problème utilisateur** : sur la page **Salaires & Pourboires**, les cellules heures (entrée/sortie) étaient un `<input type="time">` natif. Sur certains navigateurs (notamment desktop sans chevron + spinners cachés), le picker était quasi inutilisable → impossible de modifier l'heure sans passer par la saisie clavier exacte du format `HH:MM`.
+- **Solution** : remplacement par un **`<select>` avec options aux 15 min** (96 crans entre 00:00 et 23:45). Cohérent avec la grille Employés & Horaires qui utilise déjà des `<select>` (mais aux 30 min — la paie justifie une granularité plus fine).
+- **Nouveau dans `pages-payroll.js`** :
+  - Constante `PAYROLL_TIME_OPTIONS_15` (96 valeurs).
+  - Helper `buildPayrollTimeOptions(selectedValue)` qui génère le `<option>—</option>` + tous les crans, et **préserve** une valeur héritée hors quadrillage (ex. ancien `13:17` saisi via l'input time) en l'insérant en tête avec la mention « (saisie libre) » pour ne perdre aucune donnée historique.
+- **Rendu** : `<select class="payroll-time-select">` à la place de `<input type="time" class="payroll-time-input">` dans les deux cellules entrée/sortie de chaque jour.
+- **CSS** : nouvelle classe `.payroll-time-select` calquée sur `.payroll-time-input` (compact, font mono 13 px, fond transparent → surface au hover, accent jaune au focus). Chevron SVG inline injecté en `background-image` (noir clair / crème dark), `text-align-last:center` pour centrer la valeur sélectionnée. Règle « semaine verrouillée » étendue au nouveau select.
+- **Rétrocompat totale** : l'ancien `.payroll-time-input` reste défini en CSS (au cas où une autre page l'utiliserait) ; les anciennes saisies à la minute près restent visibles et modifiables.
+- **CACHE_VERSION** → `v3.14.2`
 
 ### 17 mai 2026 — Soumissions multi-options (v3.14.0) 🧾📋
 - **Nouveau modèle de données** : chaque soumission a maintenant un array `packageOptions[]` au lieu d'un forfait unique. Chaque option contient `{ id, packageId, packageSnapshot, beerAddon, customLines[], depositAmount, depositPaid }`.

@@ -20,6 +20,41 @@
 
 // ═ Helpers internes ═════════════════════════════════════
 
+// Options du dropdown heures de paie : 00:00 → 23:45 par tranches de 15 min
+// (96 options). Granularité plus fine que la grille Horaires (30 min) parce
+// que la paie réelle peut tomber sur le quart d'heure (ex. arrivée 13:15,
+// départ 22:45). On reste sur un <select> plutôt que <input type="time">
+// car le picker natif rend l'édition pénible (clic-glisse sur les chiffres,
+// pas de scroll molette sur certains navigateurs).
+const PAYROLL_TIME_OPTIONS_15 = (() => {
+  const arr = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      arr.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    }
+  }
+  return arr;
+})();
+
+// Construit le HTML des <option> pour un select de paie.
+// Si selectedValue n'est pas dans la liste (ex. ancienne saisie à la minute
+// près via l'ancien input time), on l'insère quand même comme option pour
+// ne pas perdre la valeur — l'utilisateur pourra la remplacer en sélectionnant
+// un cran de 15 min.
+function buildPayrollTimeOptions(selectedValue) {
+  const sel = selectedValue || "";
+  let html = `<option value="" ${sel === "" ? "selected" : ""}>—</option>`;
+  const hasSel = sel === "" || PAYROLL_TIME_OPTIONS_15.includes(sel);
+  if (!hasSel) {
+    // Valeur héritée hors quadrillage 15 min : on la conserve en tête de liste
+    html += `<option value="${sel}" selected>${sel} (saisie libre)</option>`;
+  }
+  for (const v of PAYROLL_TIME_OPTIONS_15) {
+    html += `<option value="${v}" ${v === sel ? "selected" : ""}>${v}</option>`;
+  }
+  return html;
+}
+
 // ID de semaine ISO au format "YYYY-Wnn" (ex: "2026-W18")
 function payrollWeekId(weekStart) {
   const thursday = new Date(weekStart);
@@ -425,10 +460,10 @@ function renderSalaires() {
                       : "";
                   const baseClasses = `schedule-td--cell payroll-td-cell ${filled ? "is-filled" : ""} ${d.isDifferent ? "is-modified" : ""} ${isAutoFromPlanned ? "is-auto" : ""}`;
                   return `<td class="${baseClasses} schedule-td--day-entry"${cellTitle ? ` title="${cellTitle}"` : ""}>
-                    <input type="time" class="payroll-time-input" value="${startVal}" onchange="updateActualShift('${row.emp.id}','${d.dk}','start',this.value)" aria-label="${empName}, entrée réelle ${dayName}"/>
+                    <select class="payroll-time-select" onchange="updateActualShift('${row.emp.id}','${d.dk}','start',this.value)" aria-label="${empName}, entrée réelle ${dayName}">${buildPayrollTimeOptions(startVal)}</select>
                   </td>
                   <td class="${baseClasses} schedule-td--day-exit"${cellTitle ? ` title="${cellTitle}"` : ""}>
-                    <input type="time" class="payroll-time-input" value="${endVal}" onchange="updateActualShift('${row.emp.id}','${d.dk}','end',this.value)" aria-label="${empName}, sortie réelle ${dayName}"/>
+                    <select class="payroll-time-select" onchange="updateActualShift('${row.emp.id}','${d.dk}','end',this.value)" aria-label="${empName}, sortie réelle ${dayName}">${buildPayrollTimeOptions(endVal)}</select>
                     ${dayTipHint}
                   </td>`;
                 }).join("")}

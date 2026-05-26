@@ -4119,6 +4119,49 @@ textarea.md-input{
 /* Firefox : pas d'API directe pour cacher l'icône, mais on cache au moins l'apparence */
 .payroll-time-input::-moz-focus-inner{border:0}
 
+/* Select 15 min — remplace les input[type=time] pour une édition fiable sur tous
+   les navigateurs. Visuellement calqué sur .payroll-time-input pour conserver
+   l'apparence ultra-compacte du tableau de paie. */
+.payroll-time-select{
+  width:100%;
+  min-width:64px;
+  background:transparent;
+  border:1px solid transparent;
+  border-radius:var(--radius-sm);
+  padding:3px 16px 3px 4px;            /* place pour le chevron à droite */
+  font-family:var(--font-mono);
+  font-size:var(--fs-sm);              /* 13px — compact */
+  font-weight:600;
+  color:var(--text);
+  cursor:pointer;
+  font-feature-settings:"tnum";
+  text-align:center;
+  text-align-last:center;              /* centre la valeur sélectionnée (Firefox/Chromium) */
+  letter-spacing:.02em;
+  appearance:none;
+  -webkit-appearance:none;
+  -moz-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%230e0d0c' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 3px center;
+  background-size:9px;
+  transition:background-color var(--transition-base), border-color var(--transition-base);
+}
+.payroll-time-select:hover{
+  background-color:var(--surface);
+  border-color:var(--border);
+}
+.payroll-time-select:focus{
+  outline:none;
+  background-color:var(--surface);
+  border-color:var(--accent);
+  box-shadow:0 0 0 2px rgba(var(--accent-rgb),.2);
+}
+/* Dark mode : chevron clair pour rester visible */
+[data-theme="dark"] .payroll-time-select{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23f5f1e8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+}
+
 /* Cellule modifiée par rapport au planifié — léger fond ambré */
 .payroll-td-cell.is-modified{
   background:rgba(247,179,44,.08) !important;
@@ -4444,6 +4487,7 @@ textarea.md-input{
 
 /* Mode "verrouillée" : inputs en lecture seule (visuel) */
 .page.is-payroll-locked .payroll-time-input,
+.page.is-payroll-locked .payroll-time-select,
 .page.is-payroll-locked .payroll-tips-day__input input,
 .page.is-payroll-locked input[type="number"]{
   pointer-events:none;
