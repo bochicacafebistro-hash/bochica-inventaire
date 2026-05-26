@@ -4162,6 +4162,163 @@ textarea.md-input{
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23f5f1e8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
 }
 
+/* ─────────────────────────────────────────────────────────── */
+/* v3.15.0 — Extras (employés ad-hoc) + multiplicateur + drag */
+/* ─────────────────────────────────────────────────────────── */
+
+/* Cellule employé enrichie : grip + nom + meta (incluant multiplicateur) */
+.payroll-emp-cell{
+  display:flex;
+  align-items:flex-start;
+  gap:6px;
+}
+.payroll-drag-handle{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  color:var(--text3);
+  cursor:grab;
+  flex-shrink:0;
+  padding:3px 1px;
+  border-radius:var(--radius-sm);
+  margin-top:1px;
+  transition:color var(--transition-base), background var(--transition-base);
+}
+.payroll-drag-handle:hover{
+  color:var(--text);
+  background:var(--surface2);
+}
+.payroll-drag-handle:active{cursor:grabbing}
+
+/* Badge EXTRA — petit pill ambré à côté du nom */
+.payroll-manual-badge{
+  display:inline-block;
+  font-family:var(--font-mono);
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.06em;
+  padding:1px 5px;
+  border-radius:var(--radius-sm);
+  background:var(--accent-soft);
+  color:var(--accent-warm);
+  border:1px solid rgba(var(--accent-rgb),.4);
+  margin-left:6px;
+  vertical-align:middle;
+  text-transform:uppercase;
+}
+[data-theme="dark"] .payroll-manual-badge{
+  background:rgba(var(--accent-rgb),.15);
+  color:var(--accent);
+}
+
+/* Mini-bouton trash pour retirer un extra */
+.payroll-manual-del{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:20px;
+  height:20px;
+  background:transparent;
+  border:1px solid transparent;
+  border-radius:var(--radius-sm);
+  color:var(--text3);
+  cursor:pointer;
+  padding:0;
+  margin-left:auto;
+  transition:all var(--transition-base);
+}
+.payroll-manual-del:hover{
+  color:#fff;
+  background:var(--status-danger, #d9534f);
+  border-color:var(--status-danger, #d9534f);
+}
+
+/* Multiplicateur de pourboire — input compact + suffixe % */
+.payroll-multiplier-wrap{
+  display:inline-flex;
+  align-items:center;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:1px 3px 1px 4px;
+  font-family:var(--font-mono);
+  font-size:10px;
+  font-weight:700;
+  line-height:1;
+  height:18px;
+  gap:1px;
+  transition:border-color var(--transition-base), background var(--transition-base);
+}
+.payroll-multiplier-wrap.is-default{
+  background:transparent;
+  border-color:rgba(14,13,12,.15);
+  color:var(--text3);
+}
+.payroll-multiplier-wrap.is-excluded{
+  background:rgba(217,83,79,.12);
+  border-color:rgba(217,83,79,.5);
+  color:#a23a36;
+}
+.payroll-multiplier-wrap.is-reduced{
+  background:rgba(180,83,9,.10);
+  border-color:rgba(180,83,9,.4);
+  color:#8c4108;
+}
+.payroll-multiplier-wrap.is-boosted{
+  background:rgba(125,191,102,.15);
+  border-color:rgba(125,191,102,.5);
+  color:#4a8f3a;
+}
+[data-theme="dark"] .payroll-multiplier-wrap.is-default{
+  color:var(--text3);
+  border-color:rgba(245,241,232,.15);
+}
+[data-theme="dark"] .payroll-multiplier-wrap.is-excluded{
+  background:rgba(217,83,79,.20);
+  color:#ff9a96;
+}
+[data-theme="dark"] .payroll-multiplier-wrap.is-reduced{
+  background:rgba(247,179,44,.15);
+  color:#ffd87a;
+}
+[data-theme="dark"] .payroll-multiplier-wrap.is-boosted{
+  background:rgba(125,191,102,.20);
+  color:#a8e090;
+}
+.payroll-multiplier-input{
+  background:transparent;
+  border:none;
+  outline:none;
+  width:28px;
+  padding:0;
+  margin:0;
+  font:inherit;
+  color:inherit;
+  text-align:right;
+  -moz-appearance:textfield;
+}
+.payroll-multiplier-input::-webkit-inner-spin-button,
+.payroll-multiplier-input::-webkit-outer-spin-button{
+  -webkit-appearance:none;
+  margin:0;
+}
+.payroll-multiplier-input:focus{
+  background:rgba(var(--accent-rgb),.08);
+}
+.payroll-multiplier-input:disabled{opacity:.6;cursor:not-allowed}
+.payroll-multiplier-suffix{
+  opacity:.7;
+  font-size:9px;
+}
+
+/* Ligne extra — fond légèrement ambré pour la distinguer visuellement */
+.schedule-emp-row.is-manual-emp .schedule-td--emp{
+  background:linear-gradient(90deg, rgba(247,179,44,.08), transparent 70%);
+}
+[data-theme="dark"] .schedule-emp-row.is-manual-emp .schedule-td--emp{
+  background:linear-gradient(90deg, rgba(247,179,44,.14), transparent 70%);
+}
+
 /* Cellule modifiée par rapport au planifié — léger fond ambré */
 .payroll-td-cell.is-modified{
   background:rgba(247,179,44,.08) !important;

@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.14.2** — **Salaires & Pourboires : heures éditables via dropdown 15 min**. Les `<input type="time">` natifs étaient quasi inutilisables sur certains navigateurs (impossible d'ouvrir le picker une fois les spinners cachés). Remplacés par un `<select>` aux **15 min** (00:00 → 23:45, 96 crans) — cohérent avec la grille Employés & Horaires (qui reste aux 30 min). Les anciennes saisies à la minute près sont préservées via une option « (saisie libre) » insérée en tête.
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.15.0** — **Salaires & Pourboires : extras + multiplicateur + ordre manuel**. Trois nouveautés majeures dans la page Salaires : (1) bouton **« + Ajouter un extra »** pour créer un employé ponctuel attaché à la semaine seulement (badge EXTRA + bouton retrait), sans toucher à la liste principale Employés. (2) **Multiplicateur de pourboire par employé** — pill éditable en % à côté du nom (100% par défaut, 0% = exclu du pool, 150% = part et demie). Le prorata des heures est pondéré, code couleur sémantique (gris défaut / rouge exclu / ambré réduit / vert majoré). (3) **Drag & drop des lignes** via handle ⋮⋮ à gauche — l'ordre est sauvé pour la semaine seulement (n'affecte pas Employés & Horaires).
+>
+> ⚠️ **26 mai 2026 — v3.14.2** — **Salaires & Pourboires : heures éditables via dropdown 15 min**. Les `<input type="time">` natifs étaient quasi inutilisables sur certains navigateurs (impossible d'ouvrir le picker une fois les spinners cachés). Remplacés par un `<select>` aux **15 min** (00:00 → 23:45, 96 crans) — cohérent avec la grille Employés & Horaires (qui reste aux 30 min). Les anciennes saisies à la minute près sont préservées via une option « (saisie libre) » insérée en tête.
 >
 > ⚠️ **17 mai 2026 — v3.14.0** — **Soumissions multi-options** : on peut maintenant proposer plusieurs forfaits dans une même soumission. Le client coche son option préférée sur le PDF. Chaque option a ses propres add-ons (bière, suppléments/rabais, dépôt) — le nombre de personnes reste commun. Le PDF passe automatiquement à une nouvelle page si une option ne tient pas, ajoute un bandeau d'intro « N options proposées » et une case à cocher par option. La liste affiche un badge « N options de forfait » et une fourchette de totaux (ex. 595 $ – 750 $). Rétrocompat complète avec les soumissions à un seul forfait.
 >
@@ -457,6 +459,49 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Salaires : extras + multiplicateur + ordre manuel (v3.15.0) 👥🎯✋
+Trois fonctionnalités significatives ajoutées à la page **Salaires & Pourboires**, toutes scopées à la semaine courante (zéro impact sur la liste principale Employés ou le planning Horaires).
+
+**1. Employés extras (ad-hoc) — bouton « + Ajouter un extra »**
+- Modale d'ajout : nom + section (cuisine/service/autre) + taux horaire.
+- Stockés dans `payroll/{weekId}.manualEmployees[]` — array d'objets `{ id (préfixé `manual_`), name, section, hourlyRate, role: "Extra", isSalaried: false, shifts: {}, createdAt }`.
+- Visibles dans le tableau avec un badge **EXTRA** (pill ambré à côté du nom) et un mini-bouton trash pour les retirer.
+- Heures saisies dans les cellules normales (réutilise `actualShifts[id][dk]` et `updateActualShift`) — aucune logique séparée.
+- Inclus dans le calcul de salaires bruts (`_computeWeekGrossWage`) et donc dans la dépense Salaires créée au verrouillage.
+- Helper `getManualEmployees()` lit le champ, `isManualEmployee(emp)` teste si une ligne est un extra.
+- Confirmation à la suppression : retire l'employé + ses heures + son multiplicateur + son entrée dans empOrder.
+
+**2. Multiplicateur de pourboire par employé**
+- Pill éditable en `%` à côté du badge cuisine/service. Range 0–500 par cran de 5.
+- **100% par défaut** (stocké comme suppression de clé pour garder le doc Firestore propre).
+- **0%** = employé exclu du pool (utile pour un gérant qui ne touche pas aux pourboires).
+- **150%** = part et demie (utile pour une heure de fermeture intense, ou pour un chef rang).
+- Pondération appliquée dans `dailyCalc` : `weightedHrs = tipHrs * multiplier`. Le pool est divisé par `totalKitchenWeightedDay`/`totalServiceWeightedDay` au lieu des heures brutes. Garantit que la somme distribuée reste égale au pool.
+- Stocké dans `payroll/{weekId}.tipMultipliers{}` (objet `{ [empId]: ratio }`, ratio 1.0 absent du doc par défaut).
+- **Code couleur sémantique** du pill : gris (défaut 100%), rouge (exclu 0%), ambré (réduit < 100%), vert (majoré > 100%). Tooltip explicatif au survol.
+- Helper `getTipMultiplier(empId)` retourne `1.0` si absent, sinon le ratio (avec garde-fou `Math.max(0, …)`).
+- Action `updateTipMultiplier(empId, pctValue)` convertit % → ratio et écrit (ou supprime la clé si valeur = 1.0).
+
+**3. Drag & drop pour réordonner les employés**
+- Handle ⋮⋮ (grip-vertical, 14px) à gauche de chaque ligne, masqué quand la semaine est verrouillée.
+- API HTML5 native (calquée sur `empRowDrag*` de `pages-hr.js`) — variable locale `_payrollDragId` pour ne pas entrer en conflit avec celle des Horaires.
+- Insertion before/after détectée selon la position du curseur dans la cellule cible (moitié haute/basse).
+- Indicateurs visuels réutilisés : `.schedule-row--dragging` (opacité 40%) + `.schedule-row--drop-before/after` (barre jaune accent au-dessus/en-dessous) — déjà définis dans `style.css`.
+- L'ordre est sauvé dans `payroll/{weekId}.empOrder[]` (array d'IDs réels + manuels), **spécifique à la semaine** — n'affecte pas `employees.sortOrder` ni la page Employés & Horaires.
+- `getAllPayrollEmployees()` applique `empOrder[]` au tri ; les employés/extras ajoutés après coup vont à la fin (tri stable).
+
+**Détails techniques**
+- Nouveau modèle de données `payroll/{weekId}` :
+  - `manualEmployees[]` — array d'extras
+  - `tipMultipliers{}` — objet sparse, clé absente = ratio 1.0
+  - `empOrder[]` — array d'IDs (réels + manuels)
+- `_computeWeekGrossWage()` étendu pour inclure `getManualEmployees()` dans le calcul des salaires bruts.
+- `renderSalaires()` utilise désormais `getAllPayrollEmployees()` au lieu de `employees` direct.
+- Empty state amélioré : si pas d'employés réels NI d'extras, on propose les deux actions (Employés & Horaires ou « + Ajouter un extra »).
+- Tous les nouveaux contrôles (multiplicateur input, drag handle, bouton supprimer) sont **désactivés quand la semaine est verrouillée**.
+- CSS : ~170 nouvelles lignes — `.payroll-emp-cell`, `.payroll-drag-handle`, `.payroll-manual-badge`, `.payroll-manual-del`, `.payroll-multiplier-wrap` (4 variantes is-default/is-excluded/is-reduced/is-boosted), `.payroll-multiplier-input`, `.payroll-multiplier-suffix`, `.schedule-emp-row.is-manual-emp`. Dark mode adapté pour chaque variante.
+- **CACHE_VERSION** → `v3.15.0` (minor bump — feature significative)
 
 ### 26 mai 2026 — Salaires : dropdown 15 min sur les heures réelles (v3.14.2) ⏱️
 - **Problème utilisateur** : sur la page **Salaires & Pourboires**, les cellules heures (entrée/sortie) étaient un `<input type="time">` natif. Sur certains navigateurs (notamment desktop sans chevron + spinners cachés), le picker était quasi inutilisable → impossible de modifier l'heure sans passer par la saisie clavier exacte du format `HH:MM`.

@@ -55,6 +55,61 @@ function buildPayrollTimeOptions(selectedValue) {
   return html;
 }
 
+// ═ Employés ad-hoc + multiplicateurs + ordre (v3.15.0) ══════════
+// Tout est stocké dans le doc payroll/{weekId} :
+//   • manualEmployees[]   — extras de la semaine ({id, name, section, hourlyRate})
+//   • tipMultipliers{}    — pondération par employé (1.0 = normal, 0 = exclu, 1.5 = part et demie)
+//   • empOrder[]          — ordre d'affichage (IDs réels + manuels)
+// Les shifts des extras sont stockés DANS actualShifts[id][dk] comme les vrais
+// employés — ça permet de réutiliser tel quel getActualShift/updateActualShift.
+
+// ID drag & drop courant (local au module pour ne pas entrer en conflit avec
+// celui de pages-hr.js : _empDragId)
+let _payrollDragId = null;
+
+// Liste des employés "ad-hoc" stockés dans la semaine courante
+function getManualEmployees() {
+  return Array.isArray(payrollWeekData?.manualEmployees) ? payrollWeekData.manualEmployees : [];
+}
+
+// Liste fusionnée employés réels + extras + tri par empOrder.
+// Si empOrder est absent ou incomplet, fallback sur l'ordre "réels d'abord
+// (par sortOrder), puis extras dans leur ordre d'insertion".
+function getAllPayrollEmployees() {
+  const manual = getManualEmployees();
+  const all = [...employees, ...manual];
+  const order = Array.isArray(payrollWeekData?.empOrder) ? payrollWeekData.empOrder : [];
+  if (order.length === 0) return all;
+  // Tri stable : on respecte l'ordre déclaré pour ceux qui sont dans order,
+  // les autres (nouveaux employés/extras pas encore ordonnés) vont à la fin.
+  const indexOf = id => {
+    const i = order.indexOf(id);
+    return i === -1 ? Infinity : i;
+  };
+  return all.slice().sort((a, b) => {
+    const ai = indexOf(a.id);
+    const bi = indexOf(b.id);
+    if (ai !== bi) return ai - bi;
+    return 0;
+  });
+}
+
+// Multiplicateur de pourboire pour un employé donné (1.0 par défaut).
+// Une valeur de 0 exclut totalement l'employé du pool ; 1.5 lui donne 50% de plus
+// que sa part "naturelle" prorata des heures.
+function getTipMultiplier(empId) {
+  const m = payrollWeekData?.tipMultipliers || {};
+  const v = m[empId];
+  if (v === undefined || v === null || v === "" || isNaN(Number(v))) return 1.0;
+  return Math.max(0, Number(v));
+}
+
+// Indique si une ligne est un employé "ad-hoc" (pas dans la liste principale)
+function isManualEmployee(emp) {
+  if (!emp) return false;
+  return getManualEmployees().some(m => m.id === emp.id);
+}
+
 // ID de semaine ISO au format "YYYY-Wnn" (ex: "2026-W18")
 function payrollWeekId(weekStart) {
   const thursday = new Date(weekStart);
@@ -196,11 +251,19 @@ function renderSalaires() {
   const poolCuisine = totalTips * (Number(tipShares.cuisine) || 0);
   const poolService = totalTips * (Number(tipShares.service) || 0);
 
+  // ─ Liste fusionnée employés réels + extras de la semaine ─────
+  // Les extras (manualEmployees) sont stockés dans payroll/{weekId}, jamais
+  // dans la collection employees principale. Ils sont totalement transparents
+  // pour le reste du calcul (mêmes shifts, mêmes pools).
+  const allEmps = getAllPayrollEmployees();
+
   // ─ Pré-calcul des pools journaliers ──────────────
   // Pour chaque jour, on calcule le pool cuisine/service du jour ET le total
-  // d'heures éligibles par groupe ce jour-là. Le pourboire de chaque employé
+  // d'heures PONDÉRÉES par groupe ce jour-là. Le pourboire de chaque employé
   // est ensuite calculé jour par jour (plus juste : un employé absent un
   // jour ne touche rien du pool de ce jour-là).
+  // Pondération : tipHrs * multiplier — un multiplier de 0 exclut l'employé,
+  // 1.5 lui donne une part et demie. Par défaut : 1.0.
   const dailyCalc = weekDays.map((d, k) => {
     const dk = dayKey(d);
     const dowIdx = visibleIdx[k];
@@ -208,23 +271,27 @@ function renderSalaires() {
     const poolKitchenDay = dayTotal * (Number(tipShares.cuisine) || 0);
     const poolServiceDay = dayTotal * (Number(tipShares.service) || 0);
     const serviceWin = getServiceWindow(dowIdx);
-    let totalKitchenHrsDay = 0;
-    let totalServiceHrsDay = 0;
-    for (const emp of employees) {
+    let totalKitchenWeightedDay = 0;
+    let totalServiceWeightedDay = 0;
+    for (const emp of allEmps) {
       const shift = getActualShift(emp.id, dk);
       const tipHrs = serviceWin ? intersectShiftHours(shift, serviceWin) : 0;
-      if (tipGroupOf(emp) === "cuisine") totalKitchenHrsDay += tipHrs;
-      else totalServiceHrsDay += tipHrs;
+      const mult = getTipMultiplier(emp.id);
+      const weighted = tipHrs * mult;
+      if (tipGroupOf(emp) === "cuisine") totalKitchenWeightedDay += weighted;
+      else totalServiceWeightedDay += weighted;
     }
-    return { dk, dowIdx, serviceWin, dayTotal, poolKitchenDay, poolServiceDay, totalKitchenHrsDay, totalServiceHrsDay };
+    return { dk, dowIdx, serviceWin, dayTotal, poolKitchenDay, poolServiceDay, totalKitchenWeightedDay, totalServiceWeightedDay };
   });
 
   // ─ Calculs par employé ────────────────────────────
-  const empRows = employees.map(emp => {
+  const empRows = allEmps.map(emp => {
     const rate = Number(emp.hourlyRate) || 0;
     const isSal = !!emp.isSalaried;
     const fixedHours = Number(emp.fixedWeeklyHours) || 0;
     const group = tipGroupOf(emp);
+    const multiplier = getTipMultiplier(emp.id);
+    const isManual = isManualEmployee(emp);
 
     let totalHours = 0;
     let plannedHours = 0;
@@ -242,10 +309,11 @@ function renderSalaires() {
       const isOverride = hasActualOverride(emp.id, dk);
       const isDifferent = isOverride && !sameShift(actualShift, plannedShift);
 
-      // Pourboire du jour pour cet employé (prorata journalier)
+      // Pourboire du jour pour cet employé (prorata journalier PONDÉRÉ)
       const groupPool = group === "cuisine" ? dailyCalc[k].poolKitchenDay : dailyCalc[k].poolServiceDay;
-      const groupTotalHrs = group === "cuisine" ? dailyCalc[k].totalKitchenHrsDay : dailyCalc[k].totalServiceHrsDay;
-      const dayTip = (groupTotalHrs > 0 && tipHours > 0) ? (tipHours / groupTotalHrs) * groupPool : 0;
+      const groupTotalWeighted = group === "cuisine" ? dailyCalc[k].totalKitchenWeightedDay : dailyCalc[k].totalServiceWeightedDay;
+      const weightedHrs = tipHours * multiplier;
+      const dayTip = (groupTotalWeighted > 0 && weightedHrs > 0) ? (weightedHrs / groupTotalWeighted) * groupPool : 0;
 
       totalHours += hours;
       plannedHours += pHours;
@@ -257,7 +325,7 @@ function renderSalaires() {
     const grossWage = isSal ? (fixedHours * rate) : (totalHours * rate);
     const gap = totalHours - plannedHours;
     const totalPay = grossWage + tipShare;
-    return { emp, rate, isSal, fixedHours, group, daily, totalHours, plannedHours, gap, tipEligibleHours, tipShare, grossWage, totalPay };
+    return { emp, rate, isSal, fixedHours, group, multiplier, isManual, daily, totalHours, plannedHours, gap, tipEligibleHours, tipShare, grossWage, totalPay };
   });
 
   // Totaux par groupe pour les hints des pools (somme des heures de la semaine)
@@ -288,13 +356,18 @@ function renderSalaires() {
     <div class="toolbar">
       <h2 class="page-title">${icon("dollar-sign", 22)} Salaires & Pourboires${isLocked ? ` <span class="payroll-locked-inline-badge">${icon("shield-check", 14)} Payée</span>` : ""}</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-secondary btn-sm" onclick="openAddExtraModal()" title="Ajouter un employé ponctuel à cette semaine seulement (ex: remplaçant, extra)" ${isLocked ? "disabled" : ""}>${icon("plus", 14)} Ajouter un extra</button>
         <button class="btn-secondary btn-sm" onclick="openServiceHoursModal()" title="Configurer les heures d'ouverture du service">${icon("clock", 14)} Heures de service</button>
         <button class="btn-secondary btn-sm" onclick="openTipSharesModal()" title="Modifier la répartition cuisine / service des pourboires">${icon("percent", 14)} Répartition</button>
       </div>
     </div>
 
-    ${employees.length === 0 ? `
-      <div class="empty"><div class="empty-state-icon">${icon("users", 36)}</div>Aucun employé enregistré. Ajoutez-en un dans Employés & Horaires pour commencer.</div>
+    ${allEmps.length === 0 ? `
+      <div class="empty"><div class="empty-state-icon">${icon("users", 36)}</div>Aucun employé enregistré. Ajoutez-en un dans <strong>Employés & Horaires</strong> ou clique sur <strong>« + Ajouter un extra »</strong> ci-dessous pour quelqu'un d'occasionnel.
+        <div style="margin-top:16px">
+          <button class="btn btn-primary btn-sm" onclick="openAddExtraModal()" ${isLocked ? "disabled" : ""}>${icon("plus", 14)} Ajouter un extra</button>
+        </div>
+      </div>
     ` : `
       <!-- ══ Bannière d'info : auto-import du planifié ══ -->
       <div class="payroll-info-banner">
@@ -427,14 +500,40 @@ function renderSalaires() {
                 : `<span class="payroll-group-badge payroll-group-badge--service" title="Pool service ${(tipShares.service*100).toFixed(0)}%">${icon("users", 10)} ${(tipShares.service*100).toFixed(0)}%</span>`;
               const gapCls = row.gap > 0.01 ? "is-positive" : row.gap < -0.01 ? "is-negative" : "";
               const gapArrow = row.gap > 0.01 ? "▲" : row.gap < -0.01 ? "▼" : "";
-              return `<tr class="schedule-emp-row" data-emp-id="${row.emp.id}">
+              const multPct = Math.round(row.multiplier * 100);
+              const multCls = multPct === 100 ? "is-default" : multPct === 0 ? "is-excluded" : multPct > 100 ? "is-boosted" : "is-reduced";
+              const multTitle = multPct === 0
+                ? "Cet employé est exclu du partage des pourboires"
+                : multPct === 100
+                  ? "Part normale (100%) — laisser tel quel pour le calcul prorata standard"
+                  : multPct > 100
+                    ? `Part majorée (${multPct}%) — cet employé reçoit ${(multPct/100).toFixed(2)}× sa part naturelle`
+                    : `Part réduite (${multPct}%) — cet employé reçoit ${(multPct/100).toFixed(2)}× sa part naturelle`;
+              return `<tr class="schedule-emp-row ${row.isManual ? "is-manual-emp" : ""}" data-emp-id="${row.emp.id}"
+                ${isLocked ? "" : `ondragover="payrollRowDragOver(event,'${row.emp.id}')"
+                ondragleave="payrollRowDragLeave(event)"
+                ondrop="payrollRowDrop(event,'${row.emp.id}')"
+                ondragend="payrollRowDragEnd(event)"`}>
                 <td class="schedule-td--emp">
-                  <div class="schedule-emp-cell">
+                  <div class="schedule-emp-cell payroll-emp-cell">
+                    ${isLocked ? "" : `<span class="payroll-drag-handle" draggable="true" ondragstart="payrollRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 14)}</span>`}
                     <div class="schedule-emp-info">
-                      <div class="schedule-emp-name">${esc(row.emp.name || "")}</div>
+                      <div class="schedule-emp-name">
+                        ${esc(row.emp.name || "")}
+                        ${row.isManual ? `<span class="payroll-manual-badge" title="Employé ajouté manuellement pour cette semaine">EXTRA</span>` : ""}
+                      </div>
                       <div class="schedule-emp-meta">
                         ${groupBadge}
                         ${row.rate ? `<span class="schedule-emp-role">${row.rate.toFixed(2)}$/h${row.isSal ? " · FIXE" : ""}</span>` : ""}
+                        <span class="payroll-multiplier-wrap ${multCls}" title="${multTitle}">
+                          <input type="number" class="payroll-multiplier-input" min="0" max="500" step="5"
+                            value="${multPct}"
+                            onchange="updateTipMultiplier('${row.emp.id}', this.value)"
+                            ${isLocked ? "disabled" : ""}
+                            aria-label="Multiplicateur de pourboire (%) pour ${esc(row.emp.name || "")}"/>
+                          <span class="payroll-multiplier-suffix">%</span>
+                        </span>
+                        ${row.isManual && !isLocked ? `<button class="payroll-manual-del" onclick="removeManualEmployee('${row.emp.id}')" title="Retirer cet extra de la semaine" aria-label="Retirer cet extra">${icon("trash", 12)}</button>` : ""}
                       </div>
                     </div>
                   </div>
@@ -847,7 +946,9 @@ function _computeWeekGrossWage() {
   });
 
   let sumGross = 0;
-  for (const emp of employees) {
+  // Inclut employés réels ET extras de la semaine (v3.15.0)
+  const allForGross = [...employees, ...getManualEmployees()];
+  for (const emp of allForGross) {
     const rate = Number(emp.hourlyRate) || 0;
     const isSal = !!emp.isSalaried;
     const fixedHours = Number(emp.fixedWeeklyHours) || 0;
@@ -978,5 +1079,257 @@ async function doUnlockPayrollWeek() {
   } catch (err) {
     console.error("doUnlockPayrollWeek failed:", err);
     toast("Erreur déverrouillage : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// v3.15.0 — Extras + multiplicateurs + ordre
+// ═══════════════════════════════════════════════════════════════
+
+// ─ Multiplicateur de pourboire par employé ─────────────────
+// Stocké en pourcentage (0-500) mais converti en ratio (0-5.0) à la lecture.
+// Une valeur 100 = part normale, 0 = exclu, 150 = part et demie.
+async function updateTipMultiplier(empId, pctValue) {
+  try {
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    const ref = db.collection("payroll").doc(wid);
+    let pct = Number(pctValue);
+    if (isNaN(pct) || pct < 0) pct = 0;
+    if (pct > 500) pct = 500;
+    const ratio = pct / 100;
+    // Si 100 (défaut), on supprime la clé pour garder le doc propre
+    const valueToWrite = Math.abs(ratio - 1.0) < 0.001
+      ? firebase.firestore.FieldValue.delete()
+      : ratio;
+    await ref.set({
+      weekId: wid,
+      weekStart: dayKey(ws),
+      updatedAt: Date.now(),
+      tipMultipliers: {
+        [empId]: valueToWrite
+      }
+    }, { merge: true });
+  } catch (err) {
+    console.error("updateTipMultiplier failed:", err);
+    toast("Erreur sauvegarde multiplicateur : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// ─ Ajout d'un employé extra (ad-hoc pour cette semaine seulement) ─
+function openAddExtraModal() {
+  if (payrollWeekData?.locked) {
+    toast("Semaine verrouillée — déverrouille avant d'ajouter un extra.", "warning");
+    return;
+  }
+  showModal(`<div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3>${icon("plus", 18)} Ajouter un extra à la semaine</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
+    </div>
+    <p style="color:var(--text3);font-size:13px;margin-bottom:16px;line-height:1.5">
+      Crée un employé <strong>uniquement pour cette semaine de paie</strong> — il n'apparaîtra pas dans la liste principale Employés & Horaires.
+      Idéal pour un remplaçant, un extra de soirée, un dépannage ponctuel.
+    </p>
+    <label>Nom <span style="color:var(--accent)">*</span>
+      <input id="extra-name" type="text" placeholder="Ex: Sophie Martin" autofocus/>
+    </label>
+    <label>Section
+      <select id="extra-section">
+        <option value="service" selected>Service à la clientèle (pool 75%)</option>
+        <option value="cuisine">Cuisine (pool 25%)</option>
+        <option value="other">Autre / Admin (pool 75%)</option>
+      </select>
+    </label>
+    <label>Taux horaire ($/h) <span style="color:var(--accent)">*</span>
+      <input id="extra-rate" type="number" min="0" step="0.25" placeholder="ex: 17.50"/>
+    </label>
+    <p style="color:var(--text3);font-size:12px;margin-top:8px">
+      ${icon("info", 11)} Tu pourras saisir ses heures et son multiplicateur de pourboires directement dans le tableau après l'ajout.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveManualEmployee()">${icon("check", 14)} Ajouter</button>
+    </div>
+  </div>`);
+}
+
+async function saveManualEmployee() {
+  try {
+    const name = (document.getElementById("extra-name")?.value || "").trim();
+    const section = document.getElementById("extra-section")?.value || "service";
+    const rate = Number(document.getElementById("extra-rate")?.value);
+    if (!name) return toast("Donne un nom à l'extra.", "error");
+    if (isNaN(rate) || rate < 0) return toast("Le taux horaire doit être un nombre positif.", "error");
+
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    const ref = db.collection("payroll").doc(wid);
+
+    // Génère un ID unique pour l'extra (préfixé pour distinguer des vrais employés)
+    const newId = "manual_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
+    const newExtra = {
+      id: newId,
+      name,
+      section,
+      hourlyRate: rate,
+      role: "Extra",
+      isSalaried: false,
+      shifts: {}, // pas de shifts planifiés
+      createdAt: Date.now()
+    };
+
+    // Lecture+merge manuel : pour ajouter à un tableau, on lit l'existant puis on réécrit
+    const snap = await ref.get();
+    const existing = (snap.exists && Array.isArray(snap.data()?.manualEmployees)) ? snap.data().manualEmployees : [];
+    const existingOrder = (snap.exists && Array.isArray(snap.data()?.empOrder)) ? snap.data().empOrder : null;
+
+    // L'ajouter à la fin de l'ordre si un empOrder existe (pour qu'il soit visible)
+    const nextOrder = existingOrder
+      ? [...existingOrder, newId]
+      : [...employees.map(e => e.id), ...existing.map(e => e.id), newId];
+
+    await ref.set({
+      weekId: wid,
+      weekStart: dayKey(ws),
+      manualEmployees: [...existing, newExtra],
+      empOrder: nextOrder,
+      updatedAt: Date.now()
+    }, { merge: true });
+
+    closeModal();
+    toast(`Extra « ${name} » ajouté pour cette semaine.`, "success");
+  } catch (err) {
+    console.error("saveManualEmployee failed:", err);
+    toast("Erreur ajout extra : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// Retrait d'un extra — confirmation puis suppression de manualEmployees,
+// actualShifts[id], tipMultipliers[id], et de l'entrée dans empOrder.
+function removeManualEmployee(id) {
+  const extras = getManualEmployees();
+  const ex = extras.find(e => e.id === id);
+  if (!ex) return;
+  openConfirm(
+    "Retirer cet extra ?",
+    `Cela va supprimer <strong>${esc(ex.name)}</strong> de cette semaine, ses heures saisies et son multiplicateur de pourboires.<br><br>
+     ⚠ Action irréversible pour cette semaine.<br>
+     ✓ Les autres semaines ne sont pas affectées.<br><br>
+     Continuer ?`,
+    () => doRemoveManualEmployee(id),
+    true
+  );
+}
+
+async function doRemoveManualEmployee(id) {
+  try {
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    const ref = db.collection("payroll").doc(wid);
+    const snap = await ref.get();
+    if (!snap.exists) return;
+    const data = snap.data() || {};
+    const newExtras = (data.manualEmployees || []).filter(e => e.id !== id);
+    const newOrder = Array.isArray(data.empOrder) ? data.empOrder.filter(eid => eid !== id) : null;
+    const newShifts = { ...(data.actualShifts || {}) };
+    delete newShifts[id];
+    const newMults = { ...(data.tipMultipliers || {}) };
+    delete newMults[id];
+
+    const update = {
+      weekId: wid,
+      weekStart: dayKey(ws),
+      manualEmployees: newExtras,
+      actualShifts: newShifts,
+      tipMultipliers: newMults,
+      updatedAt: Date.now()
+    };
+    if (newOrder !== null) update.empOrder = newOrder;
+
+    // Set sans merge pour les sous-objets (on a déjà fait le diff côté client)
+    await ref.set(update, { merge: true });
+    toast("Extra retiré.", "success");
+  } catch (err) {
+    console.error("doRemoveManualEmployee failed:", err);
+    toast("Erreur retrait : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// ─ Drag & drop pour réordonner les lignes employés ─────────
+// Calqué sur empRowDragStart/Over/Drop dans pages-hr.js, mais écrit dans
+// payroll/{weekId}.empOrder[] au lieu de employees.sortOrder.
+function payrollRowDragStart(e, id) {
+  if (payrollWeekData?.locked) { e.preventDefault(); return; }
+  _payrollDragId = id;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move";
+    try { e.dataTransfer.setData("text/plain", id); } catch (_) {}
+  }
+  const tr = document.querySelector(`tr[data-emp-id="${id}"]`);
+  setTimeout(() => tr && tr.classList.add("schedule-row--dragging"), 0);
+}
+
+function payrollRowDragOver(e, id) {
+  if (_payrollDragId === null || id === _payrollDragId) return;
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  const tr = document.querySelector(`tr[data-emp-id="${id}"]`);
+  if (!tr) return;
+  tr.classList.add("schedule-row--drag-over");
+  const rect = tr.getBoundingClientRect();
+  const before = (e.clientY - rect.top) < rect.height / 2;
+  tr.classList.toggle("schedule-row--drop-before", before);
+  tr.classList.toggle("schedule-row--drop-after", !before);
+}
+
+function payrollRowDragLeave(e) {
+  const tr = e.currentTarget;
+  if (!tr) return;
+  const related = e.relatedTarget;
+  if (related && tr.contains(related)) return;
+  tr.classList.remove("schedule-row--drag-over", "schedule-row--drop-before", "schedule-row--drop-after");
+}
+
+function payrollRowDragEnd() {
+  document.querySelectorAll("tr[data-emp-id]").forEach(tr =>
+    tr.classList.remove("schedule-row--dragging", "schedule-row--drag-over", "schedule-row--drop-before", "schedule-row--drop-after")
+  );
+  _payrollDragId = null;
+}
+
+async function payrollRowDrop(e, targetId) {
+  e.preventDefault();
+  const srcId = _payrollDragId;
+  const tr = document.querySelector(`tr[data-emp-id="${targetId}"]`);
+  const dropBefore = tr && tr.classList.contains("schedule-row--drop-before");
+  payrollRowDragEnd();
+  if (!srcId || srcId === targetId) return;
+
+  // Recomposer l'ordre des IDs à partir de la liste fusionnée actuelle
+  const all = getAllPayrollEmployees();
+  const ids = all.map(emp => emp.id);
+  const srcIdx = ids.indexOf(srcId);
+  const tgtIdx = ids.indexOf(targetId);
+  if (srcIdx < 0 || tgtIdx < 0) return;
+  ids.splice(srcIdx, 1);
+  let insertAt = tgtIdx;
+  if (srcIdx < tgtIdx) insertAt -= 1;
+  if (!dropBefore) insertAt += 1;
+  insertAt = Math.max(0, Math.min(insertAt, ids.length));
+  ids.splice(insertAt, 0, srcId);
+
+  try {
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    await db.collection("payroll").doc(wid).set({
+      weekId: wid,
+      weekStart: dayKey(ws),
+      empOrder: ids,
+      updatedAt: Date.now()
+    }, { merge: true });
+  } catch (err) {
+    console.error("payrollRowDrop failed:", err);
+    toast("Erreur réorganisation : " + (err.message || err.code || err), "error", 5000);
   }
 }
