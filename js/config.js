@@ -47,7 +47,7 @@ const ROLE_PERMISSIONS = {
   employee: {
     canAccess: ["inventaire", "pointage"],
     canWrite:  ["inventaire", "pointage"], // écriture = mise à jour du stock + pointage
-    homePage: "inventaire"
+    homePage: "pointage" // v3.17.2 : la tablette permanente s'ouvre directement sur le pointage
   }
 };
 

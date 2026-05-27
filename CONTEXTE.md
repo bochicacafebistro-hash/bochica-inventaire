@@ -2,7 +2,11 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.17.0** — **Pointage : nouvelle page kiosque pour entrée/sortie par PIN**. Nouveau module `pages-punch.js` (~330 lignes) + section CSS dédiée. Chaque employé tape son PIN (déjà configuré dans sa fiche), le système l'identifie, affiche un seul gros bouton **ENTRÉE** ou **SORTIE** détecté automatiquement selon ce qui a déjà été pointé aujourd'hui. Les punches écrivent directement dans `payroll/{weekId}.actualShifts` → le tableau de Salaires & Pourboires se remplit tout seul. Règles Firestore élargies : tout utilisateur authentifié peut écrire sur `actualShifts` uniquement (verrouillage, pourboires et autres champs restent admin only). UI tactile (clavier 96×96 px, gros boutons), live clock, écran de confirmation post-punch, retour auto au PIN après 3 s. **Important** : après déploiement, publier `firestore.rules` mis à jour dans la Console Firebase.
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.17.2** — **Page d'accueil du rôle Employé = Pointage**. `homePage` du rôle `employee` passé de `inventaire` à `pointage` dans `config.js`. Au login (et au clic sur le logo Bochica), la tablette permanente s'ouvre maintenant directement sur le clavier de pointage — prête à recevoir un PIN sans aucun clic intermédiaire. L'employé garde toujours accès à Inventaire via la sidebar s'il veut le consulter.
+>
+> ⚠️ **26 mai 2026 — v3.17.1** — **Pointage : fix auto-retour au keypad après un punch**. Bug : après avoir cliqué ENTRÉE/SORTIE, l'écran de confirmation restait bloqué et il fallait cliquer un bouton manuellement pour revenir au PIN. Cause : `renderPunch()` faisait `clearTimeout(_punchAutoResetTimer)` au début de chaque render, ce qui tuait le timer juste après qu'on l'ait armé. Fix : retrait du clearTimeout dans renderPunch (il reste dans punchReset/punchBackToKeypad pour les vrais cas d'annulation), et le setTimeout est désormais placé APRÈS renderPage(). Délai aussi raccourci de 3,5 s → 1,8 s pour fluidifier les changements d'employé pendant un rush. Le bouton « Toucher pour continuer » est renommé « Suivant → » (ne sert plus qu'à zapper l'attente).
+>
+> ⚠️ **26 mai 2026 — v3.17.0** — **Pointage : nouvelle page kiosque pour entrée/sortie par PIN**. Nouveau module `pages-punch.js` (~330 lignes) + section CSS dédiée. Chaque employé tape son PIN (déjà configuré dans sa fiche), le système l'identifie, affiche un seul gros bouton **ENTRÉE** ou **SORTIE** détecté automatiquement selon ce qui a déjà été pointé aujourd'hui. Les punches écrivent directement dans `payroll/{weekId}.actualShifts` → le tableau de Salaires & Pourboires se remplit tout seul. Règles Firestore élargies : tout utilisateur authentifié peut écrire sur `actualShifts` uniquement (verrouillage, pourboires et autres champs restent admin only). UI tactile (clavier 96×96 px, gros boutons), live clock, écran de confirmation post-punch, retour auto au PIN après 3 s. **Important** : après déploiement, publier `firestore.rules` mis à jour dans la Console Firebase.
 >
 > ⚠️ **26 mai 2026 — v3.16.3** — **Typo unifiée Horaires + Salaires + Simulation**. La refonte typo de la v3.16.2 (Inter Bold 16-18 px, tabular-nums, verts/rouges saturés) est maintenant étendue à toutes les tables `.schedule-table` — donc aussi à la page Employés & Horaires et à la page Simulation paie. Sélecteurs réorganisés en 3 sections : SHARED (`.schedule-table`), PAYROLL-ONLY (`.payroll-tip-amount` etc.), DARK MODE.
 >
@@ -475,6 +479,25 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Page d'accueil employé = Pointage (v3.17.2) 🏠⏱️
+- `ROLE_PERMISSIONS.employee.homePage` passé de `"inventaire"` à `"pointage"` dans `config.js`.
+- Effet : au login du compte « Employe » (typiquement sur la tablette permanente à l'entrée), la page de pointage s'ouvre tout de suite — prête à recevoir un PIN sans aucun clic intermédiaire. Un clic sur le logo Bochica en haut à gauche ramène aussi à `pointage` pour ce rôle.
+- L'item « Inventaire » reste dans la sidebar (l'employé y a toujours accès s'il veut consulter ou mettre à jour le stock).
+- Aucun changement pour les autres rôles : admin garde `dashboard` comme accueil, chef garde `inventaire`.
+- **CACHE_VERSION** → `v3.17.2`
+
+### 26 mai 2026 — Pointage : fix auto-retour au keypad (v3.17.1) 🐞↩️
+- **Bug critique** : après avoir cliqué ENTRÉE ou SORTIE, l'écran de confirmation restait affiché indéfiniment. L'employé suivant devait cliquer manuellement « Toucher pour continuer ». Le `setTimeout` d'auto-retour était bien armé mais immédiatement détruit par `renderPunch()` qui faisait `clearTimeout(_punchAutoResetTimer)` au début de chaque render.
+- **Fix** :
+  1. Retrait du `clearTimeout` dans `renderPunch()` — le nettoyage du timer reste dans `punchReset()` et `punchBackToKeypad()` pour les cas d'annulation explicite.
+  2. Le `setTimeout` est désormais placé **après** `renderPage()` dans `punchDoAction()`, `punchKeyOk()` (cas PIN invalide) et `catch (err)` — pour qu'aucun re-render imprévu ne le tue.
+- **Délais raccourcis** pour fluidifier les changements d'employé pendant un rush :
+  - Confirmation post-punch : 3,5 s → **1,8 s**
+  - Erreur PIN invalide : 3 s → **2,2 s**
+  - Erreur réseau : 4 s → **2,5 s**
+- Bouton « Toucher pour continuer » renommé en **« Suivant → »** (avec icône arrow-right) — il ne sert plus qu'à zapper l'attente.
+- **CACHE_VERSION** → `v3.17.1`
 
 ### 26 mai 2026 — Pointage : kiosque PIN entrée/sortie (v3.17.0) ⏱️🔢
 

@@ -54,8 +54,10 @@ function _punchDateLong() {
 
 // ─ Render principal ───────────────────────────────────────
 function renderPunch() {
-  // Annule tout timer pendant (cas où on re-render manuellement)
-  if (_punchAutoResetTimer) { clearTimeout(_punchAutoResetTimer); _punchAutoResetTimer = null; }
+  // ⚠ NE PAS clearer _punchAutoResetTimer ici — c'est ce qui faisait que
+  // l'auto-retour au keypad ne fonctionnait pas (v3.17.0 → fix v3.17.1).
+  // Le timer doit survivre au re-render qui suit immédiatement le punch.
+  // Le clear se fait dans punchReset() et punchBackToKeypad() à la place.
 
   let body = "";
   if (_punchState === "keypad")     body = renderPunchKeypadHTML();
@@ -171,7 +173,7 @@ function renderPunchConfirmedHTML() {
     <div class="punch-confirmed-name">${esc(emp?.name || "")}</div>
     <div class="punch-confirmed-time">à ${_punchActionTime || _punchNowHHMM()}</div>
     <div class="punch-confirmed-wish">${wish}</div>
-    <button class="punch-tap-anywhere" onclick="punchReset()">Toucher pour continuer</button>
+    <button class="punch-tap-anywhere" onclick="punchReset()">Suivant ${icon("arrow-right", 14)}</button>
   </div>`;
 }
 
@@ -180,7 +182,7 @@ function renderPunchErrorHTML() {
   return `<div class="punch-error-screen">
     <div class="punch-error-icon">${icon("alert", 96)}</div>
     <div class="punch-error-msg">${esc(_punchErrMessage || "PIN non reconnu")}</div>
-    <button class="punch-tap-anywhere" onclick="punchReset()">Réessayer</button>
+    <button class="punch-tap-anywhere" onclick="punchReset()">Suivant ${icon("arrow-right", 14)}</button>
   </div>`;
 }
 
@@ -225,8 +227,8 @@ function punchKeyOk() {
   if (!emp) {
     _punchErrMessage = "PIN non reconnu — vérifie avec l'admin.";
     _punchState = "error";
-    _punchAutoResetTimer = setTimeout(punchReset, 3000);
     renderPage();
+    _punchAutoResetTimer = setTimeout(punchReset, 2200);
     return;
   }
   _punchEmployee = emp;
@@ -289,14 +291,17 @@ async function punchDoAction(action) {
 
     _punchAction = displayAction;
     _punchState = "confirmed";
-    _punchAutoResetTimer = setTimeout(punchReset, 3500);
+    // Délai court (1,8 s) pour fluidifier les changements d'employé pendant un
+    // rush — l'écran de confirmation reste visible le temps qu'on lise « Marie,
+    // entrée à 17:32 » puis retour auto au keypad pour le suivant.
     renderPage();
+    _punchAutoResetTimer = setTimeout(punchReset, 1800);
   } catch (err) {
     console.error("Punch failed:", err);
     _punchErrMessage = "Erreur d'enregistrement. Réessaie ou avise l'admin.";
     _punchState = "error";
-    _punchAutoResetTimer = setTimeout(punchReset, 4000);
     renderPage();
+    _punchAutoResetTimer = setTimeout(punchReset, 2500);
   }
 }
 
