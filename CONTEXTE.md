@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.16.0** — **Salaires : export PDF + fix bug entrée/sortie qui s'effacent**. Nouveau bouton « Exporter PDF » dans la toolbar — génère un rapport landscape Letter complet (en-tête Bochica, KPI, pourboires par jour, tableau détaillé heures entrée/sortie + salaires + pourboires + totaux, récap par employé avec bonus $/h, multi-pages auto, footer). Bug critique corrigé : quand on modifiait une heure d'entrée, l'heure de sortie s'effaçait (et inverse) parce que le 1er override n'écrivait qu'un seul champ → `getActualShift` voyait alors un override partiel sans tomber sur le planifié pour le champ absent. Fix : `updateActualShift` lit maintenant la valeur courante visible avant d'écrire et pousse toujours start+end ensemble.
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.16.1** — **Tableau Salaires : alternance jaune/bleu comme Horaires**. Chaque ligne employé reçoit maintenant `--emp-rgb` jaune Bochica (lignes paires) ou bleu Colombie (lignes impaires), exactement comme la page Employés & Horaires. Les anciens fonds bleu pâle (auto-importé) et jaune (modifié) ont été retirés (conflit visuel avec l'alternance) — la signalétique « cellule modifiée » passe désormais uniquement par la barre ambrée à gauche. Légende mise à jour.
+>
+> ⚠️ **26 mai 2026 — v3.16.0** — **Salaires : export PDF + fix bug entrée/sortie qui s'effacent**. Nouveau bouton « Exporter PDF » dans la toolbar — génère un rapport landscape Letter complet (en-tête Bochica, KPI, pourboires par jour, tableau détaillé heures entrée/sortie + salaires + pourboires + totaux, récap par employé avec bonus $/h, multi-pages auto, footer). Bug critique corrigé : quand on modifiait une heure d'entrée, l'heure de sortie s'effaçait (et inverse) parce que le 1er override n'écrivait qu'un seul champ → `getActualShift` voyait alors un override partiel sans tomber sur le planifié pour le champ absent. Fix : `updateActualShift` lit maintenant la valeur courante visible avant d'écrire et pousse toujours start+end ensemble.
 >
 > ⚠️ **26 mai 2026 — v3.15.3** — **Page Salaires plus large + lignes compactées**. Nouveau modifier CSS `.page.page--wide` (max-width:none) appliqué au wrapper de la page Salaires — le tableau utilise toute la largeur disponible au lieu d'être bridé à 1200 px. Hauteur de ligne réduite de 42 px → 36 px (32 px en mobile) spécifiquement pour `.payroll-table` (le planning Employés & Horaires garde ses 42 px). Plus de respiration horizontale, moins de scroll vertical.
 >
@@ -467,6 +469,16 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Tableau Salaires : alternance jaune/bleu (v3.16.1) 🟡🔵
+- Le tableau de **Salaires & Pourboires** reprend désormais l'alternance bicolore du tableau **Employés & Horaires** (jaune Bochica `247,179,44` sur les lignes paires, bleu Colombie `74,144,226` sur les impaires). Chaque employé est visuellement distinct, plus facile à suivre horizontalement quand on a 15-20 lignes.
+- Implémentation : `renderSalaires()` ajoute maintenant l'index de ligne à `empRows.map((row, rowIdx) => …)`, calcule `empRgb` selon `rowIdx % 2`, et expose `--emp-rgb` + `--emp-color` en `style` inline sur chaque `<tr>`. Les règles CSS `.schedule-emp-row .schedule-td--*` existantes (partagées avec Horaires) prennent ensuite le relais pour teinter le fond.
+- **Conflits visuels nettoyés** :
+  - Fond `is-modified` (ambré clair) retiré — le marqueur passe désormais uniquement par la **barre ambrée 3 px à gauche** de la cellule (déjà présente). Bien lisible sur jaune comme sur bleu.
+  - Fond `is-auto` (bleu pâle = auto-importé du planifié) retiré — il faisait doublon avec le bleu de l'alternance. Les cellules sans override sont la majorité, donc l'absence de marqueur supplémentaire est cohérente avec le défaut.
+- **Légende mise à jour** sous le tableau : « Lignes jaunes / bleues = un employé par ligne · Barre ambrée à gauche = cellule modifiée · ★ = heures éligibles aux pourboires ».
+- Aucun impact sur le PDF (qui a déjà sa propre logique d'alternance plus discrète).
+- **CACHE_VERSION** → `v3.16.1`
 
 ### 26 mai 2026 — Export PDF du rapport de paie + fix bug entrée/sortie (v3.16.0) 📄🐞
 

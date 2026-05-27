@@ -4269,10 +4269,10 @@ textarea.md-input{
   background:linear-gradient(90deg, rgba(247,179,44,.14), transparent 70%);
 }
 
-/* Cellule modifiée par rapport au planifié — léger fond ambré */
-.payroll-td-cell.is-modified{
-  background:rgba(247,179,44,.08) !important;
-}
+/* Cellule modifiée par rapport au planifié
+   v3.16.1 : fond retiré (conflit avec l'alternance jaune/bleu des lignes) —
+   la signalétique passe désormais uniquement par la barre ambrée à gauche
+   (::before plus bas), qui se distingue bien sur les deux couleurs de ligne. */
 .payroll-td-cell{
   position:relative;
 }
@@ -4309,12 +4309,9 @@ textarea.md-input{
 }
 
 /* Cellule en mode "auto-import depuis le planifié" — apparence neutre/discrète */
-.payroll-td-cell.is-auto:not(.is-modified){
-  background:rgba(74,144,226,.04);
-}
-.dark .payroll-td-cell.is-auto:not(.is-modified){
-  background:rgba(74,144,226,.08);
-}
+/* (v3.16.1 : fond is-auto retiré — l'alternance jaune/bleu de la ligne le
+   masquait de toute façon, et les cellules sans override sont la majorité,
+   donc l'absence de marqueur supplémentaire est cohérente avec le défaut.) */
 
 /* ── Bannière d'info auto-import ── */
 .payroll-info-banner{
@@ -4895,9 +4892,8 @@ textarea.md-input{
 .dark .payroll-tips-pool--service{
   background:rgba(74,144,226,.15);
 }
-.dark .payroll-td-cell.is-modified{
-  background:rgba(247,179,44,.12) !important;
-}
+/* (v3.16.1 : fond is-modified retiré en dark mode aussi — voir la règle
+   light mode plus haut. La barre ambrée à gauche suffit comme indicateur.) */
 
 /* Mobile : empilement vertical */
 @media (max-width: 600px){

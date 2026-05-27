@@ -481,13 +481,21 @@ function renderSalaires() {
             </tr>
           </thead>
           <tbody>
-            ${empRows.map(row => {
+            ${empRows.map((row, rowIdx) => {
               const groupBadge = row.group === "cuisine"
                 ? `<span class="payroll-group-badge payroll-group-badge--kitchen" title="Pool cuisine ${(tipShares.cuisine*100).toFixed(0)}%">${icon("utensils", 10)} ${(tipShares.cuisine*100).toFixed(0)}%</span>`
                 : `<span class="payroll-group-badge payroll-group-badge--service" title="Pool service ${(tipShares.service*100).toFixed(0)}%">${icon("users", 10)} ${(tipShares.service*100).toFixed(0)}%</span>`;
               const gapCls = row.gap > 0.01 ? "is-positive" : row.gap < -0.01 ? "is-negative" : "";
               const gapArrow = row.gap > 0.01 ? "▲" : row.gap < -0.01 ? "▼" : "";
-              return `<tr class="schedule-emp-row ${row.isManual ? "is-manual-emp" : ""}" data-emp-id="${row.emp.id}"
+              // Alternance jaune Bochica / bleu Colombie sur la base du rowIdx
+              // (cohérent avec le tableau Employés & Horaires depuis v3.8.8).
+              // Les règles CSS .schedule-emp-row utilisent --emp-rgb/--emp-color
+              // pour teinter tout le fond de la ligne, donnant un effet zébré
+              // bicolore qui aide à suivre chaque employé horizontalement.
+              const EMP_RGB = ["247,179,44", "74,144,226"]; // jaune Bochica / bleu Colombie
+              const empRgb = EMP_RGB[rowIdx % EMP_RGB.length];
+              const toneClass = rowIdx % 2 === 0 ? "is-odd" : "is-even";
+              return `<tr class="schedule-emp-row ${toneClass} ${row.isManual ? "is-manual-emp" : ""}" data-emp-id="${row.emp.id}" style="--emp-rgb:${empRgb};--emp-color:rgb(${empRgb})"
                 ${isLocked ? "" : `ondragover="payrollRowDragOver(event,'${row.emp.id}')"
                 ondragleave="payrollRowDragLeave(event)"
                 ondrop="payrollRowDrop(event,'${row.emp.id}')"
@@ -633,9 +641,9 @@ function renderSalaires() {
 
       <p class="payroll-legend">
         ${icon("info", 12)}
-        <strong>Légende des cellules :</strong>
-        <span class="payroll-legend-item"><span class="payroll-legend-swatch payroll-legend-swatch--auto"></span> Bleu pâle = importé du planifié</span>
-        <span class="payroll-legend-item"><span class="payroll-legend-swatch payroll-legend-swatch--modified"></span> Jaune = modifié manuellement</span>
+        <strong>Légende :</strong>
+        <span class="payroll-legend-item">Lignes <strong style="color:#b87410">jaunes</strong> / <strong style="color:#3b7cc6">bleues</strong> en alternance = un employé par ligne</span>
+        <span class="payroll-legend-item">Petite <strong>barre ambrée</strong> à gauche d'une cellule = heure modifiée par rapport au planifié</span>
         <span class="payroll-legend-item">★ = heures éligibles aux pourboires (dans la fenêtre de service)</span>
       </p>
     `}
