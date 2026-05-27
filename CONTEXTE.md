@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.16.1** — **Tableau Salaires : alternance jaune/bleu comme Horaires**. Chaque ligne employé reçoit maintenant `--emp-rgb` jaune Bochica (lignes paires) ou bleu Colombie (lignes impaires), exactement comme la page Employés & Horaires. Les anciens fonds bleu pâle (auto-importé) et jaune (modifié) ont été retirés (conflit visuel avec l'alternance) — la signalétique « cellule modifiée » passe désormais uniquement par la barre ambrée à gauche. Légende mise à jour.
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.16.2** — **Tableau Salaires : typo plus grosse + verts/rouges plus vifs**. Refonte de la typo des chiffres : Inter Bold au lieu de Bebas Neue (plus classique et lisible que la police condensée), tailles bumpées (heures/salaire/écart/pourboire 14→16 px, Total à payer 14→18 px, fond accent du total renforcé). Verts saturés (#1f7a1f light / #7fd86b dark) et rouges (#b32820 / #ff7a72) qui ressortent enfin sur les lignes jaunes et bleues alternées. Hauteur de ligne ajustée 36→40 px pour accommoder la nouvelle typo. `font-variant-numeric:tabular-nums` partout pour aligner les chiffres en colonne.
+>
+> ⚠️ **26 mai 2026 — v3.16.1** — **Tableau Salaires : alternance jaune/bleu comme Horaires**. Chaque ligne employé reçoit maintenant `--emp-rgb` jaune Bochica (lignes paires) ou bleu Colombie (lignes impaires), exactement comme la page Employés & Horaires. Les anciens fonds bleu pâle (auto-importé) et jaune (modifié) ont été retirés (conflit visuel avec l'alternance) — la signalétique « cellule modifiée » passe désormais uniquement par la barre ambrée à gauche. Légende mise à jour.
 >
 > ⚠️ **26 mai 2026 — v3.16.0** — **Salaires : export PDF + fix bug entrée/sortie qui s'effacent**. Nouveau bouton « Exporter PDF » dans la toolbar — génère un rapport landscape Letter complet (en-tête Bochica, KPI, pourboires par jour, tableau détaillé heures entrée/sortie + salaires + pourboires + totaux, récap par employé avec bonus $/h, multi-pages auto, footer). Bug critique corrigé : quand on modifiait une heure d'entrée, l'heure de sortie s'effaçait (et inverse) parce que le 1er override n'écrivait qu'un seul champ → `getActualShift` voyait alors un override partiel sans tomber sur le planifié pour le champ absent. Fix : `updateActualShift` lit maintenant la valeur courante visible avant d'écrire et pousse toujours start+end ensemble.
 >
@@ -469,6 +471,35 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Salaires : typo plus grosse et verts/rouges vifs (v3.16.2) 🔢🎨
+Suite à un retour utilisateur (« je ne vois pas assez bien les couleurs vertes, ça ressort pas assez, je veux une autre typo plus classique et plus gros »), refonte complète de la typographie et des couleurs sémantiques dans le tableau de paie.
+
+**Typographie — passage de Bebas Neue à Inter Bold**
+- Bebas Neue est une police condensée et stylisée, mauvaise pour la lisibilité des chiffres financiers à petite taille. Remplacée par **Inter** (`var(--font-body)`) avec `font-variant-numeric:tabular-nums` pour des chiffres alignés en colonne.
+- **Tailles bumpées** :
+  - `.payroll-hours-actual` : 14 → **16 px** + `font-weight:800`
+  - `.payroll-hours-planned` : 10 → **12 px** (le « / 14.5h » de référence)
+  - `.payroll-gap-cell` : 14 → **16 px** + `font-weight:800`
+  - `.payroll-tip-amount` : 14 → **16 px** + `font-weight:800`
+  - `.schedule-td--summary` (salaire) : 14 → **16 px** + `font-weight:800`
+  - `.schedule-td--total` (Total à payer) : 14 → **18 px** + `font-weight:900` — la colonne la plus visible, pour fermer la ligne avec impact
+  - `.payroll-time-select` : 13 → **13 px** mais en Inter Bold (avant : mono)
+  - tfoot (totaux semaine) : 16-18 px partout
+
+**Couleurs sémantiques saturées**
+- **Vert positif** (écart ▲, OK, pourboires) : `#1f7a1f` (light) / `#7fd86b` (dark) — au lieu du `#7dbf66` pâle qui se confondait avec le fond.
+- **Rouge négatif** (écart ▼) : `#b32820` (light) / `#ff7a72` (dark).
+- Toutes les règles utilisent `!important` pour gagner contre les anciennes règles plus génériques.
+- Total à payer : fond accent jaune renforcé (`rgba(var(--accent-rgb), .25)`) pour bien démarquer la dernière colonne.
+
+**Hauteur de ligne**
+- 36 → **40 px** pour donner de l'air à la nouvelle typo (Inter 16-18 px est plus haut que Bebas condensé 14 px).
+- Mobile (≤900 px) : 32 → 36 px.
+
+Pas de changement de structure HTML, juste un nouveau bloc CSS scopé `.payroll-table .…` qui override les styles existants. La table Employés & Horaires reste identique (typo Bebas + 42 px de hauteur).
+
+**CACHE_VERSION** → `v3.16.2`
 
 ### 26 mai 2026 — Tableau Salaires : alternance jaune/bleu (v3.16.1) 🟡🔵
 - Le tableau de **Salaires & Pourboires** reprend désormais l'alternance bicolore du tableau **Employés & Horaires** (jaune Bochica `247,179,44` sur les lignes paires, bleu Colombie `74,144,226` sur les impaires). Chaque employé est visuellement distinct, plus facile à suivre horizontalement quand on a 15-20 lignes.

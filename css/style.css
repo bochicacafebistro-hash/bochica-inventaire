@@ -4072,13 +4072,13 @@ textarea.md-input{
 /* Largeur minimale du tableau pour éviter le chevauchement (scroll horizontal au besoin) */
 .payroll-table{min-width:1100px}
 
-/* Hauteur de ligne compactée spécifiquement pour la table paie (v3.15.3)
-   — la table Employés & Horaires reste à 42px, voir .schedule-emp-row plus haut.
-   Le pill multiplicateur ayant été retiré en v3.15.2, la cellule employé tient
-   facilement sur 36px (nom + 2 mini-badges sur une seule ligne wrap). */
+/* Hauteur de ligne compactée spécifiquement pour la table paie
+   (v3.15.3 : 42→36px ; v3.16.2 : 36→40px pour respirer avec la nouvelle typo
+   Inter 16-18px plus haute que Bebas condensé).
+   La table Employés & Horaires reste à 42px, voir .schedule-emp-row plus haut. */
 .payroll-table .schedule-emp-row,
 .payroll-table .schedule-emp-row td{
-  height:36px;
+  height:40px;
 }
 .payroll-table .schedule-td--emp{
   padding-top:3px;
@@ -4087,7 +4087,7 @@ textarea.md-input{
 @media (max-width: 900px){
   .payroll-table .schedule-emp-row,
   .payroll-table .schedule-emp-row td{
-    height:32px;
+    height:36px;
   }
 }
 
@@ -4437,9 +4437,147 @@ textarea.md-input{
   color:var(--status-red, #d9534f);
 }
 .payroll-gap-arrow{
-  font-size:11px;
+  font-size:13px;
   margin-right:2px;
   vertical-align:1px;
+  font-weight:900;
+}
+
+/* ─────────────────────────────────────────────────────────── */
+/* v3.16.2 — Refonte typo des chiffres de la table paie       */
+/* Plus gros, Inter (plus lisible que Bebas condensé), couleurs */
+/* vert/rouge plus saturées pour ressortir sur les lignes      */
+/* jaunes/bleues alternées.                                    */
+/* ─────────────────────────────────────────────────────────── */
+
+/* Couleurs sémantiques saturées (compatible AA sur fond clair) */
+.payroll-table .payroll-color-positive,
+.payroll-table .payroll-gap-cell.is-positive,
+.payroll-table .payroll-gap-ok{
+  color:#1f7a1f;
+}
+.payroll-table .payroll-gap-cell.is-negative{
+  color:#b32820;
+}
+/* Vert "pourboire" : un peu plus saturé que le statut vert pâle */
+.payroll-table .payroll-tip-amount,
+.payroll-table .payroll-day-tip{
+  color:#1f7a1f !important;
+  font-family:var(--font-body) !important;
+}
+
+/* Hours actual / planned : Inter bold, plus gros */
+.payroll-table .payroll-hours-actual{
+  font-family:var(--font-body) !important;
+  font-size:16px !important;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  color:var(--text);
+}
+.payroll-table .payroll-hours-planned{
+  font-family:var(--font-body) !important;
+  font-size:12px !important;
+  font-weight:600;
+  color:var(--text3);
+}
+.payroll-table .payroll-hours-sep{
+  font-size:14px;
+  font-weight:600;
+}
+
+/* Écart : taille plus marquée + meilleure visibilité */
+.payroll-table .payroll-gap-cell{
+  font-family:var(--font-body) !important;
+  font-size:16px !important;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:0;
+}
+.payroll-table .payroll-gap-ok{
+  font-family:var(--font-body);
+  font-size:16px;
+  font-weight:900;
+}
+
+/* Pourboire (montant principal dans la cellule pourboire) */
+.payroll-table .payroll-tip-amount{
+  font-size:16px !important;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:0;
+}
+.payroll-table .payroll-tip-hours{
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:600;
+  color:var(--text3);
+}
+
+/* Salaire (colonne entre Écart et Pourboire) */
+.payroll-table .schedule-td--summary{
+  font-family:var(--font-body) !important;
+  font-size:16px !important;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  color:var(--text);
+}
+
+/* Total à payer (dernière colonne) — la plus grosse, en noir chaud */
+.payroll-table .schedule-td--total{
+  font-family:var(--font-body) !important;
+  font-size:18px !important;
+  font-weight:900 !important;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:0;
+  color:var(--text) !important;
+  background:rgba(var(--accent-rgb), .25) !important; /* fond accent plus marqué */
+}
+
+/* Pourboire du jour affiché en bas de la cellule sortie */
+.payroll-table .payroll-day-tip{
+  font-family:var(--font-body) !important;
+  font-size:11px;
+  font-weight:700;
+}
+
+/* Tfoot : totaux semaine — encore plus marqués */
+.payroll-table .schedule-tfoot-row td,
+.payroll-table .schedule-tfoot-val{
+  font-family:var(--font-body) !important;
+  font-size:16px !important;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+}
+.payroll-table .schedule-tfoot-row .schedule-td--total{
+  font-size:18px !important;
+}
+.payroll-table .schedule-tfoot-row .payroll-gap-cell.is-positive{color:#1f7a1f}
+.payroll-table .schedule-tfoot-row .payroll-gap-cell.is-negative{color:#b32820}
+
+/* Time inputs (heures entrée/sortie) — bumpés pour cohérence */
+.payroll-table .payroll-time-select{
+  font-family:var(--font-body) !important;
+  font-size:13px !important;
+  font-weight:700;
+  font-variant-numeric:tabular-nums;
+}
+
+/* Dark mode : verts/rouges éclaircis pour rester contrastés */
+[data-theme="dark"] .payroll-table .payroll-color-positive,
+[data-theme="dark"] .payroll-table .payroll-gap-cell.is-positive,
+[data-theme="dark"] .payroll-table .payroll-gap-ok,
+[data-theme="dark"] .payroll-table .payroll-tip-amount,
+[data-theme="dark"] .payroll-table .payroll-day-tip,
+[data-theme="dark"] .payroll-table .schedule-tfoot-row .payroll-gap-cell.is-positive{
+  color:#7fd86b !important;
+}
+[data-theme="dark"] .payroll-table .payroll-gap-cell.is-negative,
+[data-theme="dark"] .payroll-table .schedule-tfoot-row .payroll-gap-cell.is-negative{
+  color:#ff7a72 !important;
+}
+[data-theme="dark"] .payroll-table .schedule-td--total{
+  color:var(--accent) !important;
+  background:rgba(var(--accent-rgb), .22) !important;
 }
 
 /* Badge cuisine 25% / service 75% sur la cellule employé */
