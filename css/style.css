@@ -4444,77 +4444,19 @@ textarea.md-input{
 }
 
 /* ─────────────────────────────────────────────────────────── */
-/* v3.16.2 — Refonte typo des chiffres de la table paie       */
-/* Plus gros, Inter (plus lisible que Bebas condensé), couleurs */
-/* vert/rouge plus saturées pour ressortir sur les lignes      */
-/* jaunes/bleues alternées.                                    */
+/* v3.16.3 — Typo unifiée Horaires + Salaires + Simulation     */
+/* Inter Bold (plus classique et lisible que Bebas condensé),  */
+/* tailles bumpées, chiffres tabular pour alignement parfait,  */
+/* verts/rouges saturés pour ressortir sur les fonds jaunes/   */
+/* bleus des lignes alternées.                                 */
+/* (Ce bloc remplace l'ancien v3.16.2 scopé à .payroll-table.) */
 /* ─────────────────────────────────────────────────────────── */
 
-/* Couleurs sémantiques saturées (compatible AA sur fond clair) */
-.payroll-table .payroll-color-positive,
-.payroll-table .payroll-gap-cell.is-positive,
-.payroll-table .payroll-gap-ok{
-  color:#1f7a1f;
-}
-.payroll-table .payroll-gap-cell.is-negative{
-  color:#b32820;
-}
-/* Vert "pourboire" : un peu plus saturé que le statut vert pâle */
-.payroll-table .payroll-tip-amount,
-.payroll-table .payroll-day-tip{
-  color:#1f7a1f !important;
-  font-family:var(--font-body) !important;
-}
+/* ── SECTION SHARED : s'applique à toutes les .schedule-table ── */
+/* (Horaires + Salaires + Simulation — sélecteurs sans suffixe)   */
 
-/* Hours actual / planned : Inter bold, plus gros */
-.payroll-table .payroll-hours-actual{
-  font-family:var(--font-body) !important;
-  font-size:16px !important;
-  font-weight:800;
-  font-variant-numeric:tabular-nums;
-  color:var(--text);
-}
-.payroll-table .payroll-hours-planned{
-  font-family:var(--font-body) !important;
-  font-size:12px !important;
-  font-weight:600;
-  color:var(--text3);
-}
-.payroll-table .payroll-hours-sep{
-  font-size:14px;
-  font-weight:600;
-}
-
-/* Écart : taille plus marquée + meilleure visibilité */
-.payroll-table .payroll-gap-cell{
-  font-family:var(--font-body) !important;
-  font-size:16px !important;
-  font-weight:800;
-  font-variant-numeric:tabular-nums;
-  letter-spacing:0;
-}
-.payroll-table .payroll-gap-ok{
-  font-family:var(--font-body);
-  font-size:16px;
-  font-weight:900;
-}
-
-/* Pourboire (montant principal dans la cellule pourboire) */
-.payroll-table .payroll-tip-amount{
-  font-size:16px !important;
-  font-weight:800;
-  font-variant-numeric:tabular-nums;
-  letter-spacing:0;
-}
-.payroll-table .payroll-tip-hours{
-  font-family:var(--font-body);
-  font-size:11px;
-  font-weight:600;
-  color:var(--text3);
-}
-
-/* Salaire (colonne entre Écart et Pourboire) */
-.payroll-table .schedule-td--summary{
+/* Colonnes résumé (Heures / Taux / Salaire / etc.) */
+.schedule-table .schedule-td--summary{
   font-family:var(--font-body) !important;
   font-size:16px !important;
   font-weight:800;
@@ -4522,37 +4464,108 @@ textarea.md-input{
   color:var(--text);
 }
 
-/* Total à payer (dernière colonne) — la plus grosse, en noir chaud */
-.payroll-table .schedule-td--total{
+/* Colonne Total à payer (dernière colonne) — la plus grosse */
+.schedule-table .schedule-td--total{
   font-family:var(--font-body) !important;
   font-size:18px !important;
   font-weight:900 !important;
   font-variant-numeric:tabular-nums;
   letter-spacing:0;
   color:var(--text) !important;
-  background:rgba(var(--accent-rgb), .25) !important; /* fond accent plus marqué */
+  background:rgba(var(--accent-rgb), .25) !important;
 }
 
-/* Pourboire du jour affiché en bas de la cellule sortie */
-.payroll-table .payroll-day-tip{
-  font-family:var(--font-body) !important;
-  font-size:11px;
-  font-weight:700;
-}
-
-/* Tfoot : totaux semaine — encore plus marqués */
-.payroll-table .schedule-tfoot-row td,
-.payroll-table .schedule-tfoot-val{
+/* Tfoot : totaux semaine — Inter bold tabular, plus gros */
+.schedule-table .schedule-tfoot-row td,
+.schedule-table .schedule-tfoot-val{
   font-family:var(--font-body) !important;
   font-size:16px !important;
   font-weight:800;
   font-variant-numeric:tabular-nums;
 }
-.payroll-table .schedule-tfoot-row .schedule-td--total{
+.schedule-table .schedule-tfoot-row .schedule-td--total{
   font-size:18px !important;
 }
-.payroll-table .schedule-tfoot-row .payroll-gap-cell.is-positive{color:#1f7a1f}
-.payroll-table .schedule-tfoot-row .payroll-gap-cell.is-negative{color:#b32820}
+
+/* Ligne Écart du tfoot Horaires (et autres tables) — couleurs vives */
+.schedule-table .schedule-tfoot-row--gap .is-positive{
+  color:#1f7a1f !important;
+  font-weight:800 !important;
+}
+.schedule-table .schedule-tfoot-row--gap .is-negative{
+  color:#b32820 !important;
+  font-weight:800 !important;
+}
+
+/* ── SECTION PAYROLL-ONLY : classes qui n'existent qu'en Salaires ── */
+
+/* Couleurs sémantiques saturées sur les classes propres au payroll */
+.payroll-gap-cell.is-positive,
+.payroll-gap-ok{
+  color:#1f7a1f;
+}
+.payroll-gap-cell.is-negative{
+  color:#b32820;
+}
+.payroll-tip-amount,
+.payroll-day-tip{
+  color:#1f7a1f !important;
+  font-family:var(--font-body) !important;
+}
+
+/* Heures réelles / planifiées — affichage compact "16h / 14.5h" */
+.payroll-hours-actual{
+  font-family:var(--font-body) !important;
+  font-size:16px !important;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  color:var(--text);
+}
+.payroll-hours-planned{
+  font-family:var(--font-body) !important;
+  font-size:12px !important;
+  font-weight:600;
+  color:var(--text3);
+}
+.payroll-hours-sep{
+  font-size:14px;
+  font-weight:600;
+}
+
+/* Écart (delta heures réel - planifié) */
+.payroll-gap-cell{
+  font-family:var(--font-body) !important;
+  font-size:16px !important;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:0;
+}
+.payroll-gap-ok{
+  font-family:var(--font-body);
+  font-size:16px;
+  font-weight:900;
+}
+
+/* Montant pourboire principal dans la cellule pourboire */
+.payroll-tip-amount{
+  font-size:16px !important;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:0;
+}
+.payroll-tip-hours{
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:600;
+  color:var(--text3);
+}
+
+/* Pourboire du jour affiché en bas de la cellule sortie */
+.payroll-day-tip{
+  font-family:var(--font-body) !important;
+  font-size:11px;
+  font-weight:700;
+}
 
 /* Time inputs (heures entrée/sortie) — bumpés pour cohérence */
 .payroll-table .payroll-time-select{
@@ -4562,20 +4575,25 @@ textarea.md-input{
   font-variant-numeric:tabular-nums;
 }
 
-/* Dark mode : verts/rouges éclaircis pour rester contrastés */
-[data-theme="dark"] .payroll-table .payroll-color-positive,
-[data-theme="dark"] .payroll-table .payroll-gap-cell.is-positive,
-[data-theme="dark"] .payroll-table .payroll-gap-ok,
-[data-theme="dark"] .payroll-table .payroll-tip-amount,
-[data-theme="dark"] .payroll-table .payroll-day-tip,
+/* Écart du tfoot dans la table payroll spécifiquement */
+.payroll-table .schedule-tfoot-row .payroll-gap-cell.is-positive{color:#1f7a1f}
+.payroll-table .schedule-tfoot-row .payroll-gap-cell.is-negative{color:#b32820}
+
+/* ── SECTION DARK MODE — verts/rouges éclaircis pour rester contrastés ── */
+[data-theme="dark"] .schedule-table .schedule-tfoot-row--gap .is-positive,
+[data-theme="dark"] .payroll-gap-cell.is-positive,
+[data-theme="dark"] .payroll-gap-ok,
+[data-theme="dark"] .payroll-tip-amount,
+[data-theme="dark"] .payroll-day-tip,
 [data-theme="dark"] .payroll-table .schedule-tfoot-row .payroll-gap-cell.is-positive{
   color:#7fd86b !important;
 }
-[data-theme="dark"] .payroll-table .payroll-gap-cell.is-negative,
+[data-theme="dark"] .schedule-table .schedule-tfoot-row--gap .is-negative,
+[data-theme="dark"] .payroll-gap-cell.is-negative,
 [data-theme="dark"] .payroll-table .schedule-tfoot-row .payroll-gap-cell.is-negative{
   color:#ff7a72 !important;
 }
-[data-theme="dark"] .payroll-table .schedule-td--total{
+[data-theme="dark"] .schedule-table .schedule-td--total{
   color:var(--accent) !important;
   background:rgba(var(--accent-rgb), .22) !important;
 }

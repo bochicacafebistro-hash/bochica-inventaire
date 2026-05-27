@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.16.2** — **Tableau Salaires : typo plus grosse + verts/rouges plus vifs**. Refonte de la typo des chiffres : Inter Bold au lieu de Bebas Neue (plus classique et lisible que la police condensée), tailles bumpées (heures/salaire/écart/pourboire 14→16 px, Total à payer 14→18 px, fond accent du total renforcé). Verts saturés (#1f7a1f light / #7fd86b dark) et rouges (#b32820 / #ff7a72) qui ressortent enfin sur les lignes jaunes et bleues alternées. Hauteur de ligne ajustée 36→40 px pour accommoder la nouvelle typo. `font-variant-numeric:tabular-nums` partout pour aligner les chiffres en colonne.
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.16.3** — **Typo unifiée Horaires + Salaires + Simulation**. La refonte typo de la v3.16.2 (Inter Bold 16-18 px, tabular-nums, verts/rouges saturés) est maintenant étendue à toutes les tables `.schedule-table` — donc aussi à la page Employés & Horaires et à la page Simulation paie. Sélecteurs réorganisés en 3 sections : SHARED (`.schedule-table`), PAYROLL-ONLY (`.payroll-tip-amount` etc.), DARK MODE.
+>
+> ⚠️ **26 mai 2026 — v3.16.2** — **Tableau Salaires : typo plus grosse + verts/rouges plus vifs**. Refonte de la typo des chiffres : Inter Bold au lieu de Bebas Neue (plus classique et lisible que la police condensée), tailles bumpées (heures/salaire/écart/pourboire 14→16 px, Total à payer 14→18 px, fond accent du total renforcé). Verts saturés (#1f7a1f light / #7fd86b dark) et rouges (#b32820 / #ff7a72) qui ressortent enfin sur les lignes jaunes et bleues alternées. Hauteur de ligne ajustée 36→40 px pour accommoder la nouvelle typo. `font-variant-numeric:tabular-nums` partout pour aligner les chiffres en colonne.
 >
 > ⚠️ **26 mai 2026 — v3.16.1** — **Tableau Salaires : alternance jaune/bleu comme Horaires**. Chaque ligne employé reçoit maintenant `--emp-rgb` jaune Bochica (lignes paires) ou bleu Colombie (lignes impaires), exactement comme la page Employés & Horaires. Les anciens fonds bleu pâle (auto-importé) et jaune (modifié) ont été retirés (conflit visuel avec l'alternance) — la signalétique « cellule modifiée » passe désormais uniquement par la barre ambrée à gauche. Légende mise à jour.
 >
@@ -471,6 +473,20 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Typo unifiée Horaires + Salaires + Simulation (v3.16.3) 🔢🟰
+Suite à un retour utilisateur (« je veux que le tableau des horaires ressemble plus à celui de pourboires »), la refonte typo de la v3.16.2 (scopée à `.payroll-table`) a été promue à toutes les tables `.schedule-table` — donc Employés & Horaires, Salaires & Pourboires ET Simulation paie partagent maintenant la même grammaire visuelle.
+
+**Sélecteurs réorganisés en 3 sections :**
+1. **SHARED** (`.schedule-table .schedule-td--summary`, `.schedule-td--total`, `.schedule-tfoot-row td`, `.schedule-tfoot-val`, `.schedule-tfoot-row--gap .is-positive/.is-negative`) — Inter Bold 16-18 px, tabular-nums, fond accent renforcé sur le Total, verts/rouges saturés.
+2. **PAYROLL-ONLY** (`.payroll-tip-amount`, `.payroll-gap-cell`, `.payroll-hours-actual`, etc.) — classes qui n'existent qu'en Salaires, gardent leur scope sans préfixe `.payroll-table`.
+3. **DARK MODE** — verts/rouges éclaircis pour rester contrastés sur fond sombre.
+
+**Impact** : la page Employés & Horaires affiche maintenant ses Heures / Taux / Total avec la même typo plus large et plus lisible. La ligne Écart du tfoot bascule en vert vif (#1f7a1f) ou rouge vif (#b32820) — le KPI ressort enfin. La page Simulation paie hérite aussi automatiquement.
+
+Aucun changement de structure HTML — pure refonte CSS qui élargit la portée des règles v3.16.2.
+
+**CACHE_VERSION** → `v3.16.3`
 
 ### 26 mai 2026 — Salaires : typo plus grosse et verts/rouges vifs (v3.16.2) 🔢🎨
 Suite à un retour utilisateur (« je ne vois pas assez bien les couleurs vertes, ça ressort pas assez, je veux une autre typo plus classique et plus gros »), refonte complète de la typographie et des couleurs sémantiques dans le tableau de paie.
