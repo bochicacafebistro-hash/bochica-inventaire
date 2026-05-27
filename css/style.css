@@ -742,6 +742,13 @@ svg{flex-shrink:0;vertical-align:middle}
   width:100%;
 }
 
+/* Variante pleine largeur — utilisée par les pages avec gros tableaux
+   (ex: Salaires & Pourboires) qui bénéficient de respirer au-delà des 1200px */
+.page.page--wide{
+  max-width:none;
+  padding:var(--sp-5) var(--sp-6);
+}
+
 /* ═══════════════════════════════════════════════════════════════
    BOUTONS (système unifié)
    ═══════════════════════════════════════════════════════════════ */
@@ -4058,12 +4065,31 @@ textarea.md-input{
 /* Colonnes jour : padding ramené à la portion congrue */
 .payroll-table .schedule-th--day{padding:4px 2px}
 .payroll-table .schedule-td--day-entry,
-.payroll-table .schedule-td--day-exit{padding:2px 1px}
+.payroll-table .schedule-td--day-exit{padding:1px 1px}
 .payroll-table .payroll-td-cell{vertical-align:middle}
 /* Padding réduit sur summary pour gagner de la place */
-.payroll-table .schedule-td--summary{padding:4px 6px}
+.payroll-table .schedule-td--summary{padding:3px 6px}
 /* Largeur minimale du tableau pour éviter le chevauchement (scroll horizontal au besoin) */
 .payroll-table{min-width:1100px}
+
+/* Hauteur de ligne compactée spécifiquement pour la table paie (v3.15.3)
+   — la table Employés & Horaires reste à 42px, voir .schedule-emp-row plus haut.
+   Le pill multiplicateur ayant été retiré en v3.15.2, la cellule employé tient
+   facilement sur 36px (nom + 2 mini-badges sur une seule ligne wrap). */
+.payroll-table .schedule-emp-row,
+.payroll-table .schedule-emp-row td{
+  height:36px;
+}
+.payroll-table .schedule-td--emp{
+  padding-top:3px;
+  padding-bottom:3px;
+}
+@media (max-width: 900px){
+  .payroll-table .schedule-emp-row,
+  .payroll-table .schedule-emp-row td{
+    height:32px;
+  }
+}
 
 /* Indicateur de fenêtre de service dans l'entête de colonne jour */
 .payroll-th-service{

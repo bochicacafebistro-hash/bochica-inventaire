@@ -338,7 +338,7 @@ function renderSalaires() {
   const isLocked = !!payrollWeekData?.locked;
 
   // ─ HTML ───────────────────────────────────────────
-  return `<div class="page ${isLocked ? "is-payroll-locked" : ""}">
+  return `<div class="page page--wide ${isLocked ? "is-payroll-locked" : ""}">
     <div class="toolbar">
       <h2 class="page-title">${icon("dollar-sign", 22)} Salaires & Pourboires${isLocked ? ` <span class="payroll-locked-inline-badge">${icon("shield-check", 14)} Payée</span>` : ""}</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">

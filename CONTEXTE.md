@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.15.2** — **Multiplicateur de pourboire retiré**. Le pill `100%` à côté de chaque employé (introduit en v3.15.0) faisait du bruit visuel sans réelle utilité — retrait complet de la feature : pill, input, helpers JS, action Firestore, CSS. Le calcul des pourboires revient au prorata simple des heures éligibles. Les autres nouveautés de v3.15.0 (employés extras + drag & drop) restent en place.
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.15.3** — **Page Salaires plus large + lignes compactées**. Nouveau modifier CSS `.page.page--wide` (max-width:none) appliqué au wrapper de la page Salaires — le tableau utilise toute la largeur disponible au lieu d'être bridé à 1200 px. Hauteur de ligne réduite de 42 px → 36 px (32 px en mobile) spécifiquement pour `.payroll-table` (le planning Employés & Horaires garde ses 42 px). Plus de respiration horizontale, moins de scroll vertical.
+>
+> ⚠️ **26 mai 2026 — v3.15.2** — **Multiplicateur de pourboire retiré**. Le pill `100%` à côté de chaque employé (introduit en v3.15.0) faisait du bruit visuel sans réelle utilité — retrait complet de la feature : pill, input, helpers JS, action Firestore, CSS. Le calcul des pourboires revient au prorata simple des heures éligibles. Les autres nouveautés de v3.15.0 (employés extras + drag & drop) restent en place.
 >
 > ⚠️ **26 mai 2026 — v3.15.1** — **Récap pourboires : bonus $/h par employé**. Dans la section « Pourboires de la semaine par employé » (fiche de chaque employé), un nouveau pill jaune accent affiche `+ X,XX $/h` — le bonus moyen par heure travaillée que représente le pourboire. Petite ligne sous le pill : « Effectif : Y,YY $/h (base Z,ZZ) » pour visualiser le taux horaire complet (contractuel + bonus pourboire).
 >
@@ -463,6 +465,13 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Page Salaires plus large + lignes compactées (v3.15.3) 📏
+- **Nouveau modifier CSS `.page.page--wide`** (`max-width:none`) — appliqué au wrapper de la page Salaires. Le tableau utilise désormais toute la largeur disponible au-delà de 1200 px (le `width:100%` de `.schedule-table` étire alors proportionnellement les colonnes via `table-layout:fixed`). Padding légèrement ajusté : `var(--sp-5) var(--sp-6)`.
+- **Hauteur de ligne** : de 42 px → **36 px** pour `.payroll-table .schedule-emp-row` (32 px sous 900 px). Le pill multiplicateur ayant été retiré en v3.15.2, la cellule employé tient facilement sans déborder. Cellule employé : padding vertical baissé à 3 px.
+- **Note importante** : la table Employés & Horaires (`.schedule-table` sans `.payroll-table`) garde ses 42 px → aucun impact croisé entre les deux pages.
+- Padding des cellules `entry`/`exit` baissé de `2px` à `1px` vertical, et `summary` de `4px` à `3px` pour gagner ~10 px par ligne au total.
+- **CACHE_VERSION** → `v3.15.3`
 
 ### 26 mai 2026 — Retrait du multiplicateur de pourboire (v3.15.2) ↩️
 - Le **pill `%` à côté de chaque employé** (introduit en v3.15.0) faisait apparaître « 100% » sur toutes les lignes, créant du bruit visuel sans cas d'usage concret au quotidien. Retrait complet à la demande utilisateur.
