@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.15.0** — **Salaires & Pourboires : extras + multiplicateur + ordre manuel**. Trois nouveautés majeures dans la page Salaires : (1) bouton **« + Ajouter un extra »** pour créer un employé ponctuel attaché à la semaine seulement (badge EXTRA + bouton retrait), sans toucher à la liste principale Employés. (2) **Multiplicateur de pourboire par employé** — pill éditable en % à côté du nom (100% par défaut, 0% = exclu du pool, 150% = part et demie). Le prorata des heures est pondéré, code couleur sémantique (gris défaut / rouge exclu / ambré réduit / vert majoré). (3) **Drag & drop des lignes** via handle ⋮⋮ à gauche — l'ordre est sauvé pour la semaine seulement (n'affecte pas Employés & Horaires).
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.15.1** — **Récap pourboires : bonus $/h par employé**. Dans la section « Pourboires de la semaine par employé » (fiche de chaque employé), un nouveau pill jaune accent affiche `+ X,XX $/h` — le bonus moyen par heure travaillée que représente le pourboire. Petite ligne sous le pill : « Effectif : Y,YY $/h (base Z,ZZ) » pour visualiser le taux horaire complet (contractuel + bonus pourboire).
+>
+> ⚠️ **26 mai 2026 — v3.15.0** — **Salaires & Pourboires : extras + multiplicateur + ordre manuel**. Trois nouveautés majeures dans la page Salaires : (1) bouton **« + Ajouter un extra »** pour créer un employé ponctuel attaché à la semaine seulement (badge EXTRA + bouton retrait), sans toucher à la liste principale Employés. (2) **Multiplicateur de pourboire par employé** — pill éditable en % à côté du nom (100% par défaut, 0% = exclu du pool, 150% = part et demie). Le prorata des heures est pondéré, code couleur sémantique (gris défaut / rouge exclu / ambré réduit / vert majoré). (3) **Drag & drop des lignes** via handle ⋮⋮ à gauche — l'ordre est sauvé pour la semaine seulement (n'affecte pas Employés & Horaires).
 >
 > ⚠️ **26 mai 2026 — v3.14.2** — **Salaires & Pourboires : heures éditables via dropdown 15 min**. Les `<input type="time">` natifs étaient quasi inutilisables sur certains navigateurs (impossible d'ouvrir le picker une fois les spinners cachés). Remplacés par un `<select>` aux **15 min** (00:00 → 23:45, 96 crans) — cohérent avec la grille Employés & Horaires (qui reste aux 30 min). Les anciennes saisies à la minute près sont préservées via une option « (saisie libre) » insérée en tête.
 >
@@ -459,6 +461,15 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Récap pourboires : bonus $/h par employé (v3.15.1) 💵⏱️
+- Dans la carte **« Pourboires de la semaine par employé »**, chaque fiche employé affiche maintenant deux infos supplémentaires sous le montant total :
+  - **Pill jaune accent `+ X,XX $/h`** — bonus moyen par heure travaillée. Calcul : `tipShare / totalHours`. Répond à la question « ce pourboire représente combien de plus par heure de travail ? ».
+  - **Petite ligne « Effectif : Y,YY $/h (base Z,ZZ) »** — taux horaire effectif (taux contractuel + bonus pourboire). Permet de comparer la rémunération réelle entre cuisine (sans/peu de pourboire) et service (avec).
+- Affichés uniquement quand `tipPerHour > 0` (pas de pill orphelin si l'employé n'a pas eu de pourboire).
+- Tooltips détaillés au survol pour expliquer la méthode de calcul.
+- CSS : 3 nouvelles classes — `.payroll-recap-emp-boost` (pill, ses sous-éléments `__plus`/`__amount`/`__unit`), `.payroll-recap-emp-effective` + `.payroll-recap-emp-effective__base`. Dark mode adapté.
+- **CACHE_VERSION** → `v3.15.1`
 
 ### 26 mai 2026 — Salaires : extras + multiplicateur + ordre manuel (v3.15.0) 👥🎯✋
 Trois fonctionnalités significatives ajoutées à la page **Salaires & Pourboires**, toutes scopées à la semaine courante (zéro impact sur la liste principale Employés ou le planning Horaires).

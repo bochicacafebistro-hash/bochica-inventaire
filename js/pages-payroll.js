@@ -628,10 +628,27 @@ function renderSalaires() {
                 const isKitchen = row.group === "cuisine";
                 const groupLabel = isKitchen ? "Cuisine" : "Service + Admin";
                 const groupIcon = isKitchen ? "utensils" : "users";
+                // Bonus $/h en pourboire : combien le tip ajoute au taux horaire effectif.
+                // Basé sur totalHours (heures travaillées) plutôt que tipEligibleHours
+                // (heures dans la fenêtre de service) — répond à la question
+                // « ce pourboire représente combien de plus par heure de travail ? ».
+                const tipPerHour = row.totalHours > 0 ? (row.tipShare / row.totalHours) : 0;
+                // Taux effectif horaire pour info (taux contractuel + boost pourboire)
+                const effectiveRate = row.rate + tipPerHour;
                 return `<div class="payroll-recap-card-emp ${isKitchen ? "is-kitchen" : "is-service"}">
                   <div class="payroll-recap-emp-name">${esc(row.emp.name || "")}</div>
                   <div class="payroll-recap-emp-group">${icon(groupIcon, 11)} ${groupLabel}</div>
                   <div class="payroll-recap-emp-amount">${fmtMoney(row.tipShare)}</div>
+                  ${tipPerHour > 0 ? `
+                    <div class="payroll-recap-emp-boost" title="Bonus moyen par heure travaillée — ce que le pourboire ajoute au taux horaire de ${esc(row.emp.name || "")}">
+                      <span class="payroll-recap-emp-boost__plus">+</span>
+                      <span class="payroll-recap-emp-boost__amount">${fmtMoney(tipPerHour)}</span>
+                      <span class="payroll-recap-emp-boost__unit">/h</span>
+                    </div>
+                    ${row.rate > 0 ? `<div class="payroll-recap-emp-effective" title="Taux horaire effectif : taux contractuel + bonus pourboire">
+                      Effectif : ${fmtMoney(effectiveRate)}/h <span class="payroll-recap-emp-effective__base">(base ${fmtMoney(row.rate)})</span>
+                    </div>` : ""}
+                  ` : ""}
                   <div class="payroll-recap-emp-meta">
                     ${fmtHours(row.tipEligibleHours)}h éligibles · ${fmtHours(row.totalHours)}h travaillées
                   </div>
