@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.15.3** — **Page Salaires plus large + lignes compactées**. Nouveau modifier CSS `.page.page--wide` (max-width:none) appliqué au wrapper de la page Salaires — le tableau utilise toute la largeur disponible au lieu d'être bridé à 1200 px. Hauteur de ligne réduite de 42 px → 36 px (32 px en mobile) spécifiquement pour `.payroll-table` (le planning Employés & Horaires garde ses 42 px). Plus de respiration horizontale, moins de scroll vertical.
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.16.0** — **Salaires : export PDF + fix bug entrée/sortie qui s'effacent**. Nouveau bouton « Exporter PDF » dans la toolbar — génère un rapport landscape Letter complet (en-tête Bochica, KPI, pourboires par jour, tableau détaillé heures entrée/sortie + salaires + pourboires + totaux, récap par employé avec bonus $/h, multi-pages auto, footer). Bug critique corrigé : quand on modifiait une heure d'entrée, l'heure de sortie s'effaçait (et inverse) parce que le 1er override n'écrivait qu'un seul champ → `getActualShift` voyait alors un override partiel sans tomber sur le planifié pour le champ absent. Fix : `updateActualShift` lit maintenant la valeur courante visible avant d'écrire et pousse toujours start+end ensemble.
+>
+> ⚠️ **26 mai 2026 — v3.15.3** — **Page Salaires plus large + lignes compactées**. Nouveau modifier CSS `.page.page--wide` (max-width:none) appliqué au wrapper de la page Salaires — le tableau utilise toute la largeur disponible au lieu d'être bridé à 1200 px. Hauteur de ligne réduite de 42 px → 36 px (32 px en mobile) spécifiquement pour `.payroll-table` (le planning Employés & Horaires garde ses 42 px). Plus de respiration horizontale, moins de scroll vertical.
 >
 > ⚠️ **26 mai 2026 — v3.15.2** — **Multiplicateur de pourboire retiré**. Le pill `100%` à côté de chaque employé (introduit en v3.15.0) faisait du bruit visuel sans réelle utilité — retrait complet de la feature : pill, input, helpers JS, action Firestore, CSS. Le calcul des pourboires revient au prorata simple des heures éligibles. Les autres nouveautés de v3.15.0 (employés extras + drag & drop) restent en place.
 >
@@ -465,6 +467,31 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Export PDF du rapport de paie + fix bug entrée/sortie (v3.16.0) 📄🐞
+
+**Export PDF complet de la semaine de paie**
+- Nouveau bouton **« Exporter PDF »** dans la toolbar de la page Salaires & Pourboires (icône `download`).
+- Nouvelle fonction `generatePayrollPDF()` dans `pages-payroll.js` (~280 lignes) :
+  - **Format** : landscape Letter (279,4 × 215,9 mm), marges 12 mm.
+  - **En-tête 1ère page** : logo « BOCHICA » 22 pt + « Restaurant Colombien » + tricolore jaune/bleu/rouge centré + titre « Rapport de paie — Semaine N » + dates.
+  - **En-tête compact pages suivantes** : `BOCHICA · Rapport de paie sem. N` + dates à droite + ligne accent jaune.
+  - **4 KPI cards en haut** : Total à payer, Salaires bruts, Pourboires distribués, Heures totales — barre latérale de couleur (jaune/bleu/vert/noir).
+  - **Grille pourboires par jour** : 7 cases avec date + montant + pools cuisine/service.
+  - **Tableau principal** : Employé (nom + section + taux) | 7 jours × (entrée/sortie) | Hrs | Salaire | Pourb. | Total. Lignes alternées (zébré), fond ambré clair. Bordures sobres. Saut de page automatique via `ensureSpace()` + redessin de l'en-tête de table sur chaque nouvelle page.
+  - **Ligne totaux** sous le tableau (fond accentué).
+  - **Récap par employé** en grille 4 colonnes : cartes avec barre latérale cuisine (jaune) / service (bleu), nom, groupe, montant pourboire en vert, pill `+ X,XX $/h` jaune + ligne « Effectif : Y,YY $/h (base Z,ZZ) ».
+  - **Footer** sur toutes les pages : `Généré le ... · Bochica Café Bistro` + `Page N / Total`.
+  - **Nom de fichier** : `Bochica_Paie_Sem{N}_{YYYY-MM-DD}.pdf` (date du lundi).
+- Helper interne `_truncatePdf(doc, text, maxW)` : tronque un texte avec ellipsis pour qu'il tienne dans une largeur donnée (binary search sur la longueur).
+- Bouton désactivé si aucun employé n'est inclus dans la semaine.
+
+**Fix critique : modifier une heure effaçait l'autre**
+- Symptôme : modifier l'entrée d'un employé effaçait sa sortie (et inversement). Perte de données silencieuse.
+- Cause : `updateActualShift` n'écrivait que le champ modifié (ex. `{ start: "10:00" }`). Quand l'employé n'avait pas encore d'override (heures auto-importées du planifié), le 1er write créait un override partiel : `actualShifts.emp.dk = { start: "10:00" }` — sans `end`. À la prochaine lecture, `getActualShift` détectait un override (truthy) et le retournait tel quel — il ne tombait plus sur le fallback du planifié. La cellule `end` apparaissait alors vide.
+- Solution : `updateActualShift` lit maintenant le shift courant **visible** (via `getActualShift`, qui inclut le fallback planifié) avant l'écriture, et pousse toujours `{ start, end }` ensemble. Le champ non modifié reflète ce que l'utilisateur voyait à l'écran au moment de l'édition.
+- Commentaire détaillé ajouté au-dessus de la fonction pour documenter le piège.
+- **CACHE_VERSION** → `v3.16.0` (minor bump — PDF est une feature significative + fix critique)
 
 ### 26 mai 2026 — Page Salaires plus large + lignes compactées (v3.15.3) 📏
 - **Nouveau modifier CSS `.page.page--wide`** (`max-width:none`) — appliqué au wrapper de la page Salaires. Le tableau utilise désormais toute la largeur disponible au-delà de 1200 px (le `width:100%` de `.schedule-table` étire alors proportionnellement les colonnes via `table-layout:fixed`). Padding légèrement ajusté : `var(--sp-5) var(--sp-6)`.

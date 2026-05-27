@@ -342,6 +342,7 @@ function renderSalaires() {
     <div class="toolbar">
       <h2 class="page-title">${icon("dollar-sign", 22)} Salaires & Pourboires${isLocked ? ` <span class="payroll-locked-inline-badge">${icon("shield-check", 14)} Payée</span>` : ""}</h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-secondary btn-sm" onclick="generatePayrollPDF()" title="Générer un rapport PDF complet de la paie de la semaine" ${allEmps.length === 0 ? "disabled" : ""}>${icon("download", 14)} Exporter PDF</button>
         <button class="btn-secondary btn-sm" onclick="openAddExtraModal()" title="Ajouter un employé ponctuel à cette semaine seulement (ex: remplaçant, extra)" ${isLocked ? "disabled" : ""}>${icon("plus", 14)} Ajouter un extra</button>
         <button class="btn-secondary btn-sm" onclick="openServiceHoursModal()" title="Configurer les heures d'ouverture du service">${icon("clock", 14)} Heures de service</button>
         <button class="btn-secondary btn-sm" onclick="openTipSharesModal()" title="Modifier la répartition cuisine / service des pourboires">${icon("percent", 14)} Répartition</button>
@@ -648,23 +649,41 @@ function renderSalaires() {
 // → try/catch + toast pour rendre les erreurs visibles à l'utilisateur
 
 // Met à jour un champ (start ou end) d'un shift réel pour la semaine courante.
-// Si la valeur est vide, on stocke "" — pas une suppression complète du shift,
-// car l'utilisateur peut vouloir saisir start avant end.
+//
+// IMPORTANT (fix v3.16.1) : on doit TOUJOURS écrire start ET end ensemble.
+// Sinon ce bug se produit :
+//   1. La cellule auto-importe le shift planifié (ex: 09:00 → 17:00). Visuel OK.
+//   2. L'utilisateur modifie SEULEMENT start (ex: 10:00).
+//   3. On écrit { actualShifts.emp.dk.start = "10:00" }.
+//   4. Firestore stocke maintenant actualShifts.emp.dk = { start: "10:00" } — pas
+//      de "end" du tout.
+//   5. getActualShift voit qu'il y a un override pour ce jour (truthy) et le
+//      retourne tel quel. Le fallback sur le planifié ne se déclenche plus.
+//   6. La cellule "end" devient vide → l'utilisateur perd sa donnée.
+// Solution : lire la valeur courante visible (getActualShift, qui inclut le
+// fallback planifié) avant d'écrire, et toujours pousser les deux champs.
 async function updateActualShift(empId, dk, field, value) {
   try {
+    // Lit le shift courant visible (override OU fallback planifié OU null)
+    const currentShift = getActualShift(empId, dk) || {};
+    const newShift = {
+      start: field === "start" ? (value || "") : (currentShift.start || ""),
+      end:   field === "end"   ? (value || "") : (currentShift.end   || "")
+    };
+
     const ws = getWeekStart(payrollWeekOffset);
     const wid = payrollWeekId(ws);
     const ref = db.collection("payroll").doc(wid);
-    // Deep merge : seul le champ ciblé est mis à jour, les autres restent intacts
+    // On écrit l'objet complet {start, end} — même si seul un des deux a changé,
+    // l'autre reflète maintenant le planifié importé. C'est exactement ce que
+    // l'utilisateur voit à l'écran au moment de la modification.
     const update = {
       weekId: wid,
       weekStart: dayKey(ws),
       updatedAt: Date.now(),
       actualShifts: {
         [empId]: {
-          [dk]: {
-            [field]: value || ""
-          }
+          [dk]: newShift
         }
       }
     };
@@ -1290,4 +1309,521 @@ async function payrollRowDrop(e, targetId) {
     console.error("payrollRowDrop failed:", err);
     toast("Erreur réorganisation : " + (err.message || err.code || err), "error", 5000);
   }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// v3.16.0 — Export PDF du rapport de paie hebdomadaire
+// ═══════════════════════════════════════════════════════════════
+// Rapport complet en landscape Letter avec : en-tête Bochica, infos
+// semaine, pourboires par jour, tableau détaillé (heures entrée/sortie),
+// récap par employé avec bonus $/h, footer.
+// Style aligné avec generateQuotePDF() : palette Crème Papier + tricolore.
+
+function generatePayrollPDF() {
+  if (typeof window.jspdf === "undefined") {
+    toast("La bibliothèque PDF n'est pas chargée. Rechargez la page.", "error");
+    return;
+  }
+
+  // ─ Recalcule les mêmes données que renderSalaires (mais sans HTML) ──
+  const weekStart = getWeekStart(payrollWeekOffset);
+  const weekDaysAll = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
+  });
+  const weekEnd = weekDaysAll[6];
+  const weekNum = getISOWeek(weekDaysAll[3]);
+  const startLabel = weekDaysAll[0].toLocaleDateString("fr-CA", { month: "short", day: "numeric" });
+  const endLabel = weekEnd.toLocaleDateString("fr-CA", { month: "short", day: "numeric", year: "numeric" });
+
+  const openDays = Array.isArray(scheduleSettings.openDays) ? scheduleSettings.openDays : [0,1,2,3,4,5,6];
+  const visibleIdx = [0,1,2,3,4,5,6].filter(i => openDays.includes(i));
+  const weekDays = visibleIdx.map(i => weekDaysAll[i]);
+
+  const tipShares = payrollSettings?.tipShares || { cuisine: 0.25, service: 0.75 };
+  const tipsByDay = payrollWeekData?.tipsByDay || {};
+  const legacyTotal = Number(payrollWeekData?.totalTips) || 0;
+  const totalTips = weekDays.reduce((s, d) => s + (Number(tipsByDay[dayKey(d)]) || 0), 0) || legacyTotal;
+  const poolCuisine = totalTips * (Number(tipShares.cuisine) || 0);
+  const poolService = totalTips * (Number(tipShares.service) || 0);
+
+  const allEmps = getAllPayrollEmployees();
+  if (allEmps.length === 0) {
+    toast("Aucun employé à inclure dans le rapport.", "warning");
+    return;
+  }
+
+  // Pré-calcul des pools journaliers (prorata simple)
+  const dailyCalc = weekDays.map((d, k) => {
+    const dk = dayKey(d);
+    const dowIdx = visibleIdx[k];
+    const dayTotal = Number(tipsByDay[dk]) || 0;
+    const serviceWin = getServiceWindow(dowIdx);
+    let totalKitchenHrsDay = 0;
+    let totalServiceHrsDay = 0;
+    for (const emp of allEmps) {
+      const shift = getActualShift(emp.id, dk);
+      const tipHrs = serviceWin ? intersectShiftHours(shift, serviceWin) : 0;
+      if (tipGroupOf(emp) === "cuisine") totalKitchenHrsDay += tipHrs;
+      else totalServiceHrsDay += tipHrs;
+    }
+    return {
+      dk, dowIdx, serviceWin,
+      dayTotal,
+      poolKitchenDay: dayTotal * (Number(tipShares.cuisine) || 0),
+      poolServiceDay: dayTotal * (Number(tipShares.service) || 0),
+      totalKitchenHrsDay, totalServiceHrsDay
+    };
+  });
+
+  const empRows = allEmps.map(emp => {
+    const rate = Number(emp.hourlyRate) || 0;
+    const isSal = !!emp.isSalaried;
+    const fixedHours = Number(emp.fixedWeeklyHours) || 0;
+    const group = tipGroupOf(emp);
+    let totalHours = 0, plannedHours = 0, tipEligibleHours = 0, tipShare = 0;
+    const daily = weekDays.map((d, k) => {
+      const dk = dayKey(d);
+      const actualShift = getActualShift(emp.id, dk);
+      const plannedShift = getPlannedShift(emp.id, dk);
+      const serviceWin = dailyCalc[k].serviceWin;
+      const hours = hoursFromShift(actualShift);
+      const pHours = hoursFromShift(plannedShift);
+      const tipHours = serviceWin ? intersectShiftHours(actualShift, serviceWin) : 0;
+      const groupPool = group === "cuisine" ? dailyCalc[k].poolKitchenDay : dailyCalc[k].poolServiceDay;
+      const groupTotalHrs = group === "cuisine" ? dailyCalc[k].totalKitchenHrsDay : dailyCalc[k].totalServiceHrsDay;
+      const dayTip = (groupTotalHrs > 0 && tipHours > 0) ? (tipHours / groupTotalHrs) * groupPool : 0;
+      totalHours += hours;
+      plannedHours += pHours;
+      tipEligibleHours += tipHours;
+      tipShare += dayTip;
+      return { dk, actualShift, hours, tipHours, dayTip };
+    });
+    const grossWage = isSal ? (fixedHours * rate) : (totalHours * rate);
+    return {
+      emp, rate, isSal, fixedHours, group, daily,
+      totalHours, plannedHours, tipEligibleHours, tipShare, grossWage,
+      totalPay: grossWage + tipShare,
+      isManual: isManualEmployee(emp)
+    };
+  });
+
+  const sumGross = empRows.reduce((s, r) => s + r.grossWage, 0);
+  const sumTips = empRows.reduce((s, r) => s + r.tipShare, 0);
+  const sumTotal = empRows.reduce((s, r) => s + r.totalPay, 0);
+  const sumActualHours = empRows.reduce((s, r) => s + r.totalHours, 0);
+
+  // ─ Setup jsPDF — landscape Letter ─────────────────────
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "letter" });
+
+  const W = 279.4, H = 215.9;
+  const M = 12;
+  const contentW = W - 2 * M;
+
+  // Palette Crème Papier (aligné avec generateQuotePDF)
+  const COLOR_CREAM      = [253, 246, 231];
+  const COLOR_TEXT       = [14, 13, 12];
+  const COLOR_TEXT_LIGHT = [110, 95, 80];
+  const COLOR_BORDER     = [200, 188, 165];
+  const COLOR_ACCENT     = [247, 179, 44];
+  const COLOR_BLUE       = [74, 144, 226];
+  const COLOR_RED        = [231, 76, 60];
+  const COLOR_GREEN      = [125, 191, 102];
+  const COLOR_SURFACE2   = [237, 227, 210];
+  const COLOR_HEADER_FILL = [232, 220, 200];
+
+  let y = 0;
+  let currentPage = 1;
+
+  function paintBackground() {
+    doc.setFillColor(...COLOR_CREAM);
+    doc.rect(0, 0, W, H, "F");
+  }
+  function drawTricolore(cy, triW = 56) {
+    const triX0 = (W - triW) / 2;
+    const triH = 1.4;
+    doc.setFillColor(...COLOR_ACCENT);
+    doc.rect(triX0, cy, triW / 3, triH, "F");
+    doc.setFillColor(...COLOR_BLUE);
+    doc.rect(triX0 + triW / 3, cy, triW / 3, triH, "F");
+    doc.setFillColor(...COLOR_RED);
+    doc.rect(triX0 + 2 * triW / 3, cy, triW / 3, triH, "F");
+  }
+  function newPage() {
+    doc.addPage();
+    currentPage++;
+    paintBackground();
+    drawCompactHeader();
+  }
+  function ensureSpace(needed) {
+    if (y + needed > H - 14) { // 14 = footer reserve
+      newPage();
+    }
+  }
+
+  // Header complet (1ère page)
+  function drawFullHeader() {
+    y = 12;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(22);
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text("BOCHICA", W / 2, y, { align: "center" });
+    y += 4;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLOR_TEXT_LIGHT);
+    doc.text("Restaurant Colombien", W / 2, y, { align: "center" });
+    y += 2;
+    drawTricolore(y, 50);
+    y += 7;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(15);
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text(`Rapport de paie — Semaine ${weekNum}`, W / 2, y, { align: "center" });
+    y += 4.5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLOR_TEXT_LIGHT);
+    doc.text(`${startLabel} – ${endLabel}`, W / 2, y, { align: "center" });
+    y += 7;
+  }
+  // Header compact (pages suivantes)
+  function drawCompactHeader() {
+    y = 8;
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text(`BOCHICA · Rapport de paie sem. ${weekNum}`, M, y);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLOR_TEXT_LIGHT);
+    doc.text(`${startLabel} – ${endLabel}`, W - M, y, { align: "right" });
+    y += 2;
+    doc.setFillColor(...COLOR_ACCENT);
+    doc.rect(M, y, contentW, 0.6, "F");
+    y += 5;
+  }
+
+  // ─ Démarrage ─────────────────────────────────────────
+  paintBackground();
+  drawFullHeader();
+
+  // ─ KPI cards (4 cards en haut) ──────────────────────
+  const kpis = [
+    { label: "Total à payer", value: fmtMoney(sumTotal), color: COLOR_ACCENT },
+    { label: "Salaires bruts", value: fmtMoney(sumGross), color: COLOR_BLUE },
+    { label: "Pourboires distribués", value: fmtMoney(sumTips), color: COLOR_GREEN },
+    { label: "Heures totales", value: `${fmtHours(sumActualHours)} h`, color: COLOR_TEXT }
+  ];
+  const cardW = (contentW - 3 * 4) / 4;
+  const cardH = 14;
+  kpis.forEach((k, i) => {
+    const cx = M + i * (cardW + 4);
+    doc.setFillColor(255, 255, 255);
+    doc.setDrawColor(...COLOR_BORDER);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(cx, y, cardW, cardH, 1.5, 1.5, "FD");
+    // Barre latérale couleur
+    doc.setFillColor(...k.color);
+    doc.rect(cx, y, 1.2, cardH, "F");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...COLOR_TEXT_LIGHT);
+    doc.text(k.label.toUpperCase(), cx + 3.5, y + 4);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text(k.value, cx + 3.5, y + 10);
+  });
+  y += cardH + 5;
+
+  // ─ Pourboires par jour (mini-grille) ─────────────────
+  ensureSpace(18);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...COLOR_TEXT);
+  doc.text(`Pourboires de la semaine — Total ${fmtMoney(totalTips)}`, M, y);
+  // Pool indicators à droite
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...COLOR_TEXT_LIGHT);
+  doc.text(
+    `Pool Cuisine ${(tipShares.cuisine*100).toFixed(0)}% : ${fmtMoney(poolCuisine)}   ·   Pool Service+Admin ${(tipShares.service*100).toFixed(0)}% : ${fmtMoney(poolService)}`,
+    W - M, y, { align: "right" }
+  );
+  y += 3;
+  // Grille jours
+  const dayW = contentW / weekDays.length;
+  const dayH = 9;
+  weekDays.forEach((d, k) => {
+    const cx = M + k * dayW;
+    doc.setFillColor(...COLOR_SURFACE2);
+    doc.setDrawColor(...COLOR_BORDER);
+    doc.setLineWidth(0.2);
+    doc.rect(cx, y, dayW - 1, dayH, "FD");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...COLOR_TEXT_LIGHT);
+    doc.text(`${DAYS_FR[visibleIdx[k]]} ${d.getDate()}/${d.getMonth()+1}`, cx + 2, y + 3.2);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(9);
+    doc.setTextColor(...COLOR_TEXT);
+    const dayTotal = Number(tipsByDay[dayKey(d)]) || 0;
+    doc.text(dayTotal > 0 ? fmtMoney(dayTotal) : "—", cx + 2, y + 7.5);
+  });
+  y += dayH + 6;
+
+  // ─ Tableau principal : Employé | (J×Entrée+Sortie) | Hrs | Salaire | Pourb | Total
+  // Largeurs des colonnes (en mm)
+  // Total à allouer : contentW = 255.4 mm en landscape Letter avec M=12
+  const COL_EMP = 36;
+  const COL_DAY_PAIR = (contentW - COL_EMP - 14 - 18 - 18 - 22) / weekDays.length; // ce qui reste
+  const COL_ENTRY = COL_DAY_PAIR / 2;
+  const COL_EXIT = COL_DAY_PAIR / 2;
+  const COL_HRS = 14;
+  const COL_SAL = 18;
+  const COL_TIP = 18;
+  const COL_TOTAL = 22;
+
+  function drawTableHeader() {
+    ensureSpace(11);
+    let cx = M;
+    doc.setFillColor(...COLOR_HEADER_FILL);
+    doc.rect(M, y, contentW, 10, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    doc.setTextColor(...COLOR_TEXT);
+    // Employé
+    doc.text("EMPLOYÉ", cx + 2, y + 6);
+    cx += COL_EMP;
+    // Jours
+    weekDays.forEach((d, k) => {
+      doc.setDrawColor(...COLOR_BORDER);
+      doc.setLineWidth(0.2);
+      doc.line(cx, y, cx, y + 10);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(`${DAYS_FR[visibleIdx[k]]} ${d.getDate()}/${d.getMonth()+1}`, cx + COL_DAY_PAIR / 2, y + 3.8, { align: "center" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6);
+      doc.setTextColor(...COLOR_TEXT_LIGHT);
+      doc.text("Entrée", cx + COL_ENTRY / 2, y + 8, { align: "center" });
+      doc.text("Sortie", cx + COL_ENTRY + COL_EXIT / 2, y + 8, { align: "center" });
+      cx += COL_DAY_PAIR;
+    });
+    // Hrs / Salaire / Pourb / Total
+    [["HRS", COL_HRS], ["SALAIRE", COL_SAL], ["POURB.", COL_TIP], ["TOTAL", COL_TOTAL]].forEach(([label, w]) => {
+      doc.setDrawColor(...COLOR_BORDER);
+      doc.line(cx, y, cx, y + 10);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(label, cx + w / 2, y + 6, { align: "center" });
+      cx += w;
+    });
+    // Bordure top et bottom
+    doc.setDrawColor(...COLOR_BORDER);
+    doc.setLineWidth(0.3);
+    doc.line(M, y, M + contentW, y);
+    doc.line(M, y + 10, M + contentW, y + 10);
+    y += 10;
+  }
+
+  drawTableHeader();
+
+  // ─ Lignes employés ───────────────────────────────────
+  const rowH = 6;
+  empRows.forEach((row, idx) => {
+    ensureSpace(rowH + 2);
+    // Si on est en haut d'une nouvelle page, redessiner l'en-tête de table
+    if (y < 20) {
+      drawTableHeader();
+    }
+    // Fond alterné
+    if (idx % 2 === 1) {
+      doc.setFillColor(248, 242, 228);
+      doc.rect(M, y, contentW, rowH, "F");
+    }
+    let cx = M;
+    // Employé
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(8);
+    doc.setTextColor(...COLOR_TEXT);
+    const empLabel = (row.emp.name || "") + (row.isManual ? " (EXTRA)" : "");
+    doc.text(_truncatePdf(doc, empLabel, COL_EMP - 4), cx + 2, y + 3.3);
+    // Section + taux
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6);
+    doc.setTextColor(...COLOR_TEXT_LIGHT);
+    const sectionLabel = row.group === "cuisine" ? "Cuisine" : "Service+Adm";
+    doc.text(`${sectionLabel} · ${row.rate.toFixed(2)}$/h${row.isSal ? " · FIXE" : ""}`, cx + 2, y + 5.3);
+    cx += COL_EMP;
+    // Jours (entrée / sortie)
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(7);
+    doc.setTextColor(...COLOR_TEXT);
+    row.daily.forEach(d => {
+      const startVal = d.actualShift?.start || "—";
+      const endVal = d.actualShift?.end || "—";
+      doc.text(startVal, cx + COL_ENTRY / 2, y + 4, { align: "center" });
+      doc.text(endVal, cx + COL_ENTRY + COL_EXIT / 2, y + 4, { align: "center" });
+      cx += COL_DAY_PAIR;
+    });
+    // Hrs
+    doc.setFont("helvetica", "bold");
+    doc.text(row.totalHours ? `${fmtHours(row.totalHours)}h` : "—", cx + COL_HRS / 2, y + 4, { align: "center" });
+    cx += COL_HRS;
+    // Salaire
+    doc.setFont("helvetica", "normal");
+    doc.text(row.grossWage ? fmtMoney(row.grossWage) : "—", cx + COL_SAL / 2, y + 4, { align: "center" });
+    cx += COL_SAL;
+    // Pourboire
+    doc.setTextColor(...COLOR_GREEN);
+    doc.text(row.tipShare > 0 ? fmtMoney(row.tipShare) : "—", cx + COL_TIP / 2, y + 4, { align: "center" });
+    cx += COL_TIP;
+    // Total
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text(row.totalPay ? fmtMoney(row.totalPay) : "—", cx + COL_TOTAL / 2, y + 4, { align: "center" });
+
+    // Ligne séparatrice
+    doc.setDrawColor(...COLOR_BORDER);
+    doc.setLineWidth(0.15);
+    doc.line(M, y + rowH, M + contentW, y + rowH);
+    y += rowH;
+  });
+
+  // ─ Ligne totaux ─────────────────────────────────────
+  ensureSpace(7);
+  doc.setFillColor(...COLOR_HEADER_FILL);
+  doc.rect(M, y, contentW, 7, "F");
+  let cxT = M;
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(8);
+  doc.setTextColor(...COLOR_TEXT);
+  doc.text(`TOTAUX (${empRows.length} employé${empRows.length > 1 ? "s" : ""})`, cxT + 2, y + 4.5);
+  cxT += COL_EMP + weekDays.length * COL_DAY_PAIR;
+  doc.text(`${fmtHours(sumActualHours)}h`, cxT + COL_HRS / 2, y + 4.5, { align: "center" });
+  cxT += COL_HRS;
+  doc.text(fmtMoney(sumGross), cxT + COL_SAL / 2, y + 4.5, { align: "center" });
+  cxT += COL_SAL;
+  doc.setTextColor(...COLOR_GREEN);
+  doc.text(fmtMoney(sumTips), cxT + COL_TIP / 2, y + 4.5, { align: "center" });
+  cxT += COL_TIP;
+  doc.setTextColor(...COLOR_TEXT);
+  doc.setFontSize(9);
+  doc.text(fmtMoney(sumTotal), cxT + COL_TOTAL / 2, y + 4.5, { align: "center" });
+  doc.setDrawColor(...COLOR_TEXT);
+  doc.setLineWidth(0.4);
+  doc.line(M, y, M + contentW, y);
+  doc.line(M, y + 7, M + contentW, y + 7);
+  y += 7 + 6;
+
+  // ─ Récap par employé (pourboires + bonus $/h) ────────
+  const recapRows = empRows.filter(r => r.tipShare > 0 || r.tipEligibleHours > 0);
+  if (recapRows.length > 0) {
+    ensureSpace(20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text("Pourboires par employé", M, y);
+    y += 5;
+
+    // Grille 4 colonnes
+    const RECAP_COLS = 4;
+    const recapW = (contentW - (RECAP_COLS - 1) * 3) / RECAP_COLS;
+    const recapH = 22;
+    recapRows.forEach((r, i) => {
+      const col = i % RECAP_COLS;
+      const rowI = Math.floor(i / RECAP_COLS);
+      if (col === 0 && rowI > 0) y += recapH + 3;
+      ensureSpace(recapH);
+      const cx = M + col * (recapW + 3);
+      const isKitchen = r.group === "cuisine";
+      const ringColor = isKitchen ? COLOR_ACCENT : COLOR_BLUE;
+      const tint = isKitchen ? [254, 245, 220] : [228, 240, 252];
+
+      doc.setFillColor(...tint);
+      doc.setDrawColor(...ringColor);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(cx, y, recapW, recapH, 1.5, 1.5, "FD");
+      // Barre latérale
+      doc.setFillColor(...ringColor);
+      doc.rect(cx, y, 1.2, recapH, "F");
+
+      // Nom
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(_truncatePdf(doc, r.emp.name || "", recapW - 6), cx + 4, y + 5);
+      // Groupe
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(...COLOR_TEXT_LIGHT);
+      doc.text(isKitchen ? "Cuisine" : "Service + Admin", cx + 4, y + 8.5);
+      // Montant
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(...COLOR_GREEN);
+      doc.text(fmtMoney(r.tipShare), cx + 4, y + 13.5);
+
+      // Bonus $/h pill
+      if (r.totalHours > 0 && r.tipShare > 0) {
+        const tipPerHour = r.tipShare / r.totalHours;
+        const effective = r.rate + tipPerHour;
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(8);
+        doc.setTextColor(...COLOR_ACCENT);
+        doc.text(`+ ${fmtMoney(tipPerHour)}/h`, cx + 4, y + 17.5);
+        // Effectif
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(6);
+        doc.setTextColor(...COLOR_TEXT_LIGHT);
+        if (r.rate > 0) {
+          doc.text(`Effectif : ${fmtMoney(effective)}/h (base ${fmtMoney(r.rate)})`, cx + 4, y + 20.5);
+        }
+      } else {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(7);
+        doc.setTextColor(...COLOR_TEXT_LIGHT);
+        doc.text(`${fmtHours(r.tipEligibleHours)}h éligibles`, cx + 4, y + 18);
+      }
+    });
+    y += recapH + 3;
+  }
+
+  // ─ Footer (toutes les pages) ─────────────────────────
+  const totalPages = doc.internal.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    const fy = H - 6;
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(7);
+    doc.setTextColor(...COLOR_TEXT_LIGHT);
+    const now = new Date();
+    const genDate = now.toLocaleString("fr-CA", { year: "numeric", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+    doc.text(`Généré le ${genDate} · Bochica Café Bistro`, M, fy);
+    doc.text(`Page ${p} / ${totalPages}`, W - M, fy, { align: "right" });
+  }
+
+  // ─ Téléchargement ────────────────────────────────────
+  const fileName = `Bochica_Paie_Sem${weekNum}_${dayKey(weekStart)}.pdf`;
+  doc.save(fileName);
+  toast(`Rapport PDF généré : ${fileName}`, "success", 4000);
+}
+
+// Petit helper : tronque un texte pour qu'il tienne dans une largeur (en mm)
+// donnée dans le PDF, avec ellipsis. Utilise getTextWidth du contexte courant.
+function _truncatePdf(doc, text, maxW) {
+  if (!text) return "";
+  if (doc.getTextWidth(text) <= maxW) return text;
+  const ellipsis = "…";
+  let lo = 0, hi = text.length;
+  while (lo < hi) {
+    const mid = (lo + hi + 1) >> 1;
+    if (doc.getTextWidth(text.slice(0, mid) + ellipsis) <= maxW) lo = mid;
+    else hi = mid - 1;
+  }
+  return text.slice(0, lo) + ellipsis;
 }
