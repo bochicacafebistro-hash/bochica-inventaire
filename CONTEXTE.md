@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.15.1** — **Récap pourboires : bonus $/h par employé**. Dans la section « Pourboires de la semaine par employé » (fiche de chaque employé), un nouveau pill jaune accent affiche `+ X,XX $/h` — le bonus moyen par heure travaillée que représente le pourboire. Petite ligne sous le pill : « Effectif : Y,YY $/h (base Z,ZZ) » pour visualiser le taux horaire complet (contractuel + bonus pourboire).
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.15.2** — **Multiplicateur de pourboire retiré**. Le pill `100%` à côté de chaque employé (introduit en v3.15.0) faisait du bruit visuel sans réelle utilité — retrait complet de la feature : pill, input, helpers JS, action Firestore, CSS. Le calcul des pourboires revient au prorata simple des heures éligibles. Les autres nouveautés de v3.15.0 (employés extras + drag & drop) restent en place.
+>
+> ⚠️ **26 mai 2026 — v3.15.1** — **Récap pourboires : bonus $/h par employé**. Dans la section « Pourboires de la semaine par employé » (fiche de chaque employé), un nouveau pill jaune accent affiche `+ X,XX $/h` — le bonus moyen par heure travaillée que représente le pourboire. Petite ligne sous le pill : « Effectif : Y,YY $/h (base Z,ZZ) » pour visualiser le taux horaire complet (contractuel + bonus pourboire).
 >
 > ⚠️ **26 mai 2026 — v3.15.0** — **Salaires & Pourboires : extras + multiplicateur + ordre manuel**. Trois nouveautés majeures dans la page Salaires : (1) bouton **« + Ajouter un extra »** pour créer un employé ponctuel attaché à la semaine seulement (badge EXTRA + bouton retrait), sans toucher à la liste principale Employés. (2) **Multiplicateur de pourboire par employé** — pill éditable en % à côté du nom (100% par défaut, 0% = exclu du pool, 150% = part et demie). Le prorata des heures est pondéré, code couleur sémantique (gris défaut / rouge exclu / ambré réduit / vert majoré). (3) **Drag & drop des lignes** via handle ⋮⋮ à gauche — l'ordre est sauvé pour la semaine seulement (n'affecte pas Employés & Horaires).
 >
@@ -461,6 +463,19 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Retrait du multiplicateur de pourboire (v3.15.2) ↩️
+- Le **pill `%` à côté de chaque employé** (introduit en v3.15.0) faisait apparaître « 100% » sur toutes les lignes, créant du bruit visuel sans cas d'usage concret au quotidien. Retrait complet à la demande utilisateur.
+- **Code retiré** :
+  - `getTipMultiplier()` helper
+  - `updateTipMultiplier()` action Firestore
+  - Variables `multiplier` / `multPct` / `multCls` / `multTitle` dans le rendu de chaque ligne
+  - Bloc `<span class="payroll-multiplier-wrap">…</span>` dans la cellule employé
+  - CSS `.payroll-multiplier-wrap` (4 variantes is-default/is-excluded/is-reduced/is-boosted), `.payroll-multiplier-input`, `.payroll-multiplier-suffix` + dark mode
+- **Calcul revenu au prorata simple** : `dailyCalc` reprend `totalKitchenHrsDay`/`totalServiceHrsDay` (heures brutes), et le `dayTip` de chaque employé = `(tipHours / groupTotalHrs) * groupPool`.
+- **Données BD préservées** : le champ `tipMultipliers{}` dans `payroll/{weekId}` n'est plus lu mais reste en BD pour les semaines déjà éditées. Il est simplement ignoré. `doRemoveManualEmployee()` continue à nettoyer la clé par défense au cas où un extra avait été configuré avant le retrait.
+- **Conservées de v3.15.0** : ajout d'extras (employés ad-hoc), drag & drop pour réordonner. Ces deux features restent en place et utilisables.
+- **CACHE_VERSION** → `v3.15.2`
 
 ### 26 mai 2026 — Récap pourboires : bonus $/h par employé (v3.15.1) 💵⏱️
 - Dans la carte **« Pourboires de la semaine par employé »**, chaque fiche employé affiche maintenant deux infos supplémentaires sous le montant total :

@@ -55,11 +55,13 @@ function buildPayrollTimeOptions(selectedValue) {
   return html;
 }
 
-// ═ Employés ad-hoc + multiplicateurs + ordre (v3.15.0) ══════════
+// ═ Employés ad-hoc + ordre (v3.15.0, multiplicateurs retirés v3.15.2) ══════════
 // Tout est stocké dans le doc payroll/{weekId} :
 //   • manualEmployees[]   — extras de la semaine ({id, name, section, hourlyRate})
-//   • tipMultipliers{}    — pondération par employé (1.0 = normal, 0 = exclu, 1.5 = part et demie)
 //   • empOrder[]          — ordre d'affichage (IDs réels + manuels)
+// Note : tipMultipliers{} (introduit en v3.15.0) a été retiré en v3.15.2 car
+// jugé peu utile dans la pratique. Le calcul est revenu au prorata simple des
+// heures éligibles. Les anciennes valeurs en BD sont simplement ignorées.
 // Les shifts des extras sont stockés DANS actualShifts[id][dk] comme les vrais
 // employés — ça permet de réutiliser tel quel getActualShift/updateActualShift.
 
@@ -92,16 +94,6 @@ function getAllPayrollEmployees() {
     if (ai !== bi) return ai - bi;
     return 0;
   });
-}
-
-// Multiplicateur de pourboire pour un employé donné (1.0 par défaut).
-// Une valeur de 0 exclut totalement l'employé du pool ; 1.5 lui donne 50% de plus
-// que sa part "naturelle" prorata des heures.
-function getTipMultiplier(empId) {
-  const m = payrollWeekData?.tipMultipliers || {};
-  const v = m[empId];
-  if (v === undefined || v === null || v === "" || isNaN(Number(v))) return 1.0;
-  return Math.max(0, Number(v));
 }
 
 // Indique si une ligne est un employé "ad-hoc" (pas dans la liste principale)
@@ -259,11 +251,9 @@ function renderSalaires() {
 
   // ─ Pré-calcul des pools journaliers ──────────────
   // Pour chaque jour, on calcule le pool cuisine/service du jour ET le total
-  // d'heures PONDÉRÉES par groupe ce jour-là. Le pourboire de chaque employé
+  // d'heures éligibles par groupe ce jour-là. Le pourboire de chaque employé
   // est ensuite calculé jour par jour (plus juste : un employé absent un
-  // jour ne touche rien du pool de ce jour-là).
-  // Pondération : tipHrs * multiplier — un multiplier de 0 exclut l'employé,
-  // 1.5 lui donne une part et demie. Par défaut : 1.0.
+  // jour ne touche rien du pool de ce jour-là). Prorata simple des heures.
   const dailyCalc = weekDays.map((d, k) => {
     const dk = dayKey(d);
     const dowIdx = visibleIdx[k];
@@ -271,17 +261,15 @@ function renderSalaires() {
     const poolKitchenDay = dayTotal * (Number(tipShares.cuisine) || 0);
     const poolServiceDay = dayTotal * (Number(tipShares.service) || 0);
     const serviceWin = getServiceWindow(dowIdx);
-    let totalKitchenWeightedDay = 0;
-    let totalServiceWeightedDay = 0;
+    let totalKitchenHrsDay = 0;
+    let totalServiceHrsDay = 0;
     for (const emp of allEmps) {
       const shift = getActualShift(emp.id, dk);
       const tipHrs = serviceWin ? intersectShiftHours(shift, serviceWin) : 0;
-      const mult = getTipMultiplier(emp.id);
-      const weighted = tipHrs * mult;
-      if (tipGroupOf(emp) === "cuisine") totalKitchenWeightedDay += weighted;
-      else totalServiceWeightedDay += weighted;
+      if (tipGroupOf(emp) === "cuisine") totalKitchenHrsDay += tipHrs;
+      else totalServiceHrsDay += tipHrs;
     }
-    return { dk, dowIdx, serviceWin, dayTotal, poolKitchenDay, poolServiceDay, totalKitchenWeightedDay, totalServiceWeightedDay };
+    return { dk, dowIdx, serviceWin, dayTotal, poolKitchenDay, poolServiceDay, totalKitchenHrsDay, totalServiceHrsDay };
   });
 
   // ─ Calculs par employé ────────────────────────────
@@ -290,7 +278,6 @@ function renderSalaires() {
     const isSal = !!emp.isSalaried;
     const fixedHours = Number(emp.fixedWeeklyHours) || 0;
     const group = tipGroupOf(emp);
-    const multiplier = getTipMultiplier(emp.id);
     const isManual = isManualEmployee(emp);
 
     let totalHours = 0;
@@ -309,11 +296,10 @@ function renderSalaires() {
       const isOverride = hasActualOverride(emp.id, dk);
       const isDifferent = isOverride && !sameShift(actualShift, plannedShift);
 
-      // Pourboire du jour pour cet employé (prorata journalier PONDÉRÉ)
+      // Pourboire du jour pour cet employé (prorata journalier simple)
       const groupPool = group === "cuisine" ? dailyCalc[k].poolKitchenDay : dailyCalc[k].poolServiceDay;
-      const groupTotalWeighted = group === "cuisine" ? dailyCalc[k].totalKitchenWeightedDay : dailyCalc[k].totalServiceWeightedDay;
-      const weightedHrs = tipHours * multiplier;
-      const dayTip = (groupTotalWeighted > 0 && weightedHrs > 0) ? (weightedHrs / groupTotalWeighted) * groupPool : 0;
+      const groupTotalHrs = group === "cuisine" ? dailyCalc[k].totalKitchenHrsDay : dailyCalc[k].totalServiceHrsDay;
+      const dayTip = (groupTotalHrs > 0 && tipHours > 0) ? (tipHours / groupTotalHrs) * groupPool : 0;
 
       totalHours += hours;
       plannedHours += pHours;
@@ -325,7 +311,7 @@ function renderSalaires() {
     const grossWage = isSal ? (fixedHours * rate) : (totalHours * rate);
     const gap = totalHours - plannedHours;
     const totalPay = grossWage + tipShare;
-    return { emp, rate, isSal, fixedHours, group, multiplier, isManual, daily, totalHours, plannedHours, gap, tipEligibleHours, tipShare, grossWage, totalPay };
+    return { emp, rate, isSal, fixedHours, group, isManual, daily, totalHours, plannedHours, gap, tipEligibleHours, tipShare, grossWage, totalPay };
   });
 
   // Totaux par groupe pour les hints des pools (somme des heures de la semaine)
@@ -500,15 +486,6 @@ function renderSalaires() {
                 : `<span class="payroll-group-badge payroll-group-badge--service" title="Pool service ${(tipShares.service*100).toFixed(0)}%">${icon("users", 10)} ${(tipShares.service*100).toFixed(0)}%</span>`;
               const gapCls = row.gap > 0.01 ? "is-positive" : row.gap < -0.01 ? "is-negative" : "";
               const gapArrow = row.gap > 0.01 ? "▲" : row.gap < -0.01 ? "▼" : "";
-              const multPct = Math.round(row.multiplier * 100);
-              const multCls = multPct === 100 ? "is-default" : multPct === 0 ? "is-excluded" : multPct > 100 ? "is-boosted" : "is-reduced";
-              const multTitle = multPct === 0
-                ? "Cet employé est exclu du partage des pourboires"
-                : multPct === 100
-                  ? "Part normale (100%) — laisser tel quel pour le calcul prorata standard"
-                  : multPct > 100
-                    ? `Part majorée (${multPct}%) — cet employé reçoit ${(multPct/100).toFixed(2)}× sa part naturelle`
-                    : `Part réduite (${multPct}%) — cet employé reçoit ${(multPct/100).toFixed(2)}× sa part naturelle`;
               return `<tr class="schedule-emp-row ${row.isManual ? "is-manual-emp" : ""}" data-emp-id="${row.emp.id}"
                 ${isLocked ? "" : `ondragover="payrollRowDragOver(event,'${row.emp.id}')"
                 ondragleave="payrollRowDragLeave(event)"
@@ -525,14 +502,6 @@ function renderSalaires() {
                       <div class="schedule-emp-meta">
                         ${groupBadge}
                         ${row.rate ? `<span class="schedule-emp-role">${row.rate.toFixed(2)}$/h${row.isSal ? " · FIXE" : ""}</span>` : ""}
-                        <span class="payroll-multiplier-wrap ${multCls}" title="${multTitle}">
-                          <input type="number" class="payroll-multiplier-input" min="0" max="500" step="5"
-                            value="${multPct}"
-                            onchange="updateTipMultiplier('${row.emp.id}', this.value)"
-                            ${isLocked ? "disabled" : ""}
-                            aria-label="Multiplicateur de pourboire (%) pour ${esc(row.emp.name || "")}"/>
-                          <span class="payroll-multiplier-suffix">%</span>
-                        </span>
                         ${row.isManual && !isLocked ? `<button class="payroll-manual-del" onclick="removeManualEmployee('${row.emp.id}')" title="Retirer cet extra de la semaine" aria-label="Retirer cet extra">${icon("trash", 12)}</button>` : ""}
                       </div>
                     </div>
@@ -1100,38 +1069,8 @@ async function doUnlockPayrollWeek() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// v3.15.0 — Extras + multiplicateurs + ordre
+// v3.15.0 — Extras + ordre  (multiplicateurs retirés v3.15.2)
 // ═══════════════════════════════════════════════════════════════
-
-// ─ Multiplicateur de pourboire par employé ─────────────────
-// Stocké en pourcentage (0-500) mais converti en ratio (0-5.0) à la lecture.
-// Une valeur 100 = part normale, 0 = exclu, 150 = part et demie.
-async function updateTipMultiplier(empId, pctValue) {
-  try {
-    const ws = getWeekStart(payrollWeekOffset);
-    const wid = payrollWeekId(ws);
-    const ref = db.collection("payroll").doc(wid);
-    let pct = Number(pctValue);
-    if (isNaN(pct) || pct < 0) pct = 0;
-    if (pct > 500) pct = 500;
-    const ratio = pct / 100;
-    // Si 100 (défaut), on supprime la clé pour garder le doc propre
-    const valueToWrite = Math.abs(ratio - 1.0) < 0.001
-      ? firebase.firestore.FieldValue.delete()
-      : ratio;
-    await ref.set({
-      weekId: wid,
-      weekStart: dayKey(ws),
-      updatedAt: Date.now(),
-      tipMultipliers: {
-        [empId]: valueToWrite
-      }
-    }, { merge: true });
-  } catch (err) {
-    console.error("updateTipMultiplier failed:", err);
-    toast("Erreur sauvegarde multiplicateur : " + (err.message || err.code || err), "error", 5000);
-  }
-}
 
 // ─ Ajout d'un employé extra (ad-hoc pour cette semaine seulement) ─
 function openAddExtraModal() {
@@ -1223,14 +1162,15 @@ async function saveManualEmployee() {
 }
 
 // Retrait d'un extra — confirmation puis suppression de manualEmployees,
-// actualShifts[id], tipMultipliers[id], et de l'entrée dans empOrder.
+// actualShifts[id] et de l'entrée dans empOrder. (Aussi nettoie tipMultipliers
+// par défense au cas où d'anciennes valeurs traînent.)
 function removeManualEmployee(id) {
   const extras = getManualEmployees();
   const ex = extras.find(e => e.id === id);
   if (!ex) return;
   openConfirm(
     "Retirer cet extra ?",
-    `Cela va supprimer <strong>${esc(ex.name)}</strong> de cette semaine, ses heures saisies et son multiplicateur de pourboires.<br><br>
+    `Cela va supprimer <strong>${esc(ex.name)}</strong> de cette semaine et ses heures saisies.<br><br>
      ⚠ Action irréversible pour cette semaine.<br>
      ✓ Les autres semaines ne sont pas affectées.<br><br>
      Continuer ?`,
@@ -1251,6 +1191,7 @@ async function doRemoveManualEmployee(id) {
     const newOrder = Array.isArray(data.empOrder) ? data.empOrder.filter(eid => eid !== id) : null;
     const newShifts = { ...(data.actualShifts || {}) };
     delete newShifts[id];
+    // Défensif : nettoie aussi tipMultipliers[id] si présent (champ retiré v3.15.2)
     const newMults = { ...(data.tipMultipliers || {}) };
     delete newMults[id];
 
