@@ -48,7 +48,10 @@ function getNavStructure() {
         { icon: "receipt", label: "Soumissions", page: "soumissions" }
       ]
     },
-    { type: "link", icon: "store", label: t("nav_suppliers"), page: "fournisseurs" }
+    { type: "link", icon: "store", label: t("nav_suppliers"), page: "fournisseurs" },
+    // Pointage : visible par tous les rôles. Idéal sur tablette permanente —
+    // chaque employé tape juste son PIN pour marquer entrée/sortie.
+    { type: "link", icon: "clock", label: "Pointage", page: "pointage" }
   ];
 }
 
@@ -212,7 +215,8 @@ function renderPage() {
     evenements:  { label: "Événements",         icon: "calendar" },
     soumissions: { label: "Soumissions",        icon: "receipt" },
     fournisseurs:{ label: t("nav_suppliers"),   icon: "store" },
-    rapport:     { label: t("nav_to_order"),    icon: "cart" }
+    rapport:     { label: t("nav_to_order"),    icon: "cart" },
+    pointage:    { label: "Pointage",           icon: "clock" }
   };
   const meta = pageMeta[activePage] || { label: activePage, icon: "file-text" };
   const titleEl = document.getElementById("topbar-title");
@@ -292,5 +296,13 @@ function renderPage() {
   else if (activePage === "evenements") pc.innerHTML = renderEvents();
   else if (activePage === "soumissions") pc.innerHTML = renderQuotes();
   else if (activePage === "fournisseurs") pc.innerHTML = renderFournisseurs();
+  else if (activePage === "pointage") {
+    // S'abonner au doc payroll de la semaine courante pour lire l'état des
+    // punches existants (savoir si on est en mode entrée ou sortie).
+    if (typeof subscribePayrollWeek === "function") subscribePayrollWeek();
+    pc.innerHTML = renderPunch();
+    // Focus initial sur le premier digit pour clavier physique
+    setTimeout(() => { if (typeof initPunchKeypad === "function") initPunchKeypad(); }, 30);
+  }
   else pc.innerHTML = `<div class="page"><div class="empty">Page introuvable.</div></div>`;
 }

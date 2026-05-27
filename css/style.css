@@ -7671,3 +7671,451 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   .reports-period-tabs__count{width:100%;text-align:right;margin-top:4px}
   .reports-chart-card__title{font-size:16px}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v3.17.0 — POINTAGE (page kiosque PIN + boutons entrée/sortie)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Variante de page : pleine largeur + centrée verticalement (kiosque) */
+.page.page--punch{
+  display:flex;
+  align-items:flex-start;
+  justify-content:center;
+  padding:var(--sp-4) var(--sp-4);
+  max-width:100%;
+}
+.punch-screen{
+  width:100%;
+  max-width:520px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:var(--sp-4);
+}
+
+/* Horloge + date en haut */
+.punch-clock-row{
+  text-align:center;
+  margin-bottom:var(--sp-2);
+}
+.punch-clock{
+  font-family:var(--font-body);
+  font-variant-numeric:tabular-nums;
+  font-size:32px;
+  font-weight:800;
+  color:var(--text);
+  letter-spacing:.02em;
+  line-height:1;
+}
+.punch-date{
+  font-family:var(--font-body);
+  font-size:14px;
+  color:var(--text2);
+  text-transform:capitalize;
+  margin-top:4px;
+}
+
+/* ── Écran 1 : keypad ── */
+.punch-keypad-screen{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  width:100%;
+  gap:var(--sp-4);
+}
+.punch-title{
+  font-family:var(--font-heading);
+  font-size:42px;
+  color:var(--text);
+  letter-spacing:.04em;
+  margin:0;
+  display:inline-flex;
+  align-items:center;
+  gap:12px;
+}
+.punch-subtitle{
+  font-family:var(--font-body);
+  font-size:15px;
+  color:var(--text2);
+  text-align:center;
+  margin:0;
+  max-width:380px;
+}
+.punch-pin-dots{
+  display:flex;
+  gap:16px;
+  margin:var(--sp-3) 0 var(--sp-2);
+  min-height:30px;
+  align-items:center;
+}
+.punch-pin-dot{
+  width:22px;
+  height:22px;
+  border-radius:50%;
+  border:2px solid var(--border);
+  background:transparent;
+  transition:background var(--transition-base), border-color var(--transition-base), transform var(--transition-base);
+}
+.punch-pin-dot.is-filled{
+  background:var(--accent);
+  border-color:var(--accent);
+  transform:scale(1.15);
+}
+
+/* Clavier numérique 3×4 — touch-friendly */
+.punch-keypad{
+  display:grid;
+  grid-template-columns:repeat(3, 96px);
+  gap:14px;
+  width:max-content;
+}
+.punch-key{
+  width:96px;
+  height:96px;
+  border-radius:18px;
+  border:1.5px solid var(--border);
+  background:var(--surface);
+  font-family:var(--font-body);
+  font-size:34px;
+  font-weight:700;
+  color:var(--text);
+  cursor:pointer;
+  transition:all var(--transition-base);
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 2px 4px rgba(14,13,12,.08);
+}
+.punch-key:hover{
+  background:var(--surface2);
+  border-color:var(--accent);
+  transform:translateY(-1px);
+  box-shadow:0 4px 8px rgba(14,13,12,.12);
+}
+.punch-key:active{
+  transform:translateY(0);
+  background:var(--accent-soft);
+  box-shadow:0 1px 2px rgba(14,13,12,.10);
+}
+.punch-key--clear{
+  background:var(--surface2);
+  color:var(--text2);
+  border-color:rgba(14,13,12,.15);
+}
+.punch-key--clear:hover{
+  background:rgba(217,83,79,.10);
+  border-color:#d9534f;
+  color:#a23a36;
+}
+.punch-key--ok{
+  background:var(--accent);
+  color:var(--accent-text);
+  border-color:var(--accent);
+}
+.punch-key--ok:hover:not([disabled]){
+  background:var(--accent-hover);
+  border-color:var(--accent-hover);
+}
+.punch-key--ok[disabled]{
+  background:var(--surface2);
+  color:var(--text3);
+  border-color:rgba(14,13,12,.10);
+  cursor:not-allowed;
+  box-shadow:none;
+  opacity:.6;
+}
+.punch-hint{
+  font-family:var(--font-body);
+  font-size:12px;
+  color:var(--text3);
+  text-align:center;
+  font-style:italic;
+  max-width:360px;
+  margin:var(--sp-2) 0 0;
+}
+
+/* ── Écran 2 : employé identifié + bouton ENTRÉE/SORTIE ── */
+.punch-employee-screen{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  width:100%;
+  gap:var(--sp-4);
+  padding-top:var(--sp-3);
+}
+.punch-back-btn{
+  align-self:flex-start;
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--text2);
+  font-family:var(--font-body);
+  font-size:13px;
+  font-weight:600;
+  padding:6px 12px;
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  transition:all var(--transition-base);
+}
+.punch-back-btn:hover{
+  background:var(--surface2);
+  color:var(--text);
+}
+.punch-greeting{
+  text-align:center;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:6px;
+}
+.punch-greeting-hello{
+  font-family:var(--font-body);
+  font-size:14px;
+  color:var(--text2);
+  text-transform:uppercase;
+  letter-spacing:.08em;
+  font-weight:600;
+}
+.punch-greeting-name{
+  font-family:var(--font-heading);
+  font-size:48px;
+  color:var(--text);
+  letter-spacing:.02em;
+  line-height:1;
+}
+.punch-emp-section{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  padding:3px 10px;
+  border-radius:var(--radius-pill);
+  font-family:var(--font-mono);
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+.punch-emp-section--cuisine{
+  background:rgba(247,179,44,.18);
+  color:var(--accent-warm);
+  border:1px solid rgba(247,179,44,.4);
+}
+.punch-emp-section--service{
+  background:rgba(74,144,226,.15);
+  color:#2c5f9e;
+  border:1px solid rgba(74,144,226,.4);
+}
+
+/* Gros bouton ENTRÉE / SORTIE — l'unique élément central de l'écran */
+.punch-main-btn{
+  width:100%;
+  max-width:420px;
+  min-height:200px;
+  border-radius:24px;
+  border:none;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding:var(--sp-5);
+  font-family:var(--font-body);
+  color:#fff;
+  box-shadow:0 6px 16px rgba(14,13,12,.18);
+  transition:all var(--transition-base);
+}
+.punch-main-btn:hover{
+  transform:translateY(-2px);
+  box-shadow:0 10px 24px rgba(14,13,12,.24);
+}
+.punch-main-btn:active{
+  transform:translateY(0);
+  box-shadow:0 4px 8px rgba(14,13,12,.20);
+}
+.punch-main-btn.is-entree{
+  background:linear-gradient(135deg, #2da34a, #1f7a1f);
+}
+.punch-main-btn.is-sortie{
+  background:linear-gradient(135deg, #4a90e2, #2c5f9e);
+}
+.punch-main-btn.is-override{
+  background:linear-gradient(135deg, #b87410, #8a5510);
+}
+.punch-main-btn-label{
+  font-size:32px;
+  font-weight:900;
+  letter-spacing:.06em;
+  margin-top:8px;
+}
+.punch-main-btn-time{
+  font-family:var(--font-body);
+  font-size:22px;
+  font-weight:700;
+  font-variant-numeric:tabular-nums;
+  opacity:.95;
+  letter-spacing:.02em;
+}
+.punch-action-sub{
+  font-family:var(--font-body);
+  font-size:14px;
+  color:var(--text2);
+  text-align:center;
+  margin:0;
+  max-width:380px;
+  line-height:1.5;
+}
+
+/* ── Écran 3 : confirmation post-punch ── */
+.punch-confirmed-screen{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:var(--sp-3);
+  padding:var(--sp-5);
+  width:100%;
+  border-radius:24px;
+  animation:punchConfirmedIn .35s ease-out;
+}
+@keyframes punchConfirmedIn{
+  from { opacity:0; transform:scale(.92) }
+  to   { opacity:1; transform:scale(1) }
+}
+.punch-confirmed-screen.is-entree{
+  background:linear-gradient(135deg, rgba(45,163,74,.12), rgba(31,122,31,.20));
+  border:2px solid #2da34a;
+}
+.punch-confirmed-screen.is-sortie{
+  background:linear-gradient(135deg, rgba(74,144,226,.12), rgba(44,95,158,.20));
+  border:2px solid #4a90e2;
+}
+.punch-confirmed-check{
+  color:var(--status-green, #1f7a1f);
+}
+.punch-confirmed-screen.is-sortie .punch-confirmed-check{
+  color:#2c5f9e;
+}
+.punch-confirmed-label{
+  font-family:var(--font-body);
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.05em;
+  color:var(--text2);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.punch-confirmed-name{
+  font-family:var(--font-heading);
+  font-size:54px;
+  color:var(--text);
+  letter-spacing:.02em;
+  line-height:1;
+}
+.punch-confirmed-time{
+  font-family:var(--font-body);
+  font-size:32px;
+  font-weight:800;
+  font-variant-numeric:tabular-nums;
+  color:var(--text);
+  letter-spacing:.02em;
+}
+.punch-confirmed-wish{
+  font-family:var(--font-body);
+  font-size:18px;
+  color:var(--text2);
+  font-style:italic;
+  margin-top:6px;
+}
+.punch-tap-anywhere{
+  margin-top:var(--sp-3);
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--text2);
+  padding:10px 24px;
+  border-radius:var(--radius-pill);
+  font-family:var(--font-body);
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  transition:all var(--transition-base);
+}
+.punch-tap-anywhere:hover{
+  background:var(--surface2);
+}
+
+/* ── Écran 4 : erreur PIN ── */
+.punch-error-screen{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  text-align:center;
+  gap:var(--sp-3);
+  padding:var(--sp-5);
+  background:rgba(217,83,79,.08);
+  border:2px solid #d9534f;
+  border-radius:24px;
+  width:100%;
+  animation:punchConfirmedIn .35s ease-out;
+}
+.punch-error-icon{
+  color:#d9534f;
+}
+.punch-error-msg{
+  font-family:var(--font-body);
+  font-size:22px;
+  font-weight:700;
+  color:#a23a36;
+}
+
+/* ── Dark mode ── */
+[data-theme="dark"] .punch-key{
+  background:var(--surface);
+  border-color:rgba(245,241,232,.15);
+}
+[data-theme="dark"] .punch-key:hover{
+  background:var(--surface2);
+  border-color:var(--accent);
+}
+[data-theme="dark"] .punch-confirmed-screen.is-entree{
+  background:linear-gradient(135deg, rgba(45,163,74,.18), rgba(31,122,31,.28));
+}
+[data-theme="dark"] .punch-confirmed-screen.is-sortie{
+  background:linear-gradient(135deg, rgba(74,144,226,.18), rgba(44,95,158,.28));
+}
+[data-theme="dark"] .punch-error-screen{
+  background:rgba(217,83,79,.15);
+}
+[data-theme="dark"] .punch-error-msg{
+  color:#ff9a96;
+}
+[data-theme="dark"] .punch-emp-section--service{
+  color:#8fc1ff;
+}
+
+/* ── Mobile ── */
+@media (max-width:640px){
+  .punch-screen{ max-width:100%; }
+  .punch-title{ font-size:32px; }
+  .punch-subtitle{ font-size:13px; }
+  .punch-keypad{
+    grid-template-columns:repeat(3, 80px);
+    gap:10px;
+  }
+  .punch-key{
+    width:80px;
+    height:80px;
+    font-size:28px;
+    border-radius:14px;
+  }
+  .punch-clock{ font-size:24px; }
+  .punch-greeting-name{ font-size:36px; }
+  .punch-main-btn{ min-height:160px; }
+  .punch-main-btn-label{ font-size:26px; }
+  .punch-main-btn-time{ font-size:18px; }
+  .punch-confirmed-name{ font-size:38px; }
+  .punch-confirmed-time{ font-size:24px; }
+}

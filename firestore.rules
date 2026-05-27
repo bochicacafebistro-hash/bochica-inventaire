@@ -123,11 +123,43 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
-    // ── /payroll : salaires + pourboires hebdomadaires (admin seul) ──
+    // ── /payroll : salaires + pourboires hebdomadaires ──
     // Un doc par semaine ISO (ex: "2026-W18") avec heures réelles, fenêtres
     // de service, total pourboires.
+    //
+    // v3.17.0 — Pointage : la page Pointage (kiosque PIN) doit pouvoir écrire
+    // les heures d'entrée/sortie depuis un compte non-admin (typiquement la
+    // tablette est loggée en "Employe"). On élargit donc :
+    //   - lecture : tous les rôles authentifiés (pour que la page Pointage
+    //     puisse détecter si une entrée a déjà été pointée aujourd'hui)
+    //   - écriture restreinte : tout user authentifié peut créer ou mettre à
+    //     jour un doc payroll, MAIS uniquement avec les champs `actualShifts`
+    //     + meta techniques (weekId, weekStart, updatedAt). Pas de touche aux
+    //     pourboires, multiplicateurs, verrouillage, etc. → ces champs et la
+    //     suppression restent admin only.
+    //   - admin garde l'accès complet (lecture + écriture sans restriction).
     match /payroll/{doc=**} {
-      allow read, write: if isAdmin();
+      allow read:   if isAuthed();
+      allow write:  if isAdmin();                                   // admin = tout
+      allow create: if isAuthed() && _payrollPunchCreateOnly();     // non-admin : create restreint
+      allow update: if isAuthed() && _payrollPunchUpdateOnly();     // non-admin : update restreint
+      allow delete: if isAdmin();                                   // suppression admin only
+    }
+
+    // Pour un CREATE : le nouveau doc ne doit contenir QUE les champs autorisés
+    // pour le pointage (actualShifts + meta techniques). Bloque toute tentative
+    // d'un employé de pré-remplir des pourboires, un verrouillage, etc.
+    function _payrollPunchCreateOnly() {
+      return request.resource.data.keys()
+        .hasOnly(['actualShifts', 'weekId', 'weekStart', 'updatedAt']);
+    }
+
+    // Pour un UPDATE : seules ces clés peuvent changer entre l'ancien et le
+    // nouveau doc. Préserve les autres champs admin (locked, tipsByDay, etc.)
+    // tels qu'ils sont, même si la requête tente de les écraser.
+    function _payrollPunchUpdateOnly() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['actualShifts', 'weekId', 'weekStart', 'updatedAt']);
     }
 
     // ── /payrollSimulations : scénarios paie hypothétiques (admin seul) ──

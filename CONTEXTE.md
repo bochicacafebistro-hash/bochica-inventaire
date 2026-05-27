@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.16.3** — **Typo unifiée Horaires + Salaires + Simulation**. La refonte typo de la v3.16.2 (Inter Bold 16-18 px, tabular-nums, verts/rouges saturés) est maintenant étendue à toutes les tables `.schedule-table` — donc aussi à la page Employés & Horaires et à la page Simulation paie. Sélecteurs réorganisés en 3 sections : SHARED (`.schedule-table`), PAYROLL-ONLY (`.payroll-tip-amount` etc.), DARK MODE.
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.17.0** — **Pointage : nouvelle page kiosque pour entrée/sortie par PIN**. Nouveau module `pages-punch.js` (~330 lignes) + section CSS dédiée. Chaque employé tape son PIN (déjà configuré dans sa fiche), le système l'identifie, affiche un seul gros bouton **ENTRÉE** ou **SORTIE** détecté automatiquement selon ce qui a déjà été pointé aujourd'hui. Les punches écrivent directement dans `payroll/{weekId}.actualShifts` → le tableau de Salaires & Pourboires se remplit tout seul. Règles Firestore élargies : tout utilisateur authentifié peut écrire sur `actualShifts` uniquement (verrouillage, pourboires et autres champs restent admin only). UI tactile (clavier 96×96 px, gros boutons), live clock, écran de confirmation post-punch, retour auto au PIN après 3 s. **Important** : après déploiement, publier `firestore.rules` mis à jour dans la Console Firebase.
+>
+> ⚠️ **26 mai 2026 — v3.16.3** — **Typo unifiée Horaires + Salaires + Simulation**. La refonte typo de la v3.16.2 (Inter Bold 16-18 px, tabular-nums, verts/rouges saturés) est maintenant étendue à toutes les tables `.schedule-table` — donc aussi à la page Employés & Horaires et à la page Simulation paie. Sélecteurs réorganisés en 3 sections : SHARED (`.schedule-table`), PAYROLL-ONLY (`.payroll-tip-amount` etc.), DARK MODE.
 >
 > ⚠️ **26 mai 2026 — v3.16.2** — **Tableau Salaires : typo plus grosse + verts/rouges plus vifs**. Refonte de la typo des chiffres : Inter Bold au lieu de Bebas Neue (plus classique et lisible que la police condensée), tailles bumpées (heures/salaire/écart/pourboire 14→16 px, Total à payer 14→18 px, fond accent du total renforcé). Verts saturés (#1f7a1f light / #7fd86b dark) et rouges (#b32820 / #ff7a72) qui ressortent enfin sur les lignes jaunes et bleues alternées. Hauteur de ligne ajustée 36→40 px pour accommoder la nouvelle typo. `font-variant-numeric:tabular-nums` partout pour aligner les chiffres en colonne.
 >
@@ -473,6 +475,55 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Pointage : kiosque PIN entrée/sortie (v3.17.0) ⏱️🔢
+
+Nouveau module pour permettre aux employés de pointer leurs entrées et sorties via une page kiosque (typiquement sur tablette permanente à l'entrée du resto). Les heures pointées alimentent **automatiquement** le tableau de Salaires & Pourboires de la semaine en cours.
+
+**Nouveau fichier `js/pages-punch.js`** (~330 lignes)
+- État local : `_punchState` (keypad / employee / confirmed / error), `_punchPin`, `_punchEmployee`, `_punchAction`, `_punchActionTime`
+- 4 sous-écrans :
+  - **Keypad** : titre + dots PIN (4) + clavier numérique 3×4 (1-9, clear, 0, OK) + hint
+  - **Employee** : nom de l'employé + section + UN gros bouton ENTRÉE ou SORTIE selon état du jour + sous-texte explicatif
+  - **Confirmed** : ✓ + nom + heure + souhait (« Bon shift ! » ou « Bonne soirée ! ») — auto-reset 3,5 s
+  - **Error** : message + bouton réessayer — auto-reset 3 s
+- Détection auto de l'action via `_punchGetTodayShift()` :
+  - Pas d'entrée aujourd'hui → bouton **ENTRÉE** (vert)
+  - Entrée mais pas de sortie → bouton **SORTIE** (bleu)
+  - Les deux pointés → bouton **METTRE À JOUR LA SORTIE** (ambré, écrase la sortie existante)
+- Auto-valide quand on tape le 4e chiffre (UX kiosque, moins de gestes)
+- **Clavier physique** supporté : digits, Backspace (effacer), Enter (valider), Escape (reset)
+- **Live clock** : horloge HH:MM:SS actualisée chaque seconde via `setInterval`, sans re-render complet (juste `textContent` sur l'élément `#punch-live-clock`)
+- Punch écrit directement via `updateActualShift()` de `pages-payroll.js` — réutilise la logique read-then-write qui ne risque pas d'effacer une heure existante
+
+**Routing et permissions (`config.js` + `sidebar.js`)**
+- `pointage` ajouté à `ROLE_PERMISSIONS.canAccess/canWrite` pour **les 3 rôles** (global_admin, chef, employee)
+- Item « Pointage » (icône `clock`) ajouté en bas de la sidebar, visible par tous
+- Entrée dans `pageMeta` + case dans le routing de `renderPage()`
+- `initPunchKeypad()` appelé après render pour démarrer l'horloge live + brancher le keyboard listener
+
+**Fiche employé**
+- Le hint du champ PIN dans `openEmployeeModal()` est mis à jour pour refléter le nouvel usage : « PIN utilisé sur la page **Pointage** pour marquer entrées et sorties. Doit être unique entre les employés. Sans PIN, l'employé ne pourra pas pointer (mais l'admin pourra toujours saisir ses heures manuellement dans Salaires & Pourboires) ».
+- La logique de validation/unicité existante (4 chiffres + check de collision) reste inchangée.
+
+**Règles Firestore (`firestore.rules`)** — **À PUBLIER MANUELLEMENT dans la Console Firebase**
+- `/payroll/{doc=**}` élargi pour permettre aux non-admins de pointer :
+  - `allow read` → tout user authentifié (pour détecter l'état du jour)
+  - `allow create` → tout user authentifié si le doc contient SEULEMENT `actualShifts` + meta (`weekId`, `weekStart`, `updatedAt`)
+  - `allow update` → tout user authentifié si l'update ne touche que ces mêmes 4 clés (vérifié via `request.resource.data.diff(resource.data).affectedKeys().hasOnly([...])`)
+  - `allow delete` → admin only
+  - Admin garde l'accès complet (`allow write: if isAdmin()`)
+- Deux helpers internes : `_payrollPunchCreateOnly()` et `_payrollPunchUpdateOnly()`
+
+**Stockage** — les punches alimentent `payroll/{weekId}.actualShifts[empId][dk]` (même structure que les saisies manuelles dans Salaires). Le tableau de Salaires & Pourboires se remplit donc tout seul, semaine par semaine. L'admin peut toujours corriger une heure à postériori dans Salaires (l'override prend priorité sur le planifié, le pointage est traité comme un override comme un autre).
+
+**Sécurité pratique** — la tablette doit être loggée une fois (admin/chef/employee, peu importe). Les employés ensuite tapent juste leur PIN — la session reste persistante grâce à Firebase Auth `LOCAL`. Le PIN est le seul facteur d'identification au moment du punch, donc à protéger comme tel.
+
+**CSS (~270 lignes)** : `.page--punch` (variante pleine largeur centrée), `.punch-clock`, `.punch-pin-dots`, `.punch-keypad` (grid 3×4 de 96×96 px), `.punch-key` (avec variantes `--clear`, `--ok`, état `disabled`), `.punch-greeting-name` (Bebas 48px), `.punch-main-btn` (200×420 px, gradient selon action `is-entree`/`is-sortie`/`is-override`), `.punch-confirmed-screen` (animation `punchConfirmedIn`), `.punch-error-screen`. Dark mode + mobile (keypad 80×80, boutons réduits).
+
+**Icône** `log-in` ajoutée à `icons.js` (symétrique de `log-out`).
+
+**CACHE_VERSION** → `v3.17.0` (minor — feature significative) + `pages-punch.js` ajouté à l'APP_SHELL du service worker.
 
 ### 26 mai 2026 — Typo unifiée Horaires + Salaires + Simulation (v3.16.3) 🔢🟰
 Suite à un retour utilisateur (« je veux que le tableau des horaires ressemble plus à celui de pourboires »), la refonte typo de la v3.16.2 (scopée à `.payroll-table`) a été promue à toutes les tables `.schedule-table` — donc Employés & Horaires, Salaires & Pourboires ET Simulation paie partagent maintenant la même grammaire visuelle.

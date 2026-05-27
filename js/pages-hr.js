@@ -652,7 +652,7 @@ function openEmployeeModal(id) {
     </div>
     <label>${t("emp_field_pin")} (4 chiffres)
       <input id="e-pin" type="text" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" value="${esc(emp?.pin || "")}" placeholder="${t("optional")}"/>
-      <span class="field-hint">${icon("info", 11)} L'employé pourra se connecter avec ce PIN. Doit être unique. Si rôle "Admin", aura accès à tout.</span>
+      <span class="field-hint">${icon("info", 11)} PIN utilisé sur la page <strong>Pointage</strong> pour marquer entrées et sorties. Doit être unique entre les employés. Sans PIN, l'employé ne pourra pas pointer (mais l'admin pourra toujours saisir ses heures manuellement dans Salaires & Pourboires).</span>
     </label>
     <label>${t("notes_field")}<textarea id="e-notes" style="height:60px">${esc(emp?.notes || "")}</textarea></label>
     <div class="modal-actions">

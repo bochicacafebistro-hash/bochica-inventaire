@@ -27,22 +27,26 @@ const AUTH_DISPLAY_NAMES = {
 };
 
 // Permissions par rôle : pages accessibles + pages modifiables (écriture)
+// La page "pointage" est volontairement ouverte aux 3 rôles — c'est l'écran
+// kiosque où les employés tapent leur PIN pour pointer entrées/sorties.
+// L'identification se fait par le PIN, pas par le compte loggué (qui peut
+// rester "Employe" en permanence sur la tablette).
 const ROLE_PERMISSIONS = {
   global_admin: {
     canAccess: ["dashboard", "inventaire", "rapport", "taches", "employes", "salaires", "simulations",
-                "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "fournisseurs", "rapports"],
+                "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "fournisseurs", "rapports", "pointage"],
     canWrite: ["dashboard", "inventaire", "rapport", "taches", "employes", "salaires", "simulations",
-               "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "fournisseurs", "rapports"],
+               "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "fournisseurs", "rapports", "pointage"],
     homePage: "dashboard"
   },
   chef: {
-    canAccess: ["inventaire", "menu", "ingredients", "recettes", "shopping", "evenements"],
-    canWrite:  ["inventaire", "menu", "ingredients", "recettes", "shopping", "evenements"],
+    canAccess: ["inventaire", "menu", "ingredients", "recettes", "shopping", "evenements", "pointage"],
+    canWrite:  ["inventaire", "menu", "ingredients", "recettes", "shopping", "evenements", "pointage"],
     homePage: "inventaire"
   },
   employee: {
-    canAccess: ["inventaire"],
-    canWrite:  ["inventaire"], // écriture = mise à jour du stock seulement (pas d'ajout de produit)
+    canAccess: ["inventaire", "pointage"],
+    canWrite:  ["inventaire", "pointage"], // écriture = mise à jour du stock + pointage
     homePage: "inventaire"
   }
 };
