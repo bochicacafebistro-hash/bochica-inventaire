@@ -128,14 +128,19 @@ function intersectShiftHours(shift, serviceWin) {
 }
 
 // Récupère le shift réel d'un employé pour un jour donné.
-// Tombe en fallback sur le planifié si pas encore de saisie réelle.
+//
+// ⚠ Changement v3.17.3 : PLUS de fallback sur le shift planifié.
+// Le tableau Salaires & Pourboires reste vide jusqu'à ce qu'une saisie
+// explicite (via la page Pointage ou via l'éditeur manuel) ne le remplisse.
+// Raison : l'auto-import créait un conflit visuel entre les heures théoriques
+// du planning et les heures réelles pointées — l'admin ne pouvait plus
+// distinguer une cellule auto-importée d'une vraie heure pointée.
+// Pour comparer aux heures planifiées, on utilise toujours getPlannedShift()
+// dans la colonne "Réel / Planif" (les deux côtes-à-côte).
 function getActualShift(empId, dk) {
   const actual = (payrollWeekData?.actualShifts || {})[empId];
   if (actual && actual[dk]) return actual[dk];
-  // Fallback : copie du planifié
-  const emp = employees.find(e => e.id === empId);
-  if (!emp) return null;
-  return (emp.shifts || {})[dk] || null;
+  return null;
 }
 
 // Indique si l'employé a une saisie réelle explicite (vs fallback planifié)
@@ -356,12 +361,11 @@ function renderSalaires() {
         </div>
       </div>
     ` : `
-      <!-- ══ Bannière d'info : auto-import du planifié ══ -->
+      <!-- ══ Bannière d'info : source des heures (v3.17.3) ══ -->
       <div class="payroll-info-banner">
-        ${icon("calendar", 16)}
+        ${icon("clock", 16)}
         <div>
-          <strong>Horaire planifié importé automatiquement</strong> depuis Employés & Horaires.
-          Les valeurs s'actualisent à chaque modification du planifié. Modifie ici uniquement les <strong>écarts réels</strong> (employé arrivé tard, parti tôt, etc.) — tes ajustements sont sauvegardés sans toucher au planning d'origine.
+          Les cellules se remplissent avec les <strong>pointages</strong> (page <strong>Pointage</strong>) ou la <strong>saisie manuelle</strong> de l'admin. L'horaire planifié n'est plus auto-importé — il s'affiche en <strong>petite référence grise sous chaque cellule vide</strong> pour repérer qui devait travailler mais n'a pas encore pointé. Fond bleuté = employé prévu sans pointage. Colonne « Réel / Planif » à droite pour la comparaison.
         </div>
       </div>
 
@@ -526,21 +530,34 @@ function renderSalaires() {
                   const dayTipHint = d.dayTip > 0
                     ? `<div class="payroll-day-tip" title="Pourboire reçu ce jour (prorata)">${fmtMoney(d.dayTip)}</div>`
                     : "";
-                  // États visuels — pas de texte « Auto-importé », juste le fond bleuté de la cellule
-                  // (la classe `is-auto` ajoute déjà un fond discret, suffisant visuellement)
-                  const isAutoFromPlanned = !d.isOverride && d.plannedShift && d.plannedShift.start;
-                  // Titre (tooltip) plus riche pour expliquer le contexte sans encombrer le visuel
-                  const cellTitle = isAutoFromPlanned
-                    ? `Auto-importé du planifié (${d.plannedShift.start}→${d.plannedShift.end})`
-                    : d.isDifferent
-                      ? `Modifié — planifié : ${d.plannedShift?.start || "—"}→${d.plannedShift?.end || "—"}`
+                  // Hint discret du planifié (v3.17.3) — affiché UNDER l'input
+                  // vide pour montrer qui devait travailler et à quelle heure,
+                  // sans préremplir l'input (évite de saisir par erreur le
+                  // planifié comme heure pointée).
+                  const plannedStartHint = (!startVal && d.plannedShift?.start)
+                    ? `<div class="payroll-planned-hint" title="Heure d'entrée prévue à l'horaire">${d.plannedShift.start}</div>`
+                    : "";
+                  const plannedEndHint = (!endVal && d.plannedShift?.end)
+                    ? `<div class="payroll-planned-hint" title="Heure de sortie prévue à l'horaire">${d.plannedShift.end}</div>`
+                    : "";
+                  // Tooltip riche pour expliquer le contexte sans encombrer le visuel
+                  const cellTitle = d.isDifferent
+                    ? `Modifié — planifié : ${d.plannedShift?.start || "—"}→${d.plannedShift?.end || "—"}`
+                    : (!startVal && !endVal && d.plannedShift?.start)
+                      ? `Prévu à l'horaire : ${d.plannedShift.start}→${d.plannedShift.end || "?"}`
                       : "";
-                  const baseClasses = `schedule-td--cell payroll-td-cell ${filled ? "is-filled" : ""} ${d.isDifferent ? "is-modified" : ""} ${isAutoFromPlanned ? "is-auto" : ""}`;
+                  // Classe is-scheduled : marque visuellement les cellules
+                  // d'un employé qui était prévu ce jour-là mais qui n'a pas
+                  // encore pointé (utile pour repérer les oublis de pointage).
+                  const isScheduled = !startVal && !endVal && d.plannedShift?.start;
+                  const baseClasses = `schedule-td--cell payroll-td-cell ${filled ? "is-filled" : ""} ${d.isDifferent ? "is-modified" : ""} ${isScheduled ? "is-scheduled-empty" : ""}`;
                   return `<td class="${baseClasses} schedule-td--day-entry"${cellTitle ? ` title="${cellTitle}"` : ""}>
                     <select class="payroll-time-select" onchange="updateActualShift('${row.emp.id}','${d.dk}','start',this.value)" aria-label="${empName}, entrée réelle ${dayName}">${buildPayrollTimeOptions(startVal)}</select>
+                    ${plannedStartHint}
                   </td>
                   <td class="${baseClasses} schedule-td--day-exit"${cellTitle ? ` title="${cellTitle}"` : ""}>
                     <select class="payroll-time-select" onchange="updateActualShift('${row.emp.id}','${d.dk}','end',this.value)" aria-label="${empName}, sortie réelle ${dayName}">${buildPayrollTimeOptions(endVal)}</select>
+                    ${plannedEndHint}
                     ${dayTipHint}
                   </td>`;
                 }).join("")}

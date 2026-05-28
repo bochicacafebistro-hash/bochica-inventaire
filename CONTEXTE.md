@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.17.2** — **Page d'accueil du rôle Employé = Pointage**. `homePage` du rôle `employee` passé de `inventaire` à `pointage` dans `config.js`. Au login (et au clic sur le logo Bochica), la tablette permanente s'ouvre maintenant directement sur le clavier de pointage — prête à recevoir un PIN sans aucun clic intermédiaire. L'employé garde toujours accès à Inventaire via la sidebar s'il veut le consulter.
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.17.3** — **Fix critique pointage : dayKey UTC → local + retrait auto-import planifié**. Bug racine identifié : `dayKey()` utilisait `toISOString()` qui retourne en UTC. Pour Québec (EDT/EST), un punch fait à 21h le soir basculait dans le jour SUIVANT en UTC → le système réaffichait ENTRÉE et les heures se mélangeaient entre mercredi/jeudi. Fix : `dayKey()` utilise désormais `getFullYear/Month/Date` (heure locale). Par ailleurs, le tableau Salaires & Pourboires n'importe plus l'horaire planifié dans les cellules — les inputs restent vides jusqu'à ce qu'un pointage ou une saisie manuelle les remplisse. Le planifié reste visible en petit hint gris sous chaque cellule vide pour repérer les oublis de pointage (avec fond bleuté `is-scheduled-empty`). Sanity check ajouté dans `punchDoAction` pour bloquer tout punch hors du jour local courant.
+>
+> ⚠️ **26 mai 2026 — v3.17.2** — **Page d'accueil du rôle Employé = Pointage**. `homePage` du rôle `employee` passé de `inventaire` à `pointage` dans `config.js`. Au login (et au clic sur le logo Bochica), la tablette permanente s'ouvre maintenant directement sur le clavier de pointage — prête à recevoir un PIN sans aucun clic intermédiaire. L'employé garde toujours accès à Inventaire via la sidebar s'il veut le consulter.
 >
 > ⚠️ **26 mai 2026 — v3.17.1** — **Pointage : fix auto-retour au keypad après un punch**. Bug : après avoir cliqué ENTRÉE/SORTIE, l'écran de confirmation restait bloqué et il fallait cliquer un bouton manuellement pour revenir au PIN. Cause : `renderPunch()` faisait `clearTimeout(_punchAutoResetTimer)` au début de chaque render, ce qui tuait le timer juste après qu'on l'ait armé. Fix : retrait du clearTimeout dans renderPunch (il reste dans punchReset/punchBackToKeypad pour les vrais cas d'annulation), et le setTimeout est désormais placé APRÈS renderPage(). Délai aussi raccourci de 3,5 s → 1,8 s pour fluidifier les changements d'employé pendant un rush. Le bouton « Toucher pour continuer » est renommé « Suivant → » (ne sert plus qu'à zapper l'attente).
 >
@@ -479,6 +481,49 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Fix critique pointage : timezone + auto-import (v3.17.3) 🐞🌍
+
+Suite à 3 bugs critiques signalés par l'utilisateur sur le pointage : (1) le bouton ENTRÉE réapparaissait le soir alors que la personne avait déjà pointé le matin, (2) conflit visuel entre l'horaire planifié auto-importé et les heures pointées, (3) punchs mélangés entre mercredi et jeudi.
+
+**Bug racine identifié : `dayKey()` utilisait UTC au lieu de local**
+- Avant : `function dayKey(date) { return date.toISOString().slice(0, 10); }`
+- Pour Québec (EDT, UTC-4) : un punch à 21h00 local → 01h00 UTC du JOUR SUIVANT → `dayKey` retournait la date de demain.
+- Conséquences observées :
+  - Entrée à 9h sur "2026-05-26" (correct, 9h EDT = 13h UTC, même jour)
+  - Sortie à 21h enregistrée sur "2026-05-27" (incorrect, 21h EDT = 01h UTC du J+1)
+  - Le système ne trouvait plus l'entrée du jour → réaffichait le bouton ENTRÉE
+  - Les heures se promenaient entre 2 jours dans le tableau de paie
+- Fix : nouvelle implémentation utilisant les getters locaux du Date :
+  ```js
+  function dayKey(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, "0");
+    const d = String(date.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }
+  ```
+- Audit : 35 usages de `dayKey()` dans 3 fichiers. Seul `pages-punch.js` utilisait `dayKey(new Date())` (instant courant). Les autres appels passent des Date construites via `getWeekStart() + offset` (minuit local) — donc le passage en local time ne change rien pour eux.
+
+**Suppression de l'auto-import de l'horaire planifié dans Salaires**
+- Avant : `getActualShift()` faisait fallback sur `emp.shifts[dk]` si pas d'override → les cellules pré-affichaient l'heure planifiée → conflit avec les vraies heures pointées et risque de saisir le planifié par erreur comme heure pointée.
+- Après : `getActualShift()` retourne `null` si pas d'override explicite. Le tableau reste vide jusqu'à ce qu'un pointage ou une saisie manuelle ne le remplisse.
+- L'info du planifié reste accessible :
+  - **Sous chaque cellule vide** : petit hint mono gris `.payroll-planned-hint` indiquant l'heure prévue (ex. « 13:00 ») — pour repérer rapidement qui devait travailler mais n'a pas encore pointé. N'écrase plus l'input.
+  - **Fond bleuté `.payroll-td-cell.is-scheduled-empty`** : signal visuel pour les cellules d'employés prévus mais non pointés.
+  - **Colonne « Réel / Planif »** : conserve la comparaison côte à côte (heures pointées vs heures prévues).
+- Bannière d'info en haut du tableau réécrite pour expliquer le nouveau comportement.
+
+**Garde-fou explicite dans `punchDoAction()`**
+- Avant le write Firestore, on recalcule le `dayKey` au tout dernier moment + sanity check qu'il correspond bien au jour local courant. Si jamais quelqu'un casse `dayKey` à l'avenir, on bloque le punch et on logge une erreur explicite plutôt que de stocker silencieusement sur le mauvais jour.
+
+**Notes pour l'utilisateur**
+- Les heures déjà mal enregistrées par le bug UTC (ex. punchs du mercredi soir stockés sur jeudi) **restent sur leur mauvais jour dans Firestore**. Pour nettoyer une semaine en cours, deux options :
+  - Cliquer sur chaque cellule incorrecte et sélectionner « — » dans le dropdown pour la vider
+  - Cliquer sur « Annuler mes saisies » dans la toolbar (efface toute la semaine — y compris les jours déjà corrects)
+- Les nouvelles cellules à partir de maintenant seront correctes.
+
+**CACHE_VERSION** → `v3.17.3`
 
 ### 26 mai 2026 — Page d'accueil employé = Pointage (v3.17.2) 🏠⏱️
 - `ROLE_PERMISSIONS.employee.homePage` passé de `"inventaire"` à `"pointage"` dans `config.js`.

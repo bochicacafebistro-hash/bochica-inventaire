@@ -43,7 +43,24 @@ function fmtHours(h) {
   return Number.isInteger(h) ? String(h) : h.toFixed(1);
 }
 
-function dayKey(date) { return date.toISOString().slice(0, 10); }
+// dayKey : retourne une clé "YYYY-MM-DD" basée sur la date LOCALE.
+//
+// ⚠ FIX critique v3.17.3 — Avant on utilisait `date.toISOString().slice(0,10)`,
+// qui retourne la date UTC. Pour Québec (UTC-4 ou -5), un punch fait à 21h
+// le soir basculait dans le jour SUIVANT en UTC (21h EDT = 01h UTC du J+1).
+// Conséquences observées :
+//   • Punch d'entrée à 9h sur "2026-05-26" — OK
+//   • Punch de sortie à 21h enregistré sur "2026-05-27" — BUG
+//   • Le système ne voyait plus l'entrée du jour → réaffichait le bouton ENTRÉE
+//   • Heures éparpillées sur plusieurs jours dans le tableau de paie
+// La nouvelle implémentation utilise les getters locaux du Date object pour
+// rester aligné sur le fuseau horaire de l'utilisateur (le navigateur).
+function dayKey(date) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
 
 // Options du dropdown heures : 00:00 → 23:30 par tranches de 30 min (48 options)
 const SCHEDULE_TIME_OPTIONS = (() => {

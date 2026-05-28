@@ -4344,6 +4344,29 @@ textarea.md-input{
 }
 
 /* Pourboire du jour (sous la cellule sortie) — discret, format compact */
+/* Hint discret du planifié (v3.17.3) — affiché sous l'input vide quand
+   l'employé est prévu à l'horaire mais n'a pas encore pointé. Permet à
+   l'admin de voir qui devait travailler sans préremplir le champ. */
+.payroll-planned-hint{
+  display:block;
+  font-family:var(--font-mono);
+  font-size:9px;
+  color:var(--text3);
+  font-weight:600;
+  text-align:center;
+  margin-top:1px;
+  letter-spacing:.02em;
+  opacity:.7;
+}
+/* Cellule vide où un employé devait pourtant travailler — léger fond
+   bleuté pour signaler à l'admin un éventuel oubli de pointage. */
+.payroll-td-cell.is-scheduled-empty{
+  background:rgba(74,144,226,.04);
+}
+[data-theme="dark"] .payroll-td-cell.is-scheduled-empty{
+  background:rgba(74,144,226,.08);
+}
+
 .payroll-day-tip{
   display:block;
   font-family:var(--font-mono);

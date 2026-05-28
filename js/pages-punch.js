@@ -258,7 +258,27 @@ async function punchDoAction(action) {
   const emp = _punchEmployee;
   if (!emp) return punchBackToKeypad();
 
-  const dk = dayKey(new Date());
+  // ⚠ GARDE-FOU CRITIQUE (v3.17.3) — Un punch ne peut JAMAIS être enregistré
+  // sur un jour autre que la journée courante (locale). On recalcule la date
+  // au tout dernier moment (juste avant le write Firestore) pour éviter qu'un
+  // dayKey calculé plus tôt dans la session puisse glisser. La fonction
+  // dayKey() utilise désormais la date locale (fix v3.17.3), donc tant qu'on
+  // l'appelle avec `new Date()`, on est sûr de pointer le bon jour.
+  const now = new Date();
+  const dk = dayKey(now);
+
+  // Sanity check : le dk doit correspondre exactement au jour local courant.
+  // (Si jamais quelqu'un modifie dayKey() à l'avenir et le casse, on le voit.)
+  const expectedDk = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+  if (dk !== expectedDk) {
+    console.error(`Punch refusé : dayKey(${dk}) ≠ jour local courant (${expectedDk}).`);
+    _punchErrMessage = "Erreur interne (dayKey). Avise l'admin.";
+    _punchState = "error";
+    renderPage();
+    _punchAutoResetTimer = setTimeout(punchReset, 3000);
+    return;
+  }
+
   const nowHHMM = _punchNowHHMM();
   _punchActionTime = nowHHMM;
 
