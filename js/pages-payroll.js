@@ -171,6 +171,37 @@ function tipGroupOf(emp) {
   return (emp.section || "service") === "cuisine" ? "cuisine" : "service";
 }
 
+// v3.18.0 — Override de section par semaine
+// L'admin peut, dans le tableau Salaires, dire « cette semaine, traite Marie
+// comme cuisine » (alors qu'elle est en service par défaut) ou « exclu du
+// pool cette semaine ». Stocké dans payroll/{weekId}.sectionOverrides[empId].
+// Valeurs possibles : "cuisine", "service", "excluded".
+// L'absence de clé = pas d'override, on retombe sur emp.section via tipGroupOf.
+function getSectionOverride(empId) {
+  const m = payrollWeekData?.sectionOverrides || {};
+  const v = m[empId];
+  if (v === "cuisine" || v === "service" || v === "excluded") return v;
+  return null; // pas d'override
+}
+
+// Groupe effectif de cet employé pour la semaine courante.
+// Retourne "cuisine" | "service" | "excluded".
+// "excluded" → l'employé ne reçoit aucun pourboire et ses heures ne comptent
+// pas dans le pool (utile pour un gérant qui ne touche pas aux pourboires,
+// ou un cas particulier ponctuel).
+function getEffectiveTipGroup(emp) {
+  const override = getSectionOverride(emp.id);
+  if (override === "excluded") return "excluded";
+  if (override === "cuisine") return "cuisine";
+  if (override === "service") return "service";
+  return tipGroupOf(emp);
+}
+
+// True si cet employé a un override actif pour la semaine courante.
+function hasSectionOverride(empId) {
+  return getSectionOverride(empId) !== null;
+}
+
 // Compare deux shifts {start,end} pour savoir s'ils sont identiques
 function sameShift(a, b) {
   const aStart = a?.start || "";
@@ -259,6 +290,10 @@ function renderSalaires() {
   // d'heures éligibles par groupe ce jour-là. Le pourboire de chaque employé
   // est ensuite calculé jour par jour (plus juste : un employé absent un
   // jour ne touche rien du pool de ce jour-là). Prorata simple des heures.
+  //
+  // v3.18.0 : on utilise getEffectiveTipGroup() qui respecte les overrides
+  // de section pour cette semaine. Les employés "excluded" ne contribuent pas
+  // au pool et ne reçoivent rien.
   const dailyCalc = weekDays.map((d, k) => {
     const dk = dayKey(d);
     const dowIdx = visibleIdx[k];
@@ -269,9 +304,11 @@ function renderSalaires() {
     let totalKitchenHrsDay = 0;
     let totalServiceHrsDay = 0;
     for (const emp of allEmps) {
+      const group = getEffectiveTipGroup(emp);
+      if (group === "excluded") continue; // pas dans le pool cette semaine
       const shift = getActualShift(emp.id, dk);
       const tipHrs = serviceWin ? intersectShiftHours(shift, serviceWin) : 0;
-      if (tipGroupOf(emp) === "cuisine") totalKitchenHrsDay += tipHrs;
+      if (group === "cuisine") totalKitchenHrsDay += tipHrs;
       else totalServiceHrsDay += tipHrs;
     }
     return { dk, dowIdx, serviceWin, dayTotal, poolKitchenDay, poolServiceDay, totalKitchenHrsDay, totalServiceHrsDay };
@@ -282,7 +319,8 @@ function renderSalaires() {
     const rate = Number(emp.hourlyRate) || 0;
     const isSal = !!emp.isSalaried;
     const fixedHours = Number(emp.fixedWeeklyHours) || 0;
-    const group = tipGroupOf(emp);
+    const group = getEffectiveTipGroup(emp); // override de semaine pris en compte
+    const groupOverride = getSectionOverride(emp.id); // null si pas d'override
     const isManual = isManualEmployee(emp);
 
     let totalHours = 0;
@@ -301,10 +339,14 @@ function renderSalaires() {
       const isOverride = hasActualOverride(emp.id, dk);
       const isDifferent = isOverride && !sameShift(actualShift, plannedShift);
 
-      // Pourboire du jour pour cet employé (prorata journalier simple)
-      const groupPool = group === "cuisine" ? dailyCalc[k].poolKitchenDay : dailyCalc[k].poolServiceDay;
-      const groupTotalHrs = group === "cuisine" ? dailyCalc[k].totalKitchenHrsDay : dailyCalc[k].totalServiceHrsDay;
-      const dayTip = (groupTotalHrs > 0 && tipHours > 0) ? (tipHours / groupTotalHrs) * groupPool : 0;
+      // Pourboire du jour pour cet employé (prorata journalier simple).
+      // Si exclu du pool cette semaine → dayTip = 0 d'office.
+      let dayTip = 0;
+      if (group !== "excluded") {
+        const groupPool = group === "cuisine" ? dailyCalc[k].poolKitchenDay : dailyCalc[k].poolServiceDay;
+        const groupTotalHrs = group === "cuisine" ? dailyCalc[k].totalKitchenHrsDay : dailyCalc[k].totalServiceHrsDay;
+        dayTip = (groupTotalHrs > 0 && tipHours > 0) ? (tipHours / groupTotalHrs) * groupPool : 0;
+      }
 
       totalHours += hours;
       plannedHours += pHours;
@@ -316,7 +358,7 @@ function renderSalaires() {
     const grossWage = isSal ? (fixedHours * rate) : (totalHours * rate);
     const gap = totalHours - plannedHours;
     const totalPay = grossWage + tipShare;
-    return { emp, rate, isSal, fixedHours, group, isManual, daily, totalHours, plannedHours, gap, tipEligibleHours, tipShare, grossWage, totalPay };
+    return { emp, rate, isSal, fixedHours, group, groupOverride, isManual, daily, totalHours, plannedHours, gap, tipEligibleHours, tipShare, grossWage, totalPay };
   });
 
   // Totaux par groupe pour les hints des pools (somme des heures de la semaine)
@@ -486,9 +528,27 @@ function renderSalaires() {
           </thead>
           <tbody>
             ${empRows.map((row, rowIdx) => {
-              const groupBadge = row.group === "cuisine"
-                ? `<span class="payroll-group-badge payroll-group-badge--kitchen" title="Pool cuisine ${(tipShares.cuisine*100).toFixed(0)}%">${icon("utensils", 10)} ${(tipShares.cuisine*100).toFixed(0)}%</span>`
-                : `<span class="payroll-group-badge payroll-group-badge--service" title="Pool service ${(tipShares.service*100).toFixed(0)}%">${icon("users", 10)} ${(tipShares.service*100).toFixed(0)}%</span>`;
+              // v3.18.0 — Le badge fixe est remplacé par un select compact
+              // permettant à l'admin d'override la section pour cette semaine
+              // uniquement. 4 options : Auto / Cuisine / Service / Exclu.
+              // Quand un override est actif, on ajoute un indicateur visuel
+              // (border ambré + petit point) pour qu'on voie tout de suite
+              // qu'il y a une dérogation pour ce nom cette semaine.
+              const isOverridden = !!row.groupOverride;
+              const selValue = row.groupOverride || "auto";
+              const groupClass = row.group === "cuisine" ? "is-kitchen"
+                              : row.group === "service" ? "is-service"
+                              : "is-excluded";
+              const groupBadge = `<select class="payroll-section-select ${groupClass} ${isOverridden ? "is-overridden" : ""}"
+                onchange="updateSectionOverride('${row.emp.id}', this.value)"
+                ${isLocked ? "disabled" : ""}
+                title="${isOverridden ? "⚠ Section dérogée pour cette semaine — cliquer pour modifier" : "Section pour les pourboires cette semaine"}"
+                aria-label="Section ${esc(row.emp.name || "")} (${row.group === "excluded" ? "exclu du pool" : row.group})">
+                <option value="auto" ${selValue === "auto" ? "selected" : ""}>Auto (${tipGroupOf(row.emp) === "cuisine" ? "🍳 Cuisine" : "🛎 Service"})</option>
+                <option value="cuisine" ${selValue === "cuisine" ? "selected" : ""}>🍳 Cuisine (${(tipShares.cuisine*100).toFixed(0)}%)</option>
+                <option value="service" ${selValue === "service" ? "selected" : ""}>🛎 Service (${(tipShares.service*100).toFixed(0)}%)</option>
+                <option value="excluded" ${selValue === "excluded" ? "selected" : ""}>⛔ Exclu du pool</option>
+              </select>`;
               const gapCls = row.gap > 0.01 ? "is-positive" : row.gap < -0.01 ? "is-negative" : "";
               const gapArrow = row.gap > 0.01 ? "▲" : row.gap < -0.01 ? "▼" : "";
               // Alternance jaune Bochica / bleu Colombie sur la base du rowIdx
@@ -763,6 +823,35 @@ async function updateTipForDay(dk, value) {
   } catch (err) {
     console.error("updateTipForDay failed:", err);
     toast("Erreur sauvegarde pourboire : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// v3.18.0 — Override de la section d'un employé pour la semaine courante.
+// Valeur attendue : "auto" (= delete la clé) | "cuisine" | "service" | "excluded"
+// Stocké dans payroll/{weekId}.sectionOverrides{empId: ...}.
+async function updateSectionOverride(empId, value) {
+  if (payrollWeekData?.locked) {
+    toast("Semaine verrouillée — déverrouille avant de modifier les sections.", "warning");
+    return;
+  }
+  try {
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    const ref = db.collection("payroll").doc(wid);
+    const valueToWrite = (value === "auto" || !["cuisine", "service", "excluded"].includes(value))
+      ? firebase.firestore.FieldValue.delete()
+      : value;
+    await ref.set({
+      weekId: wid,
+      weekStart: dayKey(ws),
+      updatedAt: Date.now(),
+      sectionOverrides: {
+        [empId]: valueToWrite
+      }
+    }, { merge: true });
+  } catch (err) {
+    console.error("updateSectionOverride failed:", err);
+    toast("Erreur sauvegarde section : " + (err.message || err.code || err), "error", 5000);
   }
 }
 
@@ -1238,6 +1327,9 @@ async function doRemoveManualEmployee(id) {
     // Défensif : nettoie aussi tipMultipliers[id] si présent (champ retiré v3.15.2)
     const newMults = { ...(data.tipMultipliers || {}) };
     delete newMults[id];
+    // v3.18.0 : nettoie aussi le sectionOverride[id] s'il existe
+    const newSections = { ...(data.sectionOverrides || {}) };
+    delete newSections[id];
 
     const update = {
       weekId: wid,
@@ -1245,6 +1337,7 @@ async function doRemoveManualEmployee(id) {
       manualEmployees: newExtras,
       actualShifts: newShifts,
       tipMultipliers: newMults,
+      sectionOverrides: newSections,
       updatedAt: Date.now()
     };
     if (newOrder !== null) update.empOrder = newOrder;

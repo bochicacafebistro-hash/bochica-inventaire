@@ -4643,6 +4643,87 @@ textarea.md-input{
   color:var(--blue-text, #2c5e8e);
 }
 
+/* v3.18.0 — Select compact pour override de section par semaine */
+.payroll-section-select{
+  display:inline-flex;
+  align-items:center;
+  font-family:var(--font-body);
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.02em;
+  padding:1px 16px 1px 5px;
+  border-radius:var(--radius-sm);
+  border:1px solid transparent;
+  background-color:transparent;
+  cursor:pointer;
+  white-space:nowrap;
+  appearance:none;
+  -webkit-appearance:none;
+  -moz-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%230e0d0c' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right 3px center;
+  background-size:8px;
+  max-width:130px;
+  text-overflow:ellipsis;
+  overflow:hidden;
+  transition:all var(--transition-base);
+}
+.payroll-section-select:hover{
+  border-color:var(--border);
+  background-color:var(--surface);
+}
+.payroll-section-select:focus{
+  outline:none;
+  border-color:var(--accent);
+  background-color:var(--surface);
+  box-shadow:0 0 0 2px rgba(var(--accent-rgb),.18);
+}
+.payroll-section-select:disabled{
+  opacity:.55;
+  cursor:not-allowed;
+}
+/* Couleur du fond selon le groupe effectif (cuisine = jaune, service = bleu) */
+.payroll-section-select.is-kitchen{
+  background-color:rgba(247,179,44,.18);
+  color:var(--accent-warm);
+}
+.payroll-section-select.is-service{
+  background-color:rgba(74,144,226,.15);
+  color:var(--blue-text, #2c5e8e);
+}
+.payroll-section-select.is-excluded{
+  background-color:rgba(217,83,79,.15);
+  color:#a23a36;
+  text-decoration:line-through;
+}
+/* Modificateur : ligne ambrée + petit point pour montrer qu'il y a dérogation */
+.payroll-section-select.is-overridden{
+  border:1.5px dashed var(--accent);
+  font-weight:800;
+}
+.payroll-section-select.is-overridden::before{
+  /* Pas possible directement sur un <select> en CSS — l'indicateur visuel
+     vient du border dashed jaune + le font-weight 800. Le tooltip "Section
+     dérogée pour cette semaine" complète l'info au survol. */
+}
+
+[data-theme="dark"] .payroll-section-select{
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 24 24' fill='none' stroke='%23f5f1e8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+}
+[data-theme="dark"] .payroll-section-select.is-kitchen{
+  background-color:rgba(247,179,44,.22);
+  color:var(--accent);
+}
+[data-theme="dark"] .payroll-section-select.is-service{
+  background-color:rgba(74,144,226,.22);
+  color:#8fc1ff;
+}
+[data-theme="dark"] .payroll-section-select.is-excluded{
+  background-color:rgba(217,83,79,.22);
+  color:#ff9a96;
+}
+
 /* Indication des heures éligibles aux pourboires dans une cellule de shift */
 .payroll-tip-hint{
   display:inline-block;

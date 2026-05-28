@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.17.3** — **Fix critique pointage : dayKey UTC → local + retrait auto-import planifié**. Bug racine identifié : `dayKey()` utilisait `toISOString()` qui retourne en UTC. Pour Québec (EDT/EST), un punch fait à 21h le soir basculait dans le jour SUIVANT en UTC → le système réaffichait ENTRÉE et les heures se mélangeaient entre mercredi/jeudi. Fix : `dayKey()` utilise désormais `getFullYear/Month/Date` (heure locale). Par ailleurs, le tableau Salaires & Pourboires n'importe plus l'horaire planifié dans les cellules — les inputs restent vides jusqu'à ce qu'un pointage ou une saisie manuelle les remplisse. Le planifié reste visible en petit hint gris sous chaque cellule vide pour repérer les oublis de pointage (avec fond bleuté `is-scheduled-empty`). Sanity check ajouté dans `punchDoAction` pour bloquer tout punch hors du jour local courant.
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.18.0** — **Salaires : override de section par employé par semaine**. Le badge fixe « 25% Cuisine » ou « 75% Service » à côté de chaque nom devient un **select avec 4 options** : Auto (par défaut, suit la fiche employé) / Cuisine / Service / Exclu du pool. Utile quand un serveur fait une semaine en cuisine ou inversement, ou pour exclure un gérant ponctuellement. Stocké dans `payroll/{weekId}.sectionOverrides{}` — n'affecte que la semaine courante, ne touche pas à la fiche permanente. Indicateur visuel : bordure pointillée jaune + font-weight 800 quand un override est actif. Les employés "excluded" reçoivent 0 pourboire et leurs heures ne comptent plus dans le pool de la semaine.
+>
+> ⚠️ **26 mai 2026 — v3.17.3** — **Fix critique pointage : dayKey UTC → local + retrait auto-import planifié**. Bug racine identifié : `dayKey()` utilisait `toISOString()` qui retourne en UTC. Pour Québec (EDT/EST), un punch fait à 21h le soir basculait dans le jour SUIVANT en UTC → le système réaffichait ENTRÉE et les heures se mélangeaient entre mercredi/jeudi. Fix : `dayKey()` utilise désormais `getFullYear/Month/Date` (heure locale). Par ailleurs, le tableau Salaires & Pourboires n'importe plus l'horaire planifié dans les cellules — les inputs restent vides jusqu'à ce qu'un pointage ou une saisie manuelle les remplisse. Le planifié reste visible en petit hint gris sous chaque cellule vide pour repérer les oublis de pointage (avec fond bleuté `is-scheduled-empty`). Sanity check ajouté dans `punchDoAction` pour bloquer tout punch hors du jour local courant.
 >
 > ⚠️ **26 mai 2026 — v3.17.2** — **Page d'accueil du rôle Employé = Pointage**. `homePage` du rôle `employee` passé de `inventaire` à `pointage` dans `config.js`. Au login (et au clic sur le logo Bochica), la tablette permanente s'ouvre maintenant directement sur le clavier de pointage — prête à recevoir un PIN sans aucun clic intermédiaire. L'employé garde toujours accès à Inventaire via la sidebar s'il veut le consulter.
 >
@@ -481,6 +483,40 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Salaires : override section par employé par semaine (v3.18.0) 🍳🛎️⛔
+
+Nouvelle fonctionnalité demandée pour gérer les cas où un employé change de section ponctuellement (ex. un serveur qui fait une semaine en cuisine, ou un gérant qui ne touche pas aux pourboires cette semaine).
+
+**Nouveau dans le tableau Salaires & Pourboires**
+- Le badge fixe `25% Cuisine` / `75% Service` à côté de chaque nom devient un **select compact à 4 options** :
+  - **Auto** (défaut) → suit la section configurée dans la fiche employé. Affiche entre parenthèses la section auto-détectée.
+  - **🍳 Cuisine (25%)** → cet employé compte dans le pool cuisine cette semaine, même si sa fiche dit "service".
+  - **🛎 Service (75%)** → l'inverse.
+  - **⛔ Exclu du pool** → ne reçoit aucun pourboire cette semaine ET ses heures ne comptent plus dans le pool (utile pour un gérant ou un cas particulier).
+- **Indicateur visuel d'override actif** : bordure dashed jaune + font-weight 800 + tooltip « ⚠ Section dérogée pour cette semaine ».
+- Couleur de fond du select selon le groupe effectif : jaune (cuisine), bleu (service), rouge avec texte barré (excluded).
+- Disabled quand la semaine est verrouillée.
+
+**Stockage Firestore**
+- Nouveau champ `payroll/{weekId}.sectionOverrides{empId: "cuisine"|"service"|"excluded"}`.
+- Absence de clé = pas d'override (= "auto"). Garde le doc propre.
+- Quand l'admin remet à "Auto", la clé est `FieldValue.delete()`.
+
+**Logique de calcul (`renderSalaires`)**
+- Nouveau helper `getEffectiveTipGroup(emp)` qui résout : override de semaine s'il existe, sinon `tipGroupOf(emp)` (fallback sur la fiche).
+- Helpers `getSectionOverride(empId)` et `hasSectionOverride(empId)` pour l'UI.
+- Dans `dailyCalc` : on skip les employés `"excluded"` (leurs heures ne sont pas dans le pool).
+- Dans `empRows.map` : `group = getEffectiveTipGroup(emp)`. Si excluded → `dayTip = 0` partout.
+- `groupOverride` (valeur null ou string) ajouté à `row` pour l'UI.
+
+**Cohérence avec les autres features**
+- `doRemoveManualEmployee` nettoie aussi le `sectionOverrides[id]` quand on retire un extra (en plus de actualShifts, empOrder, tipMultipliers).
+- L'admin reste le seul à pouvoir modifier les overrides (couvert par la règle Firestore `allow write: if isAdmin()` existante — le punch kiosque ne peut écrire que sur `actualShifts`).
+
+**CSS (~80 lignes)** : nouvelle classe `.payroll-section-select` (compact, font-body, chevron SVG inline en background-image, max-width 130px) avec variantes `.is-kitchen`/`.is-service`/`.is-excluded` et modificateur `.is-overridden`. Dark mode adapté.
+
+**CACHE_VERSION** → `v3.18.0`
 
 ### 26 mai 2026 — Fix critique pointage : timezone + auto-import (v3.17.3) 🐞🌍
 
