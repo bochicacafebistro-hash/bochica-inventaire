@@ -223,6 +223,83 @@ function resetPayrollWeek() {
   renderPage();
 }
 
+// ═ Détection d'anomalies (v3.19.0) ═════════════════════
+// Scanne les empRows et signale les situations probablement liées à un
+// oubli ou une erreur. Retourne [] si la semaine est verrouillée (les
+// anomalies passées ont déjà été traitées au moment du verrou).
+//
+// 3 types d'alertes :
+//   • "missing-exit"          → entrée pointée mais pas sortie sur un jour passé
+//   • "long-shift"            → shift > 14 h (probable oubli de pointer sortie)
+//   • "scheduled-not-punched" → planifié mais aucun pointage sur un jour passé
+//
+// La logique évite les faux positifs :
+//   • Aujourd'hui n'est jamais flaggué pour "missing-exit" (l'employé peut
+//     encore être en service)
+//   • Le futur n'est jamais flaggué (rien d'anormal d'avoir un horaire prévu
+//     sans pointage avant la date)
+function detectPayrollAnomalies(empRows, isLocked) {
+  if (isLocked) return [];
+
+  const alerts = [];
+  const todayDk = dayKey(new Date());
+
+  for (const row of empRows) {
+    for (const d of row.daily) {
+      const isPast = d.dk < todayDk;
+
+      // 1. Entrée sans sortie sur jour passé → oubli de pointage sortie
+      if (isPast && d.actualShift?.start && !d.actualShift?.end) {
+        alerts.push({
+          type: "missing-exit",
+          severity: "warning",
+          empId: row.emp.id,
+          empName: row.emp.name || "",
+          dk: d.dk,
+          dayLabel: _formatAlertDayLabel(d.dk),
+          message: `Entrée pointée à ${d.actualShift.start} mais pas de sortie`
+        });
+      }
+
+      // 2. Shift > 14 h → probablement oubli de pointer sortie ou erreur de saisie
+      if (d.actualShift?.start && d.actualShift?.end && d.hours > 14) {
+        alerts.push({
+          type: "long-shift",
+          severity: "warning",
+          empId: row.emp.id,
+          empName: row.emp.name || "",
+          dk: d.dk,
+          dayLabel: _formatAlertDayLabel(d.dk),
+          message: `Shift de ${fmtHours(d.hours)} h (${d.actualShift.start} → ${d.actualShift.end}) — vérifier`
+        });
+      }
+
+      // 3. Planifié mais pas pointé sur jour passé → no-show ou oubli de pointer entrée
+      if (isPast && !d.actualShift?.start && !d.actualShift?.end && d.plannedShift?.start && d.plannedShift?.end) {
+        alerts.push({
+          type: "scheduled-not-punched",
+          severity: "info",
+          empId: row.emp.id,
+          empName: row.emp.name || "",
+          dk: d.dk,
+          dayLabel: _formatAlertDayLabel(d.dk),
+          message: `Planifié ${d.plannedShift.start} → ${d.plannedShift.end} mais aucun pointage`
+        });
+      }
+    }
+  }
+
+  return alerts;
+}
+
+// Format "Mar 26/5" pour les alertes — court et clair
+function _formatAlertDayLabel(dk) {
+  const [y, m, d] = dk.split("-").map(Number);
+  if (!y || !m || !d) return dk;
+  const date = new Date(y, m - 1, d);
+  return `${DAYS_FR[(date.getDay() + 6) % 7]} ${d}/${m}`;
+}
+
 // ═ Listener Firestore sur le doc de la semaine courante ═
 // IDEMPOTENT : si on est déjà abonné à la même semaine, on ne fait rien.
 // Sinon on détache l'ancien listener et on crée un nouveau.
@@ -384,6 +461,16 @@ function renderSalaires() {
   // État verrouillage de la semaine
   const isLocked = !!payrollWeekData?.locked;
 
+  // ─ Détection d'anomalies (v3.19.0) ────────────────
+  const alerts = detectPayrollAnomalies(empRows, isLocked);
+  const alertsByType = {
+    "missing-exit": alerts.filter(a => a.type === "missing-exit"),
+    "long-shift": alerts.filter(a => a.type === "long-shift"),
+    "scheduled-not-punched": alerts.filter(a => a.type === "scheduled-not-punched")
+  };
+  const warningCount = alerts.filter(a => a.severity === "warning").length;
+  const infoCount = alerts.filter(a => a.severity === "info").length;
+
   // ─ HTML ───────────────────────────────────────────
   return `<div class="page page--wide ${isLocked ? "is-payroll-locked" : ""}">
     <div class="toolbar">
@@ -457,6 +544,72 @@ function renderSalaires() {
           </div>
         </div>
       </div>
+
+      ${alerts.length > 0 ? `
+      <!-- ══ Bannière d'alertes (v3.19.0) ══════════════ -->
+      <div class="card payroll-alerts-card ${warningCount > 0 ? "has-warnings" : "has-info-only"}">
+        <div class="payroll-alerts-head">
+          ${icon(warningCount > 0 ? "alert" : "info", 18)}
+          <div>
+            <h3 class="payroll-alerts-title">
+              ${alerts.length} ${alerts.length > 1 ? "anomalies détectées" : "anomalie détectée"} cette semaine
+            </h3>
+            <div class="payroll-alerts-subtitle">
+              ${warningCount > 0 ? `<strong>${warningCount}</strong> à vérifier` : ""}
+              ${warningCount > 0 && infoCount > 0 ? ` · ` : ""}
+              ${infoCount > 0 ? `<strong>${infoCount}</strong> à titre informatif` : ""}
+            </div>
+          </div>
+        </div>
+        <div class="payroll-alerts-list">
+          ${alertsByType["missing-exit"].length > 0 ? `
+            <div class="payroll-alerts-group">
+              <div class="payroll-alerts-group-head">
+                ${icon("log-out", 14)} Sortie manquante (${alertsByType["missing-exit"].length})
+              </div>
+              ${alertsByType["missing-exit"].map(a => `
+                <div class="payroll-alert payroll-alert--warning">
+                  <span class="payroll-alert-day">${a.dayLabel}</span>
+                  <strong class="payroll-alert-emp">${esc(a.empName)}</strong>
+                  <span class="payroll-alert-msg">${esc(a.message)}</span>
+                </div>
+              `).join("")}
+            </div>
+          ` : ""}
+          ${alertsByType["long-shift"].length > 0 ? `
+            <div class="payroll-alerts-group">
+              <div class="payroll-alerts-group-head">
+                ${icon("clock", 14)} Shift suspicieusement long (${alertsByType["long-shift"].length})
+              </div>
+              ${alertsByType["long-shift"].map(a => `
+                <div class="payroll-alert payroll-alert--warning">
+                  <span class="payroll-alert-day">${a.dayLabel}</span>
+                  <strong class="payroll-alert-emp">${esc(a.empName)}</strong>
+                  <span class="payroll-alert-msg">${esc(a.message)}</span>
+                </div>
+              `).join("")}
+            </div>
+          ` : ""}
+          ${alertsByType["scheduled-not-punched"].length > 0 ? `
+            <div class="payroll-alerts-group">
+              <div class="payroll-alerts-group-head">
+                ${icon("calendar", 14)} Planifié sans pointage (${alertsByType["scheduled-not-punched"].length})
+              </div>
+              ${alertsByType["scheduled-not-punched"].map(a => `
+                <div class="payroll-alert payroll-alert--info">
+                  <span class="payroll-alert-day">${a.dayLabel}</span>
+                  <strong class="payroll-alert-emp">${esc(a.empName)}</strong>
+                  <span class="payroll-alert-msg">${esc(a.message)}</span>
+                </div>
+              `).join("")}
+            </div>
+          ` : ""}
+        </div>
+        <p class="payroll-alerts-footer">
+          ${icon("info", 11)} Les alertes disparaissent automatiquement dès que tu corriges la saisie dans le tableau ci-dessous.
+        </p>
+      </div>
+      ` : ""}
 
       <!-- ══ Pourboires par jour + total auto + pools ══ -->
       <div class="card payroll-tips-card">

@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.18.0** — **Salaires : override de section par employé par semaine**. Le badge fixe « 25% Cuisine » ou « 75% Service » à côté de chaque nom devient un **select avec 4 options** : Auto (par défaut, suit la fiche employé) / Cuisine / Service / Exclu du pool. Utile quand un serveur fait une semaine en cuisine ou inversement, ou pour exclure un gérant ponctuellement. Stocké dans `payroll/{weekId}.sectionOverrides{}` — n'affecte que la semaine courante, ne touche pas à la fiche permanente. Indicateur visuel : bordure pointillée jaune + font-weight 800 quand un override est actif. Les employés "excluded" reçoivent 0 pourboire et leurs heures ne comptent plus dans le pool de la semaine.
+> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.19.0** — **Salaires : bannière d'alertes intelligentes**. Nouveau bloc en haut du tableau qui détecte automatiquement 3 types d'anomalies : (1) entrée pointée mais pas sortie sur un jour passé, (2) shift de plus de 14 h (oubli probable de pointer sortie), (3) employé planifié mais aucun pointage sur un jour passé. Affichage groupé par type avec compteurs (warnings ambrés / info bleus), disparaît automatiquement dès qu'on corrige la saisie. Skip si la semaine est verrouillée. Évite que des erreurs silencieuses passent sous le radar avant le verrouillage de la paie.
+>
+> ⚠️ **26 mai 2026 — v3.18.0** — **Salaires : override de section par employé par semaine**. Le badge fixe « 25% Cuisine » ou « 75% Service » à côté de chaque nom devient un **select avec 4 options** : Auto (par défaut, suit la fiche employé) / Cuisine / Service / Exclu du pool. Utile quand un serveur fait une semaine en cuisine ou inversement, ou pour exclure un gérant ponctuellement. Stocké dans `payroll/{weekId}.sectionOverrides{}` — n'affecte que la semaine courante, ne touche pas à la fiche permanente. Indicateur visuel : bordure pointillée jaune + font-weight 800 quand un override est actif. Les employés "excluded" reçoivent 0 pourboire et leurs heures ne comptent plus dans le pool de la semaine.
 >
 > ⚠️ **26 mai 2026 — v3.17.3** — **Fix critique pointage : dayKey UTC → local + retrait auto-import planifié**. Bug racine identifié : `dayKey()` utilisait `toISOString()` qui retourne en UTC. Pour Québec (EDT/EST), un punch fait à 21h le soir basculait dans le jour SUIVANT en UTC → le système réaffichait ENTRÉE et les heures se mélangeaient entre mercredi/jeudi. Fix : `dayKey()` utilise désormais `getFullYear/Month/Date` (heure locale). Par ailleurs, le tableau Salaires & Pourboires n'importe plus l'horaire planifié dans les cellules — les inputs restent vides jusqu'à ce qu'un pointage ou une saisie manuelle les remplisse. Le planifié reste visible en petit hint gris sous chaque cellule vide pour repérer les oublis de pointage (avec fond bleuté `is-scheduled-empty`). Sanity check ajouté dans `punchDoAction` pour bloquer tout punch hors du jour local courant.
 >
@@ -483,6 +485,31 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 26 mai 2026 — Salaires : bannière d'alertes intelligentes (v3.19.0) 🚨🔍
+
+Nouveau bloc qui apparaît en haut du tableau Salaires & Pourboires (entre la card ratio et la card pourboires) quand le système détecte des anomalies sur les heures pointées. Évite que des oublis silencieux ne se rendent jusqu'au verrouillage de la paie.
+
+**3 types d'alertes détectées**
+1. **Sortie manquante** (warning ambré) : entrée pointée mais pas sortie sur un jour PASSÉ. Aujourd'hui n'est jamais flaggué (l'employé peut encore être en service).
+2. **Shift suspicieusement long** (warning ambré) : shift > 14 h — probable oubli de pointer sortie ou erreur de saisie.
+3. **Planifié sans pointage** (info bleu) : employé prévu à l'horaire mais aucun pointage sur un jour passé — no-show ou oubli de pointer entrée.
+
+**Comportement**
+- **Skip si semaine verrouillée** — les anomalies passées ont déjà été traitées au moment du verrou, inutile d'alerter à nouveau.
+- **Auto-disparition** : dès que l'admin corrige la saisie (ajoute la sortie manquante, ou met l'employé absent), l'alerte disparaît à la prochaine re-render.
+- **Groupes** : les alertes sont regroupées par type avec un compteur (ex. « Sortie manquante (3) »).
+- **Aucun risque de faux positifs** : aujourd'hui ni le futur ne sont flaggués pour les manques de pointage.
+
+**Implémentation**
+- Helper `detectPayrollAnomalies(empRows, isLocked)` retourne un array d'alertes `{type, severity, empId, empName, dk, dayLabel, message}`. ~50 lignes, parcourt empRows × weekDays une fois.
+- Helper `_formatAlertDayLabel(dk)` : formate "2026-05-26" → "Mar 26/5" (court, lisible).
+- Calculé dans `renderSalaires()` après `empRows`, juste avant le HTML.
+- Bannière `.payroll-alerts-card` avec barre latérale ambrée (warnings) ou bleue (info only), header avec icône + titre + compteurs (« 3 à vérifier · 1 à titre informatif »), liste groupée par type, footer explicatif.
+
+**CSS (~120 lignes)** : `.payroll-alerts-card` (avec variantes `.has-warnings`/`.has-info-only`), `.payroll-alerts-head`, `.payroll-alerts-title` (Bebas 22px), `.payroll-alerts-list`, `.payroll-alerts-group-head` (label section), `.payroll-alert` (item) avec variantes `.payroll-alert--warning`/`.payroll-alert--info`, `.payroll-alert-day` (mono compact), `.payroll-alert-emp` (Inter bold), `.payroll-alert-msg`. Dark mode + mobile (stack vertical des items).
+
+**CACHE_VERSION** → `v3.19.0`
 
 ### 26 mai 2026 — Salaires : override section par employé par semaine (v3.18.0) 🍳🛎️⛔
 
