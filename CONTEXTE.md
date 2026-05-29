@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 26 mai 2026 — v3.19.0** — **Salaires : bannière d'alertes intelligentes**. Nouveau bloc en haut du tableau qui détecte automatiquement 3 types d'anomalies : (1) entrée pointée mais pas sortie sur un jour passé, (2) shift de plus de 14 h (oubli probable de pointer sortie), (3) employé planifié mais aucun pointage sur un jour passé. Affichage groupé par type avec compteurs (warnings ambrés / info bleus), disparaît automatiquement dès qu'on corrige la saisie. Skip si la semaine est verrouillée. Évite que des erreurs silencieuses passent sous le radar avant le verrouillage de la paie.
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.20.0** — **Pointage : compaction 12 pouces + 2 boutons toujours visibles + badge timezone**. La page débordait sur écran 12" (clavier coupé). Toutes les tailles réduites (keypad 96→64 px, titre 42→26 px, horloge 32→22 px, bouton min-height 200→130 px). L'écran employé affiche désormais **2 boutons côte à côte** (ENTRÉE vert + SORTIE bleu) toujours présents, avec une barre d'info au-dessus indiquant ce qui a déjà été pointé aujourd'hui. Badge timezone visible sous l'horloge (`Fuseau · jour système : 2026-05-29`) pour validation rapide. Action `override-sortie` retirée (devenue inutile avec les 2 boutons).
+>
+> ⚠️ **26 mai 2026 — v3.19.0** — **Salaires : bannière d'alertes intelligentes**. Nouveau bloc en haut du tableau qui détecte automatiquement 3 types d'anomalies : (1) entrée pointée mais pas sortie sur un jour passé, (2) shift de plus de 14 h (oubli probable de pointer sortie), (3) employé planifié mais aucun pointage sur un jour passé. Affichage groupé par type avec compteurs (warnings ambrés / info bleus), disparaît automatiquement dès qu'on corrige la saisie. Skip si la semaine est verrouillée. Évite que des erreurs silencieuses passent sous le radar avant le verrouillage de la paie.
 >
 > ⚠️ **26 mai 2026 — v3.18.0** — **Salaires : override de section par employé par semaine**. Le badge fixe « 25% Cuisine » ou « 75% Service » à côté de chaque nom devient un **select avec 4 options** : Auto (par défaut, suit la fiche employé) / Cuisine / Service / Exclu du pool. Utile quand un serveur fait une semaine en cuisine ou inversement, ou pour exclure un gérant ponctuellement. Stocké dans `payroll/{weekId}.sectionOverrides{}` — n'affecte que la semaine courante, ne touche pas à la fiche permanente. Indicateur visuel : bordure pointillée jaune + font-weight 800 quand un override est actif. Les employés "excluded" reçoivent 0 pourboire et leurs heures ne comptent plus dans le pool de la semaine.
 >
@@ -485,6 +487,40 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Pointage : compaction 12 pouces + 2 boutons + badge TZ (v3.20.0) 📐🎯🌐
+
+Suite à un retour utilisateur (« actuellement ça s'affiche comme ça et ça coupe » avec capture montrant le clavier numérique débordant hors écran sur 12 pouces).
+
+**Compaction visuelle pour écrans 12 pouces**
+Toutes les dimensions de la page Pointage réduites pour tenir confortablement dans un viewport ~1280×800 sans scroll :
+- `.punch-key` : 96×96 → **64×64 px** (gap 14 → 8, font-size 34 → 24)
+- `.punch-title` : 42 → **26 px**
+- `.punch-clock` : 32 → **22 px**
+- `.punch-date` : 14 → **12 px**
+- `.punch-subtitle` : 15 → **12 px**
+- `.punch-pin-dot` : 22 → **18 px**
+- `.punch-greeting-name` : 48 → **36 px**
+- `.punch-main-btn` min-height : 200 → **130 px**, label 32 → 24 px, time 22 → 18 px
+- `.punch-confirmed-name` : 54 → **42 px**, time 32 → 26 px
+- `.punch-screen` max-width : 520 → **780 px** (pour accommoder 2 boutons côte à côte)
+- Padding de page réduit (`var(--sp-4)` → `var(--sp-2)`)
+
+**Deux boutons ENTRÉE + SORTIE toujours visibles**
+L'auto-détection unique remplacée par les **2 boutons côte à côte** :
+- **ENTRÉE** (gradient vert) → écrit `start`
+- **SORTIE** (gradient bleu) → écrit `end`
+- Si l'action écraserait une valeur existante, indication `(remplacer 09:00)` sous le label + tooltip explicite
+- Bouton flex `1 1 280px` avec max-width 340 → s'aligne côte à côte sur tout écran ≥ 700 px, stack vertical sinon
+- Nouvelle barre d'info `.punch-state-info` au-dessus des boutons : affiche ce qui a déjà été pointé (« Entrée : 09:00 · Sortie : 17:30 ») ou « Aucun pointage aujourd'hui » si rien
+- Action obsolète `override-sortie` retirée du code (devenue inutile)
+
+**Badge timezone visible pour validation**
+Petit pill mono sous la date : `America/Toronto · jour système : 2026-05-29` (timezone détecté par `Intl.DateTimeFormat().resolvedOptions().timeZone` + `dayKey(new Date())`). Si jamais la date affichée ne correspond pas au jour réel local, on sait immédiatement qu'il y a un problème de fuseau au niveau OS, navigateur ou code. Tooltip explicatif au survol.
+
+**CSS (~80 lignes modifiées + ~60 ajoutées)** : nouvelle classe `.punch-tz-badge`, `.punch-state-info` (avec variantes `--empty` + items `--entree`/`--sortie`), `.punch-buttons-row` (flex layout pour 2 boutons), `.punch-main-btn-state` (sous-label de remplacement), `.punch-main-btn.is-disabled`. Toutes les tailles existantes ajustées en place.
+
+**CACHE_VERSION** → `v3.20.0`
 
 ### 26 mai 2026 — Salaires : bannière d'alertes intelligentes (v3.19.0) 🚨🔍
 

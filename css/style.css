@@ -7780,32 +7780,32 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
    v3.17.0 — POINTAGE (page kiosque PIN + boutons entrée/sortie)
    ═══════════════════════════════════════════════════════════════ */
 
-/* Variante de page : pleine largeur + centrée verticalement (kiosque) */
+/* Variante de page : pleine largeur, padding réduit pour 12" (v3.20.0) */
 .page.page--punch{
   display:flex;
   align-items:flex-start;
   justify-content:center;
-  padding:var(--sp-4) var(--sp-4);
+  padding:var(--sp-2) var(--sp-3);
   max-width:100%;
 }
 .punch-screen{
   width:100%;
-  max-width:520px;
+  max-width:780px;          /* élargi pour accommoder 2 boutons côte à côte */
   display:flex;
   flex-direction:column;
   align-items:center;
-  gap:var(--sp-4);
+  gap:var(--sp-3);
 }
 
-/* Horloge + date en haut */
+/* Horloge + date en haut — compact pour 12" */
 .punch-clock-row{
   text-align:center;
-  margin-bottom:var(--sp-2);
+  margin-bottom:2px;
 }
 .punch-clock{
   font-family:var(--font-body);
   font-variant-numeric:tabular-nums;
-  font-size:32px;
+  font-size:22px;            /* 32 → 22 */
   font-weight:800;
   color:var(--text);
   letter-spacing:.02em;
@@ -7813,10 +7813,22 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 .punch-date{
   font-family:var(--font-body);
-  font-size:14px;
+  font-size:12px;            /* 14 → 12 */
   color:var(--text2);
   text-transform:capitalize;
+  margin-top:2px;
+}
+/* Badge timezone — fournit un repère visuel pour valider que dayKey est OK */
+.punch-tz-badge{
+  display:inline-block;
   margin-top:4px;
+  padding:1px 8px;
+  border-radius:var(--radius-pill);
+  background:var(--surface2);
+  color:var(--text3);
+  font-family:var(--font-mono);
+  font-size:10px;
+  letter-spacing:.04em;
 }
 
 /* ── Écran 1 : keypad ── */
@@ -7825,21 +7837,21 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   flex-direction:column;
   align-items:center;
   width:100%;
-  gap:var(--sp-4);
+  gap:var(--sp-2);
 }
 .punch-title{
   font-family:var(--font-heading);
-  font-size:42px;
+  font-size:26px;            /* 42 → 26 */
   color:var(--text);
   letter-spacing:.04em;
   margin:0;
   display:inline-flex;
   align-items:center;
-  gap:12px;
+  gap:8px;
 }
 .punch-subtitle{
   font-family:var(--font-body);
-  font-size:15px;
+  font-size:12px;            /* 15 → 12 */
   color:var(--text2);
   text-align:center;
   margin:0;
@@ -7847,14 +7859,14 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 .punch-pin-dots{
   display:flex;
-  gap:16px;
-  margin:var(--sp-3) 0 var(--sp-2);
-  min-height:30px;
+  gap:14px;                  /* 16 → 14 */
+  margin:6px 0 4px;
+  min-height:22px;
   align-items:center;
 }
 .punch-pin-dot{
-  width:22px;
-  height:22px;
+  width:18px;                /* 22 → 18 */
+  height:18px;
   border-radius:50%;
   border:2px solid var(--border);
   background:transparent;
@@ -7866,21 +7878,21 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   transform:scale(1.15);
 }
 
-/* Clavier numérique 3×4 — touch-friendly */
+/* Clavier numérique 3×4 — compact pour 12" mais toujours touch-friendly */
 .punch-keypad{
   display:grid;
-  grid-template-columns:repeat(3, 96px);
-  gap:14px;
+  grid-template-columns:repeat(3, 64px);   /* 96 → 64 */
+  gap:8px;                                  /* 14 → 8 */
   width:max-content;
 }
 .punch-key{
-  width:96px;
-  height:96px;
-  border-radius:18px;
+  width:64px;                /* 96 → 64 */
+  height:64px;
+  border-radius:12px;        /* 18 → 12 */
   border:1.5px solid var(--border);
   background:var(--surface);
   font-family:var(--font-body);
-  font-size:34px;
+  font-size:24px;            /* 34 → 24 */
   font-weight:700;
   color:var(--text);
   cursor:pointer;
@@ -7888,7 +7900,7 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  box-shadow:0 2px 4px rgba(14,13,12,.08);
+  box-shadow:0 1px 3px rgba(14,13,12,.07);
 }
 .punch-key:hover{
   background:var(--surface2);
@@ -7930,22 +7942,66 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 .punch-hint{
   font-family:var(--font-body);
-  font-size:12px;
+  font-size:11px;
   color:var(--text3);
   text-align:center;
   font-style:italic;
   max-width:360px;
-  margin:var(--sp-2) 0 0;
+  margin:6px 0 0;
 }
 
-/* ── Écran 2 : employé identifié + bouton ENTRÉE/SORTIE ── */
+/* ── Écran 2 : employé identifié + 2 boutons ENTRÉE + SORTIE ── */
 .punch-employee-screen{
   display:flex;
   flex-direction:column;
   align-items:center;
   width:100%;
+  gap:var(--sp-3);
+  padding-top:var(--sp-2);
+}
+
+/* Bloc info état actuel : montre ce qui a déjà été pointé aujourd'hui */
+.punch-state-info{
+  display:flex;
   gap:var(--sp-4);
-  padding-top:var(--sp-3);
+  align-items:center;
+  justify-content:center;
+  padding:var(--sp-2) var(--sp-4);
+  background:var(--surface2);
+  border-radius:var(--radius-md);
+  font-family:var(--font-body);
+  flex-wrap:wrap;
+}
+.punch-state-info--empty{
+  color:var(--text3);
+  font-size:13px;
+  font-style:italic;
+}
+.punch-state-item{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  font-size:13px;
+  color:var(--text2);
+}
+.punch-state-item-time{
+  font-family:var(--font-body);
+  font-weight:800;
+  font-size:18px;
+  font-variant-numeric:tabular-nums;
+  color:var(--text);
+  margin-left:3px;
+}
+.punch-state-item--entree .punch-state-item-time{ color:#1f7a1f; }
+.punch-state-item--sortie .punch-state-item-time{ color:#2c5f9e; }
+
+/* Rangée de 2 boutons côte à côte */
+.punch-buttons-row{
+  display:flex;
+  gap:var(--sp-3);
+  width:100%;
+  justify-content:center;
+  flex-wrap:wrap;
 }
 .punch-back-btn{
   align-self:flex-start;
@@ -7984,7 +8040,7 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 .punch-greeting-name{
   font-family:var(--font-heading);
-  font-size:48px;
+  font-size:36px;            /* 48 → 36 */
   color:var(--text);
   letter-spacing:.02em;
   line-height:1;
@@ -8012,32 +8068,32 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   border:1px solid rgba(74,144,226,.4);
 }
 
-/* Gros bouton ENTRÉE / SORTIE — l'unique élément central de l'écran */
+/* Gros bouton ENTRÉE / SORTIE — l'un des 2 boutons côte à côte (v3.20.0) */
 .punch-main-btn{
-  width:100%;
-  max-width:420px;
-  min-height:200px;
-  border-radius:24px;
+  flex:1 1 280px;
+  max-width:340px;
+  min-height:130px;          /* 200 → 130, compact pour 12" */
+  border-radius:16px;
   border:none;
   cursor:pointer;
   display:flex;
   flex-direction:column;
   align-items:center;
   justify-content:center;
-  gap:8px;
-  padding:var(--sp-5);
+  gap:6px;
+  padding:var(--sp-3) var(--sp-4);
   font-family:var(--font-body);
   color:#fff;
-  box-shadow:0 6px 16px rgba(14,13,12,.18);
+  box-shadow:0 4px 12px rgba(14,13,12,.16);
   transition:all var(--transition-base);
 }
 .punch-main-btn:hover{
   transform:translateY(-2px);
-  box-shadow:0 10px 24px rgba(14,13,12,.24);
+  box-shadow:0 8px 20px rgba(14,13,12,.22);
 }
 .punch-main-btn:active{
   transform:translateY(0);
-  box-shadow:0 4px 8px rgba(14,13,12,.20);
+  box-shadow:0 2px 6px rgba(14,13,12,.18);
 }
 .punch-main-btn.is-entree{
   background:linear-gradient(135deg, #2da34a, #1f7a1f);
@@ -8045,30 +8101,39 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 .punch-main-btn.is-sortie{
   background:linear-gradient(135deg, #4a90e2, #2c5f9e);
 }
-.punch-main-btn.is-override{
-  background:linear-gradient(135deg, #b87410, #8a5510);
+.punch-main-btn.is-disabled{
+  opacity:.6;
+  cursor:not-allowed;
 }
 .punch-main-btn-label{
-  font-size:32px;
+  font-size:24px;            /* 32 → 24 */
   font-weight:900;
   letter-spacing:.06em;
-  margin-top:8px;
+  margin-top:4px;
 }
 .punch-main-btn-time{
   font-family:var(--font-body);
-  font-size:22px;
+  font-size:18px;            /* 22 → 18 */
   font-weight:700;
   font-variant-numeric:tabular-nums;
   opacity:.95;
   letter-spacing:.02em;
 }
+.punch-main-btn-state{
+  font-size:11px;
+  font-weight:600;
+  opacity:.85;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  margin-top:2px;
+}
 .punch-action-sub{
   font-family:var(--font-body);
-  font-size:14px;
+  font-size:13px;
   color:var(--text2);
   text-align:center;
   margin:0;
-  max-width:380px;
+  max-width:520px;
   line-height:1.5;
 }
 
@@ -8114,14 +8179,14 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 .punch-confirmed-name{
   font-family:var(--font-heading);
-  font-size:54px;
+  font-size:42px;            /* 54 → 42 */
   color:var(--text);
   letter-spacing:.02em;
   line-height:1;
 }
 .punch-confirmed-time{
   font-family:var(--font-body);
-  font-size:32px;
+  font-size:26px;            /* 32 → 26 */
   font-weight:800;
   font-variant-numeric:tabular-nums;
   color:var(--text);

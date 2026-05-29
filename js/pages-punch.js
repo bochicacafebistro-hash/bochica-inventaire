@@ -65,11 +65,23 @@ function renderPunch() {
   else if (_punchState === "confirmed") body = renderPunchConfirmedHTML();
   else if (_punchState === "error")     body = renderPunchErrorHTML();
 
+  // Badge timezone — affiche le fuseau détecté par le navigateur + le dayKey
+  // utilisé par le système. Permet à l'admin/utilisateur de vérifier d'un
+  // coup d'œil que la date "système" correspond bien au jour réel local.
+  // Si jamais ça affiche le mauvais jour, on sait que c'est ici qu'il faut
+  // creuser (problème de fuseau au niveau OS, navigateur, ou code).
+  const tzGuess = Intl.DateTimeFormat().resolvedOptions().timeZone || "?";
+  const todayDk = dayKey(new Date());
+  const tzBadge = `<div class="punch-tz-badge" title="Fuseau horaire détecté + clé du jour utilisée par le système. Si la date affichée ne correspond pas à aujourd'hui réel, le pointage tombera sur le mauvais jour — préviens l'admin.">
+    ${tzGuess} · jour système : ${todayDk}
+  </div>`;
+
   return `<div class="page page--wide page--punch">
     <div class="punch-screen">
       <div class="punch-clock-row">
         <div class="punch-clock" id="punch-live-clock">${_punchNowFull()}</div>
         <div class="punch-date">${_punchDateLong()}</div>
+        ${tzBadge}
       </div>
       ${body}
     </div>
@@ -105,7 +117,11 @@ function renderPunchKeypadHTML() {
   </div>`;
 }
 
-// ─ Écran 2 : confirmation employé + bouton ENTRÉE ou SORTIE ─
+// ─ Écran 2 : confirmation employé + 2 boutons ENTRÉE + SORTIE
+// v3.20.0 — Les 2 boutons sont TOUJOURS visibles (au lieu d'un seul bouton
+// auto-détecté). L'employé sait toujours ce qu'il fait et peut corriger
+// une saisie en re-cliquant. L'état actuel (déjà pointé ?) s'affiche dans
+// une barre d'info entre le nom et les boutons.
 function renderPunchEmployeeHTML() {
   const emp = _punchEmployee;
   if (!emp) return renderPunchKeypadHTML();
@@ -115,32 +131,30 @@ function renderPunchEmployeeHTML() {
   const hasStart = !!(todayShift && todayShift.start);
   const hasEnd = !!(todayShift && todayShift.end);
 
-  // Détection auto de l'action
-  let mainAction, mainLabel, mainIcon, mainCls, sub;
-  if (!hasStart) {
-    mainAction = "entree";
-    mainLabel = "ENTRÉE";
-    mainIcon = "log-in";
-    mainCls = "is-entree";
-    sub = "Marque ton début de quart de travail";
-  } else if (!hasEnd) {
-    mainAction = "sortie";
-    mainLabel = "SORTIE";
-    mainIcon = "log-out";
-    mainCls = "is-sortie";
-    sub = `Tu as pointé ton entrée à <strong>${todayShift.start}</strong> aujourd'hui — marque ta sortie`;
-  } else {
-    // Les deux ont déjà été pointés → bloquer mais offrir d'écraser la sortie
-    mainAction = "override-sortie";
-    mainLabel = "METTRE À JOUR LA SORTIE";
-    mainIcon = "log-out";
-    mainCls = "is-override";
-    sub = `Tu as déjà pointé : entrée <strong>${todayShift.start}</strong>, sortie <strong>${todayShift.end}</strong>. Cliquer pour remplacer la sortie par l'heure actuelle.`;
-  }
-
   const groupBadge = (emp.section || "service") === "cuisine"
     ? `<span class="punch-emp-section punch-emp-section--cuisine">${icon("utensils", 12)} Cuisine</span>`
     : `<span class="punch-emp-section punch-emp-section--service">${icon("users", 12)} Service</span>`;
+
+  // Bloc info état : ce qui a déjà été pointé aujourd'hui
+  let stateInfo;
+  if (!hasStart && !hasEnd) {
+    stateInfo = `<div class="punch-state-info punch-state-info--empty">
+      ${icon("info", 14)} Aucun pointage aujourd'hui
+    </div>`;
+  } else {
+    stateInfo = `<div class="punch-state-info">
+      ${hasStart ? `<span class="punch-state-item punch-state-item--entree">
+        ${icon("log-in", 14)} Entrée :
+        <span class="punch-state-item-time">${todayShift.start}</span>
+      </span>` : ""}
+      ${hasEnd ? `<span class="punch-state-item punch-state-item--sortie">
+        ${icon("log-out", 14)} Sortie :
+        <span class="punch-state-item-time">${todayShift.end}</span>
+      </span>` : ""}
+    </div>`;
+  }
+
+  const nowHHMM = _punchNowHHMM();
 
   return `<div class="punch-employee-screen">
     <button class="punch-back-btn" onclick="punchBackToKeypad()" aria-label="Retour">${icon("arrow-left", 18)} Pas moi</button>
@@ -149,12 +163,22 @@ function renderPunchEmployeeHTML() {
       <div class="punch-greeting-name">${esc(emp.name || "")}</div>
       ${groupBadge}
     </div>
-    <button class="punch-main-btn ${mainCls}" onclick="punchDoAction('${mainAction}')">
-      ${icon(mainIcon, 48)}
-      <span class="punch-main-btn-label">${mainLabel}</span>
-      <span class="punch-main-btn-time">${_punchNowHHMM()}</span>
-    </button>
-    <p class="punch-action-sub">${sub}</p>
+    ${stateInfo}
+    <div class="punch-buttons-row">
+      <button class="punch-main-btn is-entree" onclick="punchDoAction('entree')" title="Marquer ton heure d'entrée${hasStart ? ` (remplacera l'entrée existante à ${todayShift.start})` : ""}">
+        ${icon("log-in", 36)}
+        <span class="punch-main-btn-label">ENTRÉE</span>
+        <span class="punch-main-btn-time">${nowHHMM}</span>
+        ${hasStart ? `<span class="punch-main-btn-state">(remplacer ${todayShift.start})</span>` : ""}
+      </button>
+      <button class="punch-main-btn is-sortie" onclick="punchDoAction('sortie')" title="Marquer ton heure de sortie${hasEnd ? ` (remplacera la sortie existante à ${todayShift.end})` : ""}">
+        ${icon("log-out", 36)}
+        <span class="punch-main-btn-label">SORTIE</span>
+        <span class="punch-main-btn-time">${nowHHMM}</span>
+        ${hasEnd ? `<span class="punch-main-btn-state">(remplacer ${todayShift.end})</span>` : ""}
+      </button>
+    </div>
+    <p class="punch-action-sub">Choisis ENTRÉE pour marquer ton début de quart, SORTIE pour marquer ta fin. Tu peux re-pointer si tu t'es trompé — la dernière saisie écrase la précédente.</p>
   </div>`;
 }
 
@@ -282,16 +306,15 @@ async function punchDoAction(action) {
   const nowHHMM = _punchNowHHMM();
   _punchActionTime = nowHHMM;
 
-  // Map action → champ Firestore
+  // Map action → champ Firestore (v3.20.0 : on n'a plus que entree/sortie,
+  // l'ancienne action "override-sortie" est retirée — les 2 boutons sont
+  // toujours visibles donc l'admin/employé peut juste re-cliquer SORTIE).
   let field;
   let displayAction;
   if (action === "entree") {
     field = "start";
     displayAction = "entree";
   } else if (action === "sortie") {
-    field = "end";
-    displayAction = "sortie";
-  } else if (action === "override-sortie") {
     field = "end";
     displayAction = "sortie";
   } else {
