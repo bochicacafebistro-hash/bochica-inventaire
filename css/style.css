@@ -9635,3 +9635,64 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
     grid-template-columns:170px repeat(var(--n-days, 5), minmax(95px, 1fr)) 110px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v3.27.1 — Card shift « en cours » (entrée pointée sans sortie)
+   ═══════════════════════════════════════════════════════════════
+   Fix du bug où les employés ayant pointé leur entrée mais pas
+   leur sortie n'apparaissaient pas dans le tableau Salaires.
+   La carte « partial » est distincte d'une carte normale et d'un
+   « Congé » — animation pulsation pour signaler l'état actif. */
+
+.shift-card.shift-card--partial{
+  background:rgba(74,144,226,.10) !important;
+  border-style:solid !important;
+  border-color:rgba(74,144,226,.5) !important;
+  position:relative;
+}
+.shift-card.shift-card--partial::after{
+  content:"";
+  position:absolute;
+  top:5px;
+  right:5px;
+  width:7px;
+  height:7px;
+  border-radius:50%;
+  background:#1f7a1f;
+  box-shadow:0 0 0 0 rgba(31,122,31,.6);
+  animation:pulsePartial 1.6s ease-out infinite;
+}
+@keyframes pulsePartial{
+  0%   { box-shadow:0 0 0 0 rgba(31,122,31,.6); }
+  60%  { box-shadow:0 0 0 8px rgba(31,122,31,0); }
+  100% { box-shadow:0 0 0 0 rgba(31,122,31,0); }
+}
+.shift-card.shift-card--partial .shift-card-time{
+  color:#2c5f9e;
+  font-weight:800;
+}
+.shift-card-partial-tag{
+  font-family:var(--font-body);
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  color:#2c5f9e;
+  background:rgba(74,144,226,.15);
+  padding:1px 5px;
+  border-radius:var(--radius-sm);
+}
+[data-theme="dark"] .shift-card.shift-card--partial{
+  background:rgba(74,144,226,.18) !important;
+  border-color:rgba(74,144,226,.6) !important;
+}
+[data-theme="dark"] .shift-card.shift-card--partial .shift-card-time,
+[data-theme="dark"] .shift-card-partial-tag{
+  color:#8fc1ff;
+}
+[data-theme="dark"] .shift-card-partial-tag{
+  background:rgba(74,144,226,.25);
+}
+@media (prefers-reduced-motion: reduce){
+  .shift-card.shift-card--partial::after{ animation:none }
+}

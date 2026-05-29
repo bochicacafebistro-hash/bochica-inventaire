@@ -708,12 +708,42 @@ function renderSalaires() {
             </div>
             <!-- Cellules par jour : shift card ou Congé -->
             ${row.daily.map((d, k) => {
-              const filled = d.actualShift && d.actualShift.start && d.actualShift.end;
+              const startVal = d.actualShift?.start || "";
+              const endVal = d.actualShift?.end || "";
+              const filled = startVal && endVal;
+              const partial = (startVal && !endVal) || (!startVal && endVal);
               const dk = d.dk;
               const empName = esc(row.emp.name || "");
               const dayName = DAYS_FR[visibleIdx[k]];
+
+              // ─ Cas 1 : shift PARTIEL (entrée pointée sans sortie, ou inverse) ─
+              // Affiche une carte spéciale « en cours » pour ne PAS confondre avec
+              // un congé. Bug fix v3.27.1 — avant ce cas tombait dans la branche
+              // « Congé » et les employés en service n'apparaissaient pas.
+              if (partial) {
+                const inProgress = !!startVal && !endVal;
+                const label = inProgress
+                  ? `${startVal} → en cours`
+                  : `? → ${endVal}`;
+                const sub = inProgress ? "Pointé · pas de sortie" : "Sortie sans entrée";
+                return `<div class="schedule-empgrid-cell"
+                    data-day-key="${dk}"
+                    ${isLocked ? "" : `ondragover="payrollShiftDragOver(event,'${dk}')"
+                    ondragleave="payrollShiftDragLeave(event)"
+                    ondrop="payrollShiftDrop(event,'${row.emp.id}','${dk}')"`}>
+                  <div class="shift-card shift-card--compact shift-card--partial ${groupClass}"
+                      ${isLocked ? "" : `onclick="openPayrollShiftModal('${row.emp.id}','${dk}')"`}
+                      title="${sub} — cliquer pour ${inProgress ? "saisir la sortie" : "corriger"}">
+                    <div class="shift-card-time">${label}</div>
+                    <div class="shift-card-meta">
+                      <span class="shift-card-partial-tag">${inProgress ? "En cours" : "Partiel"}</span>
+                    </div>
+                  </div>
+                </div>`;
+              }
+
+              // ─ Cas 2 : pas de shift du tout — afficher Congé / planifié ─
               if (!filled) {
-                // Aucun pointage — afficher Congé avec hint du planifié si applicable
                 const plannedHint = d.plannedShift?.start && d.plannedShift?.end
                   ? `${d.plannedShift.start} → ${d.plannedShift.end}`
                   : "";

@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.27.0** — **Salaires & Pourboires : refonte en empgrid avec cartes shift**. La table « ledger pro » (v3.23.0) est remplacée par la même grille **employés × jours avec cartes** que Horaires et Simulation. Cellule employé éditable avec drag handle + nom + badge EXTRA + select section override + taux + trash pour les extras. Cards shift compactes avec heures pointées + pourboire du jour en vert. Cartes « Congé » pour les jours sans pointage (avec hint « 09:00 → 17:00 · Pas pointé » si l'horaire était planifié). Modal `openPayrollShiftModal` pour éditer (selects 15 min + supprimer). Drag & drop des cards entre jours. Cellule totaux multi-lignes Hrs (réel/planif) / Écart / Sal / Pourb / Total. Panneau totaux résumé dessous.
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.27.1** — **Fix bug : les employés en cours de service apparaissaient comme « Congé »**. Quand un employé pointait son entrée le matin sans avoir encore pointé sa sortie, le nouveau render v3.27.0 le traitait comme un congé (la cellule cherchait `start && end`). Fix : nouveau cas « partiel » qui détecte `start sans end` (ou inverse) et affiche une card spéciale « 09:00 → en cours » avec point vert pulsant et tag « En cours ». L'admin voit immédiatement qui travaille et clique pour saisir la sortie.
+>
+> ⚠️ **29 mai 2026 — v3.27.0** — **Salaires & Pourboires : refonte en empgrid avec cartes shift**. La table « ledger pro » (v3.23.0) est remplacée par la même grille **employés × jours avec cartes** que Horaires et Simulation. Cellule employé éditable avec drag handle + nom + badge EXTRA + select section override + taux + trash pour les extras. Cards shift compactes avec heures pointées + pourboire du jour en vert. Cartes « Congé » pour les jours sans pointage (avec hint « 09:00 → 17:00 · Pas pointé » si l'horaire était planifié). Modal `openPayrollShiftModal` pour éditer (selects 15 min + supprimer). Drag & drop des cards entre jours. Cellule totaux multi-lignes Hrs (réel/planif) / Écart / Sal / Pourb / Total. Panneau totaux résumé dessous.
 >
 > ⚠️ **29 mai 2026 — v3.26.0** — **Simulation paie : refonte en empgrid (même look que Horaires)**. La table sim utilise désormais la même grille **employés × jours avec cartes shift** que la page Employés & Horaires. Cellule employé éditable (nom + taux + section + badge FICTIF), cartes shift compactes avec drag & drop entre jours, carte « Congé » pour les jours libres, totaux multi-lignes à droite (Hrs / Sal / Pourb / Total + bouton supprimer en hover). Modal `openSimShiftModal` pour ajouter/modifier/supprimer un shift. Panneau totaux dessous avec mêmes colonnes alignées (Heures, Coût, Ventes prévues).
 >
@@ -505,6 +507,25 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Fix : employés en cours invisibles dans Salaires (v3.27.1) 🐞🟢
+
+Bug rapporté par l'utilisateur : « il y a du monde qui ont fait le pointage ce matin pourquoi je ne les vois pas? ».
+
+**Cause** : la refonte v3.27.0 utilisait `filled = startVal && endVal` pour décider quel type de card afficher. Pour les employés ayant pointé leur **entrée mais pas leur sortie** (= en cours de service), `endVal` était vide donc `filled = false` → fallait dans le bloc « Congé ». Les employés en cours apparaissaient comme « Congé · + Saisir », totalement invisibles dans la vue Salaires.
+
+**Fix v3.27.1**
+- Nouveau cas intermédiaire `partial = (startVal && !endVal) || (!startVal && endVal)` détecté avant la branche « Congé »
+- Affiche une carte **`.shift-card--partial`** distincte :
+  - Fond bleu plus marqué + bordure solid bleue
+  - Texte : « 09:00 → en cours » (ou « ? → 17:30 » dans le cas inverse rare)
+  - Tag « EN COURS » mono dans la meta
+  - **Point vert pulsant** en haut-droite (animation 1.6s, respecte `prefers-reduced-motion`)
+- Cliquer la card ouvre `openPayrollShiftModal` pré-rempli pour saisir la sortie
+
+**Impact** : les employés au travail sont maintenant visibles avec un signal clair (point pulsant + tag), évitant la confusion avec ceux qui n'ont pas pointé du tout.
+
+**CACHE_VERSION** → `v3.27.1`
 
 ### 29 mai 2026 — Salaires & Pourboires : refonte en empgrid (v3.27.0) 💰📅
 
