@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.24.0** — **Employés & Horaires : refonte en vue calendrier hebdomadaire**. La grille employés × jours est remplacée par une **grille de colonnes-jour**. Chaque jour devient une colonne avec ses cartes shift triées par heure de début (couleur de la barre latérale selon section : ambré cuisine / bleu service). Header de colonne avec compteurs « X pers · Yh ». Bouton « + Ajouter » en bas pour créer un shift. Clic sur une carte → modal d'édition. Glisser une carte vers un autre jour → déplace le shift (avec confirmation si la cible a déjà un shift de cet employé). Panneau totaux compact sous le calendrier (heures, coût, ventes prévues, ventes réelles, écart) avec labels jour en bas. Garde le coverage chart et les team cards inchangés. Maquettes proposées dans le chat, option B sélectionnée.
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.24.1** — **Horaires : grille employés × jours (hybride tableau + cartes)**. Retour d'utilisateur après la v3.24.0 : « je veux garder ce design mais plus style tableau avec la liste de tous les employés dans une colonne à gauche ». Refonte : la vue calendrier par colonnes-jour est remplacée par une **grille tableau** avec employés en lignes à gauche (sticky, avec border-color section), 7 colonnes-jour au centre (chaque cellule = shift card compact OU bouton + Add discret), colonne totaux à droite. Garde la modal d'édition, le drag & drop entre cellules, et la palette de couleurs sections (ambré cuisine / bleu service). Plus efficace pour voir « toute l'équipe » d'un coup et identifier rapidement les jours faibles d'un employé.
+>
+> ⚠️ **29 mai 2026 — v3.24.0** — **Employés & Horaires : refonte en vue calendrier hebdomadaire**. La grille employés × jours est remplacée par une **grille de colonnes-jour**. Chaque jour devient une colonne avec ses cartes shift triées par heure de début (couleur de la barre latérale selon section : ambré cuisine / bleu service). Header de colonne avec compteurs « X pers · Yh ». Bouton « + Ajouter » en bas pour créer un shift. Clic sur une carte → modal d'édition. Glisser une carte vers un autre jour → déplace le shift (avec confirmation si la cible a déjà un shift de cet employé). Panneau totaux compact sous le calendrier (heures, coût, ventes prévues, ventes réelles, écart) avec labels jour en bas. Garde le coverage chart et les team cards inchangés. Maquettes proposées dans le chat, option B sélectionnée.
 >
 > ⚠️ **29 mai 2026 — v3.23.0** — **Salaires & Pourboires : refonte visuelle « ledger pro »**. L'alternance jaune Bochica / bleu Colombie vive est retirée — le tableau passe à un style **tableur comptable sobre** : zébré gris très léger (1 ligne sur 2), pourboires en vert subtil, employés sans pointage en gris pâle (faded), bordures fines neutres, header gris uniforme, total à payer en bold sans fond accent. Le select de section devient text-only en mode « Auto », ne se colore que quand un override est actif. Scope strict à `.payroll-table` — la page Employés & Horaires garde son alternance colorée. Maquettes proposées dans le chat, option 3 sélectionnée par l'utilisateur.
 >
@@ -495,6 +497,36 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Horaires : grille employés × jours (hybride tableau + cartes) (v3.24.1) 📊🗓️
+
+Suite à un retour utilisateur après la v3.24.0 (« je veux garder cet design, mais plus style tableau avec la liste de tous les employés dans une colonne à gauche »), retour à un format tableau classique mais en gardant le nouveau **style de cartes shift** au lieu des dropdowns inline.
+
+**Structure**
+- **CSS Grid** : `160px (employé) + N × minmax(110px, 1fr) (jours) + 96px (totaux)`, avec `gap:1px` qui crée les lignes de séparation grises subtiles
+- **Header** (1 ligne) : « Employé » à gauche · labels jours au centre avec compteurs `X pers · Yh` · « Total » à droite
+- **Body** (N lignes) : pour chaque employé, une ligne complète
+  - **Cellule employé** (gauche) : nom (bold 13px) + section (uppercase 10px) + taux horaire. Barre latérale 3px colorée selon section.
+  - **Cellules jour** : soit une `shift-card--compact` (avec horaires + heures + coût), soit un bouton `+ Add` mini circulaire (24×24, dashed, opacité 0.5 par défaut, plein opacité au hover)
+  - **Cellule totaux** (droite) : heures de la semaine + total à payer
+
+**Card compact (nouveau)**
+- Plus petite que la card de la v3.24.0 (qui était dans une colonne large)
+- Pas d'avatar ni de nom (déjà sur la ligne employé)
+- Juste : `09:00 → 16:00` en bold + meta `5h · 125 $` en bas
+- Fond légèrement teinté selon section (ambré 6% / bleu 5%)
+
+**Interaction conservée**
+- Clic sur card → modal édition (`openShiftModal`)
+- Clic sur `+ Add` → modal création avec employé pré-sélectionné
+- Drag d'une card vers une autre cellule (même employé, jour différent) → déplace le shift
+- Confirmation si la cible a déjà un shift
+
+**Implémentation**
+- **JS** : `renderEmployes()` — bloc « grille calendrier » remplacé par le nouveau bloc « grille empgrid ». L'itération principale passe de « par jour, listant les shifts » à « par employé, listant ses jours » (ce qui était la structure d'origine).
+- **CSS (~140 lignes)** : `.schedule-empgrid` (grid layout), `.schedule-empgrid-emp` (cellule gauche sticky avec border-left section), `.schedule-empgrid-cell` (cellule jour avec drop handlers), `.schedule-empgrid-cell--empty` (avec `.shift-add-mini` 24×24), `.shift-card--compact` (variante plus petite de la card pour cellule de grille), `.schedule-empgrid-total` (cellule droite). `display:contents` sur `.schedule-empgrid-row` pour que les enfants s'insèrent directement dans la grille parente.
+
+**CACHE_VERSION** → `v3.24.1`
 
 ### 29 mai 2026 — Horaires : refonte en vue calendrier hebdomadaire (v3.24.0) 📅🗓️
 

@@ -186,75 +186,84 @@ function renderEmployes() {
         </div>
       </div>
 
-      <!-- ══ Vue calendrier hebdomadaire (v3.24.0) ══ -->
-      <!-- Chaque colonne = un jour. Cartes shift triées par heure de début. -->
-      <div class="schedule-week-cal" style="--n-days:${nCols};">
-        ${weekDays.map((d, k) => {
-          const dk = dayKey(d);
-          const dowIdx = visibleIdx[k];
-          // Collecter les shifts du jour : un par employé qui a start+end
-          const dayShifts = empRows
-            .map(row => {
-              const dd = row.daily[k];
-              if (!dd || !dd.shift || !dd.shift.start || !dd.shift.end) return null;
-              return {
-                emp: row.emp,
-                start: dd.shift.start,
-                end: dd.shift.end,
-                hours: dd.hours,
-                cost: dd.cost,
-                rate: row.rate,
-                isSal: row.isSal
-              };
-            })
-            .filter(Boolean)
-            .sort((a, b) => (a.start || "").localeCompare(b.start || ""));
-          const dayHrs = dayShifts.reduce((s, x) => s + x.hours, 0);
-          const dayCost = dayShifts.reduce((s, x) => s + x.cost, 0);
-          return `<div class="schedule-day-col" data-day-key="${dk}"
-              ondragover="shiftCardDragOver(event,'${dk}')"
-              ondragleave="shiftCardDragLeave(event)"
-              ondrop="shiftCardDrop(event,'${dk}')">
-            <div class="schedule-day-col-head">
-              <div class="schedule-day-col-name">${DAYS_FR[dowIdx]}</div>
-              <div class="schedule-day-col-date">${d.getDate()}/${d.getMonth() + 1}</div>
-              <div class="schedule-day-col-stats">
-                <span class="schedule-day-col-count">${dayShifts.length} pers</span>
-                <span class="schedule-day-col-sep">·</span>
-                <span class="schedule-day-col-hrs">${dayHrs ? fmtHours(dayHrs) + "h" : "0h"}</span>
+      <!-- ══ Grille employés × jours avec cartes shift (v3.24.1) ══ -->
+      <!-- Liste des employés à gauche, 7 colonnes jour, totaux à droite. -->
+      <div class="schedule-empgrid" style="--n-days:${nCols};">
+        <!-- Header : labels jours + colonne totaux -->
+        <div class="schedule-empgrid-header">
+          <div class="schedule-empgrid-emp-head">Employé</div>
+          ${weekDays.map((d, k) => {
+            const dk = dayKey(d);
+            const dowIdx = visibleIdx[k];
+            const dayShiftsCount = empRows.filter(r => r.daily[k]?.shift?.start && r.daily[k]?.shift?.end).length;
+            return `<div class="schedule-empgrid-day-head">
+              <div class="schedule-empgrid-day-name">${DAYS_FR[dowIdx]}</div>
+              <div class="schedule-empgrid-day-date">${d.getDate()}/${d.getMonth() + 1}</div>
+              <div class="schedule-empgrid-day-count">${dayShiftsCount} pers · ${dayTotalsHours[k] ? fmtHours(dayTotalsHours[k]) + "h" : "0h"}</div>
+            </div>`;
+          }).join("")}
+          <div class="schedule-empgrid-total-head">Total</div>
+        </div>
+
+        <!-- Body : une ligne par employé -->
+        ${empRows.map(row => {
+          const emp = row.emp;
+          const sec = (emp.section || "service");
+          const secCls = sec === "cuisine" ? "is-kitchen"
+                      : sec === "service" ? "is-service" : "is-other";
+          const secLabel = sec === "cuisine" ? "Cuisine"
+                        : sec === "service" ? "Service" : "Autre";
+          return `<div class="schedule-empgrid-row">
+            <!-- Cellule employé (sticky à gauche) -->
+            <div class="schedule-empgrid-emp ${secCls}">
+              <div class="schedule-empgrid-emp-name">${esc(emp.name || "")}</div>
+              <div class="schedule-empgrid-emp-meta">
+                <span class="schedule-empgrid-emp-section">${secLabel}</span>
+                ${row.rate ? `<span class="schedule-empgrid-emp-rate">${row.rate.toFixed(2)} $/h${row.isSal ? " · FIXE" : ""}</span>` : ""}
               </div>
             </div>
-            <div class="schedule-day-col-cards">
-              ${dayShifts.length === 0 ? `
-                <div class="shift-card-empty">Aucun shift</div>
-              ` : dayShifts.map(s => {
-                const sec = (s.emp.section || "service");
-                const secCls = sec === "cuisine" ? "is-kitchen"
-                            : sec === "service" ? "is-service" : "is-other";
-                const initials = (s.emp.name || "?").split(" ").map(p => p[0]).filter(Boolean).slice(0,2).join("").toUpperCase();
-                return `<div class="shift-card ${secCls}"
+            <!-- Cellules par jour : shift card OU bouton + Add -->
+            ${row.daily.map((d, k) => {
+              const dk = dayKey(weekDays[k]);
+              const s = d.shift;
+              const hasShift = s && s.start && s.end;
+              if (!hasShift) {
+                return `<div class="schedule-empgrid-cell schedule-empgrid-cell--empty"
+                    data-day-key="${dk}"
+                    ondragover="shiftCardDragOver(event,'${dk}')"
+                    ondragleave="shiftCardDragLeave(event)"
+                    ondrop="shiftCardDrop(event,'${dk}')">
+                  <button class="shift-add-mini" onclick="openShiftModal('${row.emp.id}','${dk}')" title="Ajouter un shift">
+                    ${icon("plus", 11)}
+                  </button>
+                </div>`;
+              }
+              return `<div class="schedule-empgrid-cell"
+                  data-day-key="${dk}"
+                  ondragover="shiftCardDragOver(event,'${dk}')"
+                  ondragleave="shiftCardDragLeave(event)"
+                  ondrop="shiftCardDrop(event,'${dk}')">
+                <div class="shift-card shift-card--compact ${secCls}"
                     draggable="true"
-                    data-emp-id="${s.emp.id}"
+                    data-emp-id="${row.emp.id}"
                     data-from-day="${dk}"
-                    ondragstart="shiftCardDragStart(event,'${s.emp.id}','${dk}')"
+                    ondragstart="shiftCardDragStart(event,'${row.emp.id}','${dk}')"
                     ondragend="shiftCardDragEnd(event)"
-                    onclick="openShiftModal('${s.emp.id}','${dk}')"
-                    title="Cliquer pour modifier · Glisser pour déplacer vers un autre jour">
-                  <div class="shift-card-head">
-                    <span class="shift-card-avatar">${initials}</span>
-                    <span class="shift-card-name">${esc(s.emp.name || "")}</span>
-                  </div>
+                    onclick="openShiftModal('${row.emp.id}','${dk}')"
+                    title="Cliquer pour modifier · Glisser pour déplacer">
                   <div class="shift-card-time">${s.start} → ${s.end}</div>
                   <div class="shift-card-meta">
-                    <span>${fmtHours(s.hours)}h</span>
-                    <span class="shift-card-cost">${fmtMoney(s.cost)}</span>
+                    <span>${fmtHours(d.hours)}h</span>
+                    <span class="shift-card-cost">${fmtMoney(d.cost)}</span>
                   </div>
-                </div>`;
-              }).join("")}
+                </div>
+              </div>`;
+            }).join("")}
+            <!-- Cellule totaux employé (sticky à droite) -->
+            <div class="schedule-empgrid-total">
+              <div class="schedule-empgrid-total-hrs">${row.totalHours ? fmtHours(row.totalHours) + "h" : "—"}</div>
+              <div class="schedule-empgrid-total-pay">${row.totalPay ? fmtMoney(row.totalPay) : ""}</div>
             </div>
-            <button class="shift-add-btn" onclick="openShiftModal('','${dk}')" aria-label="Ajouter un shift ce jour-là">
-              ${icon("plus", 12)} Ajouter
-            </button>
           </div>`;
         }).join("")}
       </div>
