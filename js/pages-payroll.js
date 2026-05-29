@@ -650,179 +650,159 @@ function renderSalaires() {
         </div>
       </div>
 
-      <!-- ══ Tableau heures réelles + planifiées + salaires + pourboires ══ -->
-      <div class="card payroll-table-wrap" style="padding:0;overflow-x:auto">
-        <table class="schedule-table payroll-table">
-          <thead>
-            <tr>
-              <th class="schedule-th--emp">Employé</th>
-              ${weekDays.map((d, k) => {
-                const dowIdx = visibleIdx[k];
-                const sw = getServiceWindow(dowIdx);
-                const swLabel = sw ? `${sw.start}–${sw.end}` : "—";
-                return `<th class="schedule-th--day" colspan="2">
-                  <div class="schedule-day-name">${DAYS_FR[dowIdx]}</div>
-                  <div class="schedule-day-date">${d.getDate()}/${d.getMonth() + 1}</div>
-                  <div class="payroll-th-service" title="Fenêtre de service">${swLabel}</div>
-                </th>`;
-              }).join("")}
-              <th class="schedule-th--summary">Réel / Planif</th>
-              <th class="schedule-th--summary">Écart</th>
-              <th class="schedule-th--summary">Salaire</th>
-              <th class="schedule-th--summary payroll-th-tip" title="Pourboire total de la semaine">Pourboire (sem.)</th>
-              <th class="schedule-th--summary">Total à payer</th>
-            </tr>
-            <tr class="schedule-subheader">
-              <th></th>
-              ${weekDays.map(() => `<th class="schedule-th--entry">Entrée</th><th class="schedule-th--exit">Sortie</th>`).join("")}
-              <th></th><th></th><th></th><th></th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            ${empRows.map((row, rowIdx) => {
-              // v3.23.0 — Style ledger pro : on retire le inline --emp-rgb
-              // (qui imposait l'alternance jaune/bleu vive). Le zébré gris
-              // subtil est désormais géré par CSS pur via tbody tr:nth-child.
-              // La classe is-no-hours fane les lignes des employés qui n'ont
-              // pas pointé du tout (texte gris pâle, opacité réduite).
-              const hasNoHours = !row.totalHours;
-              // v3.18.0 — Le badge fixe est remplacé par un select compact
-              // permettant à l'admin d'override la section pour cette semaine
-              // uniquement. 4 options : Auto / Cuisine / Service / Exclu.
-              // Quand un override est actif, on ajoute un indicateur visuel
-              // (border ambré + petit point) pour qu'on voie tout de suite
-              // qu'il y a une dérogation pour ce nom cette semaine.
-              const isOverridden = !!row.groupOverride;
-              const selValue = row.groupOverride || "auto";
-              const groupClass = row.group === "cuisine" ? "is-kitchen"
-                              : row.group === "service" ? "is-service"
-                              : "is-excluded";
-              const groupBadge = `<select class="payroll-section-select ${groupClass} ${isOverridden ? "is-overridden" : ""}"
-                onchange="updateSectionOverride('${row.emp.id}', this.value)"
-                ${isLocked ? "disabled" : ""}
-                title="${isOverridden ? "⚠ Section dérogée pour cette semaine — cliquer pour modifier" : "Section pour les pourboires cette semaine"}"
-                aria-label="Section ${esc(row.emp.name || "")} (${row.group === "excluded" ? "exclu du pool" : row.group})">
-                <option value="auto" ${selValue === "auto" ? "selected" : ""}>Auto (${tipGroupOf(row.emp) === "cuisine" ? "🍳 Cuisine" : "🛎 Service"})</option>
-                <option value="cuisine" ${selValue === "cuisine" ? "selected" : ""}>🍳 Cuisine (${(tipShares.cuisine*100).toFixed(0)}%)</option>
-                <option value="service" ${selValue === "service" ? "selected" : ""}>🛎 Service (${(tipShares.service*100).toFixed(0)}%)</option>
-                <option value="excluded" ${selValue === "excluded" ? "selected" : ""}>⛔ Exclu du pool</option>
-              </select>`;
-              const gapCls = row.gap > 0.01 ? "is-positive" : row.gap < -0.01 ? "is-negative" : "";
-              const gapArrow = row.gap > 0.01 ? "▲" : row.gap < -0.01 ? "▼" : "";
-              // v3.23.0 — Plus d'alternance jaune/bleu vive (style ledger pro).
-              // Le zébré gris subtil vient désormais d'une règle CSS pure
-              // (.payroll-table tbody tr:nth-child(even)) — pas besoin de
-              // CSS variable inline. La classe is-no-hours fane la ligne.
-              const toneClass = rowIdx % 2 === 0 ? "is-odd" : "is-even";
-              return `<tr class="schedule-emp-row ${toneClass} ${row.isManual ? "is-manual-emp" : ""} ${hasNoHours ? "is-no-hours" : ""}" data-emp-id="${row.emp.id}"
-                ${isLocked ? "" : `ondragover="payrollRowDragOver(event,'${row.emp.id}')"
-                ondragleave="payrollRowDragLeave(event)"
-                ondrop="payrollRowDrop(event,'${row.emp.id}')"
-                ondragend="payrollRowDragEnd(event)"`}>
-                <td class="schedule-td--emp">
-                  <div class="schedule-emp-cell payroll-emp-cell">
-                    ${isLocked ? "" : `<span class="payroll-drag-handle" draggable="true" ondragstart="payrollRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 14)}</span>`}
-                    <div class="schedule-emp-info">
-                      <div class="schedule-emp-name">
-                        ${esc(row.emp.name || "")}
-                        ${row.isManual ? `<span class="payroll-manual-badge" title="Employé ajouté manuellement pour cette semaine">EXTRA</span>` : ""}
-                      </div>
-                      <div class="schedule-emp-meta">
-                        ${groupBadge}
-                        ${row.rate ? `<span class="schedule-emp-role">${row.rate.toFixed(2)}$/h${row.isSal ? " · FIXE" : ""}</span>` : ""}
-                        ${row.isManual && !isLocked ? `<button class="payroll-manual-del" onclick="removeManualEmployee('${row.emp.id}')" title="Retirer cet extra de la semaine" aria-label="Retirer cet extra">${icon("trash", 12)}</button>` : ""}
-                      </div>
-                    </div>
+      <!-- ══ Grille empgrid Salaires & Pourboires (v3.27.0) ══ -->
+      <div class="schedule-empgrid payroll-empgrid" style="--n-days:${weekDays.length};">
+        <!-- Header -->
+        <div class="schedule-empgrid-header">
+          <div class="schedule-empgrid-emp-head">Employé · Section</div>
+          ${weekDays.map((d, k) => {
+            const dowIdx = visibleIdx[k];
+            const sw = getServiceWindow(dowIdx);
+            const swLabel = sw ? `${sw.start}–${sw.end}` : "—";
+            const count = empRows.filter(r => r.daily[k]?.actualShift?.start && r.daily[k]?.actualShift?.end).length;
+            return `<div class="schedule-empgrid-day-head">
+              <div class="schedule-empgrid-day-name">${DAYS_FR[dowIdx]}</div>
+              <div class="schedule-empgrid-day-date">${d.getDate()}/${d.getMonth() + 1}</div>
+              <div class="schedule-empgrid-day-count">${count} pers · service ${swLabel}</div>
+            </div>`;
+          }).join("")}
+          <div class="schedule-empgrid-total-head">Totaux</div>
+        </div>
+
+        <!-- Body -->
+        ${empRows.map((row, rowIdx) => {
+          const hasNoHours = !row.totalHours;
+          const isOverridden = !!row.groupOverride;
+          const selValue = row.groupOverride || "auto";
+          const groupClass = row.group === "cuisine" ? "is-kitchen"
+                          : row.group === "service" ? "is-service"
+                          : "is-excluded";
+          const gapCls = row.gap > 0.01 ? "is-positive" : row.gap < -0.01 ? "is-negative" : "";
+          const gapArrow = row.gap > 0.01 ? "▲" : row.gap < -0.01 ? "▼" : "";
+          return `<div class="schedule-empgrid-row payroll-empgrid-row ${row.isManual ? "is-manual-emp" : ""} ${hasNoHours ? "is-no-hours" : ""}" data-emp-id="${row.emp.id}"
+            ${isLocked ? "" : `ondragover="payrollRowDragOver(event,'${row.emp.id}')"
+            ondragleave="payrollRowDragLeave(event)"
+            ondrop="payrollRowDrop(event,'${row.emp.id}')"
+            ondragend="payrollRowDragEnd(event)"`}>
+            <!-- Cellule employé : drag + nom + EXTRA + section + rate + trash -->
+            <div class="schedule-empgrid-emp payroll-empgrid-emp ${groupClass}">
+              <div class="payroll-empgrid-emp-row">
+                ${isLocked ? "" : `<span class="payroll-drag-handle" draggable="true" ondragstart="payrollRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 12)}</span>`}
+                <span class="schedule-empgrid-emp-name">${esc(row.emp.name || "")}</span>
+                ${row.isManual ? `<span class="payroll-manual-badge">EXTRA</span>` : ""}
+                ${row.isManual && !isLocked ? `<button class="payroll-manual-del" onclick="removeManualEmployee('${row.emp.id}')" title="Retirer cet extra" aria-label="Retirer cet extra">${icon("trash", 11)}</button>` : ""}
+              </div>
+              <div class="payroll-empgrid-emp-meta">
+                <select class="payroll-section-select ${groupClass} ${isOverridden ? "is-overridden" : ""}"
+                  onchange="updateSectionOverride('${row.emp.id}', this.value)"
+                  ${isLocked ? "disabled" : ""}
+                  title="${isOverridden ? "⚠ Section dérogée pour cette semaine" : "Section pour les pourboires"}"
+                  aria-label="Section ${esc(row.emp.name || "")}">
+                  <option value="auto" ${selValue === "auto" ? "selected" : ""}>Auto (${tipGroupOf(row.emp) === "cuisine" ? "Cuisine" : "Service"})</option>
+                  <option value="cuisine" ${selValue === "cuisine" ? "selected" : ""}>Cuisine ${(tipShares.cuisine*100).toFixed(0)}%</option>
+                  <option value="service" ${selValue === "service" ? "selected" : ""}>Service ${(tipShares.service*100).toFixed(0)}%</option>
+                  <option value="excluded" ${selValue === "excluded" ? "selected" : ""}>Exclu</option>
+                </select>
+                ${row.rate ? `<span class="payroll-empgrid-rate">${row.rate.toFixed(2)} $/h${row.isSal ? " · FIXE" : ""}</span>` : ""}
+              </div>
+            </div>
+            <!-- Cellules par jour : shift card ou Congé -->
+            ${row.daily.map((d, k) => {
+              const filled = d.actualShift && d.actualShift.start && d.actualShift.end;
+              const dk = d.dk;
+              const empName = esc(row.emp.name || "");
+              const dayName = DAYS_FR[visibleIdx[k]];
+              if (!filled) {
+                // Aucun pointage — afficher Congé avec hint du planifié si applicable
+                const plannedHint = d.plannedShift?.start && d.plannedShift?.end
+                  ? `${d.plannedShift.start} → ${d.plannedShift.end}`
+                  : "";
+                const offLabel = plannedHint ? plannedHint : "Congé";
+                const offSub = plannedHint ? "Pas pointé" : (isLocked ? "—" : "+ Saisir");
+                return `<div class="schedule-empgrid-cell schedule-empgrid-cell--empty ${plannedHint ? "is-scheduled-empty" : ""}"
+                    data-day-key="${dk}"
+                    ${isLocked ? "" : `ondragover="payrollShiftDragOver(event,'${dk}')"
+                    ondragleave="payrollShiftDragLeave(event)"
+                    ondrop="payrollShiftDrop(event,'${row.emp.id}','${dk}')"`}>
+                  <div class="shift-card shift-card--off"
+                      ${isLocked ? "" : `onclick="openPayrollShiftModal('${row.emp.id}','${dk}')"`}
+                      title="${plannedHint ? `Prévu à l'horaire : ${plannedHint}` : "Aucun pointage"}">
+                    <div class="shift-off-label">${offLabel}</div>
+                    <div class="shift-off-add">${offSub}</div>
                   </div>
-                </td>
-                ${row.daily.map((d, k) => {
-                  const filled = d.actualShift && d.actualShift.start && d.actualShift.end;
-                  const startVal = d.actualShift?.start || "";
-                  const endVal = d.actualShift?.end || "";
-                  const empName = esc(row.emp.name || "");
-                  const dayName = DAYS_FR[visibleIdx[k]];
-                  // Pourboire du jour pour cet employé — affiché en bas de la cellule sortie
-                  const dayTipHint = d.dayTip > 0
-                    ? `<div class="payroll-day-tip" title="Pourboire reçu ce jour (prorata)">${fmtMoney(d.dayTip)}</div>`
-                    : "";
-                  // Hint discret du planifié (v3.17.3) — affiché UNDER l'input
-                  // vide pour montrer qui devait travailler et à quelle heure,
-                  // sans préremplir l'input (évite de saisir par erreur le
-                  // planifié comme heure pointée).
-                  const plannedStartHint = (!startVal && d.plannedShift?.start)
-                    ? `<div class="payroll-planned-hint" title="Heure d'entrée prévue à l'horaire">${d.plannedShift.start}</div>`
-                    : "";
-                  const plannedEndHint = (!endVal && d.plannedShift?.end)
-                    ? `<div class="payroll-planned-hint" title="Heure de sortie prévue à l'horaire">${d.plannedShift.end}</div>`
-                    : "";
-                  // Tooltip riche pour expliquer le contexte sans encombrer le visuel
-                  const cellTitle = d.isDifferent
-                    ? `Modifié — planifié : ${d.plannedShift?.start || "—"}→${d.plannedShift?.end || "—"}`
-                    : (!startVal && !endVal && d.plannedShift?.start)
-                      ? `Prévu à l'horaire : ${d.plannedShift.start}→${d.plannedShift.end || "?"}`
-                      : "";
-                  // Classe is-scheduled : marque visuellement les cellules
-                  // d'un employé qui était prévu ce jour-là mais qui n'a pas
-                  // encore pointé (utile pour repérer les oublis de pointage).
-                  const isScheduled = !startVal && !endVal && d.plannedShift?.start;
-                  const baseClasses = `schedule-td--cell payroll-td-cell ${filled ? "is-filled" : ""} ${d.isDifferent ? "is-modified" : ""} ${isScheduled ? "is-scheduled-empty" : ""}`;
-                  return `<td class="${baseClasses} schedule-td--day-entry"${cellTitle ? ` title="${cellTitle}"` : ""}>
-                    <select class="payroll-time-select" onchange="updateActualShift('${row.emp.id}','${d.dk}','start',this.value)" aria-label="${empName}, entrée réelle ${dayName}">${buildPayrollTimeOptions(startVal)}</select>
-                    ${plannedStartHint}
-                  </td>
-                  <td class="${baseClasses} schedule-td--day-exit"${cellTitle ? ` title="${cellTitle}"` : ""}>
-                    <select class="payroll-time-select" onchange="updateActualShift('${row.emp.id}','${d.dk}','end',this.value)" aria-label="${empName}, sortie réelle ${dayName}">${buildPayrollTimeOptions(endVal)}</select>
-                    ${plannedEndHint}
-                    ${dayTipHint}
-                  </td>`;
-                }).join("")}
-                <td class="schedule-td--summary">
-                  <div class="payroll-hours-cell" title="Réel / Planifié">
-                    <span class="payroll-hours-actual">${row.totalHours ? fmtHours(row.totalHours) : "0"}h</span>
-                    <span class="payroll-hours-sep">/</span>
-                    <span class="payroll-hours-planned" title="Heures planifiées">${row.plannedHours ? fmtHours(row.plannedHours) : "0"}h</span>
+                </div>`;
+              }
+              const dayTipPart = d.dayTip > 0
+                ? `<div class="shift-card-tip" title="Pourboire reçu ce jour">+${fmtMoney(d.dayTip)}</div>`
+                : "";
+              const cellTitle = d.isDifferent
+                ? `Modifié — planifié : ${d.plannedShift?.start || "—"}→${d.plannedShift?.end || "—"}`
+                : "";
+              return `<div class="schedule-empgrid-cell ${d.isDifferent ? "is-modified" : ""}"
+                  data-day-key="${dk}"
+                  title="${cellTitle}"
+                  ${isLocked ? "" : `ondragover="payrollShiftDragOver(event,'${dk}')"
+                  ondragleave="payrollShiftDragLeave(event)"
+                  ondrop="payrollShiftDrop(event,'${row.emp.id}','${dk}')"`}>
+                <div class="shift-card shift-card--compact ${groupClass}"
+                    ${isLocked ? "" : `draggable="true"
+                    data-emp-id="${row.emp.id}"
+                    data-from-day="${dk}"
+                    ondragstart="payrollShiftDragStart(event,'${row.emp.id}','${dk}')"
+                    ondragend="payrollShiftDragEnd(event)"
+                    onclick="openPayrollShiftModal('${row.emp.id}','${dk}')"`}
+                    title="Cliquer pour modifier · Glisser pour déplacer">
+                  <div class="shift-card-time">${d.actualShift.start} → ${d.actualShift.end}</div>
+                  <div class="shift-card-meta">
+                    <span>${fmtHours(d.hours)}h</span>
+                    ${dayTipPart || `<span class="shift-card-cost">${d.tipHours > 0 ? fmtHours(d.tipHours) + "h★" : ""}</span>`}
                   </div>
-                </td>
-                <td class="schedule-td--summary payroll-gap-cell ${gapCls}">
-                  ${Math.abs(row.gap) < 0.01
-                    ? (row.totalHours || row.plannedHours ? `<span class="payroll-gap-ok" title="Réel = planifié">=</span>` : "—")
-                    : `<span class="payroll-gap-arrow">${gapArrow}</span>${(row.gap > 0 ? "+" : "")}${fmtHours(row.gap)}h`}
-                </td>
-                <td class="schedule-td--summary">${row.grossWage ? fmtMoney(row.grossWage) : "—"}</td>
-                <td class="schedule-td--summary payroll-td-tip ${row.tipShare > 0 ? "has-tip" : ""}">
-                  ${row.tipShare > 0
-                    ? `<div class="payroll-tip-amount">${fmtMoney(row.tipShare)}</div>
-                       <div class="payroll-tip-hours" title="Heures éligibles aux pourboires">${fmtHours(row.tipEligibleHours)}h ★</div>`
-                    : "—"}
-                </td>
-                <td class="schedule-td--summary schedule-td--total">${row.totalPay ? fmtMoney(row.totalPay) : ""}</td>
-              </tr>`;
-            }).join("")}
-          </tbody>
-          <tfoot>
-            <tr class="schedule-tfoot-row schedule-tfoot-row--predicted">
-              <td class="schedule-tfoot-label">Totaux semaine</td>
-              <td colspan="${weekDays.length * 2}" class="schedule-tfoot-val" style="text-align:right;color:var(--text3);font-style:italic">
-                ${empRows.length} employé${empRows.length > 1 ? "s" : ""}
-              </td>
-              <td class="schedule-tfoot-val">
-                <div class="payroll-hours-cell">
-                  <span class="payroll-hours-actual">${fmtHours(sumActualHours)}h</span>
-                  <span class="payroll-hours-sep">/</span>
-                  <span class="payroll-hours-planned">${fmtHours(sumPlannedHours)}h</span>
                 </div>
-              </td>
-              <td class="schedule-tfoot-val payroll-gap-cell ${(sumActualHours - sumPlannedHours) > 0.01 ? "is-positive" : (sumActualHours - sumPlannedHours) < -0.01 ? "is-negative" : ""}">
-                ${Math.abs(sumActualHours - sumPlannedHours) < 0.01
-                  ? (sumActualHours || sumPlannedHours ? "=" : "—")
-                  : `${((sumActualHours - sumPlannedHours) > 0 ? "+" : "")}${fmtHours(sumActualHours - sumPlannedHours)}h`}
-              </td>
-              <td class="schedule-tfoot-val">${fmtMoney(sumGross)}</td>
-              <td class="schedule-tfoot-val">${fmtMoney(sumTips)}</td>
-              <td class="schedule-tfoot-val schedule-td--total">${fmtMoney(sumTotal)}</td>
-            </tr>
-          </tfoot>
-        </table>
+              </div>`;
+            }).join("")}
+            <!-- Cellule totaux (Hrs réel/planif + Écart + Salaire + Pourb + Total) -->
+            <div class="schedule-empgrid-total payroll-empgrid-total">
+              <div class="payroll-empgrid-total-row">
+                <span class="payroll-empgrid-total-lbl">Hrs</span>
+                <span class="payroll-empgrid-total-val">
+                  ${row.totalHours ? fmtHours(row.totalHours) : "0"}<small>/${row.plannedHours ? fmtHours(row.plannedHours) : "0"}</small>
+                </span>
+              </div>
+              <div class="payroll-empgrid-total-row">
+                <span class="payroll-empgrid-total-lbl">Écart</span>
+                <span class="payroll-empgrid-total-val ${gapCls}">${Math.abs(row.gap) < 0.01
+                  ? (row.totalHours || row.plannedHours ? `=` : "—")
+                  : `${gapArrow}${(row.gap > 0 ? "+" : "")}${fmtHours(row.gap)}h`}</span>
+              </div>
+              <div class="payroll-empgrid-total-row">
+                <span class="payroll-empgrid-total-lbl">Sal</span>
+                <span class="payroll-empgrid-total-val">${row.grossWage ? fmtMoney(row.grossWage) : "—"}</span>
+              </div>
+              <div class="payroll-empgrid-total-row">
+                <span class="payroll-empgrid-total-lbl">Pourb</span>
+                <span class="payroll-empgrid-total-val payroll-empgrid-total-val--tip">${row.tipShare > 0 ? fmtMoney(row.tipShare) : "—"}</span>
+              </div>
+              <div class="payroll-empgrid-total-row payroll-empgrid-total-row--final">
+                <span class="payroll-empgrid-total-lbl">Total</span>
+                <span class="payroll-empgrid-total-val payroll-empgrid-total-val--final">${row.totalPay ? fmtMoney(row.totalPay) : "—"}</span>
+              </div>
+            </div>
+          </div>`;
+        }).join("")}
+      </div>
+
+      <!-- ══ Panneau totaux (mêmes colonnes que la grille du haut) ══ -->
+      <div class="schedule-totals-panel payroll-totals-panel" style="--n-days:${weekDays.length};">
+        <div class="schedule-totals-grid">
+          <div class="schedule-totals-label">Totaux semaine</div>
+          <div class="schedule-totals-val schedule-totals-val--summary" style="grid-column:span ${weekDays.length}; text-align:left; font-style:italic; color:var(--text3); justify-content:flex-start">
+            ${empRows.length} employé${empRows.length > 1 ? "s" : ""} ·
+            ${fmtHours(sumActualHours)}h pointées / ${fmtHours(sumPlannedHours)}h planifiées
+            · Écart ${(sumActualHours - sumPlannedHours) > 0 ? "+" : ""}${fmtHours(sumActualHours - sumPlannedHours)}h
+            · Salaires ${fmtMoney(sumGross)} · Pourboires ${fmtMoney(sumTips)}
+          </div>
+          <div class="schedule-totals-val schedule-totals-val--total">${fmtMoney(sumTotal)}</div>
+        </div>
       </div>
 
       <!-- ══ Récap pourboires par employé (visible sans scroll horizontal) ══ -->
@@ -2600,4 +2580,144 @@ async function generateBiWeeklyPDF() {
   const fileName = `Bochica_Paie2Sem_S${w1.weekNum}-${w2.weekNum}_${dayKey(w1.weekStart)}.pdf`;
   doc.save(fileName);
   toast(`Rapport PDF 2 semaines généré : ${fileName}`, "success", 4000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// v3.27.0 — Modal d'édition de shift + drag&drop pour Salaires
+// ═══════════════════════════════════════════════════════════════
+// Les shifts sont stockés dans payroll/{weekId}.actualShifts indexés par
+// empId + dk (date YYYY-MM-DD). Modal + handlers payroll-spécifiques.
+
+// État local pour le drag de cartes shift (différent de payrollRowDragId
+// qui gère le réordonnement vertical des employés)
+let _payrollShiftDragEmpId = null;
+let _payrollShiftDragFromDk = null;
+
+// Ouvre une modal pour créer/modifier un shift réel (par dk)
+function openPayrollShiftModal(empId, dk) {
+  if (payrollWeekData?.locked) {
+    toast("Semaine verrouillée — déverrouille avant de modifier.", "warning");
+    return;
+  }
+  const allEmps = getAllPayrollEmployees();
+  const emp = allEmps.find(e => e.id === empId);
+  if (!emp) return;
+  const currentShift = getActualShift(empId, dk) || {};
+  const startVal = currentShift.start || "";
+  const endVal = currentShift.end || "";
+  const hasShift = !!(startVal && endVal);
+  // Date longue
+  const [yy, mm, ddNum] = dk.split("-").map(Number);
+  const dateObj = new Date(yy, mm - 1, ddNum);
+  const dayLabel = dateObj.toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
+  // Planifié (rappel)
+  const plannedShift = getPlannedShift(empId, dk);
+  const plannedHint = plannedShift?.start && plannedShift?.end
+    ? `<span style="color:var(--text3);font-size:11px;font-style:italic;margin-left:6px">Prévu : ${plannedShift.start} → ${plannedShift.end}</span>`
+    : "";
+
+  showModal(`<div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h3>${icon("clock", 18)} ${hasShift ? "Modifier le shift" : "Saisir un shift"}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
+    </div>
+    <p style="color:var(--text2);font-size:13px;margin:0 0 var(--sp-3);text-transform:capitalize">
+      ${icon("user", 12)} <strong>${esc(emp.name || "")}</strong> · ${dayLabel}${plannedHint}
+    </p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin-top:var(--sp-2)">
+      <label>Entrée
+        <select id="payroll-shift-start">${buildPayrollTimeOptions(startVal)}</select>
+      </label>
+      <label>Sortie
+        <select id="payroll-shift-end">${buildPayrollTimeOptions(endVal)}</select>
+      </label>
+    </div>
+    <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3)">
+      ${hasShift ? `<button class="btn-cancel" style="color:#a23a36" onclick="deletePayrollShift('${empId}','${dk}')">${icon("trash", 14)} Supprimer</button>` : `<div></div>`}
+      <div style="display:flex;gap:var(--sp-2)">
+        <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+        <button class="btn btn-primary" onclick="savePayrollShiftFromModal('${empId}','${dk}')">${icon("check", 14)} ${hasShift ? "Enregistrer" : "Ajouter"}</button>
+      </div>
+    </div>
+  </div>`);
+}
+
+async function savePayrollShiftFromModal(empId, dk) {
+  const start = document.getElementById("payroll-shift-start").value;
+  const end = document.getElementById("payroll-shift-end").value;
+  if (!start || !end) return toast("Saisis l'entrée et la sortie.", "warning");
+  // updateActualShift gère le read-then-write pour ne rien effacer
+  await updateActualShift(empId, dk, "start", start);
+  await updateActualShift(empId, dk, "end", end);
+  closeModal();
+  toast("Shift enregistré.", "success", 2000);
+}
+
+async function deletePayrollShift(empId, dk) {
+  await clearActualShift(empId, dk);
+  closeModal();
+  toast("Shift supprimé.", "success", 2000);
+}
+
+// ─ Drag & drop des cartes shift entre jours ─────────────
+// Différent de payrollRowDrag* qui gère le réordonnement vertical des employés.
+function payrollShiftDragStart(e, empId, fromDk) {
+  if (payrollWeekData?.locked) { e.preventDefault(); return; }
+  _payrollShiftDragEmpId = empId;
+  _payrollShiftDragFromDk = fromDk;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move";
+    try { e.dataTransfer.setData("text/plain", `${empId}|${fromDk}`); } catch (_) {}
+  }
+  e.stopPropagation();
+  const card = e.currentTarget;
+  setTimeout(() => card && card.classList.add("is-dragging"), 0);
+}
+
+function payrollShiftDragOver(e, targetDk) {
+  if (!_payrollShiftDragEmpId || targetDk === _payrollShiftDragFromDk) return;
+  e.preventDefault();
+  e.stopPropagation();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  e.currentTarget.classList.add("is-drop-target");
+}
+
+function payrollShiftDragLeave(e) {
+  const cell = e.currentTarget;
+  if (!cell) return;
+  const related = e.relatedTarget;
+  if (related && cell.contains(related)) return;
+  cell.classList.remove("is-drop-target");
+}
+
+function payrollShiftDragEnd(e) {
+  if (e) e.stopPropagation();
+  document.querySelectorAll(".shift-card.is-dragging").forEach(c => c.classList.remove("is-dragging"));
+  document.querySelectorAll(".schedule-empgrid-cell.is-drop-target").forEach(c => c.classList.remove("is-drop-target"));
+  _payrollShiftDragEmpId = null;
+  _payrollShiftDragFromDk = null;
+}
+
+async function payrollShiftDrop(e, targetEmpId, targetDk) {
+  e.preventDefault();
+  e.stopPropagation();
+  const empId = _payrollShiftDragEmpId;
+  const fromDk = _payrollShiftDragFromDk;
+  payrollShiftDragEnd();
+  if (!empId || !fromDk || fromDk === targetDk) return;
+  // On limite au même employé
+  if (empId !== targetEmpId) {
+    toast("On ne peut déplacer un shift que vers un autre jour du même employé.", "warning", 4000);
+    return;
+  }
+  const src = getActualShift(empId, fromDk);
+  if (!src || !src.start || !src.end) return;
+  const tgt = (payrollWeekData?.actualShifts || {})[empId]?.[targetDk];
+  if (tgt && tgt.start && tgt.end) {
+    if (!confirm(`Un shift existe déjà : ${tgt.start} → ${tgt.end}. Le remplacer par ${src.start} → ${src.end} ?`)) return;
+  }
+  await updateActualShift(empId, targetDk, "start", src.start);
+  await updateActualShift(empId, targetDk, "end", src.end);
+  await clearActualShift(empId, fromDk);
+  toast(`Shift déplacé vers le ${targetDk.slice(8,10)}/${targetDk.slice(5,7)}`, "success", 2500);
 }

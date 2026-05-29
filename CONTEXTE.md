@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.26.0** — **Simulation paie : refonte en empgrid (même look que Horaires)**. La table sim utilise désormais la même grille **employés × jours avec cartes shift** que la page Employés & Horaires. Cellule employé éditable (nom + taux + section + badge FICTIF), cartes shift compactes avec drag & drop entre jours, carte « Congé » pour les jours libres, totaux multi-lignes à droite (Hrs / Sal / Pourb / Total + bouton supprimer en hover). Modal `openSimShiftModal` pour ajouter/modifier/supprimer un shift. Panneau totaux dessous avec mêmes colonnes alignées (Heures, Coût, Ventes prévues).
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.27.0** — **Salaires & Pourboires : refonte en empgrid avec cartes shift**. La table « ledger pro » (v3.23.0) est remplacée par la même grille **employés × jours avec cartes** que Horaires et Simulation. Cellule employé éditable avec drag handle + nom + badge EXTRA + select section override + taux + trash pour les extras. Cards shift compactes avec heures pointées + pourboire du jour en vert. Cartes « Congé » pour les jours sans pointage (avec hint « 09:00 → 17:00 · Pas pointé » si l'horaire était planifié). Modal `openPayrollShiftModal` pour éditer (selects 15 min + supprimer). Drag & drop des cards entre jours. Cellule totaux multi-lignes Hrs (réel/planif) / Écart / Sal / Pourb / Total. Panneau totaux résumé dessous.
+>
+> ⚠️ **29 mai 2026 — v3.26.0** — **Simulation paie : refonte en empgrid (même look que Horaires)**. La table sim utilise désormais la même grille **employés × jours avec cartes shift** que la page Employés & Horaires. Cellule employé éditable (nom + taux + section + badge FICTIF), cartes shift compactes avec drag & drop entre jours, carte « Congé » pour les jours libres, totaux multi-lignes à droite (Hrs / Sal / Pourb / Total + bouton supprimer en hover). Modal `openSimShiftModal` pour ajouter/modifier/supprimer un shift. Panneau totaux dessous avec mêmes colonnes alignées (Heures, Coût, Ventes prévues).
 >
 > ⚠️ **29 mai 2026 — v3.25.0** — **Horaires : carte « Congé » + export PNG public pour les employés**. (1) Les cellules vides affichent désormais une mini-carte « Congé » (dashed, gris discret) au lieu du bouton + isolé. Toute la cellule est cliquable pour ouvrir le modal d'ajout — l'effet hover passe le dashed en solid jaune. (2) Nouveau bouton « PNG pour équipe » dans la toolbar qui télécharge une image PNG de l'horaire de la semaine — **sans aucune donnée financière** (taux horaires, coûts, totaux $ retirés). En-tête Bochica + tricolore + entrées/sorties uniquement. Idéal pour partager via SMS ou affichage en cuisine sans révéler les salaires. Utilise html2canvas via CDN.
 >
@@ -503,6 +505,41 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Salaires & Pourboires : refonte en empgrid (v3.27.0) 💰📅
+
+Demande utilisateur : « J'aimerais aussi avoir un visuel semblable pour la section salaire et pourboires, je le trouve plus beau comme ça ». Le style « ledger pro » (v3.23.0) est remplacé par la même grille empgrid que Horaires (v3.24.1) et Simulation (v3.26.0).
+
+**Structure**
+- **Grille principale** : `200px (employé) + N × minmax(110px, 1fr) (jours) + 140px (totaux)` avec `gap:1px` qui dessine les séparations grises
+- **Header** : « Employé · Section » + labels jours avec compteur `X pers · service HH–HH` + « Totaux »
+- **Cellule employé éditable** :
+  - Drag handle ⋮⋮ (réordonnement des employés) + nom + badge **EXTRA** + bouton trash (extras non-locked)
+  - Select **section override** (Auto / Cuisine / Service / Excluded) avec couleur sémantique
+  - Taux horaire à droite (« 22,00 $/h » ou « 22,00 $/h · FIXE »)
+- **Cellules-jour** :
+  - **Card shift** si pointé : start → end + meta (heures + pourboire vert si applicable)
+  - **Card « Congé »** sinon — affiche le planifié (« 09:00 → 17:00 ») + « Pas pointé » si l'horaire était prévu, sinon « Congé · + Saisir »
+  - Barre ambrée 3px à gauche si shift modifié (`is-modified`)
+  - Fond bleuté très léger si l'employé était prévu mais n'a pas pointé (`is-scheduled-empty`)
+- **Cellule totaux** (140px) multi-lignes :
+  - Hrs : 15.5h<small>/15h</small>
+  - Écart : +0.5h (vert) / -2h (rouge) / =
+  - Sal : 387,50 $
+  - Pourb : 80,35 $ (vert)
+  - **Total : 467,85 $** (bold)
+
+**Modal d'édition** : `openPayrollShiftModal(empId, dk)` avec employé + date longue + rappel du planifié, 2 selects 15 min, boutons Supprimer + Enregistrer. Désactivée si semaine verrouillée.
+
+**Drag & drop des cards** : handlers `payrollShiftDragStart/Over/Leave/End/Drop` (séparés des `payrollRowDrag*` qui gèrent le réordonnement vertical des employés). Permet de déplacer un shift d'un jour à l'autre pour le **même employé**. Confirmation si la cible a déjà un shift.
+
+**Panneau totaux dessous** : ligne résumée (« N employés · Xh pointées / Yh planifiées · Écart +1.5h · Salaires 3 250 $ · Pourboires 280 $ ») + grande cellule Total à droite. Mêmes grid-template-columns que la grille principale pour alignement parfait.
+
+**Implémentation**
+- **JS** (`pages-payroll.js`) : `renderSalaires` — section « tableau heures réelles » remplacée (~150 lignes → ~140 lignes). Ajout de `openPayrollShiftModal`, `savePayrollShiftFromModal`, `deletePayrollShift`, et 5 handlers drag & drop (~120 lignes total).
+- **CSS (~140 lignes)** : `.schedule-empgrid.payroll-empgrid` override grid-template-columns, `.payroll-empgrid-emp` (avec drag handle + section select), `.payroll-empgrid-total` (multi-lignes Hrs/Écart/Sal/Pourb/Total), `.shift-card-tip` (vert), états `is-modified` (barre ambrée) + `is-scheduled-empty` (fond bleuté), `is-no-hours` (opacity 0.65).
+
+**CACHE_VERSION** → `v3.27.0`
 
 ### 29 mai 2026 — Simulation paie : refonte en empgrid (v3.26.0) 🧮📅
 

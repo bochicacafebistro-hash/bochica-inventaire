@@ -9433,3 +9433,205 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
     grid-template-columns:180px repeat(var(--n-days, 5), minmax(95px, 1fr)) 110px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v3.27.0 — Adaptations empgrid pour Salaires & Pourboires
+   ═══════════════════════════════════════════════════════════════
+   Cellule employé avec drag handle + nom + EXTRA + section override
+   + rate. Cellule totaux multi-lignes Hrs/Écart/Sal/Pourb/Total.
+   ─────────────────────────────────────────────────────────────── */
+
+.schedule-empgrid.payroll-empgrid{
+  grid-template-columns:200px repeat(var(--n-days, 5), minmax(110px, 1fr)) 140px;
+}
+.schedule-totals-panel.payroll-totals-panel .schedule-totals-grid{
+  grid-template-columns:200px repeat(var(--n-days, 5), minmax(110px, 1fr)) 140px;
+}
+
+/* Cellule employé Salaires */
+.payroll-empgrid-emp{
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:8px 10px;
+  gap:5px;
+}
+.payroll-empgrid-emp-row{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  min-width:0;
+}
+.payroll-empgrid-emp-row .schedule-empgrid-emp-name{
+  flex:1;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  min-width:0;
+}
+.payroll-empgrid-emp-row .payroll-drag-handle{
+  flex-shrink:0;
+  color:var(--text3);
+  cursor:grab;
+}
+.payroll-empgrid-emp-row .payroll-drag-handle:active{cursor:grabbing}
+.payroll-empgrid-emp-meta{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  flex-wrap:wrap;
+}
+.payroll-empgrid-rate{
+  font-family:var(--font-body);
+  font-size:10px;
+  font-weight:600;
+  color:var(--text3);
+  font-variant-numeric:tabular-nums;
+}
+.payroll-empgrid-emp .payroll-manual-badge{
+  font-size:9px;
+  padding:1px 4px;
+}
+.payroll-empgrid-emp .payroll-manual-del{
+  width:18px;
+  height:18px;
+  background:transparent;
+  border:none;
+  color:var(--text3);
+  border-radius:50%;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  transition:all var(--transition-base);
+}
+.payroll-empgrid-emp .payroll-manual-del:hover{
+  background:rgba(217,83,79,.15);
+  color:#a23a36;
+}
+
+/* Override le select section dans la nouvelle cellule */
+.payroll-empgrid-emp-meta .payroll-section-select{
+  flex:1;
+  font-size:10px;
+  min-width:0;
+  max-width:none;
+}
+
+/* Carte shift avec tip — adaptation pour Salaires */
+.shift-card.shift-card--compact .shift-card-tip{
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:700;
+  color:#1f7a1f;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:.02em;
+}
+[data-theme="dark"] .shift-card.shift-card--compact .shift-card-tip{
+  color:#7fd86b;
+}
+
+/* Cellule modifiée : barre ambrée à gauche (comme avant) */
+.schedule-empgrid-cell.is-modified{
+  position:relative;
+}
+.schedule-empgrid-cell.is-modified::before{
+  content:"";
+  position:absolute;
+  top:4px; left:0;
+  bottom:4px;
+  width:3px;
+  background:var(--accent);
+  border-radius:0 var(--radius-sm) var(--radius-sm) 0;
+  z-index:2;
+}
+
+/* Cellule "planifié sans pointage" : fond bleuté très léger */
+.schedule-empgrid-cell.schedule-empgrid-cell--empty.is-scheduled-empty{
+  background:rgba(74,144,226,.04);
+}
+[data-theme="dark"] .schedule-empgrid-cell.schedule-empgrid-cell--empty.is-scheduled-empty{
+  background:rgba(74,144,226,.08);
+}
+
+/* Cellule totaux multi-lignes (droite) */
+.payroll-empgrid-total{
+  padding:6px 8px;
+  gap:2px;
+  align-items:stretch;
+}
+.payroll-empgrid-total-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:6px;
+  font-family:var(--font-body);
+  font-size:11px;
+  font-variant-numeric:tabular-nums;
+  line-height:1.2;
+}
+.payroll-empgrid-total-lbl{
+  color:var(--text3);
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  font-weight:500;
+}
+.payroll-empgrid-total-val{
+  font-weight:600;
+  color:var(--text);
+}
+.payroll-empgrid-total-val small{
+  color:var(--text3);
+  font-size:9px;
+  margin-left:2px;
+}
+.payroll-empgrid-total-val.is-positive{color:#1f7a1f}
+.payroll-empgrid-total-val.is-negative{color:#b32820}
+.payroll-empgrid-total-val--tip{color:#1f7a1f}
+.payroll-empgrid-total-row--final{
+  margin-top:3px;
+  padding-top:3px;
+  border-top:0.5px solid var(--border);
+}
+.payroll-empgrid-total-val--final{
+  font-size:14px;
+  font-weight:900;
+  color:var(--text);
+}
+
+[data-theme="dark"] .payroll-empgrid-total-val--tip,
+[data-theme="dark"] .payroll-empgrid-total-val.is-positive{color:#7fd86b}
+[data-theme="dark"] .payroll-empgrid-total-val.is-negative{color:#ff7a72}
+
+/* Ligne EXTRA : fond ambré léger sur l'employé */
+.schedule-empgrid-row.payroll-empgrid-row.is-manual-emp .payroll-empgrid-emp{
+  background:linear-gradient(90deg, rgba(247,179,44,.08), transparent 60%) !important;
+}
+[data-theme="dark"] .schedule-empgrid-row.payroll-empgrid-row.is-manual-emp .payroll-empgrid-emp{
+  background:linear-gradient(90deg, rgba(247,179,44,.14), transparent 60%) !important;
+}
+
+/* Lignes sans pointage : opacité réduite */
+.schedule-empgrid-row.payroll-empgrid-row.is-no-hours{
+  opacity:.65;
+}
+.schedule-empgrid-row.payroll-empgrid-row.is-no-hours:hover{
+  opacity:1;
+}
+
+/* Panneau totaux : ligne résumée full-width */
+.schedule-totals-panel.payroll-totals-panel .schedule-totals-val--summary{
+  background:var(--surface);
+  font-size:12px;
+  font-weight:600;
+  padding:10px 12px;
+}
+
+/* Mobile */
+@media (max-width:900px){
+  .schedule-empgrid.payroll-empgrid,
+  .schedule-totals-panel.payroll-totals-panel .schedule-totals-grid{
+    grid-template-columns:170px repeat(var(--n-days, 5), minmax(95px, 1fr)) 110px;
+  }
+}
