@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.21.0** — **Salaires : PDF bi-mensuel (2 semaines) + retrait label « (saisie libre) »**. Nouveau bouton « PDF 2 sem » dans la toolbar qui génère un rapport combinant la semaine courante + la précédente — adapté à une paie aux 2 semaines, plus besoin de produire 2 rapports séparés. KPI sur 2 sem, sous-totaux par sem, tableau récap par employé (1 ligne avec colonnes S1/S2/Total pour heures, salaire, pourboires). Bouton « Exporter PDF » renommé « PDF 1 sem » pour la clarté. Par ailleurs, le suffixe « (saisie libre) » qui apparaissait dans les dropdowns d'heures (pour les valeurs hors grille 15 min comme les punchs à la minute) est retiré — la valeur exacte reste affichée sans le label parasite.
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.22.0** — **Salaires : protection du bouton « Annuler mes saisies »**. Avant : un seul clic de confirmation pouvait effacer toutes les heures pointées de la semaine — risque d'accident. Maintenant : modale dédiée avec champ texte où l'admin doit taper exactement **EFFACER** pour activer le bouton de suppression. Bouton désactivé sinon. Bordure et fond rouge dans le bandeau d'avertissement. Le bouton final affiche aussi le numéro de la semaine concernée (« Effacer la semaine 22 ») pour éviter d'effacer la mauvaise.
+>
+> ⚠️ **29 mai 2026 — v3.21.0** — **Salaires : PDF bi-mensuel (2 semaines) + retrait label « (saisie libre) »**. Nouveau bouton « PDF 2 sem » dans la toolbar qui génère un rapport combinant la semaine courante + la précédente — adapté à une paie aux 2 semaines, plus besoin de produire 2 rapports séparés. KPI sur 2 sem, sous-totaux par sem, tableau récap par employé (1 ligne avec colonnes S1/S2/Total pour heures, salaire, pourboires). Bouton « Exporter PDF » renommé « PDF 1 sem » pour la clarté. Par ailleurs, le suffixe « (saisie libre) » qui apparaissait dans les dropdowns d'heures (pour les valeurs hors grille 15 min comme les punchs à la minute) est retiré — la valeur exacte reste affichée sans le label parasite.
 >
 > ⚠️ **29 mai 2026 — v3.20.0** — **Pointage : compaction 12 pouces + 2 boutons toujours visibles + badge timezone**. La page débordait sur écran 12" (clavier coupé). Toutes les tailles réduites (keypad 96→64 px, titre 42→26 px, horloge 32→22 px, bouton min-height 200→130 px). L'écran employé affiche désormais **2 boutons côte à côte** (ENTRÉE vert + SORTIE bleu) toujours présents, avec une barre d'info au-dessus indiquant ce qui a déjà été pointé aujourd'hui. Badge timezone visible sous l'horloge (`Fuseau · jour système : 2026-05-29`) pour validation rapide. Action `override-sortie` retirée (devenue inutile avec les 2 boutons).
 >
@@ -489,6 +491,29 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Salaires : protection du bouton « Annuler mes saisies » (v3.22.0) 🛡️🗑️
+
+Suite à un retour utilisateur (« Le bouton Annuler mes heures saisies peut être dangereux »). Refonte de la confirmation pour ajouter une friction suffisante avant l'action destructive.
+
+**Avant** : `openConfirm()` standard avec deux boutons « Annuler / Continuer ». Un clic accidentel sur Continuer effaçait tout — y compris les pointages des employés.
+
+**Après** : modale custom avec :
+- **Titre rouge** « ⚠ Effacer toutes les saisies — Semaine N » (affiche le numéro de semaine pour éviter la confusion)
+- **Bandeau d'avertissement rouge** avec mention « Action irréversible » + détail de ce qui sera effacé (« X cellules d'heures pointées/saisies + Y jours de pourboires »)
+- **Input texte** où l'admin doit taper exactement **EFFACER** (insensible à la casse, validé via `toUpperCase()`)
+- **Bouton de confirmation** désactivé tant que la phrase n'est pas correcte, devient rouge actif sinon
+- Label du bouton : « 🗑 Effacer la semaine N » (rappel du numéro de semaine)
+- `autocapitalize="characters"` sur l'input pour faciliter sur mobile/tablette
+
+**Implémentation**
+- Remplacement de `openConfirm` par `showModal` dans `resetActualFromPlanned()`.
+- Validation côté client uniquement (`oninput` qui toggle `disabled` du bouton).
+- Pattern utilisé par GitHub/Vercel pour les actions destructives. Pas de mot de passe à gérer ni à partager.
+
+**Détail bonus** : `doResetActualFromPlanned()` toast simplifié (avant : « heures repartent du planifié » — obsolète depuis v3.17.3 où l'auto-import a été retiré).
+
+**CACHE_VERSION** → `v3.22.0`
 
 ### 29 mai 2026 — Salaires : PDF bi-mensuel + fix « (saisie libre) » (v3.21.0) 📅📄
 

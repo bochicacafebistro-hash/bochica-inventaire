@@ -1157,38 +1157,72 @@ function resetActualFromPlanned() {
 
   if (totalCount === 0) {
     toast(
-      "Aucune saisie à effacer. Les heures que tu vois viennent du planning planifié (page Employés & Horaires) — elles s'importent automatiquement.",
+      "Aucune saisie à effacer pour cette semaine.",
       "info",
-      6000
+      4000
     );
     return;
   }
 
   // Détail à afficher dans la confirmation
   const parts = [];
-  if (shiftOverrides > 0) parts.push(`<strong>${shiftOverrides}</strong> ajustement${shiftOverrides > 1 ? "s" : ""} d'horaire`);
-  if (tipDaysCount > 0) parts.push(`<strong>${tipDaysCount}</strong> jour${tipDaysCount > 1 ? "s" : ""} de pourboires saisis`);
+  if (shiftOverrides > 0) parts.push(`<strong>${shiftOverrides}</strong> cellule${shiftOverrides > 1 ? "s" : ""} d'heures pointées/saisies`);
+  if (tipDaysCount > 0) parts.push(`<strong>${tipDaysCount}</strong> jour${tipDaysCount > 1 ? "s" : ""} de pourboires`);
   const detailLine = parts.join(" + ");
 
-  openConfirm(
-    "Annuler toutes les saisies de la semaine ?",
-    `Cela va effacer ${detailLine} pour cette semaine.<br><br>
-     ✓ Les heures repartiront automatiquement du <strong>planning planifié</strong> (Employés & Horaires).<br>
-     ✓ Les pourboires journaliers seront <strong>remis à zéro</strong>.<br>
-     ✓ Le <strong>planning planifié reste intact</strong> — il n'est jamais modifié depuis cette page.<br><br>
-     Continuer ?`,
-    doResetActualFromPlanned,
-    true
-  );
+  // v3.22.0 : modale custom avec champ de confirmation à taper pour éviter
+  // les clics accidentels sur une action destructive irréversible.
+  const weekStart = getWeekStart(payrollWeekOffset);
+  const weekNum = getISOWeek(new Date(weekStart.getTime() + 3 * 86400000));
+
+  showModal(`<div class="modal" style="max-width:520px">
+    <div class="modal-header">
+      <h3 style="color:#a23a36">${icon("alert", 18)} Effacer toutes les saisies — Semaine ${weekNum}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
+    </div>
+    <div style="background:rgba(217,83,79,.08);border:1px solid rgba(217,83,79,.3);border-radius:var(--radius-md);padding:var(--sp-3);margin-bottom:var(--sp-3)">
+      <strong style="color:#a23a36;font-size:14px">⚠ Action irréversible</strong>
+      <p style="margin:8px 0 0;font-size:13px;line-height:1.5;color:var(--text2)">
+        Cela va effacer définitivement ${detailLine} pour la <strong>semaine ${weekNum}</strong>.
+        Les heures de pointage déjà enregistrées par les employés seront <strong>perdues</strong>.
+      </p>
+    </div>
+    <p style="font-size:13px;line-height:1.5;color:var(--text2);margin:0 0 8px">
+      Pour confirmer, tape <strong style="font-family:var(--font-mono);background:var(--surface2);padding:2px 6px;border-radius:4px;color:var(--text)">EFFACER</strong> dans le champ ci-dessous :
+    </p>
+    <label style="display:block;margin-bottom:var(--sp-2)">
+      <input
+        id="confirm-reset-input"
+        type="text"
+        placeholder="Tape EFFACER pour activer le bouton"
+        autocomplete="off"
+        autocapitalize="characters"
+        oninput="document.getElementById('confirm-reset-btn').disabled = this.value.trim().toUpperCase() !== 'EFFACER'"
+        style="width:100%;font-family:var(--font-mono);font-size:15px;font-weight:700;letter-spacing:.05em;text-transform:uppercase"
+        autofocus
+      />
+    </label>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button
+        id="confirm-reset-btn"
+        class="btn-danger"
+        onclick="doResetActualFromPlanned();closeModal()"
+        disabled
+        style="background:#d9534f;color:#fff;border:none">
+        ${icon("trash", 14)} Effacer la semaine ${weekNum}
+      </button>
+    </div>
+  </div>`);
 }
 
 async function doResetActualFromPlanned() {
   try {
     const ws = getWeekStart(payrollWeekOffset);
     const wid = payrollWeekId(ws);
-    // Effacer entièrement actualShifts ET tipsByDay
-    // → les heures repassent sur le planifié via getActualShift (auto-import)
-    // → les pourboires journaliers sont supprimés
+    // Effacer entièrement actualShifts ET tipsByDay (v3.17.3 : plus d'auto-
+    // import du planifié, donc les cellules redeviennent vides — visible
+    // uniquement le hint gris sous chaque cellule pour les employés prévus).
     await db.collection("payroll").doc(wid).set({
       weekId: wid,
       weekStart: dayKey(ws),
@@ -1198,7 +1232,7 @@ async function doResetActualFromPlanned() {
       totalTips: firebase.firestore.FieldValue.delete(),
       updatedAt: Date.now()
     }, { merge: true });
-    toast("Saisies effacées — heures repartent du planifié, pourboires remis à zéro.", "success", 4000);
+    toast("Saisies effacées pour la semaine.", "success", 4000);
   } catch (err) {
     console.error("doResetActualFromPlanned failed:", err);
     toast("Erreur : " + (err.message || err.code || err), "error", 5000);
