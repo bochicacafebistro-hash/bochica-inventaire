@@ -8434,3 +8434,158 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   }
   .payroll-alert-emp{ min-width:0 }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v3.23.0 — Style ledger pro pour la table Salaires & Pourboires
+   ═══════════════════════════════════════════════════════════════
+   Refonte visuelle : on retire l'alternance jaune/bleu vive qui était
+   trop chargée et on passe à un look « tableur comptable » sobre :
+   zébré gris très léger, pourboires en vert subtil, employés sans
+   pointage fanés en gris pâle, bordures fines.
+   Scope strict à .payroll-table — la page Employés & Horaires garde
+   son style coloré actuel.
+   ─────────────────────────────────────────────────────────────── */
+
+/* 1. Reset des fonds colorés sur les lignes (override des règles
+      .schedule-emp-row .schedule-td--* qui appliquaient rgba(--emp-rgb)) */
+.payroll-table .schedule-emp-row .schedule-td--emp,
+.payroll-table .schedule-emp-row .schedule-td--summary,
+.payroll-table .schedule-emp-row .schedule-td--cell,
+.payroll-table .schedule-emp-row .schedule-td--cell.is-filled,
+.payroll-table .schedule-emp-row .schedule-td--summary.schedule-td--total{
+  background:transparent !important;
+}
+.payroll-table .schedule-emp-row:hover .schedule-td--emp,
+.payroll-table .schedule-emp-row:hover .schedule-td--summary,
+.payroll-table .schedule-emp-row:hover .schedule-td--cell,
+.payroll-table .schedule-emp-row:hover .schedule-td--summary.schedule-td--total{
+  background:rgba(14,13,12,.04) !important; /* hover gris très léger */
+}
+[data-theme="dark"] .payroll-table .schedule-emp-row:hover .schedule-td--emp,
+[data-theme="dark"] .payroll-table .schedule-emp-row:hover .schedule-td--summary,
+[data-theme="dark"] .payroll-table .schedule-emp-row:hover .schedule-td--cell,
+[data-theme="dark"] .payroll-table .schedule-emp-row:hover .schedule-td--summary.schedule-td--total{
+  background:rgba(245,241,232,.06) !important;
+}
+
+/* 2. Zébré gris subtil (1 ligne sur 2) — pure CSS via nth-child */
+.payroll-table tbody tr.schedule-emp-row.is-even td{
+  background:rgba(14,13,12,.025) !important;
+}
+[data-theme="dark"] .payroll-table tbody tr.schedule-emp-row.is-even td{
+  background:rgba(245,241,232,.04) !important;
+}
+/* Le hover prend le dessus sur le zébré */
+.payroll-table tbody tr.schedule-emp-row.is-even:hover td{
+  background:rgba(14,13,12,.06) !important;
+}
+[data-theme="dark"] .payroll-table tbody tr.schedule-emp-row.is-even:hover td{
+  background:rgba(245,241,232,.08) !important;
+}
+
+/* 3. Total à payer : fond accent jaune retiré (style sobre), juste bold */
+.payroll-table .schedule-td--total{
+  background:transparent !important;
+  color:var(--text) !important;
+  font-weight:900 !important;
+  font-size:17px !important;
+}
+
+/* 4. Lignes des employés sans pointage : fanées */
+.payroll-table .schedule-emp-row.is-no-hours td{
+  opacity:.55;
+}
+.payroll-table .schedule-emp-row.is-no-hours .schedule-emp-name{
+  color:var(--text2);
+}
+.payroll-table .schedule-emp-row.is-no-hours:hover td{
+  opacity:1; /* Plein opacité au hover pour la lisibilité à l'édition */
+}
+
+/* 5. Select section override : minimaliste (text-like quand auto, coloré
+      seulement quand un override est actif) */
+.payroll-table .payroll-section-select.is-kitchen:not(.is-overridden),
+.payroll-table .payroll-section-select.is-service:not(.is-overridden){
+  background-color:transparent !important;
+  color:var(--text3) !important;
+  border-color:transparent !important;
+  font-weight:500;
+}
+.payroll-table .payroll-section-select.is-kitchen:not(.is-overridden):hover,
+.payroll-table .payroll-section-select.is-service:not(.is-overridden):hover{
+  background-color:var(--surface) !important;
+  border-color:var(--border) !important;
+  color:var(--text) !important;
+}
+/* Les overrides restent vifs (c'est le but, signaler la dérogation) */
+
+/* 6. Bordures plus fines + couleurs neutres entre lignes */
+.payroll-table tbody tr.schedule-emp-row td{
+  border-bottom:0.5px solid rgba(14,13,12,.08) !important;
+}
+[data-theme="dark"] .payroll-table tbody tr.schedule-emp-row td{
+  border-bottom:0.5px solid rgba(245,241,232,.08) !important;
+}
+
+/* 7. Modified cell : on garde la barre ambrée à gauche mais on enlève
+      le fond ambré (gardait du bruit) */
+.payroll-table .payroll-td-cell.is-modified{
+  background:transparent !important;
+}
+
+/* 8. Bordures verticales entre colonnes : retirer celles qui marquaient
+      les separations colorées des shifts (rendu plus dépouillé) */
+.payroll-table .schedule-td--day-entry,
+.payroll-table .schedule-td--day-exit{
+  border-left:none !important;
+  border-right:none !important;
+}
+
+/* 9. Header de table : gris uniforme, pas accentué */
+.payroll-table thead tr{
+  background:rgba(14,13,12,.05);
+}
+[data-theme="dark"] .payroll-table thead tr{
+  background:rgba(245,241,232,.06);
+}
+.payroll-table thead th{
+  background:transparent !important;
+  color:var(--text2) !important;
+  font-weight:500 !important;
+  font-size:10px !important;
+  text-transform:uppercase !important;
+  letter-spacing:.06em !important;
+}
+.payroll-table thead .schedule-day-name{
+  font-family:var(--font-body);
+  font-size:11px;
+  color:var(--text2);
+  font-weight:600;
+}
+.payroll-table thead .schedule-day-date{
+  font-family:var(--font-body);
+  font-size:10px;
+  color:var(--text3);
+}
+.payroll-table thead .payroll-th-service{
+  font-size:9px;
+  color:var(--text3);
+}
+
+/* 10. Tfoot : ligne totaux plus marquée pour fermer la table */
+.payroll-table tfoot tr.schedule-tfoot-row td{
+  background:rgba(14,13,12,.05) !important;
+  border-top:1px solid rgba(14,13,12,.2) !important;
+}
+[data-theme="dark"] .payroll-table tfoot tr.schedule-tfoot-row td{
+  background:rgba(245,241,232,.07) !important;
+  border-top:1px solid rgba(245,241,232,.18) !important;
+}
+
+/* 11. Ligne extra (EXTRA) : juste un fond légèrement plus chaud */
+.payroll-table .schedule-emp-row.is-manual-emp .schedule-td--emp{
+  background:linear-gradient(90deg, rgba(247,179,44,.06), transparent 60%) !important;
+}
+[data-theme="dark"] .payroll-table .schedule-emp-row.is-manual-emp .schedule-td--emp{
+  background:linear-gradient(90deg, rgba(247,179,44,.10), transparent 60%) !important;
+}

@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.22.0** — **Salaires : protection du bouton « Annuler mes saisies »**. Avant : un seul clic de confirmation pouvait effacer toutes les heures pointées de la semaine — risque d'accident. Maintenant : modale dédiée avec champ texte où l'admin doit taper exactement **EFFACER** pour activer le bouton de suppression. Bouton désactivé sinon. Bordure et fond rouge dans le bandeau d'avertissement. Le bouton final affiche aussi le numéro de la semaine concernée (« Effacer la semaine 22 ») pour éviter d'effacer la mauvaise.
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.23.0** — **Salaires & Pourboires : refonte visuelle « ledger pro »**. L'alternance jaune Bochica / bleu Colombie vive est retirée — le tableau passe à un style **tableur comptable sobre** : zébré gris très léger (1 ligne sur 2), pourboires en vert subtil, employés sans pointage en gris pâle (faded), bordures fines neutres, header gris uniforme, total à payer en bold sans fond accent. Le select de section devient text-only en mode « Auto », ne se colore que quand un override est actif. Scope strict à `.payroll-table` — la page Employés & Horaires garde son alternance colorée. Maquettes proposées dans le chat, option 3 sélectionnée par l'utilisateur.
+>
+> ⚠️ **29 mai 2026 — v3.22.0** — **Salaires : protection du bouton « Annuler mes saisies »**. Avant : un seul clic de confirmation pouvait effacer toutes les heures pointées de la semaine — risque d'accident. Maintenant : modale dédiée avec champ texte où l'admin doit taper exactement **EFFACER** pour activer le bouton de suppression. Bouton désactivé sinon. Bordure et fond rouge dans le bandeau d'avertissement. Le bouton final affiche aussi le numéro de la semaine concernée (« Effacer la semaine 22 ») pour éviter d'effacer la mauvaise.
 >
 > ⚠️ **29 mai 2026 — v3.21.0** — **Salaires : PDF bi-mensuel (2 semaines) + retrait label « (saisie libre) »**. Nouveau bouton « PDF 2 sem » dans la toolbar qui génère un rapport combinant la semaine courante + la précédente — adapté à une paie aux 2 semaines, plus besoin de produire 2 rapports séparés. KPI sur 2 sem, sous-totaux par sem, tableau récap par employé (1 ligne avec colonnes S1/S2/Total pour heures, salaire, pourboires). Bouton « Exporter PDF » renommé « PDF 1 sem » pour la clarté. Par ailleurs, le suffixe « (saisie libre) » qui apparaissait dans les dropdowns d'heures (pour les valeurs hors grille 15 min comme les punchs à la minute) est retiré — la valeur exacte reste affichée sans le label parasite.
 >
@@ -491,6 +493,30 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Salaires : refonte ledger pro (v3.23.0) 📋🎨
+
+Suite à un retour utilisateur (« Je n'aime pas tant le visuel de ce tableau »), 3 maquettes ont été proposées dans le chat. L'utilisateur a choisi l'**option 3 « tableur comptable sobre »**.
+
+**Avant (v3.16.1 → v3.22.x)** : alternance bicolore vive jaune Bochica + bleu Colombie sur les lignes via CSS variable `--emp-rgb` inline. Couleurs intenses (opacité 0.45 puis 0.60 au hover), section badge coloré, total à payer avec fond accent jaune. Visuellement chargé sur 15+ lignes.
+
+**Après (v3.23.0)** : style ledger comptable sobre :
+- **Zébré gris très léger** (1 ligne sur 2, opacité 0.025 light / 0.04 dark) — pure CSS via `.payroll-table tbody tr.is-even td`, plus de CSS variable inline
+- **Lignes blanches/neutres** pour les autres — hover gris léger
+- **Pourboires en vert subtil** (#1f7a1f light / #7fd86b dark, déjà en place depuis v3.16.2)
+- **Total à payer** : font-weight 900, taille 17px, plus de fond accent jaune (juste les chiffres bold)
+- **Employés sans pointage** (`is-no-hours` class quand `totalHours === 0`) : opacité 0.55 sur toute la ligne, nom en gris secondaire. Hover restaure l'opacité pour permettre l'édition.
+- **Select section override** : devient text-only en mode « Auto » (transparent, gris discret). Ne s'affiche en couleur que quand un override est actif (= dérogation à signaler).
+- **Bordures fines** entre lignes (0.5px subtle), pas de séparateurs verticaux entre cellules
+- **Header** : gris uniforme, font-weight 500, uppercase 10px tracking 0.06em
+- **Tfoot** : fond légèrement plus marqué + border-top 1px pour fermer visuellement la table
+- **Ligne extra (EXTRA)** : juste un gradient ambré très léger sur la cellule employé (au lieu d'un fond plein)
+
+**Implémentation**
+- JS (`renderSalaires`) : retrait de `style="--emp-rgb:...;--emp-color:..."` du `<tr>` (la CSS variable n'est plus utilisée pour le payroll). Ajout d'une classe `is-no-hours` quand l'employé n'a pointé aucune heure.
+- CSS (~90 nouvelles lignes) : tout scopé à `.payroll-table` avec `!important` pour battre les règles globales `.schedule-emp-row .schedule-td--*` qui s'appliquent encore à la page Horaires. La page Employés & Horaires reste **inchangée visuellement** (toujours alternance jaune/bleu vive).
+
+**CACHE_VERSION** → `v3.23.0`
 
 ### 29 mai 2026 — Salaires : protection du bouton « Annuler mes saisies » (v3.22.0) 🛡️🗑️
 

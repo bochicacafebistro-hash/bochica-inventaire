@@ -680,6 +680,12 @@ function renderSalaires() {
           </thead>
           <tbody>
             ${empRows.map((row, rowIdx) => {
+              // v3.23.0 — Style ledger pro : on retire le inline --emp-rgb
+              // (qui imposait l'alternance jaune/bleu vive). Le zébré gris
+              // subtil est désormais géré par CSS pur via tbody tr:nth-child.
+              // La classe is-no-hours fane les lignes des employés qui n'ont
+              // pas pointé du tout (texte gris pâle, opacité réduite).
+              const hasNoHours = !row.totalHours;
               // v3.18.0 — Le badge fixe est remplacé par un select compact
               // permettant à l'admin d'override la section pour cette semaine
               // uniquement. 4 options : Auto / Cuisine / Service / Exclu.
@@ -703,15 +709,12 @@ function renderSalaires() {
               </select>`;
               const gapCls = row.gap > 0.01 ? "is-positive" : row.gap < -0.01 ? "is-negative" : "";
               const gapArrow = row.gap > 0.01 ? "▲" : row.gap < -0.01 ? "▼" : "";
-              // Alternance jaune Bochica / bleu Colombie sur la base du rowIdx
-              // (cohérent avec le tableau Employés & Horaires depuis v3.8.8).
-              // Les règles CSS .schedule-emp-row utilisent --emp-rgb/--emp-color
-              // pour teinter tout le fond de la ligne, donnant un effet zébré
-              // bicolore qui aide à suivre chaque employé horizontalement.
-              const EMP_RGB = ["247,179,44", "74,144,226"]; // jaune Bochica / bleu Colombie
-              const empRgb = EMP_RGB[rowIdx % EMP_RGB.length];
+              // v3.23.0 — Plus d'alternance jaune/bleu vive (style ledger pro).
+              // Le zébré gris subtil vient désormais d'une règle CSS pure
+              // (.payroll-table tbody tr:nth-child(even)) — pas besoin de
+              // CSS variable inline. La classe is-no-hours fane la ligne.
               const toneClass = rowIdx % 2 === 0 ? "is-odd" : "is-even";
-              return `<tr class="schedule-emp-row ${toneClass} ${row.isManual ? "is-manual-emp" : ""}" data-emp-id="${row.emp.id}" style="--emp-rgb:${empRgb};--emp-color:rgb(${empRgb})"
+              return `<tr class="schedule-emp-row ${toneClass} ${row.isManual ? "is-manual-emp" : ""} ${hasNoHours ? "is-no-hours" : ""}" data-emp-id="${row.emp.id}"
                 ${isLocked ? "" : `ondragover="payrollRowDragOver(event,'${row.emp.id}')"
                 ondragleave="payrollRowDragLeave(event)"
                 ondrop="payrollRowDrop(event,'${row.emp.id}')"
