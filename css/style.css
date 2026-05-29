@@ -9696,3 +9696,55 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 @media (prefers-reduced-motion: reduce){
   .shift-card.shift-card--partial::after{ animation:none }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v3.27.2 — Délimitation visuelle des employés dans la grille
+   ═══════════════════════════════════════════════════════════════
+   La cellule totaux à droite (multi-lignes blanches) rendait la
+   séparation entre employés peu visible. Solution : barre colorée
+   en haut de chaque cellule totaux selon la section (cuisine ambré,
+   service bleu, exclu rouge, autre gris) + bordure de séparation
+   plus marquée entre lignes. */
+
+/* Barre colorée en haut de chaque cellule totaux pour marquer le
+   début d'un nouvel employé. La couleur reflète sa section. */
+.payroll-empgrid-total{
+  position:relative;
+  border-top:3px solid var(--text3);
+  padding-top:8px;
+}
+.payroll-empgrid-total.is-kitchen{
+  border-top-color:#BA7517;
+}
+.payroll-empgrid-total.is-service{
+  border-top-color:#378ADD;
+}
+.payroll-empgrid-total.is-excluded{
+  border-top-color:#A32D2D;
+}
+.payroll-empgrid-total.is-other{
+  border-top-color:#888780;
+}
+
+/* Pour la sim aussi (déjà avec barre latérale gauche, on ajoute le top) */
+.sim-empgrid-total{
+  border-top:3px solid var(--text3);
+  padding-top:6px;
+}
+
+/* Renforce aussi la séparation horizontale entre lignes : on rend le
+   gap (qui montre la couleur de fond du parent) un peu plus marqué. */
+.schedule-empgrid.payroll-empgrid,
+.schedule-empgrid.sim-empgrid{
+  background:rgba(14,13,12, 0.18) !important;
+}
+[data-theme="dark"] .schedule-empgrid.payroll-empgrid,
+[data-theme="dark"] .schedule-empgrid.sim-empgrid{
+  background:rgba(245,241,232, 0.18) !important;
+}
+
+/* Pour que la barre colorée du totaux ressorte bien, on supprime
+   la bordure dans le first row (le header n'a pas besoin de la barre) */
+.schedule-empgrid-header .schedule-empgrid-total-head{
+  border-top:none;
+}

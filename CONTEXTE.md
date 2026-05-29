@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.27.1** — **Fix bug : les employés en cours de service apparaissaient comme « Congé »**. Quand un employé pointait son entrée le matin sans avoir encore pointé sa sortie, le nouveau render v3.27.0 le traitait comme un congé (la cellule cherchait `start && end`). Fix : nouveau cas « partiel » qui détecte `start sans end` (ou inverse) et affiche une card spéciale « 09:00 → en cours » avec point vert pulsant et tag « En cours ». L'admin voit immédiatement qui travaille et clique pour saisir la sortie.
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.27.2** — **Délimitation visuelle des employés dans la colonne totaux**. Retour utilisateur : « les cartes dans totaux sont toutes blanches, on ne sait pas où ça finit ». Solution : barre colorée de 3 px en haut de chaque cellule totaux selon la section (ambré cuisine, bleu service, rouge exclu, gris autre) qui marque clairement où commence chaque employé. Aussi appliquée à la sim. Gap entre lignes rendu plus marqué (0.18 alpha au lieu de 0.10) pour mieux délimiter les lignes partout.
+>
+> ⚠️ **29 mai 2026 — v3.27.1** — **Fix bug : les employés en cours de service apparaissaient comme « Congé »**. Quand un employé pointait son entrée le matin sans avoir encore pointé sa sortie, le nouveau render v3.27.0 le traitait comme un congé (la cellule cherchait `start && end`). Fix : nouveau cas « partiel » qui détecte `start sans end` (ou inverse) et affiche une card spéciale « 09:00 → en cours » avec point vert pulsant et tag « En cours ». L'admin voit immédiatement qui travaille et clique pour saisir la sortie.
 >
 > ⚠️ **29 mai 2026 — v3.27.0** — **Salaires & Pourboires : refonte en empgrid avec cartes shift**. La table « ledger pro » (v3.23.0) est remplacée par la même grille **employés × jours avec cartes** que Horaires et Simulation. Cellule employé éditable avec drag handle + nom + badge EXTRA + select section override + taux + trash pour les extras. Cards shift compactes avec heures pointées + pourboire du jour en vert. Cartes « Congé » pour les jours sans pointage (avec hint « 09:00 → 17:00 · Pas pointé » si l'horaire était planifié). Modal `openPayrollShiftModal` pour éditer (selects 15 min + supprimer). Drag & drop des cards entre jours. Cellule totaux multi-lignes Hrs (réel/planif) / Écart / Sal / Pourb / Total. Panneau totaux résumé dessous.
 >
@@ -507,6 +509,29 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Délimitation visuelle des employés dans totaux (v3.27.2) 🎨📐
+
+Retour utilisateur après v3.27.1 : « les cartes dans totaux, celle à la fin de chaque employé, vue que toutes les cartes sont blanches, on ne sait pas exactement où ça finit ».
+
+**Solution**
+- **Barre colorée de 3 px** ajoutée en haut de chaque cellule `.payroll-empgrid-total` selon la section de l'employé :
+  - `is-kitchen` → ambré (#BA7517)
+  - `is-service` → bleu (#378ADD)
+  - `is-excluded` → rouge (#A32D2D)
+  - `is-other` → gris (#888780)
+- La cellule employé à gauche avait déjà un border-left de la même couleur — maintenant les deux extrémités de chaque ligne sont délimitées par la couleur de la section. Tu vois immédiatement « cette ligne va de la barre ambrée à gauche à la barre ambrée à droite ».
+- Même traitement appliqué à `.sim-empgrid-total` pour la cohérence avec la page Simulation.
+
+**Renforcement du séparateur horizontal**
+- Background du grid parent (qui apparaît dans le gap entre lignes) passé de `rgba(14,13,12, 0.10)` (var(--border)) à `rgba(14,13,12, 0.18)` pour mieux délimiter les lignes globalement.
+- Dark mode : `rgba(245,241,232, 0.18)` au lieu de 0.10.
+
+**Implémentation**
+- JS : ajout de `groupClass` (`is-kitchen`/`is-service`/`is-excluded`) sur la cellule `.payroll-empgrid-total` (déjà présent sur `.payroll-empgrid-emp`).
+- CSS (~25 lignes) : border-top 3px avec couleur dynamique selon `.is-*`, override background du grid parent pour gap plus visible, suppression du border-top sur le header pour éviter l'effet double bordure.
+
+**CACHE_VERSION** → `v3.27.2`
 
 ### 29 mai 2026 — Fix : employés en cours invisibles dans Salaires (v3.27.1) 🐞🟢
 

@@ -791,7 +791,7 @@ function renderSalaires() {
               </div>`;
             }).join("")}
             <!-- Cellule totaux (Hrs réel/planif + Écart + Salaire + Pourb + Total) -->
-            <div class="schedule-empgrid-total payroll-empgrid-total">
+            <div class="schedule-empgrid-total payroll-empgrid-total ${groupClass}">
               <div class="payroll-empgrid-total-row">
                 <span class="payroll-empgrid-total-lbl">Hrs</span>
                 <span class="payroll-empgrid-total-val">
