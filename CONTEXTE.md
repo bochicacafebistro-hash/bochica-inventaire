@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.24.1** — **Horaires : grille employés × jours (hybride tableau + cartes)**. Retour d'utilisateur après la v3.24.0 : « je veux garder ce design mais plus style tableau avec la liste de tous les employés dans une colonne à gauche ». Refonte : la vue calendrier par colonnes-jour est remplacée par une **grille tableau** avec employés en lignes à gauche (sticky, avec border-color section), 7 colonnes-jour au centre (chaque cellule = shift card compact OU bouton + Add discret), colonne totaux à droite. Garde la modal d'édition, le drag & drop entre cellules, et la palette de couleurs sections (ambré cuisine / bleu service). Plus efficace pour voir « toute l'équipe » d'un coup et identifier rapidement les jours faibles d'un employé.
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.24.2** — **Horaires : alignement parfait du panneau totaux avec la grille du haut**. Bug visuel après la v3.24.1 : le panneau totaux (Heures/Coût/Ventes prévues/Réelles/Écart) ne s'alignait pas avec les colonnes de la grille empgrid (130px+1fr+90px vs 160px+minmax(110px,1fr)+96px). Fix : panneau totaux utilise exactement les mêmes grid-template-columns que la grille du haut, même padding, même background:var(--border), même border-radius. La rangée day-name redondante en bas (qui dupliquait les labels du header) est retirée. Les colonnes-jour s'alignent maintenant verticalement au pixel près.
+>
+> ⚠️ **29 mai 2026 — v3.24.1** — **Horaires : grille employés × jours (hybride tableau + cartes)**. Retour d'utilisateur après la v3.24.0 : « je veux garder ce design mais plus style tableau avec la liste de tous les employés dans une colonne à gauche ». Refonte : la vue calendrier par colonnes-jour est remplacée par une **grille tableau** avec employés en lignes à gauche (sticky, avec border-color section), 7 colonnes-jour au centre (chaque cellule = shift card compact OU bouton + Add discret), colonne totaux à droite. Garde la modal d'édition, le drag & drop entre cellules, et la palette de couleurs sections (ambré cuisine / bleu service). Plus efficace pour voir « toute l'équipe » d'un coup et identifier rapidement les jours faibles d'un employé.
 >
 > ⚠️ **29 mai 2026 — v3.24.0** — **Employés & Horaires : refonte en vue calendrier hebdomadaire**. La grille employés × jours est remplacée par une **grille de colonnes-jour**. Chaque jour devient une colonne avec ses cartes shift triées par heure de début (couleur de la barre latérale selon section : ambré cuisine / bleu service). Header de colonne avec compteurs « X pers · Yh ». Bouton « + Ajouter » en bas pour créer un shift. Clic sur une carte → modal d'édition. Glisser une carte vers un autre jour → déplace le shift (avec confirmation si la cible a déjà un shift de cet employé). Panneau totaux compact sous le calendrier (heures, coût, ventes prévues, ventes réelles, écart) avec labels jour en bas. Garde le coverage chart et les team cards inchangés. Maquettes proposées dans le chat, option B sélectionnée.
 >
@@ -497,6 +499,25 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Horaires : alignement panneau totaux ↔ grille (v3.24.2) 📐
+
+Bug visuel signalé par l'utilisateur après la v3.24.1 : « le tableau en haut n'est pas bien aligné avec celui en bas ». Capture d'écran montrant que la grille empgrid (avec employés à gauche + jours + totaux) ne s'alignait pas verticalement avec le panneau totaux en dessous.
+
+**Cause**
+- Empgrid utilisait `grid-template-columns: 160px repeat(N, minmax(110px, 1fr)) 96px`
+- Totals utilisait `grid-template-columns: 130px repeat(N, 1fr) 90px`
+- Le `.card` parent du totals ajoutait padding `var(--sp-3) var(--sp-4)` qui décalait encore
+- Mobile media query avait aussi des largeurs différentes
+
+**Fix**
+- **`.schedule-totals-panel`** : `padding:0 !important`, mêmes `background:var(--border)`, `border:0.5px solid var(--border)`, `border-radius:var(--radius-md)` que `.schedule-empgrid` (override `.card` aggressif)
+- **`.schedule-totals-grid`** : `grid-template-columns:160px repeat(var(--n-days, 5), minmax(110px, 1fr)) 96px` (match strict)
+- **`.schedule-totals-label/.schedule-totals-val`** : `background:var(--surface2)/var(--surface)`, `padding:8px 10px` (match avec empgrid)
+- **`gap:1px`** au lieu de `gap:4px 8px` pour utiliser le même mécanisme de séparation par background du parent
+- **Ligne `day-row` retirée** : redondante, les labels jours sont déjà dans le header de l'empgrid au-dessus
+
+**CACHE_VERSION** → `v3.24.2`
 
 ### 29 mai 2026 — Horaires : grille employés × jours (hybride tableau + cartes) (v3.24.1) 📊🗓️
 

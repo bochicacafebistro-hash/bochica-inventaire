@@ -325,10 +325,6 @@ function renderEmployes() {
             return (totalActual || totalPredicted) ? `<span class="gap-arrow">${arrow}</span>${fmtMoney(gap)}` : "—";
           })()}</div>
         </div>
-        <div class="schedule-totals-day-row">
-          ${weekDays.map((d, k) => `<div class="schedule-totals-day-name">${DAYS_FR[visibleIdx[k]]} ${d.getDate()}/${d.getMonth() + 1}</div>`).join("")}
-          <div class="schedule-totals-day-name schedule-totals-day-name--total">Semaine</div>
-        </div>
       </div>
 
       <!-- ══ Graphique de couverture horaire ══ -->

@@ -8799,36 +8799,49 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 
 /* ── Panneau totaux sous le calendrier ── */
 .schedule-totals-panel{
+  /* v3.24.2 — Aligné colonne-à-colonne avec la grille empgrid en haut.
+     Mêmes background, border, gap, grid-template-columns pour que les
+     colonnes-jour matchent verticalement à 1px près. Override de .card
+     padding pour que le grid interne touche les bords (comme empgrid). */
   margin-top:var(--sp-2);
-  padding:var(--sp-3) var(--sp-4);
+  padding:0 !important;
+  background:var(--border) !important;
+  border:0.5px solid var(--border) !important;
+  border-radius:var(--radius-md) !important;
+  overflow:hidden;
 }
 .schedule-totals-grid{
   display:grid;
-  /* 1 colonne pour le label + N colonnes jour + 1 colonne semaine */
-  grid-template-columns:130px repeat(var(--n-days, 5), 1fr) 90px;
-  gap:4px 8px;
-  align-items:center;
+  /* Doit matcher EXACTEMENT .schedule-empgrid : 160px + N × minmax(110px,1fr) + 96px */
+  grid-template-columns:160px repeat(var(--n-days, 5), minmax(110px, 1fr)) 96px;
+  gap:1px;
+  align-items:stretch;
 }
 .schedule-totals-label{
+  background:var(--surface2);
   font-family:var(--font-body);
   font-size:11px;
   font-weight:600;
   color:var(--text2);
   text-transform:uppercase;
   letter-spacing:.05em;
-  padding:6px 0;
+  padding:8px 10px;
   display:flex;
   align-items:center;
   gap:4px;
 }
 .schedule-totals-val{
+  background:var(--surface);
   font-family:var(--font-body);
   font-size:13px;
   font-weight:600;
   font-variant-numeric:tabular-nums;
   color:var(--text);
   text-align:right;
-  padding:6px 8px;
+  padding:8px 10px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
 }
 .schedule-totals-val--predicted{
   color:#378ADD;
@@ -8837,7 +8850,6 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   font-weight:800;
   font-size:14px;
   background:var(--surface2);
-  border-radius:var(--radius-sm);
 }
 .schedule-totals-val--input input{
   width:100%;
@@ -8870,16 +8882,19 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 /* Petite ligne en bas avec les labels jour (sous le grid) */
 .schedule-totals-day-row{
   display:grid;
-  grid-template-columns:130px repeat(var(--n-days, 5), 1fr) 90px;
-  gap:4px 8px;
-  margin-top:6px;
-  padding-top:6px;
-  border-top:0.5px dashed var(--border);
+  /* Match strict avec .schedule-empgrid et .schedule-totals-grid */
+  grid-template-columns:160px repeat(var(--n-days, 5), minmax(110px, 1fr)) 96px;
+  gap:1px;
+  margin-top:0;
+  padding-top:0;
+  border-top:0; /* Le gap:1px et le bg gris du parent dessinent déjà la séparation */
 }
 .schedule-totals-day-row > div:first-child{
-  visibility:hidden;
+  background:var(--surface2);
+  padding:6px 10px;
 }
 .schedule-totals-day-name{
+  background:var(--surface2);
   font-family:var(--font-body);
   font-size:10px;
   font-weight:500;
@@ -8887,6 +8902,10 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   text-align:center;
   text-transform:uppercase;
   letter-spacing:.04em;
+  padding:6px 4px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 .schedule-totals-day-name--total{
   font-weight:700;
@@ -8916,7 +8935,8 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   }
   .schedule-totals-grid,
   .schedule-totals-day-row{
-    grid-template-columns:110px repeat(var(--n-days, 5), minmax(80px, 1fr)) 80px;
+    /* Match avec la version mobile de .schedule-empgrid (130 + 78px) */
+    grid-template-columns:130px repeat(var(--n-days, 5), minmax(95px, 1fr)) 78px;
     overflow-x:auto;
   }
 }
