@@ -9245,3 +9245,191 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 [data-theme="dark"] .shift-card.shift-card--off:hover{
   background:var(--surface);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v3.26.0 — Adaptations empgrid pour Simulation paie
+   ═══════════════════════════════════════════════════════════════
+   La grille empgrid de la sim est plus large : cellule employé
+   avec inputs éditables (nom + taux + section), cellule totaux
+   plus large à droite avec 4 lignes (Hrs / Sal / Pourb / Total +
+   bouton supprimer). */
+
+.schedule-empgrid.sim-empgrid{
+  /* Cellule employé un peu plus large pour les inputs (220px),
+     cellule totaux 130px pour les 4 lignes */
+  grid-template-columns:220px repeat(var(--n-days, 5), minmax(110px, 1fr)) 130px;
+}
+.schedule-totals-panel.sim-totals-panel .schedule-totals-grid{
+  grid-template-columns:220px repeat(var(--n-days, 5), minmax(110px, 1fr)) 130px;
+}
+
+/* Cellule employé sim : champs éditables */
+.sim-empgrid-emp{
+  padding:8px 10px;
+  gap:5px;
+}
+.sim-emp-name-row{
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.sim-input-name{
+  flex:1;
+  width:100%;
+  background:transparent;
+  border:0.5px solid transparent;
+  border-radius:var(--radius-sm);
+  padding:3px 5px;
+  font-family:var(--font-body);
+  font-size:13px;
+  font-weight:700;
+  color:var(--text);
+  min-width:0;
+}
+.sim-input-name:hover{
+  background:var(--surface2);
+}
+.sim-input-name:focus{
+  outline:none;
+  background:var(--surface);
+  border-color:var(--accent);
+}
+.sim-emp-fields{
+  display:flex;
+  gap:4px;
+  align-items:center;
+}
+.sim-rate-input{
+  width:54px;
+  background:transparent;
+  border:0.5px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:2px 4px;
+  font-family:var(--font-body);
+  font-size:11px;
+  font-variant-numeric:tabular-nums;
+  color:var(--text);
+  text-align:right;
+}
+.sim-rate-input:focus{
+  outline:none;
+  border-color:var(--accent);
+  background:var(--surface);
+}
+.sim-section-select{
+  flex:1;
+  background:transparent;
+  border:0.5px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:2px 4px;
+  font-family:var(--font-body);
+  font-size:11px;
+  color:var(--text);
+  cursor:pointer;
+}
+.sim-section-select:focus{
+  outline:none;
+  border-color:var(--accent);
+  background:var(--surface);
+}
+.sim-badge-fictional{
+  display:inline-flex;
+  align-items:center;
+  font-family:var(--font-mono);
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.06em;
+  padding:1px 5px;
+  border-radius:var(--radius-sm);
+  background:var(--accent-soft);
+  color:var(--accent-warm);
+  border:1px solid rgba(247,179,44,.4);
+  text-transform:uppercase;
+}
+[data-theme="dark"] .sim-badge-fictional{
+  background:rgba(247,179,44,.18);
+  color:var(--accent);
+}
+
+/* Cellule totaux sim : multi-lignes Hrs/Sal/Pourb/Total + bouton */
+.sim-empgrid-total{
+  padding:6px 8px;
+  align-items:stretch;
+  gap:2px;
+  position:relative;
+}
+.sim-empgrid-total-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:6px;
+  font-family:var(--font-body);
+  font-size:11px;
+  font-variant-numeric:tabular-nums;
+  line-height:1.2;
+}
+.sim-empgrid-total-lbl{
+  color:var(--text3);
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  font-weight:500;
+}
+.sim-empgrid-total-val{
+  font-weight:600;
+  color:var(--text);
+}
+.sim-empgrid-total-val--tip{
+  color:#1f7a1f;
+}
+.sim-empgrid-total-row--final{
+  margin-top:3px;
+  padding-top:3px;
+  border-top:0.5px solid var(--border);
+}
+.sim-empgrid-total-val--final{
+  font-size:13px;
+  font-weight:900;
+  color:var(--text);
+}
+.sim-empgrid-remove{
+  position:absolute;
+  top:4px;
+  right:4px;
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  border:none;
+  background:transparent;
+  color:var(--text3);
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  opacity:0;
+  transition:all var(--transition-base);
+}
+.schedule-empgrid-row.sim-empgrid-row:hover .sim-empgrid-remove{
+  opacity:.6;
+}
+.sim-empgrid-remove:hover{
+  opacity:1 !important;
+  background:rgba(217,83,79,.15);
+  color:#a23a36;
+}
+
+/* Ligne fictionnelle : léger fond ambré */
+.schedule-empgrid-row.sim-empgrid-row.is-fictional .sim-empgrid-emp{
+  background:linear-gradient(90deg, rgba(247,179,44,.10), transparent 70%);
+}
+[data-theme="dark"] .schedule-empgrid-row.sim-empgrid-row.is-fictional .sim-empgrid-emp{
+  background:linear-gradient(90deg, rgba(247,179,44,.16), transparent 70%);
+}
+
+/* Mobile */
+@media (max-width:900px){
+  .schedule-empgrid.sim-empgrid,
+  .schedule-totals-panel.sim-totals-panel .schedule-totals-grid{
+    grid-template-columns:180px repeat(var(--n-days, 5), minmax(95px, 1fr)) 110px;
+  }
+}

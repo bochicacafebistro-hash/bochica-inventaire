@@ -555,61 +555,51 @@ function renderSimulationEditorHTML(sim) {
       </div>
     </div>
 
-    <!-- ═ Tableau des employés simulés ═══════════════ -->
-    <div class="card sim-table-wrap" style="padding:0;overflow-x:auto">
-      <table class="schedule-table sim-table">
-        <thead>
-          <tr>
-            <th class="sim-th--emp">Employé / Taux / Section</th>
-            ${visibleIdx.map(dow => `<th class="schedule-th--day" colspan="2">
-              <div class="schedule-day-name">${DAYS_FR[dow]}</div>
-            </th>`).join("")}
-            <th class="schedule-th--summary">Heures</th>
-            <th class="schedule-th--summary">Salaire</th>
-            <th class="schedule-th--summary">Pourb.</th>
-            <th class="schedule-th--summary">Total</th>
-            <th class="schedule-th--summary" style="width:40px"></th>
-          </tr>
-          <tr class="schedule-subheader">
-            <th></th>
-            ${visibleIdx.map(() => `<th class="schedule-th--entry">Entr</th><th class="schedule-th--exit">Sort</th>`).join("")}
-            <th></th><th></th><th></th><th></th><th></th>
-          </tr>
-        </thead>
-        <tbody>
-          ${cur.rows.map((row, rowIdx) => renderSimEmpRow(sim, row, rowIdx, visibleIdx, base.rows)).join("")}
-        </tbody>
-        <tfoot>
-          <!-- Ligne Heures / jour -->
-          <tr class="schedule-tfoot-row">
-            <td class="schedule-tfoot-label">Heures / jour</td>
-            ${visibleIdx.map(dow => {
-              const h = cur.dayTotalsHours[dow] || 0;
-              return `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">${h ? fmtHours(h) : ""}</td>`;
-            }).join("")}
-            <td class="schedule-tfoot-val schedule-td--total" colspan="5">${fmtHours(weekTotalHours)} h</td>
-          </tr>
-          <!-- Ligne Mt / jour (coût salaires) -->
-          <tr class="schedule-tfoot-row">
-            <td class="schedule-tfoot-label">Mt / jour</td>
-            ${visibleIdx.map(dow => {
-              const c = cur.dayTotalsCost[dow] || 0;
-              return `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">${c ? fmtMoney(c) : ""}</td>`;
-            }).join("")}
-            <td class="schedule-tfoot-val schedule-td--total" colspan="5">${fmtMoney(weekTotalCost)}</td>
-          </tr>
-          <!-- Ligne Ventes prévues (Mt/jour ÷ ratio) -->
-          <tr class="schedule-tfoot-row schedule-tfoot-row--predicted">
-            <td class="schedule-tfoot-label">Ventes prévues</td>
-            ${visibleIdx.map(dow => {
-              const c = cur.dayTotalsCost[dow] || 0;
-              const predicted = salesRatio > 0 ? c / salesRatio : 0;
-              return `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">${predicted ? fmtMoney(predicted) : ""}</td>`;
-            }).join("")}
-            <td class="schedule-tfoot-val schedule-td--total" colspan="5">${fmtMoney(weekTotalSales)}</td>
-          </tr>
-        </tfoot>
-      </table>
+    <!-- ═ Grille employés × jours (v3.26.0 — empgrid comme Horaires) ═ -->
+    <div class="schedule-empgrid sim-empgrid" style="--n-days:${visibleIdx.length};">
+      <!-- Header -->
+      <div class="schedule-empgrid-header">
+        <div class="schedule-empgrid-emp-head">Employé · Taux · Section</div>
+        ${visibleIdx.map(dow => {
+          const count = cur.rows.filter(r => r.daily[dow]?.shift?.start && r.daily[dow]?.shift?.end).length;
+          const dayHrs = cur.dayTotalsHours[dow] || 0;
+          return `<div class="schedule-empgrid-day-head">
+            <div class="schedule-empgrid-day-name">${DAYS_FR[dow]}</div>
+            <div class="schedule-empgrid-day-count">${count} pers · ${dayHrs ? fmtHours(dayHrs) + "h" : "0h"}</div>
+          </div>`;
+        }).join("")}
+        <div class="schedule-empgrid-total-head">Total</div>
+      </div>
+
+      <!-- Body : une ligne par employé simulé -->
+      ${cur.rows.map((row, rowIdx) => renderSimEmpRow(sim, row, rowIdx, visibleIdx, base.rows)).join("")}
+    </div>
+
+    <!-- ═ Panneau totaux (mêmes colonnes que la grille du haut) ═ -->
+    <div class="schedule-totals-panel sim-totals-panel" style="--n-days:${visibleIdx.length};">
+      <div class="schedule-totals-grid">
+        <div class="schedule-totals-label">Heures / jour</div>
+        ${visibleIdx.map(dow => {
+          const h = cur.dayTotalsHours[dow] || 0;
+          return `<div class="schedule-totals-val">${h ? fmtHours(h) + "h" : "—"}</div>`;
+        }).join("")}
+        <div class="schedule-totals-val schedule-totals-val--total">${fmtHours(weekTotalHours)}h</div>
+
+        <div class="schedule-totals-label">Coût / jour</div>
+        ${visibleIdx.map(dow => {
+          const c = cur.dayTotalsCost[dow] || 0;
+          return `<div class="schedule-totals-val">${c ? fmtMoney(c) : "—"}</div>`;
+        }).join("")}
+        <div class="schedule-totals-val schedule-totals-val--total">${fmtMoney(weekTotalCost)}</div>
+
+        <div class="schedule-totals-label">Ventes prévues</div>
+        ${visibleIdx.map(dow => {
+          const c = cur.dayTotalsCost[dow] || 0;
+          const predicted = salesRatio > 0 ? c / salesRatio : 0;
+          return `<div class="schedule-totals-val schedule-totals-val--predicted">${predicted ? fmtMoney(predicted) : "—"}</div>`;
+        }).join("")}
+        <div class="schedule-totals-val schedule-totals-val--total schedule-totals-val--predicted">${fmtMoney(weekTotalSales)}</div>
+      </div>
     </div>
 
     <!-- ═ Bouton ajouter employé ════════════════════ -->
@@ -697,47 +687,88 @@ function renderSimKpi(label, valSim, valBase, gap, positiveIsBad, iconName) {
 // Ligne d'employé dans le tableau de la simulation (éditable)
 function renderSimEmpRow(sim, row, rowIdx, visibleIdx, baseRows) {
   const emp = row.emp;
-  const EMP_RGB = ["247,179,44", "74,144,226"];
-  const empRgb = EMP_RGB[rowIdx % EMP_RGB.length];
   const isFictional = !!emp.isFictional;
-  const sectionLabel = { cuisine: "Cuisine", service: "Service", other: "Autre" }[emp.section || "service"];
+  const sec = (emp.section || "service");
+  const secCls = sec === "cuisine" ? "is-kitchen"
+              : sec === "service" ? "is-service" : "is-other";
 
-  return `<tr class="schedule-emp-row sim-emp-row${isFictional ? " is-fictional" : ""}" data-emp-id="${emp.id}" style="--emp-rgb:${empRgb};--emp-color:rgb(${empRgb})">
-    <td class="schedule-td--emp sim-td--emp">
-      <div class="sim-emp-cell">
-        <div class="sim-emp-name-row">
-          <input class="sim-input-name" type="text" value="${esc(emp.name || "")}" placeholder="Nom" onchange="updateSimEmployee('${sim.id}','${emp.id}','name',this.value)"/>
-          ${isFictional ? `<span class="sim-badge-fictional" title="Employé ajouté dans la simulation">FICTIF</span>` : ""}
-        </div>
-        <div class="sim-emp-fields">
-          <input class="sim-rate-input" type="number" min="0" step="0.25" value="${emp.hourlyRate || ""}" placeholder="Taux" title="Taux horaire ($/h)" onchange="updateSimEmployee('${sim.id}','${emp.id}','hourlyRate',this.value)"/>
-          <select class="sim-section-select" title="Section pour les pourboires" onchange="updateSimEmployee('${sim.id}','${emp.id}','section',this.value)">
-            <option value="service" ${emp.section === "service" ? "selected" : ""}>Service</option>
-            <option value="cuisine" ${emp.section === "cuisine" ? "selected" : ""}>Cuisine</option>
-            <option value="other" ${emp.section === "other" ? "selected" : ""}>Autre</option>
-          </select>
-        </div>
+  return `<div class="schedule-empgrid-row sim-empgrid-row${isFictional ? " is-fictional" : ""}" data-emp-id="${emp.id}">
+    <!-- Cellule employé éditable (gauche) -->
+    <div class="schedule-empgrid-emp sim-empgrid-emp ${secCls}">
+      <div class="sim-emp-name-row">
+        <input class="sim-input-name" type="text" value="${esc(emp.name || "")}" placeholder="Nom" onchange="updateSimEmployee('${sim.id}','${emp.id}','name',this.value)"/>
+        ${isFictional ? `<span class="sim-badge-fictional" title="Employé ajouté dans la simulation">FICTIF</span>` : ""}
       </div>
-    </td>
+      <div class="sim-emp-fields">
+        <input class="sim-rate-input" type="number" min="0" step="0.25" value="${emp.hourlyRate || ""}" placeholder="Taux" title="Taux horaire ($/h)" onchange="updateSimEmployee('${sim.id}','${emp.id}','hourlyRate',this.value)"/>
+        <select class="sim-section-select" title="Section pour les pourboires" onchange="updateSimEmployee('${sim.id}','${emp.id}','section',this.value)">
+          <option value="service" ${sec === "service" ? "selected" : ""}>Service</option>
+          <option value="cuisine" ${sec === "cuisine" ? "selected" : ""}>Cuisine</option>
+          <option value="other" ${sec === "other" ? "selected" : ""}>Autre</option>
+        </select>
+      </div>
+    </div>
+    <!-- Cellules par jour : shift card ou Congé -->
     ${visibleIdx.map(dow => {
       const d = row.daily[dow];
       const shift = d ? d.shift : null;
-      const filled = shift && shift.start && shift.end;
-      return `<td class="schedule-td--cell schedule-td--day-entry ${filled ? "is-filled" : ""}">
-        <select class="schedule-time" onchange="updateSimShift('${sim.id}','${emp.id}',${dow},'start',this.value)" aria-label="${esc(emp.name)} entrée ${DAYS_FR[dow]}">${buildTimeOptions(shift?.start || "")}</select>
-      </td>
-      <td class="schedule-td--cell schedule-td--day-exit ${filled ? "is-filled" : ""}">
-        <select class="schedule-time" onchange="updateSimShift('${sim.id}','${emp.id}',${dow},'end',this.value)" aria-label="${esc(emp.name)} sortie ${DAYS_FR[dow]}">${buildTimeOptions(shift?.end || "")}</select>
-      </td>`;
+      const hasShift = shift && shift.start && shift.end;
+      if (!hasShift) {
+        return `<div class="schedule-empgrid-cell schedule-empgrid-cell--empty"
+            data-dow="${dow}"
+            ondragover="simShiftCardDragOver(event,${dow})"
+            ondragleave="simShiftCardDragLeave(event)"
+            ondrop="simShiftCardDrop(event,'${sim.id}','${emp.id}',${dow})">
+          <div class="shift-card shift-card--off"
+              onclick="openSimShiftModal('${sim.id}','${emp.id}',${dow})"
+              title="Aucun shift — cliquer pour ajouter">
+            <div class="shift-off-label">Congé</div>
+            <div class="shift-off-add">${icon("plus", 11)} Ajouter</div>
+          </div>
+        </div>`;
+      }
+      return `<div class="schedule-empgrid-cell"
+          data-dow="${dow}"
+          ondragover="simShiftCardDragOver(event,${dow})"
+          ondragleave="simShiftCardDragLeave(event)"
+          ondrop="simShiftCardDrop(event,'${sim.id}','${emp.id}',${dow})">
+        <div class="shift-card shift-card--compact ${secCls}"
+            draggable="true"
+            data-emp-id="${emp.id}"
+            data-from-dow="${dow}"
+            ondragstart="simShiftCardDragStart(event,'${emp.id}',${dow})"
+            ondragend="simShiftCardDragEnd(event)"
+            onclick="openSimShiftModal('${sim.id}','${emp.id}',${dow})"
+            title="Cliquer pour modifier · Glisser pour déplacer">
+          <div class="shift-card-time">${shift.start} → ${shift.end}</div>
+          <div class="shift-card-meta">
+            <span>${fmtHours(d.hours || 0)}h</span>
+            <span class="shift-card-cost">${fmtMoney(d.cost || 0)}</span>
+          </div>
+        </div>
+      </div>`;
     }).join("")}
-    <td class="schedule-td--summary">${row.totalHours ? fmtHours(row.totalHours) : ""}</td>
-    <td class="schedule-td--summary">${row.grossWage ? fmtMoney(row.grossWage) : ""}</td>
-    <td class="schedule-td--summary">${row.tipShare > 0.005 ? fmtMoney(row.tipShare) : ""}</td>
-    <td class="schedule-td--summary schedule-td--total">${row.totalPay ? fmtMoney(row.totalPay) : ""}</td>
-    <td class="schedule-td--summary" style="text-align:center">
-      <button class="btn-icon-sm sim-remove-btn" onclick="askRemoveSimEmp('${sim.id}','${emp.id}')" title="Retirer de la simulation" aria-label="Retirer ${esc(emp.name)}">${icon("trash", 14)}</button>
-    </td>
-  </tr>`;
+    <!-- Cellule totaux + bouton supprimer (droite) -->
+    <div class="schedule-empgrid-total sim-empgrid-total">
+      <div class="sim-empgrid-total-row">
+        <span class="sim-empgrid-total-lbl">Hrs</span>
+        <span class="sim-empgrid-total-val">${row.totalHours ? fmtHours(row.totalHours) + "h" : "—"}</span>
+      </div>
+      <div class="sim-empgrid-total-row">
+        <span class="sim-empgrid-total-lbl">Sal</span>
+        <span class="sim-empgrid-total-val">${row.grossWage ? fmtMoney(row.grossWage) : "—"}</span>
+      </div>
+      <div class="sim-empgrid-total-row">
+        <span class="sim-empgrid-total-lbl">Pourb</span>
+        <span class="sim-empgrid-total-val sim-empgrid-total-val--tip">${row.tipShare > 0.005 ? fmtMoney(row.tipShare) : "—"}</span>
+      </div>
+      <div class="sim-empgrid-total-row sim-empgrid-total-row--final">
+        <span class="sim-empgrid-total-lbl">Total</span>
+        <span class="sim-empgrid-total-val sim-empgrid-total-val--final">${row.totalPay ? fmtMoney(row.totalPay) : "—"}</span>
+      </div>
+      <button class="sim-empgrid-remove" onclick="askRemoveSimEmp('${sim.id}','${emp.id}')" title="Retirer de la simulation" aria-label="Retirer ${esc(emp.name)}">${icon("trash", 12)}</button>
+    </div>
+  </div>`;
 }
 
 // Lignes comparaison côte à côte (réel ↔ sim)
@@ -1234,4 +1265,133 @@ async function toggleSimOpenDay(simId, dayIdx, checked) {
     return;
   }
   await persistSim(simId, { ...sim.simulation, openDays: next });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// v3.26.0 — Modal d'édition de shift + drag&drop pour Simulation
+// ═══════════════════════════════════════════════════════════════
+// La sim utilise dow (0-6) au lieu de dk (date) puisqu'elle est
+// indépendante d'une semaine particulière. Handlers séparés des
+// handlers Horaires (qui utilisent dk).
+
+// État local pour le drag&drop sim
+let _simShiftDragEmpId = null;
+let _simShiftDragFromDow = null;
+
+// Ouvre une modal pour créer/modifier un shift sim (par dow)
+function openSimShiftModal(simId, empId, dow) {
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) return;
+  const emp = (sim.simulation?.employees || []).find(e => e.id === empId);
+  if (!emp) return;
+  const shift = (emp.shifts || {})[dow];
+  const startVal = shift?.start || "";
+  const endVal = shift?.end || "";
+  const hasShift = !!(startVal && endVal);
+
+  showModal(`<div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h3>${icon("clock", 18)} ${hasShift ? "Modifier le shift" : "Ajouter un shift"}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
+    </div>
+    <p style="color:var(--text2);font-size:13px;margin:0 0 var(--sp-3)">
+      ${icon("user", 12)} <strong>${esc(emp.name || "")}</strong> · ${DAYS_FR[dow]}
+    </p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin-top:var(--sp-2)">
+      <label>Entrée
+        <select id="sim-shift-start">${buildTimeOptions(startVal)}</select>
+      </label>
+      <label>Sortie
+        <select id="sim-shift-end">${buildTimeOptions(endVal)}</select>
+      </label>
+    </div>
+    <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3)">
+      ${hasShift ? `<button class="btn-cancel" style="color:#a23a36" onclick="deleteSimShift('${simId}','${empId}',${dow})">${icon("trash", 14)} Supprimer</button>` : `<div></div>`}
+      <div style="display:flex;gap:var(--sp-2)">
+        <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+        <button class="btn btn-primary" onclick="saveSimShiftFromModal('${simId}','${empId}',${dow})">${icon("check", 14)} ${hasShift ? "Enregistrer" : "Ajouter"}</button>
+      </div>
+    </div>
+  </div>`);
+}
+
+async function saveSimShiftFromModal(simId, empId, dow) {
+  const start = document.getElementById("sim-shift-start").value;
+  const end = document.getElementById("sim-shift-end").value;
+  if (!start || !end) return toast("Saisis l'entrée et la sortie.", "warning");
+  // updateSimShift est asynchrone et accepte un seul champ à la fois — on l'appelle deux fois
+  await updateSimShift(simId, empId, dow, "start", start);
+  await updateSimShift(simId, empId, dow, "end", end);
+  closeModal();
+  toast("Shift sim enregistré.", "success", 2000);
+}
+
+async function deleteSimShift(simId, empId, dow) {
+  await updateSimShift(simId, empId, dow, "start", "");
+  await updateSimShift(simId, empId, dow, "end", "");
+  closeModal();
+  toast("Shift sim supprimé.", "success", 2000);
+}
+
+// ─ Drag & drop sim (par dow) ─────────────────────────────
+function simShiftCardDragStart(e, empId, fromDow) {
+  _simShiftDragEmpId = empId;
+  _simShiftDragFromDow = fromDow;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move";
+    try { e.dataTransfer.setData("text/plain", `${empId}|${fromDow}`); } catch (_) {}
+  }
+  const card = e.currentTarget;
+  setTimeout(() => card && card.classList.add("is-dragging"), 0);
+}
+
+function simShiftCardDragOver(e, targetDow) {
+  if (_simShiftDragEmpId === null || targetDow === _simShiftDragFromDow) return;
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  e.currentTarget.classList.add("is-drop-target");
+}
+
+function simShiftCardDragLeave(e) {
+  const cell = e.currentTarget;
+  if (!cell) return;
+  const related = e.relatedTarget;
+  if (related && cell.contains(related)) return;
+  cell.classList.remove("is-drop-target");
+}
+
+function simShiftCardDragEnd() {
+  document.querySelectorAll(".shift-card.is-dragging").forEach(c => c.classList.remove("is-dragging"));
+  document.querySelectorAll(".schedule-empgrid-cell.is-drop-target").forEach(c => c.classList.remove("is-drop-target"));
+  _simShiftDragEmpId = null;
+  _simShiftDragFromDow = null;
+}
+
+async function simShiftCardDrop(e, simId, targetEmpId, targetDow) {
+  e.preventDefault();
+  const empId = _simShiftDragEmpId;
+  const fromDow = _simShiftDragFromDow;
+  simShiftCardDragEnd();
+  if (!empId || fromDow === null || fromDow === targetDow) return;
+  // Le drop doit rester pour le MÊME employé (déplacer son shift vers un autre jour)
+  if (empId !== targetEmpId) {
+    toast("On ne peut déplacer un shift que vers un autre jour du même employé.", "warning", 4000);
+    return;
+  }
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) return;
+  const emp = (sim.simulation?.employees || []).find(e => e.id === empId);
+  if (!emp) return;
+  const src = (emp.shifts || {})[fromDow];
+  if (!src || !src.start || !src.end) return;
+  const tgt = (emp.shifts || {})[targetDow];
+  if (tgt && tgt.start && tgt.end) {
+    if (!confirm(`${emp.name} a déjà un shift ${tgt.start}→${tgt.end} ${DAYS_FR[targetDow]}. Le remplacer par ${src.start}→${src.end} ?`)) return;
+  }
+  // Move : copy to target, clear source
+  await updateSimShift(simId, empId, targetDow, "start", src.start);
+  await updateSimShift(simId, empId, targetDow, "end", src.end);
+  await updateSimShift(simId, empId, fromDow, "start", "");
+  await updateSimShift(simId, empId, fromDow, "end", "");
+  toast(`Shift sim déplacé ${DAYS_FR[fromDow]} → ${DAYS_FR[targetDow]}`, "success", 2500);
 }

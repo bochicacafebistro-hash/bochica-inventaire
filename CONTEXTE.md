@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.25.0** — **Horaires : carte « Congé » + export PNG public pour les employés**. (1) Les cellules vides affichent désormais une mini-carte « Congé » (dashed, gris discret) au lieu du bouton + isolé. Toute la cellule est cliquable pour ouvrir le modal d'ajout — l'effet hover passe le dashed en solid jaune. (2) Nouveau bouton « PNG pour équipe » dans la toolbar qui télécharge une image PNG de l'horaire de la semaine — **sans aucune donnée financière** (taux horaires, coûts, totaux $ retirés). En-tête Bochica + tricolore + entrées/sorties uniquement. Idéal pour partager via SMS ou affichage en cuisine sans révéler les salaires. Utilise html2canvas via CDN.
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.26.0** — **Simulation paie : refonte en empgrid (même look que Horaires)**. La table sim utilise désormais la même grille **employés × jours avec cartes shift** que la page Employés & Horaires. Cellule employé éditable (nom + taux + section + badge FICTIF), cartes shift compactes avec drag & drop entre jours, carte « Congé » pour les jours libres, totaux multi-lignes à droite (Hrs / Sal / Pourb / Total + bouton supprimer en hover). Modal `openSimShiftModal` pour ajouter/modifier/supprimer un shift. Panneau totaux dessous avec mêmes colonnes alignées (Heures, Coût, Ventes prévues).
+>
+> ⚠️ **29 mai 2026 — v3.25.0** — **Horaires : carte « Congé » + export PNG public pour les employés**. (1) Les cellules vides affichent désormais une mini-carte « Congé » (dashed, gris discret) au lieu du bouton + isolé. Toute la cellule est cliquable pour ouvrir le modal d'ajout — l'effet hover passe le dashed en solid jaune. (2) Nouveau bouton « PNG pour équipe » dans la toolbar qui télécharge une image PNG de l'horaire de la semaine — **sans aucune donnée financière** (taux horaires, coûts, totaux $ retirés). En-tête Bochica + tricolore + entrées/sorties uniquement. Idéal pour partager via SMS ou affichage en cuisine sans révéler les salaires. Utilise html2canvas via CDN.
 >
 > ⚠️ **29 mai 2026 — v3.24.2** — **Horaires : alignement parfait du panneau totaux avec la grille du haut**. Bug visuel après la v3.24.1 : le panneau totaux (Heures/Coût/Ventes prévues/Réelles/Écart) ne s'alignait pas avec les colonnes de la grille empgrid (130px+1fr+90px vs 160px+minmax(110px,1fr)+96px). Fix : panneau totaux utilise exactement les mêmes grid-template-columns que la grille du haut, même padding, même background:var(--border), même border-radius. La rangée day-name redondante en bas (qui dupliquait les labels du header) est retirée. Les colonnes-jour s'alignent maintenant verticalement au pixel près.
 >
@@ -501,6 +503,29 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Simulation paie : refonte en empgrid (v3.26.0) 🧮📅
+
+Demande utilisateur : « rappelles toi de ramener cet tableau pour la section simulation de paie ». Application du même style empgrid (employés × jours avec cartes shift) que la page Employés & Horaires.
+
+**Avant** : `schedule-table sim-table` (HTML `<table>`) avec dropdowns `<select class="schedule-time">` pour entrée/sortie de chaque jour, alternance jaune/bleu vive sur les lignes.
+
+**Après** : `.schedule-empgrid.sim-empgrid` (CSS Grid) :
+- **Cellule employé** (220px) : champs éditables conservés (nom + taux + section), badge FICTIF si applicable. Fond ambré léger pour les employés fictionnels.
+- **Cellules-jour** (N × minmax(110px, 1fr)) : shift card compact avec horaires + heures + coût, ou carte « Congé » dashed pour les jours libres. Drag & drop entre jours pour déplacer un shift (du même employé).
+- **Cellule totaux** (130px) : multi-lignes Hrs / Sal / Pourb (vert) / Total (bold) avec bouton supprimer rouge qui apparaît au hover.
+
+**Modal d'édition** : `openSimShiftModal(simId, empId, dow)` avec employé + jour fixes, 2 selects heures (30 min), boutons Supprimer + Enregistrer. Save appelle `updateSimShift` deux fois (start + end).
+
+**Drag & drop sim-spécifique** : handlers `simShiftCardDragStart/Over/Leave/End/Drop` avec dow (0-6) au lieu de dk (date). Force `targetEmpId === sourceEmpId` (déplacement uniquement du même employé vers un autre jour). Confirmation si la cible a déjà un shift.
+
+**Panneau totaux** : `.schedule-totals-panel.sim-totals-panel` avec **mêmes grid-template-columns** que la grille du haut (220 + N + 130) pour alignement parfait. 3 lignes : Heures / Coût / Ventes prévues. Pas de Ventes réelles ni Écart (la sim est théorique).
+
+**Implémentation**
+- **JS** (`pages-simulations.js`) : `renderSimulationEditorHTML` — section table remplacée (~50 lignes → ~70 lignes plus claires). `renderSimEmpRow` refactoré complètement (de `<tr>` à `<div class="schedule-empgrid-row">`). Ajout de `openSimShiftModal`, `saveSimShiftFromModal`, `deleteSimShift`, et 4 handlers drag & drop (~130 lignes total à la fin du fichier).
+- **CSS (~150 lignes)** : `.schedule-empgrid.sim-empgrid` override grid-template-columns (220px + N + 130px), `.sim-empgrid-emp` (inputs éditables avec hover/focus), `.sim-empgrid-total` (multi-lignes), `.sim-empgrid-remove` (visible au hover row), `.is-fictional` (gradient ambré). Mobile breakpoint 900px.
+
+**CACHE_VERSION** → `v3.26.0`
 
 ### 29 mai 2026 — Horaires : carte « Congé » + export PNG public (v3.25.0) 🏖️📸
 
