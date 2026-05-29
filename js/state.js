@@ -68,6 +68,17 @@ let expandedNavSections = new Set();
 let isAdmin = false, isLoggedIn = false, darkMode = false;
 let userRole = null; // "global_admin" | "chef" | "employee" | null
 let loggedInUser = null; // { id, name, role } pour traçabilité
+
+// v3.28.0 — Mode aperçu : l'admin peut visualiser l'app comme si elle/il
+// était chef ou employee, sans changer de compte. Pendant l'aperçu :
+//   • userRole et isAdmin sont temporairement écrasés par le rôle simulé
+//   • _realUserRole et _realIsAdmin gardent les vraies valeurs
+//   • _previewActive = true pour signaler l'état (banner, restore au logout)
+// Toutes les vérifications existantes (userRole === "X", isAdmin, etc.) sont
+// automatiquement cohérentes — aucun refactor des 38 références nécessaire.
+let _realUserRole = null;
+let _realIsAdmin = false;
+let _previewActive = false;
 let activeSection = "Toutes", searchQuery = "", sectionsExpanded = false;
 // Mode de tri pour la page À commander : "section" (catégorie inv.) ou "supplier"
 let rapportSortMode = "section";

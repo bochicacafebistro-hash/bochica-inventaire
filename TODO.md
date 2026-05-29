@@ -1,7 +1,59 @@
 # 📌 TODO — Bochica Inventaire
 
 > Liste vivante des améliorations identifiées mais pas encore implémentées.
-> Mise à jour : **12 mai 2026**
+> Mise à jour : **29 mai 2026**
+
+---
+
+## ⏳ À reconsidérer à moyen terme (proposées le 29 mai 2026)
+
+> L'utilisateur souhaite stabiliser l'app actuelle (pointage, salaires, planning) avant d'ajouter ces gros chantiers. À revisiter quand le système est rodé en production.
+
+### ⚖️ Conformité Québec (Loi sur les normes du travail) — **PRIORITÉ haute**
+
+- [ ] **Heures supplémentaires automatiques** : détection au-delà de 40 h/semaine → taux × 1,5×. Ligne séparée dans la paie (« 40 h régulières + 5 h sup × 1,5 = 47,5 h équivalent »). Seuil et taux configurables dans les paramètres.
+- [ ] **Vacances accumulées (4% / 6%)** : calcul automatique à chaque paie. Affichage du solde par employé dans sa fiche. Inclus dans le PDF de paie. 6% après 3 ans d'ancienneté.
+- [ ] **Jours fériés payés** : calcul de l'indemnité de jour férié selon la formule officielle (1/20 du salaire des 4 dernières semaines).
+- [ ] **Déductions automatiques** : RRQ, AE, RQAP avec taux 2026 à jour (paramètres). Optionnel — si l'admin utilise déjà un logiciel de paie séparé.
+
+### 💵 Workflow paie (impact direct)
+
+- [ ] **Pourboires cash vs cartes** : séparation pour déclaration fiscale (les pourboires cartes sont déclarés automatiquement par le POS, les cash le sont volontairement). 2 inputs au lieu d'un dans « Pourboires de la semaine ». Total combiné inchangé, mais le rapport PDF affiche la séparation.
+- [ ] **Verrouillage partiel par employé** : permet de verrouiller un employé (déjà payé) sans verrouiller toute la semaine. Utile pour les paies fractionnées.
+
+### 📧 Communication employés
+
+- [ ] **Email hebdomadaire automatique** : chaque dimanche soir, chaque employé reçoit un mail avec son horaire de la semaine à venir + ses heures et son pourboire de la semaine passée + total à payer. Requiert un compte SendGrid gratuit (3000 mails/mois).
+- [ ] **SMS d'horaire** : alternative à l'email pour les employés sans email. Twilio ou Brevo.
+- [ ] **Notifications PWA push** : alerte sur la tablette quand quelqu'un oublie sa sortie. Rappel de début de shift (« David, tu commences dans 15 min »). Nécessite Firebase Cloud Messaging.
+
+### 🛡️ Sécurité du pointage (anti-fraude)
+
+- [ ] **Géolocalisation au pointage** : vérifie que le pointage se fait depuis le resto (rayon configurable, ex. 100 m). Bloque ou alerte si fait depuis ailleurs. Gratuit, utilise l'API Geolocation du navigateur. Demande consentement utilisateur la première fois.
+- [ ] **Photo selfie au pointage** (optionnel) : selfie webcam capturé au moment du punch, stocké compressé dans Firestore. Empêche les employés de pointer pour un collègue. Optionnel par configuration.
+
+### 📅 Demandes des employés (workflow RH)
+
+- [ ] **Demandes de congés** : page dédiée où l'employé (via son PIN) peut demander un congé avec date début/fin + raison. Notification à l'admin qui approuve/refuse. Si approuvé → marque automatiquement le shift comme « Congé » dans le planning.
+- [ ] **Échange de shifts entre employés** : Marie ne peut pas travailler vendredi, propose un échange à Paul. Paul accepte ou refuse. Si accepté + admin approuve → shifts inversés automatiquement.
+- [ ] **Notifications de demandes** : badge dans la sidebar admin pour signaler les demandes en attente.
+
+### 📊 Analyse mensuelle/annuelle
+
+- [ ] **Vue cumulée par employé** : nouveau bouton « Stats employé » dans Salaires. Stats du mois en cours : heures totales, salaire brut, pourboires, bonus $/h moyen. Stats annuelles YTD : total payé, jours travaillés, vacances accumulées. Comparaison vs mois/année précédent. Graphique de tendance (revenus + heures par semaine).
+- [ ] **Forecast / Prédiction des ventes** : basé sur les rapports Cluster déjà importés. « Vendredi prochain devrait faire ~3500 $ basé sur les 4 derniers vendredis ». Suggère un budget heures basé sur le ratio cible.
+- [ ] **Heatmap de couverture mensuelle** : vue mois entier sur le dashboard. Identifie les jours/heures où on manque chroniquement de monde. Aide à ajuster les embauches.
+
+### 📤 Exports & intégrations comptables
+
+- [ ] **Sync avec logiciel comptable** : export en format compatible Acomba, Sage 50 ou QuickBooks. Évite la double saisie pour le comptable du resto. Format CSV bien structuré au minimum.
+- [ ] **Bulletins de paie individuels PDF** : un PDF par employé style fiche de paie officielle (avec déductions si on les calcule). À distribuer en main propre ou par email.
+- [ ] **Export Excel des Salaires** : feuille consolidée + feuille par employé. SheetJS déjà chargé donc rapide à ajouter.
+
+### 🏠 Dashboard amélioré
+
+- [ ] **Widget « Maintenant »** : qui travaille en ce moment, avec photo/initiales. Combien d'heures déjà pointées aujourd'hui par employé. Heures restantes prévues.
+- [ ] **Widget « Alertes de pointage »** : compteur des oublis non corrigés (entrées sans sorties sur jours passés).
 
 ---
 

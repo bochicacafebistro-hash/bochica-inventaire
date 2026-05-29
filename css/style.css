@@ -9748,3 +9748,103 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 .schedule-empgrid-header .schedule-empgrid-total-head{
   border-top:none;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v3.28.0 — Mode aperçu rôle (admin → chef/employé)
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Pill dans la sidebar (au-dessus du dark/lang/logout) */
+.preview-role-pill{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 10px;
+  margin:0 12px 8px;
+  background:rgba(247,179,44,.10);
+  border:1px solid rgba(247,179,44,.25);
+  border-radius:var(--radius-pill);
+  font-family:var(--font-body);
+  font-size:11px;
+  color:var(--on-dark, #f5f1e8);
+  transition:all var(--transition-base);
+}
+.preview-role-pill.is-active{
+  background:rgba(247,179,44,.22);
+  border-color:var(--accent);
+  box-shadow:0 0 0 1px var(--accent);
+}
+.preview-role-label{
+  font-weight:600;
+  letter-spacing:.04em;
+  opacity:.85;
+}
+.preview-role-pill select{
+  flex:1;
+  background:transparent;
+  border:none;
+  color:var(--on-dark, #f5f1e8);
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:600;
+  cursor:pointer;
+  padding:2px 4px;
+  outline:none;
+}
+.preview-role-pill select option{
+  background:#14110f;
+  color:#f5f1e8;
+}
+
+/* Bandeau sticky en haut quand aperçu actif */
+.preview-banner{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  padding:8px 16px;
+  background:linear-gradient(90deg, rgba(247,179,44,.22), rgba(247,179,44,.12));
+  border-bottom:2px solid var(--accent);
+  font-family:var(--font-body);
+  font-size:13px;
+  color:var(--text);
+  position:sticky;
+  top:0;
+  z-index:50;
+  animation:previewSlideIn .25s ease-out;
+}
+@keyframes previewSlideIn{
+  from{ opacity:0; transform:translateY(-6px); }
+  to{ opacity:1; transform:translateY(0); }
+}
+.preview-banner-icon{
+  font-size:18px;
+  flex-shrink:0;
+}
+.preview-banner-msg{
+  flex:1;
+}
+.preview-banner-msg strong{
+  color:var(--accent-warm);
+}
+.preview-banner-exit{
+  background:var(--accent);
+  color:var(--accent-text);
+  border:none;
+  border-radius:var(--radius-pill);
+  padding:5px 14px;
+  font-family:var(--font-body);
+  font-size:12px;
+  font-weight:700;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:all var(--transition-base);
+}
+.preview-banner-exit:hover{
+  background:var(--accent-hover);
+  transform:translateY(-1px);
+}
+[data-theme="dark"] .preview-banner{
+  background:linear-gradient(90deg, rgba(247,179,44,.30), rgba(247,179,44,.18));
+}
+[data-theme="dark"] .preview-banner-msg strong{
+  color:var(--accent);
+}

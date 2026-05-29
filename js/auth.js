@@ -24,6 +24,10 @@ function initAuth() {
   auth.onAuthStateChanged(async (fbUser) => {
     if (!fbUser) {
       // Pas connecté → afficher le login
+      // v3.28.0 : reset le mode aperçu pour ne pas laisser l'état traîner
+      _realUserRole = null;
+      _realIsAdmin = false;
+      _previewActive = false;
       userRole = null;
       isAdmin = false;
       isLoggedIn = false;

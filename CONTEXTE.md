@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.27.2** — **Délimitation visuelle des employés dans la colonne totaux**. Retour utilisateur : « les cartes dans totaux sont toutes blanches, on ne sait pas où ça finit ». Solution : barre colorée de 3 px en haut de chaque cellule totaux selon la section (ambré cuisine, bleu service, rouge exclu, gris autre) qui marque clairement où commence chaque employé. Aussi appliquée à la sim. Gap entre lignes rendu plus marqué (0.18 alpha au lieu de 0.10) pour mieux délimiter les lignes partout.
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.28.0** — **Mode aperçu rôle pour l'admin (voir comme chef/employé)**. Nouveau pill dans la sidebar (visible uniquement pour le vrai admin) avec un select à 3 options : `Admin (réel)` / `Chef` / `Employé`. Sélectionner Chef ou Employé bascule toute l'app en mode aperçu — sidebar filtrée selon le rôle, pages cachées, boutons admin invisibles. Bandeau sticky jaune en haut « Aperçu actif — tu vois l'app comme un Employé » avec bouton « Sortir de l'aperçu ». Pas besoin de se déconnecter/reconnecter pour valider ce que voit chaque rôle. Sécurité préservée : les règles Firestore continuent à vérifier le vrai token Firebase Auth, donc même en aperçu un admin ne peut pas faire de modifs interdites côté serveur.
+>
+> ⚠️ **29 mai 2026 — v3.27.2** — **Délimitation visuelle des employés dans la colonne totaux**. Retour utilisateur : « les cartes dans totaux sont toutes blanches, on ne sait pas où ça finit ». Solution : barre colorée de 3 px en haut de chaque cellule totaux selon la section (ambré cuisine, bleu service, rouge exclu, gris autre) qui marque clairement où commence chaque employé. Aussi appliquée à la sim. Gap entre lignes rendu plus marqué (0.18 alpha au lieu de 0.10) pour mieux délimiter les lignes partout.
 >
 > ⚠️ **29 mai 2026 — v3.27.1** — **Fix bug : les employés en cours de service apparaissaient comme « Congé »**. Quand un employé pointait son entrée le matin sans avoir encore pointé sa sortie, le nouveau render v3.27.0 le traitait comme un congé (la cellule cherchait `start && end`). Fix : nouveau cas « partiel » qui détecte `start sans end` (ou inverse) et affiche une card spéciale « 09:00 → en cours » avec point vert pulsant et tag « En cours ». L'admin voit immédiatement qui travaille et clique pour saisir la sortie.
 >
@@ -509,6 +511,35 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Mode aperçu rôle pour l'admin (v3.28.0) 👁️🎭
+
+Permet à l'admin de prévisualiser l'app comme si elle/il était chef ou employee, sans changer de compte. Utile pour valider rapidement ce que voit chaque rôle après une modification de permissions ou de page.
+
+**Mécanisme**
+- Plutôt que refactorer les **38 occurrences** de `userRole === "X"` / `isAdmin` dispersées dans 12 fichiers (canAccess, render functions, etc.), on **écrase temporairement** `userRole` et `isAdmin` avec le rôle prévisualisé. Le vrai rôle est sauvé dans `_realUserRole` / `_realIsAdmin`. Le flag `_previewActive` indique l'état.
+- Toutes les vérifications existantes continuent de fonctionner sans modification — elles lisent le `userRole` modifié.
+- **Sécurité préservée** : les règles Firestore continuent à vérifier le **vrai token Firebase Auth** côté serveur. L'admin en aperçu employé ne peut pas faire de modifs interdites — l'UI cache juste les boutons admin pour cohérence visuelle.
+
+**API JS**
+- `enterPreviewMode(role)` — `role` ∈ `["chef", "employee"]`. Sauve `userRole`/`isAdmin`, les écrase, navigue vers la home du rôle prévisualisé.
+- `exitPreviewMode()` — restaure les vraies valeurs.
+- `onPreviewRoleChange(value)` — handler du select dans la sidebar : `""` → exit, sinon enter.
+
+**UI**
+- **Pill dans la sidebar** (au-dessus de dark/lang/logout) avec label « Aperçu : » + select à 3 options. Visible uniquement pour le vrai admin (le check utilise `_realUserRole` ou `userRole` selon l'état).
+- **Bandeau sticky** en haut (au-dessus de la topbar) avec icône 👁, message « Aperçu actif — tu vois l'app comme un **Employé** », bouton jaune « Sortir de l'aperçu ». Animation slideIn 0.25s.
+- Le pill se colore (border + box-shadow accent) quand l'aperçu est actif pour signaler l'état dans la sidebar.
+
+**Reset au logout**
+- `auth.js` (onAuthStateChanged) : reset `_realUserRole = null`, `_realIsAdmin = false`, `_previewActive = false` avant de clear `userRole`. Évite que l'état traîne entre deux sessions.
+
+**Implémentation**
+- **JS** : `state.js` (+3 variables), `utils.js` (+3 fonctions ~50 lignes), `sidebar.js` (visibility du pill + bandeau), `auth.js` (reset au logout).
+- **HTML** (`index.html`) : `<div id="preview-role-pill">` dans la sidebar, `<div id="preview-banner">` avant la topbar.
+- **CSS (~75 lignes)** : `.preview-role-pill` (avec état `.is-active`), `.preview-banner` (sticky, gradient ambré, animation), dark mode adapté.
+
+**CACHE_VERSION** → `v3.28.0`
 
 ### 29 mai 2026 — Délimitation visuelle des employés dans totaux (v3.27.2) 🎨📐
 

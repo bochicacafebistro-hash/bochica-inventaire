@@ -144,6 +144,15 @@ function buildSidebar() {
     logoutBtn.innerHTML = icon("log-out", 14) + ` <span>${t("logout")}</span>`;
     logoutBtn.setAttribute("aria-label", t("logout"));
   }
+  // v3.28.0 — Pill aperçu rôle : visible uniquement pour le VRAI admin
+  const previewPill = document.getElementById("preview-role-pill");
+  if (previewPill) {
+    const isRealAdmin = _previewActive ? (_realUserRole === "global_admin") : (userRole === "global_admin");
+    previewPill.style.display = isRealAdmin ? "flex" : "none";
+    previewPill.classList.toggle("is-active", _previewActive);
+    const sel = document.getElementById("preview-role-select");
+    if (sel) sel.value = _previewActive ? userRole : "";
+  }
   // Bouton de langue (FR/ES)
   const langBtn = document.getElementById("lang-btn");
   if (langBtn) {
@@ -221,6 +230,19 @@ function renderPage() {
   const meta = pageMeta[activePage] || { label: activePage, icon: "file-text" };
   const titleEl = document.getElementById("topbar-title");
   if (titleEl) titleEl.innerHTML = `<span class="icon-inline" style="gap:10px">${icon(meta.icon, 22)} ${meta.label}</span>`;
+
+  // v3.28.0 — Bandeau aperçu rôle : visible si admin prévisualise
+  const previewBanner = document.getElementById("preview-banner");
+  const previewMsg = document.getElementById("preview-banner-msg");
+  if (previewBanner) {
+    if (_previewActive) {
+      const roleLabel = userRole === "chef" ? "Chef de cuisine" : "Employé";
+      if (previewMsg) previewMsg.innerHTML = `Aperçu actif — tu vois l'app comme un <strong>${roleLabel}</strong>. Les boutons admin sont cachés.`;
+      previewBanner.style.display = "flex";
+    } else {
+      previewBanner.style.display = "none";
+    }
+  }
 
   const lowCount = products.filter(p => !p.archived && ["red", "yellow"].includes(getStatus(p))).length;
   const al = document.getElementById("topbar-alert");

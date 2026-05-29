@@ -19,6 +19,67 @@ function getHomePage() {
   const perm = ROLE_PERMISSIONS[userRole];
   return (perm && perm.homePage) || "inventaire";
 }
+
+// v3.28.0 — Mode aperçu admin ─────────────────────────────
+// Permet à l'admin de visualiser l'app comme un autre rôle
+// (chef ou employee) sans changer de compte. Implémenté en
+// écrasant temporairement userRole/isAdmin pour que toutes
+// les vérifications existantes (canAccess, userRole === "X",
+// isAdmin, etc.) soient cohérentes.
+//
+// ⚠ Les writes Firestore continuent à utiliser le VRAI auth
+// (côté serveur les règles vérifient le token Firebase Auth),
+// donc l'aperçu reste sécurisé : un admin en aperçu employé
+// ne peut pas faire de modifs interdites côté serveur, mais
+// l'UI les cache pour une expérience cohérente.
+function enterPreviewMode(role) {
+  if (_previewActive) {
+    // Déjà en aperçu — change juste de rôle ciblé (sans écraser _real*)
+    if (!["chef", "employee"].includes(role)) return;
+    userRole = role;
+    isAdmin = (role === "chef"); // chef peut écrire, employee non
+    buildSidebar();
+    navTo(getHomePage());
+    return;
+  }
+  // Seul le VRAI admin peut entrer en aperçu
+  if (userRole !== "global_admin") {
+    toast("Seul l'admin peut activer le mode aperçu.", "warning");
+    return;
+  }
+  if (!["chef", "employee"].includes(role)) return;
+  _realUserRole = userRole;
+  _realIsAdmin = isAdmin;
+  userRole = role;
+  isAdmin = (role === "chef");
+  _previewActive = true;
+  buildSidebar();
+  navTo(getHomePage());
+  const label = role === "chef" ? "Chef de cuisine" : "Employé";
+  toast(`Aperçu activé : ${label}`, "info", 2500);
+}
+
+function exitPreviewMode() {
+  if (!_previewActive) return;
+  userRole = _realUserRole;
+  isAdmin = _realIsAdmin;
+  _realUserRole = null;
+  _realIsAdmin = false;
+  _previewActive = false;
+  buildSidebar();
+  navTo(getHomePage());
+  toast("Aperçu terminé — retour admin.", "success", 2000);
+}
+
+// Handler du select dans la sidebar : value === "" → sortir de l'aperçu,
+// value === "chef"|"employee" → entrer (ou changer) le rôle prévisualisé.
+function onPreviewRoleChange(value) {
+  if (!value) {
+    exitPreviewMode();
+  } else {
+    enterPreviewMode(value);
+  }
+}
 function getAllSections() {
   // Utilise la liste unifiée `allSections` (par défaut + personnalisées, gérée via Firestore).
   // Fallback pour tout premier chargement avant que le listener n'ait répondu.

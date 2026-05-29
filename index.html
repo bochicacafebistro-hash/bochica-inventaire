@@ -63,6 +63,15 @@
         <div class="logo-sub">Gestion interne</div>
       </button>
       <nav class="sidebar-nav" id="sidebar-nav" aria-label="Sections de l'application"></nav>
+      <!-- Pill aperçu rôle (visible uniquement pour admin réel) — v3.28.0 -->
+      <div id="preview-role-pill" class="preview-role-pill" style="display:none">
+        <span class="preview-role-label">Aperçu :</span>
+        <select id="preview-role-select" onchange="onPreviewRoleChange(this.value)" aria-label="Aperçu en tant que rôle">
+          <option value="">Admin (réel)</option>
+          <option value="chef">Chef</option>
+          <option value="employee">Employé</option>
+        </select>
+      </div>
       <div class="sidebar-bottom">
         <button class="btn-icon-sm" onclick="toggleDark()" id="dark-btn"></button>
         <button class="btn-icon-sm" onclick="toggleUILang()" id="lang-btn"></button>
@@ -72,6 +81,12 @@
 
     <!-- ═══ MAIN ═══ -->
     <main class="main" id="main-area">
+      <!-- Bandeau aperçu rôle (sticky, visible quand admin prévisualise — v3.28.0) -->
+      <div id="preview-banner" class="preview-banner" style="display:none">
+        <span class="preview-banner-icon" aria-hidden="true">👁</span>
+        <span class="preview-banner-msg" id="preview-banner-msg"></span>
+        <button class="preview-banner-exit" onclick="exitPreviewMode()">Sortir de l'aperçu</button>
+      </div>
       <header class="topbar">
         <div style="display:flex;align-items:center;gap:12px">
           <button class="btn-icon-sm" onclick="toggleSidebar()" aria-label="Ouvrir/fermer le menu" id="sidebar-toggle-btn" style="border:1px solid var(--border-strong);color:var(--text2)"></button>
