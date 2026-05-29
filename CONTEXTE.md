@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.24.2** — **Horaires : alignement parfait du panneau totaux avec la grille du haut**. Bug visuel après la v3.24.1 : le panneau totaux (Heures/Coût/Ventes prévues/Réelles/Écart) ne s'alignait pas avec les colonnes de la grille empgrid (130px+1fr+90px vs 160px+minmax(110px,1fr)+96px). Fix : panneau totaux utilise exactement les mêmes grid-template-columns que la grille du haut, même padding, même background:var(--border), même border-radius. La rangée day-name redondante en bas (qui dupliquait les labels du header) est retirée. Les colonnes-jour s'alignent maintenant verticalement au pixel près.
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.25.0** — **Horaires : carte « Congé » + export PNG public pour les employés**. (1) Les cellules vides affichent désormais une mini-carte « Congé » (dashed, gris discret) au lieu du bouton + isolé. Toute la cellule est cliquable pour ouvrir le modal d'ajout — l'effet hover passe le dashed en solid jaune. (2) Nouveau bouton « PNG pour équipe » dans la toolbar qui télécharge une image PNG de l'horaire de la semaine — **sans aucune donnée financière** (taux horaires, coûts, totaux $ retirés). En-tête Bochica + tricolore + entrées/sorties uniquement. Idéal pour partager via SMS ou affichage en cuisine sans révéler les salaires. Utilise html2canvas via CDN.
+>
+> ⚠️ **29 mai 2026 — v3.24.2** — **Horaires : alignement parfait du panneau totaux avec la grille du haut**. Bug visuel après la v3.24.1 : le panneau totaux (Heures/Coût/Ventes prévues/Réelles/Écart) ne s'alignait pas avec les colonnes de la grille empgrid (130px+1fr+90px vs 160px+minmax(110px,1fr)+96px). Fix : panneau totaux utilise exactement les mêmes grid-template-columns que la grille du haut, même padding, même background:var(--border), même border-radius. La rangée day-name redondante en bas (qui dupliquait les labels du header) est retirée. Les colonnes-jour s'alignent maintenant verticalement au pixel près.
 >
 > ⚠️ **29 mai 2026 — v3.24.1** — **Horaires : grille employés × jours (hybride tableau + cartes)**. Retour d'utilisateur après la v3.24.0 : « je veux garder ce design mais plus style tableau avec la liste de tous les employés dans une colonne à gauche ». Refonte : la vue calendrier par colonnes-jour est remplacée par une **grille tableau** avec employés en lignes à gauche (sticky, avec border-color section), 7 colonnes-jour au centre (chaque cellule = shift card compact OU bouton + Add discret), colonne totaux à droite. Garde la modal d'édition, le drag & drop entre cellules, et la palette de couleurs sections (ambré cuisine / bleu service). Plus efficace pour voir « toute l'équipe » d'un coup et identifier rapidement les jours faibles d'un employé.
 >
@@ -499,6 +501,31 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Horaires : carte « Congé » + export PNG public (v3.25.0) 🏖️📸
+
+Deux ajouts demandés en parallèle pour la page Employés & Horaires.
+
+**1. Carte « Congé » dans les cellules vides**
+- Avant : cellules vides montraient juste un bouton + circulaire au centre (visuellement vides).
+- Après : mini-carte `.shift-card--off` avec label « CONGÉ » en uppercase + sous-label « + Ajouter » discret. Style **dashed** (border + barre latérale gauche) pour signaler l'état non-travaillé.
+- Toute la carte est cliquable → ouvre le modal d'ajout de shift pour cet employé/jour.
+- Au hover : dashed → solid, accent jaune. Sous-label « + Ajouter » s'affiche en pleine opacité.
+- Garde la fonctionnalité drop target (recevoir un shift glissé depuis une autre cellule).
+
+**2. Export PNG « pour équipe »**
+- Nouveau bouton **« PNG pour équipe »** dans la toolbar (entre « Copier → S+1 » et le pill ratio).
+- Génère une image PNG (résolution 2× pour rendu Retina) de l'horaire de la semaine courante, à partager via SMS / affichage cuisine.
+- **Sans aucune donnée financière** : taux horaires, coûts par jour, totaux $, ratio, ventes prévues/réelles, écart — tout est retiré du rendu d'export.
+- Contenu : en-tête BOCHICA + tricolore + titre « Horaire — Semaine N · dates », puis grille employés × jours avec **uniquement** : nom employé, section (Cuisine/Service/Autre), heures entrée → sortie ou label « Congé » pour les jours non-travaillés. Footer avec date de génération.
+- Style minimaliste hardcodé inline (indépendant du theme CSS principal) pour un rendu stable et prévisible. Couleurs Bochica conservées (ambré cuisine, bleu service, crème fond).
+
+**Implémentation**
+- **`exportScheduleAsPNG()`** (~110 lignes dans `pages-hr.js`) : construit un container hors-écran avec le DOM clean, attend 100 ms pour les polices, capture avec html2canvas (scale 2, backgroundColor crème, logging off), convertit en data URL, télécharge via lien temporaire. Toast de feedback + nettoyage du DOM en finally.
+- **html2canvas chargé via CDN** (`cdn.jsdelivr.net/npm/html2canvas@1.4.1`) dans `index.html` avec defer. ~50 ko. Vérification `typeof window.html2canvas === "function"` avant usage.
+- **CSS (~45 lignes)** : `.shift-card--off` (dashed border, flex column, hover state), `.shift-off-label` (uppercase 11px), `.shift-off-add` (9px, opacity 0.7 → 1).
+
+**CACHE_VERSION** → `v3.25.0`
 
 ### 29 mai 2026 — Horaires : alignement panneau totaux ↔ grille (v3.24.2) 📐
 

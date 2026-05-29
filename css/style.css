@@ -9186,3 +9186,62 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   .schedule-empgrid-emp-meta{font-size:9px}
   .shift-card.shift-card--compact .shift-card-time{font-size:11px}
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v3.25.0 — Carte "Congé" pour les cellules vides
+   ═══════════════════════════════════════════════════════════════
+   Remplace le bouton + isolé par une mini-carte "Congé" cliquable.
+   Reste visuellement discret (gris, dashed) pour ne pas dominer.
+   ─────────────────────────────────────────────────────────────── */
+
+.shift-card.shift-card--off{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  padding:6px 8px;
+  background:transparent;
+  border:0.5px dashed var(--border);
+  border-left:3px dashed var(--text3);
+  border-top-left-radius:0;
+  border-bottom-left-radius:0;
+  border-top-right-radius:var(--radius-md);
+  border-bottom-right-radius:var(--radius-md);
+  color:var(--text3);
+  cursor:pointer;
+  transition:all var(--transition-base);
+  min-height:44px;
+}
+.shift-card.shift-card--off:hover{
+  background:var(--surface2);
+  border-style:solid;
+  border-color:var(--accent);
+  border-left-color:var(--accent);
+  color:var(--text);
+}
+.shift-off-label{
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  line-height:1;
+  margin-bottom:2px;
+}
+.shift-off-add{
+  font-family:var(--font-body);
+  font-size:9px;
+  font-weight:500;
+  display:inline-flex;
+  align-items:center;
+  gap:2px;
+  opacity:.7;
+}
+.shift-card.shift-card--off:hover .shift-off-add{
+  opacity:1;
+  color:var(--accent-text);
+}
+[data-theme="dark"] .shift-card.shift-card--off:hover{
+  background:var(--surface);
+}

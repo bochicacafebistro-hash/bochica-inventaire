@@ -168,6 +168,7 @@ function renderEmployes() {
           <!-- Actions fréquentes (visibles pour tous les admins) -->
           <button class="btn-secondary btn-sm" onclick="openOpenDaysModal()" title="Choisir les jours d'ouverture">${icon("calendar", 14)} Jours ouverts</button>
           <button class="btn-secondary btn-sm" onclick="duplicateScheduleToNextWeek()" title="Copier cet horaire vers la semaine suivante">${icon("copy", 14)} Copier → S${weekNum + 1}</button>
+          <button class="btn-secondary btn-sm" onclick="exportScheduleAsPNG()" title="Télécharger une image PNG de l'horaire pour partager avec l'équipe (sans aucune donnée financière)">${icon("download", 14)} PNG pour équipe</button>
           <div class="schedule-ratio-pill" title="Ratio salaires / ventes : les Ventes prévues sont recalculées instantanément">
             <span class="schedule-ratio-pill__label">${icon("trending-up", 14)} Ratio</span>
             <input id="sched-ratio" type="number" min="1" max="100" step="0.5" value="${(ratio * 100).toFixed(1)}" onchange="updateSalesRatio(this.value)" oninput="updateSalesRatioLive(this.value)" aria-label="Ratio salaires sur ventes"/>
@@ -233,9 +234,12 @@ function renderEmployes() {
                     ondragover="shiftCardDragOver(event,'${dk}')"
                     ondragleave="shiftCardDragLeave(event)"
                     ondrop="shiftCardDrop(event,'${dk}')">
-                  <button class="shift-add-mini" onclick="openShiftModal('${row.emp.id}','${dk}')" title="Ajouter un shift">
-                    ${icon("plus", 11)}
-                  </button>
+                  <div class="shift-card shift-card--off"
+                      onclick="openShiftModal('${row.emp.id}','${dk}')"
+                      title="Aucun shift ce jour-là — cliquer pour ajouter">
+                    <div class="shift-off-label">Congé</div>
+                    <div class="shift-off-add">${icon("plus", 11)} Ajouter</div>
+                  </div>
                 </div>`;
               }
               return `<div class="schedule-empgrid-cell"
@@ -1208,5 +1212,130 @@ async function shiftCardDrop(e, targetDk) {
   } catch (err) {
     console.error("shiftCardDrop failed:", err);
     toast("Erreur déplacement : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// v3.25.0 — Export PNG d'horaire (version publique pour employés)
+// ═══════════════════════════════════════════════════════════════
+// Génère une image PNG propre de l'horaire de la semaine pour partage
+// avec les employés. SUPPRIME tous les chiffres financiers (taux horaire,
+// coût par jour, total à payer) — seules les heures entrée/sortie sont
+// affichées. Utilise html2canvas pour capturer un DOM dédié.
+
+async function exportScheduleAsPNG() {
+  if (typeof window.html2canvas !== "function") {
+    toast("La bibliothèque PNG n'est pas chargée. Recharge la page.", "error");
+    return;
+  }
+  toast("Préparation de l'image…", "info", 2000);
+
+  const weekStart = getWeekStart(scheduleWeekOffset);
+  const weekDaysAll = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
+  });
+  const weekEnd = weekDaysAll[6];
+  const weekNum = getISOWeek(weekDaysAll[3]);
+  const weekLabel = `${weekDaysAll[0].toLocaleDateString("fr-CA", { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString("fr-CA", { month: "short", day: "numeric", year: "numeric" })}`;
+
+  const openDays = Array.isArray(scheduleSettings.openDays) ? scheduleSettings.openDays : [0,1,2,3,4,5,6];
+  const visibleIdx = [0,1,2,3,4,5,6].filter(i => openDays.includes(i));
+  const weekDays = visibleIdx.map(i => weekDaysAll[i]);
+
+  // Récupère les shifts par employé (sans aucune donnée financière)
+  const rows = employees.map(emp => {
+    const shifts = emp.shifts || {};
+    const sec = (emp.section || "service");
+    const daily = weekDays.map(d => {
+      const s = shifts[dayKey(d)];
+      if (s && s.start && s.end) return { start: s.start, end: s.end };
+      return null;
+    });
+    return { emp, section: sec, daily };
+  });
+
+  // Construit un DOM off-screen avec un style minimaliste destiné à l'export
+  const container = document.createElement("div");
+  container.id = "_schedule-png-export";
+  container.style.cssText = `
+    position:fixed; left:-99999px; top:0; z-index:-1;
+    background:#fdf6e7; padding:32px;
+    font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    color:#0e0d0c; width:1200px;
+  `;
+  container.innerHTML = `
+    <div style="text-align:center; margin-bottom:24px; padding-bottom:18px; border-bottom:2px solid #0e0d0c">
+      <div style="font-family:'Bebas Neue',Impact,sans-serif; font-size:42px; letter-spacing:.08em; line-height:1">BOCHICA</div>
+      <div style="font-size:13px; color:#6e5f50; margin-top:2px">Restaurant Colombien</div>
+      <div style="margin-top:8px">
+        <div style="display:inline-block; height:3px; width:60px; background:#F7B32C"></div><div style="display:inline-block; height:3px; width:60px; background:#4a90e2"></div><div style="display:inline-block; height:3px; width:60px; background:#e74c3c"></div>
+      </div>
+      <div style="font-size:26px; font-weight:700; margin-top:14px">Horaire — Semaine ${weekNum}</div>
+      <div style="font-size:14px; color:#444; margin-top:2px">${weekLabel}</div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:180px repeat(${visibleIdx.length}, 1fr); gap:1px; background:#c8bca5; border:1px solid #c8bca5; border-radius:8px; overflow:hidden">
+      <div style="background:#ede3d2; padding:12px; font-size:12px; font-weight:600; color:#444; text-transform:uppercase; letter-spacing:.05em">Employé</div>
+      ${weekDays.map((d, k) => `<div style="background:#ede3d2; padding:12px; text-align:center">
+        <div style="font-size:11px; font-weight:600; color:#444; text-transform:uppercase; letter-spacing:.05em">${DAYS_FR[visibleIdx[k]]}</div>
+        <div style="font-size:18px; font-weight:700; margin-top:2px">${d.getDate()}/${d.getMonth() + 1}</div>
+      </div>`).join("")}
+
+      ${rows.map(row => {
+        const isKitchen = row.section === "cuisine";
+        const isService = row.section === "service";
+        const accentColor = isKitchen ? "#BA7517" : isService ? "#378ADD" : "#888780";
+        const secLabel = isKitchen ? "Cuisine" : isService ? "Service" : "Autre";
+        return `
+          <div style="background:#fff; padding:12px; border-left:4px solid ${accentColor}; display:flex; flex-direction:column; justify-content:center; min-height:70px">
+            <div style="font-size:15px; font-weight:700; line-height:1.2">${esc(row.emp.name || "")}</div>
+            <div style="font-size:11px; font-weight:600; color:#666; text-transform:uppercase; letter-spacing:.05em; margin-top:3px">${secLabel}</div>
+          </div>
+          ${row.daily.map(d => {
+            if (!d) {
+              return `<div style="background:#fff; padding:10px; display:flex; align-items:center; justify-content:center; min-height:70px">
+                <div style="font-size:13px; color:#999; font-style:italic">Congé</div>
+              </div>`;
+            }
+            const tintBg = isKitchen ? "rgba(186,117,23,.10)" : isService ? "rgba(55,138,221,.08)" : "#f5f1e8";
+            return `<div style="background:#fff; padding:8px; display:flex; align-items:center; justify-content:center; min-height:70px">
+              <div style="background:${tintBg}; border-left:4px solid ${accentColor}; padding:8px 12px; border-radius:8px; text-align:center; min-width:90px">
+                <div style="font-size:16px; font-weight:700; color:#0e0d0c; letter-spacing:.02em">${d.start} → ${d.end}</div>
+              </div>
+            </div>`;
+          }).join("")}
+        `;
+      }).join("")}
+    </div>
+
+    <div style="margin-top:24px; padding-top:14px; border-top:1px dashed #c8bca5; display:flex; justify-content:space-between; font-size:11px; color:#6e5f50">
+      <div>Bochica Café Bistro</div>
+      <div>Affiché le ${new Date().toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}</div>
+    </div>
+  `;
+  document.body.appendChild(container);
+
+  try {
+    // Attendre un peu pour que les polices/styles se rendent
+    await new Promise(r => setTimeout(r, 100));
+    const canvas = await html2canvas(container, {
+      scale: 2,                    // Retina-quality
+      backgroundColor: "#fdf6e7",  // Fond crème
+      logging: false,
+      useCORS: true
+    });
+    const url = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.download = `Bochica_Horaire_Sem${weekNum}_${dayKey(weekStart)}.png`;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast("Image PNG téléchargée — prête à partager avec l'équipe.", "success", 4000);
+  } catch (err) {
+    console.error("exportScheduleAsPNG failed:", err);
+    toast("Erreur génération PNG : " + (err.message || err), "error", 5000);
+  } finally {
+    container.remove();
   }
 }
