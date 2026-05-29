@@ -301,54 +301,68 @@ bochica-inventaire/
 - **Kanban Tâches** : 3 colonnes (À faire / En cours / Complété) avec drag & drop.
 - **Log d'actions** : la collection `/logs` continue d'enregistrer les actions (création/modif/suppression). Pas de page UI pour les consulter — l'admin peut accéder via la console Firebase si besoin.
 
-### 👥 Employés & Horaires
-- Fiche employé + grille horaire semaine (Matin/Soir/Journée/Congé)
-- Section employé (cuisine / service / autre) — utilisée pour le pool de pourboires
-- Taux horaire par employé + option salarié (heures fixes hebdomadaires)
+### 👥 Employés & Horaires (refonte empgrid v3.24.1 + cartes Congé v3.25.0)
+- **Vue grille employés × jours** : `.schedule-empgrid` avec employés en lignes (sticky, border-color section), 7 colonnes-jour au centre, colonne totaux à droite. Pas de tableau HTML — pure CSS Grid avec `display:contents` sur les rangées.
+- Chaque cellule-jour contient soit une **card shift** (start → end + heures + coût), soit une **carte « Congé »** dashed (cliquable pour ajouter). Couleur de la barre latérale selon section (ambré cuisine / bleu service / gris autre).
+- **Clic sur une card → modal d'édition** `openShiftModal` (employé fixe, selects 30 min, bouton supprimer). **Clic sur Congé → modal de création**.
+- **Drag & drop** d'une card vers un autre jour pour le même employé → déplace le shift (confirmation si la cible a déjà un shift).
+- **Header de colonne** : compteur `X pers · Yh` pour voir la couverture du jour en un coup d'œil.
+- **Cellule totaux** (droite) : heures de la semaine + total à payer par employé.
+- **Panneau totaux** sous la grille avec **mêmes grid-template-columns** pour alignement parfait : 5 lignes (Heures · Coût · Ventes prévues · Ventes réelles (inputs) · Écart vert/rouge).
+- **Bouton « PNG pour équipe »** dans la toolbar (v3.25.0) : télécharge une image PNG de l'horaire pour partage (sans données financières). Utilise html2canvas via CDN.
+- **Bouton « Copier → S+1 »** : duplique vers la semaine suivante. **Modal « Jours ouverts »** pour configurer les jours d'ouverture.
+- Section employé (cuisine / service / autre) — utilisée pour le pool de pourboires et la couleur des cards.
+- Taux horaire + option salarié (heures fixes hebdomadaires) configurés dans la fiche employé.
+- Toujours présent : **coverage chart** (Chart.js, 7 lignes superposées par jour), **team cards** (fiches employés en bas).
 
-### 💵 Salaires & Pourboires
-- Page séparée pour saisir les **heures réelles** travaillées (peuvent différer du planifié)
-- **Inputs `<input type="time">`** : saisie à la minute près (pas seulement par tranches de 30 min)
-- **Comparaison planifié vs réel** : chaque ligne affiche `Réel / Planifié` + colonne **Écart** avec couleur (vert si plus, rouge si moins)
-- **Cellule en surbrillance ambrée** quand l'heure réelle diffère du planifié
-- **Heures de service configurables** globalement via modale (settings/payroll.defaultServiceHours par jour 0-6) — fixes par défaut, modifiables n'importe quand
-- **Pourboires saisis par jour** dans une grille (un input par jour) — le **total semaine** se calcule automatiquement
-- **Répartition automatique des pourboires** :
-  - Cuisine (`section === "cuisine"`) → pool 25% par défaut
-  - Service + Admin (`section === "service"` ou `"other"`) → pool 75% par défaut
-  - Pourcentages modifiables via la modale « Répartition »
-  - Calcul au prorata des heures éligibles (heures dans la fenêtre de service du jour)
-- **Bouton « Copier → S{n+1} »** : duplique heures réelles + pourboires vers la semaine suivante (avec confirmation si la cible contient déjà des données)
-- **Bouton « Reprendre du planifié »** : initialise les heures réelles avec l'horaire planifié de la semaine
-- Calcul salaire = heures réelles totales × taux (ou heures fixes × taux pour les salariés)
-- Total à payer par employé = salaire + pourboire
+### 💵 Salaires & Pourboires (refonte empgrid v3.27.0)
+- **Même grille empgrid** que Horaires (employés × jours avec cards shift), adaptée à la paie.
+- **Cellule employé éditable** : drag handle ⋮⋮ (réordonnement des employés) + nom + badge **EXTRA** pour les manuels + bouton trash + **select section override** (Auto / Cuisine / Service / Excluded — change la part de pourboire pour la semaine sans toucher à la fiche permanente) + taux horaire affiché.
+- **Cards shift** : `start → end` + meta avec heures + pourboire du jour en vert (prorata).
+- **Card « Congé »** pour jours sans pointage — affiche le **planifié** « 09:00 → 17:00 · Pas pointé » si l'horaire était prévu (fond bleuté), ou « Congé · + Saisir » sinon.
+- **Card « En cours »** (v3.27.1) : pour les shifts partiels (entrée pointée mais pas sortie), card spéciale avec « 09:00 → en cours », tag « EN COURS » et point vert pulsant. Évite la confusion avec un congé.
+- **Cellule totaux** (droite) multi-lignes Hrs (réel/planif) · Écart vert/rouge · Sal · Pourb vert · **Total**. Barre colorée 3 px en haut selon section pour délimitation claire (v3.27.2).
+- **Modal d'édition** `openPayrollShiftModal` (selects 15 min, Supprimer/Enregistrer).
+- **Drag & drop** des cards entre jours pour le même employé.
+- **Bandeau d'alertes intelligentes** (v3.19.0) en haut : détection auto des sorties manquantes / shifts > 14h / planifiés sans pointage.
+- **Bouton « Annuler mes saisies »** protégé par confirmation à taper « EFFACER » (v3.22.0).
+- **2 boutons PDF** dans la toolbar : « PDF 1 sem » (semaine courante) et « PDF 2 sem » (paie aux 2 semaines).
+- **Pourboires saisis par jour** dans une grille séparée — total semaine auto-calculé.
+- **Répartition pourboires** : Cuisine 25% / Service+Admin 75% par défaut, modifiables. Calcul prorata des heures éligibles dans la fenêtre de service.
+- **Heures de service** configurables globalement (settings/payroll.defaultServiceHours).
+- **Verrouillage de semaine** : transforme le brut en dépense « Salaires sem. N » dans Dépenses & Revenus.
 
-### 📈 Simulation paie (scénarios hypothétiques RH)
-- Page **Simulation paie** (admin seulement) sous Salaires & Pourboires
-- **Création** depuis l'horaire planifié courant : snapshot figé (baseline) + version modifiable (simulation)
-- Donne un nom + description au scénario (ex : « Embauche serveuse été », « Hausse salaire cuisine +2$/h »)
-- **Modifications possibles** sur la simulation :
-  - Renommer un employé fictivement
-  - Changer le taux horaire
-  - Changer la section (cuisine / service / autre) → impacte la répartition des pourboires
-  - Ajuster les heures de chaque jour (entrée/sortie par dropdown 30 min)
-  - **Ajouter des employés fictifs** (badge « FICTIF ») pour tester une future embauche
-  - **Retirer un employé** de la simulation (badge « RETIRÉ » dans la comparaison)
-  - Modifier le total pourboires + parts cuisine/service
-  - Modifier les heures de service par jour de semaine
-  - Modifier les jours d'ouverture
-- **Comparaison côte à côte** : tableau Réel | Simulation | Écart $ avec % par employé + ligne TOTAL
-- **4 KPI en haut** : Heures totales, Masse salariale, Pourboires distribués, Total à payer (avec écart $/%)
-- **Code couleur sémantique** :
-  - Coûts qui augmentent (masse salariale, total) → rouge
-  - Coûts qui baissent → vert
-  - Pourboires qui montent → vert (positif pour l'équipe)
-  - Heures qui montent → vert (plus de couverture)
-- **Bouton « Réinitialiser au réel »** : écrase la simulation par le snapshot baseline
-- **Duplication** : créer une variante d'une simulation existante
-- **Plusieurs scénarios sauvegardés** simultanément (Firestore `payrollSimulations`)
-- **Persistance sans toucher au réel** : aucune modification de la simulation n'affecte les vrais employés, horaires ou paie
-- Reset automatique à la liste quand on clique sur « Simulation paie » dans la sidebar (sortie propre de l'éditeur)
+### 📈 Simulation paie (refonte empgrid v3.26.0)
+- **Même grille empgrid** que Horaires/Salaires, adaptée à la sim (indexée par dow 0-6 et non par dk).
+- **Cellule employé éditable** avec inputs inline (nom + taux + section + badge FICTIF si applicable) + bouton trash au hover.
+- Cards shift compactes + cards Congé + drag & drop entre jours.
+- **Modal** `openSimShiftModal(simId, empId, dow)` pour éditer.
+- **Cellule totaux** multi-lignes Hrs · Sal · Pourb · Total + bouton supprimer.
+- **4 KPI en haut** : Heures totales, Masse salariale, Pourboires distribués, Total à payer (avec écart $/%).
+- **Paramètres globaux** : pourboires totaux + parts cuisine/service + ratio salaires/ventes + jours ouverts.
+- **Code couleur sémantique** : coûts qui montent = rouge, baissent = vert ; pourboires/heures qui montent = vert.
+- **Comparaison côte à côte** en bas : tableau Réel | Simulation | Écart $ avec % par employé + TOTAL.
+- **Coverage chart** propre à la sim (par section, configurable).
+- **Persistance** : Firestore `payrollSimulations`, plusieurs scénarios sauvegardés simultanément. Aucun impact sur les vrais employés/horaires/paie.
+
+### ⏱️ Pointage (kiosque PIN — v3.17.0+)
+- **Page kiosque** accessible aux 3 rôles (typiquement la tablette à l'entrée reste loggée en « Employe »).
+- L'employé tape son **PIN à 4 chiffres** (configuré dans sa fiche), le système l'identifie.
+- **2 boutons toujours visibles** ENTRÉE (vert) + SORTIE (bleu) côte à côte avec heure actuelle. Barre d'info au-dessus indique ce qui a déjà été pointé aujourd'hui.
+- **Auto-retour au keypad** 1,8 s après confirmation du punch (fluide pour les changements d'employé pendant un rush).
+- **Live clock** + date + **badge timezone visible** (« America/Toronto · jour système : 2026-05-29 ») pour valider d'un coup d'œil que le bon fuseau est utilisé.
+- **Optim 12 pouces** : keypad 64×64 px, titres 26 px, tout tient dans 700 px de hauteur viewport.
+- **Page d'accueil du rôle Employé = Pointage** (v3.17.2) — la tablette s'ouvre directement sur le clavier au login.
+- **Données écrites dans `payroll/{weekId}.actualShifts`** → alimente automatiquement le tableau Salaires & Pourboires. L'admin peut toujours corriger une heure à postériori.
+- **Règles Firestore** élargies pour permettre aux non-admins d'écrire **uniquement** sur `actualShifts` (verrouillage et autres champs restent admin only).
+
+### 👁 Mode aperçu rôle (admin → chef/employé — v3.28.0)
+- **Pill dans la sidebar** (visible uniquement pour le vrai admin) avec select « Admin (réel) / Chef / Employé ».
+- Sélectionner Chef ou Employé bascule toute l'app en mode aperçu — sidebar filtrée, pages cachées, boutons admin invisibles.
+- **Bandeau sticky jaune** en haut « Aperçu actif — tu vois l'app comme un Employé » avec bouton « Sortir de l'aperçu ».
+- Implémentation : écrasement temporaire de `userRole`/`isAdmin` (sauvés dans `_realUserRole`/`_realIsAdmin`) — pas de refactor des 38 références existantes.
+- **Sécurité préservée** : les règles Firestore vérifient toujours le vrai token Firebase Auth côté serveur.
+- Reset automatique au logout.
 
 ### 💰 Dépenses & Revenus
 - Calcul TPS/TVQ auto, catégories personnalisables
