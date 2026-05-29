@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.20.0** — **Pointage : compaction 12 pouces + 2 boutons toujours visibles + badge timezone**. La page débordait sur écran 12" (clavier coupé). Toutes les tailles réduites (keypad 96→64 px, titre 42→26 px, horloge 32→22 px, bouton min-height 200→130 px). L'écran employé affiche désormais **2 boutons côte à côte** (ENTRÉE vert + SORTIE bleu) toujours présents, avec une barre d'info au-dessus indiquant ce qui a déjà été pointé aujourd'hui. Badge timezone visible sous l'horloge (`Fuseau · jour système : 2026-05-29`) pour validation rapide. Action `override-sortie` retirée (devenue inutile avec les 2 boutons).
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.21.0** — **Salaires : PDF bi-mensuel (2 semaines) + retrait label « (saisie libre) »**. Nouveau bouton « PDF 2 sem » dans la toolbar qui génère un rapport combinant la semaine courante + la précédente — adapté à une paie aux 2 semaines, plus besoin de produire 2 rapports séparés. KPI sur 2 sem, sous-totaux par sem, tableau récap par employé (1 ligne avec colonnes S1/S2/Total pour heures, salaire, pourboires). Bouton « Exporter PDF » renommé « PDF 1 sem » pour la clarté. Par ailleurs, le suffixe « (saisie libre) » qui apparaissait dans les dropdowns d'heures (pour les valeurs hors grille 15 min comme les punchs à la minute) est retiré — la valeur exacte reste affichée sans le label parasite.
+>
+> ⚠️ **29 mai 2026 — v3.20.0** — **Pointage : compaction 12 pouces + 2 boutons toujours visibles + badge timezone**. La page débordait sur écran 12" (clavier coupé). Toutes les tailles réduites (keypad 96→64 px, titre 42→26 px, horloge 32→22 px, bouton min-height 200→130 px). L'écran employé affiche désormais **2 boutons côte à côte** (ENTRÉE vert + SORTIE bleu) toujours présents, avec une barre d'info au-dessus indiquant ce qui a déjà été pointé aujourd'hui. Badge timezone visible sous l'horloge (`Fuseau · jour système : 2026-05-29`) pour validation rapide. Action `override-sortie` retirée (devenue inutile avec les 2 boutons).
 >
 > ⚠️ **26 mai 2026 — v3.19.0** — **Salaires : bannière d'alertes intelligentes**. Nouveau bloc en haut du tableau qui détecte automatiquement 3 types d'anomalies : (1) entrée pointée mais pas sortie sur un jour passé, (2) shift de plus de 14 h (oubli probable de pointer sortie), (3) employé planifié mais aucun pointage sur un jour passé. Affichage groupé par type avec compteurs (warnings ambrés / info bleus), disparaît automatiquement dès qu'on corrige la saisie. Skip si la semaine est verrouillée. Évite que des erreurs silencieuses passent sous le radar avant le verrouillage de la paie.
 >
@@ -487,6 +489,37 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Salaires : PDF bi-mensuel + fix « (saisie libre) » (v3.21.0) 📅📄
+
+**Rapport PDF couvrant 2 semaines de paie**
+- Nouveau bouton **« PDF 2 sem »** dans la toolbar (à côté de « PDF 1 sem », anciennement « Exporter PDF »).
+- Génère un rapport agrégé sur la **semaine courante + la semaine précédente** — pratique quand on paie aux 2 semaines, plus besoin de produire 2 rapports séparés.
+- Contenu du PDF (landscape Letter, multi-pages auto) :
+  - **En-tête** : « Rapport de paie — 2 semaines (S19 + S20) · date début → date fin »
+  - **4 KPI combinés** : Total à payer, Salaires bruts, Pourboires, Heures totales (sommés sur 2 sem)
+  - **Sous-totaux par semaine** : 2 mini cards avec dates + heures + salaires + pourboires + total par semaine
+  - **Tableau récap par employé** : 1 ligne avec colonnes Employé · Section · Hrs S1 · Hrs S2 · Hrs Total · Sal S1 · Sal S2 · Pourb S1 · Pourb S2 · Total à payer (2 sem)
+  - **Badge EXTRA** conservé pour les employés ad-hoc
+  - **Ligne totaux** en bas avec sommes par semaine et combinées
+  - **Footer** « Période de paie 2 semaines · Page X/Y »
+- Nom de fichier : `Bochica_Paie2Sem_S{N1}-{N2}_{date}.pdf`
+
+**Nouveau helper réutilisable `_computePayrollWeekData(offset)`**
+- ~110 lignes, encapsule toute la logique de calcul d'une semaine de paie : fetch Firestore (ou cache local), agrégation des heures, application des overrides de section, calcul des pourboires prorata, sommes globales.
+- Optimisation : si l'offset demandé correspond à la semaine actuellement subscribed, utilise `payrollWeekData` directement (évite un appel réseau).
+- Retourne un objet riche `{ weekStart, weekEnd, weekNum, weekLabel, startLabel, endLabel, empRows, sums, tipsByDay, totalTips, ... }`.
+- Permet à `generateBiWeeklyPDF` de récupérer 2 semaines en parallèle et de les agréger via une Map (union des employés par ID, ordre = semaine la plus récente).
+
+**Fix label « (saisie libre) »**
+- Avant, les dropdowns d'heures du tableau Salaires affichaient `09:32 (saisie libre)` quand un punch tombait à la minute près (hors grille 15 min). Surchargeait visuellement le tableau (largeur de cellule pour 50% des cellules avec punchs réels).
+- Après : juste `09:32`. La valeur exacte reste sélectionnée et préservée à la sauvegarde, sans le label parasite.
+- Une seule ligne modifiée dans `buildPayrollTimeOptions()`.
+
+**Renommage cosmétique**
+- Bouton « Exporter PDF » → « **PDF 1 sem** » pour distinguer clairement des deux options de rapport.
+
+**CACHE_VERSION** → `v3.21.0`
 
 ### 29 mai 2026 — Pointage : compaction 12 pouces + 2 boutons + badge TZ (v3.20.0) 📐🎯🌐
 
