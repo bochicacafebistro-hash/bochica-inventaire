@@ -8589,3 +8589,339 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 [data-theme="dark"] .payroll-table .schedule-emp-row.is-manual-emp .schedule-td--emp{
   background:linear-gradient(90deg, rgba(247,179,44,.10), transparent 60%) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v3.24.0 — Vue calendrier hebdomadaire (page Employés & Horaires)
+   ═══════════════════════════════════════════════════════════════
+   Remplace la grille employé×jours par une grille colonnes-jour
+   avec cartes shift triées par heure de début. Vue « par jour ».
+   ─────────────────────────────────────────────────────────────── */
+
+/* Grille principale : 1 colonne par jour ouvert (--n-days set inline) */
+.schedule-week-cal{
+  display:grid;
+  grid-template-columns:repeat(var(--n-days, 7), minmax(0, 1fr));
+  gap:8px;
+  margin-top:var(--sp-4);
+  margin-bottom:var(--sp-4);
+}
+
+/* Colonne d'un jour */
+.schedule-day-col{
+  display:flex;
+  flex-direction:column;
+  background:var(--surface);
+  border:0.5px solid var(--border);
+  border-radius:var(--radius-md);
+  min-height:240px;
+  transition:background var(--transition-base), border-color var(--transition-base);
+}
+.schedule-day-col.is-drop-target{
+  background:rgba(247,179,44,.08);
+  border-color:var(--accent);
+  border-style:dashed;
+}
+
+/* Header de colonne : jour, date, compteurs */
+.schedule-day-col-head{
+  padding:10px 10px 8px;
+  border-bottom:0.5px solid var(--border);
+  text-align:center;
+}
+.schedule-day-col-name{
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:600;
+  color:var(--text2);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+}
+.schedule-day-col-date{
+  font-family:var(--font-body);
+  font-size:18px;
+  font-weight:600;
+  color:var(--text);
+  margin-top:2px;
+}
+.schedule-day-col-stats{
+  font-family:var(--font-body);
+  font-size:10px;
+  color:var(--text3);
+  margin-top:4px;
+  font-variant-numeric:tabular-nums;
+}
+.schedule-day-col-sep{
+  margin:0 4px;
+  opacity:.5;
+}
+
+/* Liste verticale des cartes shift */
+.schedule-day-col-cards{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:5px;
+  padding:8px;
+}
+
+/* Carte shift individuelle */
+.shift-card{
+  background:var(--surface);
+  border:0.5px solid var(--border);
+  border-left:3px solid var(--text3);
+  border-top-left-radius:0;
+  border-bottom-left-radius:0;
+  border-top-right-radius:var(--radius-md);
+  border-bottom-right-radius:var(--radius-md);
+  padding:6px 8px;
+  cursor:pointer;
+  transition:background var(--transition-base), border-color var(--transition-base), transform var(--transition-base);
+}
+.shift-card:hover{
+  background:var(--surface2);
+  border-color:var(--text3);
+}
+.shift-card.is-dragging{
+  opacity:.4;
+  transform:scale(.96);
+}
+
+/* Sections : couleur de la barre latérale */
+.shift-card.is-kitchen{
+  border-left-color:#BA7517;
+}
+.shift-card.is-service{
+  border-left-color:#378ADD;
+}
+.shift-card.is-other{
+  border-left-color:#888780;
+}
+
+/* Header de carte : avatar initiales + nom */
+.shift-card-head{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  margin-bottom:3px;
+}
+.shift-card-avatar{
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:var(--surface2);
+  color:var(--text2);
+  font-size:9px;
+  font-weight:700;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  letter-spacing:0;
+  flex-shrink:0;
+}
+.shift-card.is-kitchen .shift-card-avatar{
+  background:rgba(186,117,23,.18);
+  color:#854F0B;
+}
+.shift-card.is-service .shift-card-avatar{
+  background:rgba(55,138,221,.18);
+  color:#0C447C;
+}
+.shift-card-name{
+  font-family:var(--font-body);
+  font-size:12px;
+  font-weight:600;
+  color:var(--text);
+  line-height:1.2;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  min-width:0;
+}
+
+/* Heures (start → end) */
+.shift-card-time{
+  font-family:var(--font-body);
+  font-size:11px;
+  font-variant-numeric:tabular-nums;
+  color:var(--text2);
+  letter-spacing:.02em;
+}
+
+/* Meta : heures travaillées + coût */
+.shift-card-meta{
+  display:flex;
+  justify-content:space-between;
+  margin-top:3px;
+  font-family:var(--font-body);
+  font-size:10px;
+  font-variant-numeric:tabular-nums;
+  color:var(--text3);
+}
+.shift-card-cost{
+  font-weight:600;
+  color:var(--text2);
+}
+
+/* État vide de la colonne */
+.shift-card-empty{
+  text-align:center;
+  font-family:var(--font-body);
+  font-size:11px;
+  color:var(--text3);
+  font-style:italic;
+  padding:14px 8px;
+}
+
+/* Bouton + Ajouter en bas de colonne */
+.shift-add-btn{
+  margin:6px 8px 8px;
+  padding:6px 8px;
+  background:transparent;
+  border:1px dashed var(--border);
+  border-radius:var(--radius-md);
+  color:var(--text3);
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:500;
+  cursor:pointer;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  transition:all var(--transition-base);
+}
+.shift-add-btn:hover{
+  background:var(--surface2);
+  border-color:var(--accent);
+  color:var(--text);
+  border-style:solid;
+}
+
+/* ── Panneau totaux sous le calendrier ── */
+.schedule-totals-panel{
+  margin-top:var(--sp-2);
+  padding:var(--sp-3) var(--sp-4);
+}
+.schedule-totals-grid{
+  display:grid;
+  /* 1 colonne pour le label + N colonnes jour + 1 colonne semaine */
+  grid-template-columns:130px repeat(var(--n-days, 5), 1fr) 90px;
+  gap:4px 8px;
+  align-items:center;
+}
+.schedule-totals-label{
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:600;
+  color:var(--text2);
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  padding:6px 0;
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.schedule-totals-val{
+  font-family:var(--font-body);
+  font-size:13px;
+  font-weight:600;
+  font-variant-numeric:tabular-nums;
+  color:var(--text);
+  text-align:right;
+  padding:6px 8px;
+}
+.schedule-totals-val--predicted{
+  color:#378ADD;
+}
+.schedule-totals-val--total{
+  font-weight:800;
+  font-size:14px;
+  background:var(--surface2);
+  border-radius:var(--radius-sm);
+}
+.schedule-totals-val--input input{
+  width:100%;
+  text-align:right;
+  border:0.5px solid var(--border);
+  border-radius:var(--radius-sm);
+  padding:3px 5px;
+  font-family:var(--font-body);
+  font-size:12px;
+  font-variant-numeric:tabular-nums;
+  background:transparent;
+  color:var(--text);
+}
+.schedule-totals-val--input input:focus{
+  outline:none;
+  border-color:var(--accent);
+  background:var(--surface);
+}
+.schedule-totals-val--gap.is-positive{
+  color:#1f7a1f;
+}
+.schedule-totals-val--gap.is-negative{
+  color:#b32820;
+}
+.schedule-totals-val--gap .gap-arrow{
+  margin-right:3px;
+  font-size:10px;
+}
+
+/* Petite ligne en bas avec les labels jour (sous le grid) */
+.schedule-totals-day-row{
+  display:grid;
+  grid-template-columns:130px repeat(var(--n-days, 5), 1fr) 90px;
+  gap:4px 8px;
+  margin-top:6px;
+  padding-top:6px;
+  border-top:0.5px dashed var(--border);
+}
+.schedule-totals-day-row > div:first-child{
+  visibility:hidden;
+}
+.schedule-totals-day-name{
+  font-family:var(--font-body);
+  font-size:10px;
+  font-weight:500;
+  color:var(--text3);
+  text-align:center;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.schedule-totals-day-name--total{
+  font-weight:700;
+  color:var(--text2);
+}
+
+/* Dark mode adaptations */
+[data-theme="dark"] .schedule-day-col.is-drop-target{
+  background:rgba(247,179,44,.12);
+}
+[data-theme="dark"] .shift-card.is-kitchen .shift-card-avatar{
+  background:rgba(186,117,23,.25);
+  color:#FAC775;
+}
+[data-theme="dark"] .shift-card.is-service .shift-card-avatar{
+  background:rgba(55,138,221,.25);
+  color:#85B7EB;
+}
+[data-theme="dark"] .schedule-totals-val--predicted{
+  color:#85B7EB;
+}
+
+/* Mobile : passe à 2 colonnes (scroll horizontal pas idéal) */
+@media (max-width:900px){
+  .schedule-week-cal{
+    grid-template-columns:repeat(2, 1fr);
+  }
+  .schedule-totals-grid,
+  .schedule-totals-day-row{
+    grid-template-columns:110px repeat(var(--n-days, 5), minmax(80px, 1fr)) 80px;
+    overflow-x:auto;
+  }
+}
+@media (max-width:600px){
+  .schedule-week-cal{
+    grid-template-columns:1fr;
+  }
+}

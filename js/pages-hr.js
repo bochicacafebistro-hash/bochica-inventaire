@@ -186,142 +186,140 @@ function renderEmployes() {
         </div>
       </div>
 
-      <!-- ══ Grille horaire ══ -->
-      <div class="schedule-wrap card" style="padding:0;overflow-x:auto">
-        <table class="schedule-table">
-          <thead>
-            <tr>
-              <th class="schedule-th--emp">Employé</th>
-              ${weekDays.map((d, k) => `<th class="schedule-th--day" colspan="2">
-                <div class="schedule-day-name">${DAYS_FR[visibleIdx[k]]}</div>
-                <div class="schedule-day-date">${d.getDate()}/${d.getMonth() + 1}</div>
-              </th>`).join("")}
-              <th class="schedule-th--summary">Heures</th>
-              <th class="schedule-th--summary">Taux</th>
-              <th class="schedule-th--summary">Total</th>
-            </tr>
-            <tr class="schedule-subheader">
-              <th></th>
-              ${weekDays.map(() => `<th class="schedule-th--entry">Entr</th><th class="schedule-th--exit">Sort</th>`).join("")}
-              <th></th><th></th><th></th>
-            </tr>
-          </thead>
-          <tbody>
-            ${empRows.map((row, rowIdx) => {
-              // Alternance sur 2 couleurs vives qui contrastent :
-              // jaune Bochica (accent marque) et bleu Colombie. Chaque ligne
-              // est uniforme (toutes les cellules même couleur), peu importe
-              // si les heures sont saisies ou non.
-              const EMP_RGB = [
-                "247,179,44",   // jaune Bochica
-                "74,144,226"    // bleu Colombie
-              ];
-              const empRgb = EMP_RGB[rowIdx % EMP_RGB.length];
-              // toneClass conservé pour rétrocompat CSS (le sélecteur s'applique
-              // mais l'opacité est désormais identique → pas d'impact visuel)
-              const toneClass = rowIdx % 2 === 0 ? "is-odd" : "is-even";
-              return `<tr class="schedule-emp-row ${toneClass}" data-emp-id="${row.emp.id}" style="--emp-rgb:${empRgb};--emp-color:rgb(${empRgb})"
-                ondragover="empRowDragOver(event,'${row.emp.id}')"
-                ondragleave="empRowDragLeave(event)"
-                ondrop="empRowDrop(event,'${row.emp.id}')"
-                ondragend="empRowDragEnd(event)">
-              <td class="schedule-td--emp">
-                <div class="schedule-emp-cell">
-                  <span class="schedule-emp-grip" draggable="true" ondragstart="empRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 16)}</span>
-                  <div class="schedule-emp-name">${esc(row.emp.name || "")}</div>
-                </div>
-              </td>
-              ${row.daily.map((d, k) => {
-                const s = d.shift;
-                const filled = s && s.start && s.end;
-                const startVal = s?.start || "";
-                const endVal = s?.end || "";
-                const dk = dayKey(weekDays[k]);
-                const empName = esc(row.emp.name || "");
-                const dayName = DAYS_FR[visibleIdx[k]];
-                return `<td class="schedule-td--cell schedule-td--day-entry ${filled ? "is-filled" : ""}">
-                  <select class="schedule-time" onchange="updateShift('${row.emp.id}','${dk}','start',this.value)" aria-label="${empName}, entrée ${dayName}">${buildTimeOptions(startVal)}</select>
-                </td>
-                <td class="schedule-td--cell schedule-td--day-exit ${filled ? "is-filled" : ""}">
-                  <select class="schedule-time" onchange="updateShift('${row.emp.id}','${dk}','end',this.value)" aria-label="${empName}, sortie ${dayName}">${buildTimeOptions(endVal)}</select>
-                </td>`;
+      <!-- ══ Vue calendrier hebdomadaire (v3.24.0) ══ -->
+      <!-- Chaque colonne = un jour. Cartes shift triées par heure de début. -->
+      <div class="schedule-week-cal" style="--n-days:${nCols};">
+        ${weekDays.map((d, k) => {
+          const dk = dayKey(d);
+          const dowIdx = visibleIdx[k];
+          // Collecter les shifts du jour : un par employé qui a start+end
+          const dayShifts = empRows
+            .map(row => {
+              const dd = row.daily[k];
+              if (!dd || !dd.shift || !dd.shift.start || !dd.shift.end) return null;
+              return {
+                emp: row.emp,
+                start: dd.shift.start,
+                end: dd.shift.end,
+                hours: dd.hours,
+                cost: dd.cost,
+                rate: row.rate,
+                isSal: row.isSal
+              };
+            })
+            .filter(Boolean)
+            .sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+          const dayHrs = dayShifts.reduce((s, x) => s + x.hours, 0);
+          const dayCost = dayShifts.reduce((s, x) => s + x.cost, 0);
+          return `<div class="schedule-day-col" data-day-key="${dk}"
+              ondragover="shiftCardDragOver(event,'${dk}')"
+              ondragleave="shiftCardDragLeave(event)"
+              ondrop="shiftCardDrop(event,'${dk}')">
+            <div class="schedule-day-col-head">
+              <div class="schedule-day-col-name">${DAYS_FR[dowIdx]}</div>
+              <div class="schedule-day-col-date">${d.getDate()}/${d.getMonth() + 1}</div>
+              <div class="schedule-day-col-stats">
+                <span class="schedule-day-col-count">${dayShifts.length} pers</span>
+                <span class="schedule-day-col-sep">·</span>
+                <span class="schedule-day-col-hrs">${dayHrs ? fmtHours(dayHrs) + "h" : "0h"}</span>
+              </div>
+            </div>
+            <div class="schedule-day-col-cards">
+              ${dayShifts.length === 0 ? `
+                <div class="shift-card-empty">Aucun shift</div>
+              ` : dayShifts.map(s => {
+                const sec = (s.emp.section || "service");
+                const secCls = sec === "cuisine" ? "is-kitchen"
+                            : sec === "service" ? "is-service" : "is-other";
+                const initials = (s.emp.name || "?").split(" ").map(p => p[0]).filter(Boolean).slice(0,2).join("").toUpperCase();
+                return `<div class="shift-card ${secCls}"
+                    draggable="true"
+                    data-emp-id="${s.emp.id}"
+                    data-from-day="${dk}"
+                    ondragstart="shiftCardDragStart(event,'${s.emp.id}','${dk}')"
+                    ondragend="shiftCardDragEnd(event)"
+                    onclick="openShiftModal('${s.emp.id}','${dk}')"
+                    title="Cliquer pour modifier · Glisser pour déplacer vers un autre jour">
+                  <div class="shift-card-head">
+                    <span class="shift-card-avatar">${initials}</span>
+                    <span class="shift-card-name">${esc(s.emp.name || "")}</span>
+                  </div>
+                  <div class="shift-card-time">${s.start} → ${s.end}</div>
+                  <div class="shift-card-meta">
+                    <span>${fmtHours(s.hours)}h</span>
+                    <span class="shift-card-cost">${fmtMoney(s.cost)}</span>
+                  </div>
+                </div>`;
               }).join("")}
-              <td class="schedule-td--summary">
-                ${row.totalHours ? fmtHours(row.totalHours) : ""}
-                ${row.isSal ? `<div class="schedule-fixed-hint" title="Heures fixes payées">${fmtHours(row.fixedHours)}h fixes</div>` : ""}
-              </td>
-              <td class="schedule-td--summary">
-                ${row.rate ? row.rate : "—"}
-                ${row.isSal ? `<span class="schedule-badge-fixed" title="Salaire fixe">FIXE</span>` : ""}
-              </td>
-              <td class="schedule-td--summary schedule-td--total">${row.totalPay ? fmtMoney(row.totalPay) : ""}</td>
-            </tr>`;
-            }).join("")}
-          </tbody>
-          <tfoot>
-            <!-- Ligne Heures / jour -->
-            <tr class="schedule-tfoot-row">
-              <td class="schedule-tfoot-label">Heures / jour</td>
-              ${dayTotalsHours.map(h => `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">${h ? fmtHours(h) : ""}</td>`).join("")}
-              <td class="schedule-tfoot-val schedule-td--total" colspan="3">${fmtHours(weekTotalHours)} h</td>
-            </tr>
-            <!-- Ligne Mt / jour -->
-            <tr class="schedule-tfoot-row">
-              <td class="schedule-tfoot-label">Mt / jour</td>
-              ${dayTotalsCost.map(c => `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">${c ? fmtMoney(c) : ""}</td>`).join("")}
-              <td class="schedule-tfoot-val schedule-td--total" colspan="3">${fmtMoney(weekTotalCost)}</td>
-            </tr>
-            <!-- Ligne Ventes prévues -->
-            <tr class="schedule-tfoot-row schedule-tfoot-row--predicted">
-              <td class="schedule-tfoot-label">Ventes prévues</td>
-              ${dayTotalsCost.map(c => {
-                const predicted = ratio > 0 ? c / ratio : 0;
-                return `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">${predicted ? fmtMoney(predicted) : ""}</td>`;
-              }).join("")}
-              <td class="schedule-tfoot-val schedule-td--total" colspan="3">${fmtMoney(ratio > 0 ? weekTotalCost / ratio : 0)}</td>
-            </tr>
-            <!-- Ligne Ventes réelles (input) -->
-            <tr class="schedule-tfoot-row schedule-tfoot-row--actual">
-              <td class="schedule-tfoot-label">Ventes réelles</td>
-              ${weekDays.map((d, k) => {
-                const dk = dayKey(d);
-                const val = Number(scheduleSettings.actualSales?.[dk] || 0);
-                const dayName = DAYS_FR[visibleIdx[k]];
-                const dateLabel = `${d.getDate()}/${d.getMonth() + 1}`;
-                return `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot">
-                  <input type="number" step="0.01" min="0" class="schedule-sales-input" placeholder="—" value="${val || ""}" onchange="updateActualSales('${dk}',this.value)" aria-label="Ventes réelles ${dayName} ${dateLabel}"/>
-                </td>`;
-              }).join("")}
-              <td class="schedule-tfoot-val schedule-td--total" colspan="3">${(() => {
-                const total = weekDays.reduce((sum, d) => sum + (Number(scheduleSettings.actualSales?.[dayKey(d)] || 0)), 0);
-                return total ? fmtMoney(total) : "";
-              })()}</td>
-            </tr>
-            <!-- Ligne Écart (mise en valeur — KPI critique) -->
-            <tr class="schedule-tfoot-row schedule-tfoot-row--gap">
-              <td class="schedule-tfoot-label"><span class="gap-label-inner">${icon("trending-up", 14)} Écart</span></td>
-              ${weekDays.map((d, k) => {
-                const dk = dayKey(d);
-                const actual = Number(scheduleSettings.actualSales?.[dk] || 0);
-                const predicted = ratio > 0 ? dayTotalsCost[k] / ratio : 0;
-                const gap = actual - predicted;
-                const cls = gap > 0 ? "is-positive" : gap < 0 ? "is-negative" : "";
-                const arrow = gap > 0 ? "▲" : gap < 0 ? "▼" : "";
-                const content = (actual || predicted) ? `<span class="gap-arrow">${arrow}</span>${fmtMoney(gap)}` : "";
-                return `<td colspan="2" class="schedule-tfoot-val schedule-td--day-foot ${cls}">${content}</td>`;
-              }).join("")}
-              <td class="schedule-tfoot-val schedule-td--total" colspan="3">${(() => {
-                const totalActual = weekDays.reduce((sum, d) => sum + (Number(scheduleSettings.actualSales?.[dayKey(d)] || 0)), 0);
-                const totalPredicted = ratio > 0 ? weekTotalCost / ratio : 0;
-                const gap = totalActual - totalPredicted;
-                const cls = gap > 0 ? "is-positive" : gap < 0 ? "is-negative" : "";
-                const arrow = gap > 0 ? "▲" : gap < 0 ? "▼" : "";
-                const content = (totalActual || totalPredicted) ? `<span class="gap-arrow">${arrow}</span>${fmtMoney(gap)}` : "";
-                return `<span class="${cls}">${content}</span>`;
-              })()}</td>
-            </tr>
-          </tfoot>
-        </table>
+            </div>
+            <button class="shift-add-btn" onclick="openShiftModal('','${dk}')" aria-label="Ajouter un shift ce jour-là">
+              ${icon("plus", 12)} Ajouter
+            </button>
+          </div>`;
+        }).join("")}
+      </div>
+
+      <!-- ══ Panneau totaux compact (sous le calendrier) ══ -->
+      <div class="schedule-totals-panel card">
+        <div class="schedule-totals-grid" style="--n-days:${nCols};">
+          <div class="schedule-totals-label">Heures</div>
+          ${dayTotalsHours.map(h => `<div class="schedule-totals-val">${h ? fmtHours(h) + "h" : "—"}</div>`).join("")}
+          <div class="schedule-totals-val schedule-totals-val--total">${fmtHours(weekTotalHours)}h</div>
+
+          <div class="schedule-totals-label">Coût</div>
+          ${dayTotalsCost.map(c => `<div class="schedule-totals-val">${c ? fmtMoney(c) : "—"}</div>`).join("")}
+          <div class="schedule-totals-val schedule-totals-val--total">${fmtMoney(weekTotalCost)}</div>
+
+          <div class="schedule-totals-label">Ventes prévues</div>
+          ${dayTotalsCost.map(c => {
+            const p = ratio > 0 ? c / ratio : 0;
+            return `<div class="schedule-totals-val schedule-totals-val--predicted">${p ? fmtMoney(p) : "—"}</div>`;
+          }).join("")}
+          <div class="schedule-totals-val schedule-totals-val--total schedule-totals-val--predicted">${fmtMoney(ratio > 0 ? weekTotalCost / ratio : 0)}</div>
+
+          <div class="schedule-totals-label">Ventes réelles</div>
+          ${weekDays.map((d, k) => {
+            const dk = dayKey(d);
+            const val = Number(scheduleSettings.actualSales?.[dk] || 0);
+            const dayName = DAYS_FR[visibleIdx[k]];
+            const dateLabel = `${d.getDate()}/${d.getMonth() + 1}`;
+            return `<div class="schedule-totals-val schedule-totals-val--input">
+              <input type="number" step="0.01" min="0" class="schedule-sales-input" placeholder="—" value="${val || ""}" onchange="updateActualSales('${dk}',this.value)" aria-label="Ventes réelles ${dayName} ${dateLabel}"/>
+            </div>`;
+          }).join("")}
+          <div class="schedule-totals-val schedule-totals-val--total">${(() => {
+            const total = weekDays.reduce((sum, d) => sum + (Number(scheduleSettings.actualSales?.[dayKey(d)] || 0)), 0);
+            return total ? fmtMoney(total) : "—";
+          })()}</div>
+
+          <div class="schedule-totals-label">${icon("trending-up", 12)} Écart</div>
+          ${weekDays.map((d, k) => {
+            const dk = dayKey(d);
+            const actual = Number(scheduleSettings.actualSales?.[dk] || 0);
+            const predicted = ratio > 0 ? dayTotalsCost[k] / ratio : 0;
+            const gap = actual - predicted;
+            const cls = gap > 0.01 ? "is-positive" : gap < -0.01 ? "is-negative" : "";
+            const arrow = gap > 0.01 ? "▲" : gap < -0.01 ? "▼" : "";
+            const content = (actual || predicted) ? `<span class="gap-arrow">${arrow}</span>${fmtMoney(gap)}` : "—";
+            return `<div class="schedule-totals-val schedule-totals-val--gap ${cls}">${content}</div>`;
+          }).join("")}
+          <div class="schedule-totals-val schedule-totals-val--total schedule-totals-val--gap ${(() => {
+            const totalActual = weekDays.reduce((sum, d) => sum + (Number(scheduleSettings.actualSales?.[dayKey(d)] || 0)), 0);
+            const totalPredicted = ratio > 0 ? weekTotalCost / ratio : 0;
+            const gap = totalActual - totalPredicted;
+            return gap > 0.01 ? "is-positive" : gap < -0.01 ? "is-negative" : "";
+          })()}">${(() => {
+            const totalActual = weekDays.reduce((sum, d) => sum + (Number(scheduleSettings.actualSales?.[dayKey(d)] || 0)), 0);
+            const totalPredicted = ratio > 0 ? weekTotalCost / ratio : 0;
+            const gap = totalActual - totalPredicted;
+            const arrow = gap > 0.01 ? "▲" : gap < -0.01 ? "▼" : "";
+            return (totalActual || totalPredicted) ? `<span class="gap-arrow">${arrow}</span>${fmtMoney(gap)}` : "—";
+          })()}</div>
+        </div>
+        <div class="schedule-totals-day-row">
+          ${weekDays.map((d, k) => `<div class="schedule-totals-day-name">${DAYS_FR[visibleIdx[k]]} ${d.getDate()}/${d.getMonth() + 1}</div>`).join("")}
+          <div class="schedule-totals-day-name schedule-totals-day-name--total">Semaine</div>
+        </div>
       </div>
 
       <!-- ══ Graphique de couverture horaire ══ -->
@@ -1036,4 +1034,174 @@ async function doSeedScheduleFromTemplate() {
   let result = `Horaire de la semaine ${weekNum} importé · ${updated} mis à jour`;
   if (created > 0) result += ` · ${created} créé(s)`;
   toast(result, "success", 5000);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// v3.24.0 — Vue calendrier hebdomadaire (refonte Horaires)
+// ═══════════════════════════════════════════════════════════════
+// Modal d'édition de shift + drag&drop des cartes entre jours.
+
+// État local pour le drag & drop des cartes shift
+let _shiftDragEmpId = null;
+let _shiftDragFromDay = null;
+
+// Ouvre un modal pour créer/modifier un shift sur un jour donné.
+// empId === "" → mode création, on affiche le select employé en haut
+// empId !== "" → mode édition, employé fixe, on charge le shift existant
+function openShiftModal(empId, dk) {
+  const emp = empId ? employees.find(e => e.id === empId) : null;
+  const existingShift = emp ? (emp.shifts || {})[dk] : null;
+  // Convertit dk "YYYY-MM-DD" en label "Mardi 27 mai 2026"
+  const [yy, mm, ddNum] = dk.split("-").map(Number);
+  const dateObj = new Date(yy, mm - 1, ddNum);
+  const dayLabel = dateObj.toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
+
+  const isEdit = !!emp;
+  const startVal = existingShift?.start || "";
+  const endVal = existingShift?.end || "";
+
+  // Employés sans shift CE jour-là (pour l'option création) — exclut ceux qui
+  // ont déjà un shift le même jour (un seul shift par employé par jour).
+  const availableEmps = isEdit ? employees.slice() : employees.filter(e => {
+    const s = (e.shifts || {})[dk];
+    return !(s && s.start && s.end);
+  });
+
+  showModal(`<div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <h3>${icon("clock", 18)} ${isEdit ? "Modifier le shift" : "Ajouter un shift"}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
+    </div>
+    <p style="color:var(--text2);font-size:13px;margin:0 0 var(--sp-3);text-transform:capitalize">
+      ${icon("calendar", 12)} ${dayLabel}
+    </p>
+    <label>Employé
+      ${isEdit
+        ? `<input type="text" value="${esc(emp.name || "")}" disabled style="background:var(--surface2);color:var(--text2);cursor:not-allowed"/>
+           <input type="hidden" id="shift-emp-id" value="${empId}"/>`
+        : `<select id="shift-emp-id" autofocus>
+            <option value="">— Choisir un employé —</option>
+            ${availableEmps.map(e => `<option value="${e.id}">${esc(e.name || "")}${e.section === "cuisine" ? " (Cuisine)" : e.section === "service" ? " (Service)" : ""}</option>`).join("")}
+          </select>`
+      }
+    </label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin-top:var(--sp-2)">
+      <label>Entrée
+        <select id="shift-start">${buildTimeOptions(startVal)}</select>
+      </label>
+      <label>Sortie
+        <select id="shift-end">${buildTimeOptions(endVal)}</select>
+      </label>
+    </div>
+    <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3)">
+      ${isEdit ? `<button class="btn-cancel" style="color:#a23a36" onclick="deleteShift('${empId}','${dk}')">${icon("trash", 14)} Supprimer</button>` : `<div></div>`}
+      <div style="display:flex;gap:var(--sp-2)">
+        <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+        <button class="btn btn-primary" onclick="saveShiftFromModal('${dk}')">${icon("check", 14)} ${isEdit ? "Enregistrer" : "Ajouter"}</button>
+      </div>
+    </div>
+  </div>`);
+}
+
+// Sauve le shift saisi dans la modale.
+async function saveShiftFromModal(dk) {
+  const empIdEl = document.getElementById("shift-emp-id");
+  const empId = empIdEl ? empIdEl.value : "";
+  if (!empId) return toast("Choisis un employé.", "warning");
+  const start = document.getElementById("shift-start").value;
+  const end = document.getElementById("shift-end").value;
+  if (!start || !end) return toast("Saisis l'entrée et la sortie.", "warning");
+  try {
+    // Écrit start + end ensemble pour ne rien perdre.
+    await db.collection("employees").doc(empId).set({
+      shifts: { [dk]: { start, end } }
+    }, { merge: true });
+    closeModal();
+    toast("Shift enregistré.", "success", 2500);
+  } catch (err) {
+    console.error("saveShiftFromModal failed:", err);
+    toast("Erreur sauvegarde : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// Supprime un shift (depuis la modale d'édition).
+async function deleteShift(empId, dk) {
+  try {
+    // Pour supprimer la clé d'un map Firestore, on utilise FieldValue.delete()
+    // en nesting dans un set merge:true.
+    await db.collection("employees").doc(empId).set({
+      shifts: { [dk]: firebase.firestore.FieldValue.delete() }
+    }, { merge: true });
+    closeModal();
+    toast("Shift supprimé.", "success", 2500);
+  } catch (err) {
+    console.error("deleteShift failed:", err);
+    toast("Erreur suppression : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// ─ Drag & drop de cartes shift entre colonnes-jour ────────
+function shiftCardDragStart(e, empId, fromDk) {
+  _shiftDragEmpId = empId;
+  _shiftDragFromDay = fromDk;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move";
+    try { e.dataTransfer.setData("text/plain", `${empId}|${fromDk}`); } catch (_) {}
+  }
+  // Petit décalage visuel sur la carte en cours de drag
+  const card = e.currentTarget;
+  setTimeout(() => card && card.classList.add("is-dragging"), 0);
+}
+
+function shiftCardDragOver(e, targetDk) {
+  if (!_shiftDragEmpId || targetDk === _shiftDragFromDay) return;
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  const col = e.currentTarget;
+  col.classList.add("is-drop-target");
+}
+
+function shiftCardDragLeave(e) {
+  const col = e.currentTarget;
+  if (!col) return;
+  // Ignore si on entre dans un enfant (le dragleave se déclenche aussi)
+  const related = e.relatedTarget;
+  if (related && col.contains(related)) return;
+  col.classList.remove("is-drop-target");
+}
+
+function shiftCardDragEnd() {
+  document.querySelectorAll(".shift-card.is-dragging").forEach(c => c.classList.remove("is-dragging"));
+  document.querySelectorAll(".schedule-day-col.is-drop-target").forEach(c => c.classList.remove("is-drop-target"));
+  _shiftDragEmpId = null;
+  _shiftDragFromDay = null;
+}
+
+async function shiftCardDrop(e, targetDk) {
+  e.preventDefault();
+  const empId = _shiftDragEmpId;
+  const fromDk = _shiftDragFromDay;
+  shiftCardDragEnd();
+  if (!empId || !fromDk || fromDk === targetDk) return;
+  const emp = employees.find(x => x.id === empId);
+  if (!emp) return;
+  const srcShift = (emp.shifts || {})[fromDk];
+  if (!srcShift || !srcShift.start || !srcShift.end) return;
+  // Si la cible a déjà un shift pour cet employé, on demande confirmation
+  const tgtShift = (emp.shifts || {})[targetDk];
+  if (tgtShift && tgtShift.start && tgtShift.end) {
+    if (!confirm(`${emp.name} a déjà un shift ${tgtShift.start}→${tgtShift.end} ce jour-là. Le remplacer par ${srcShift.start}→${srcShift.end} ?`)) return;
+  }
+  try {
+    await db.collection("employees").doc(empId).set({
+      shifts: {
+        [fromDk]: firebase.firestore.FieldValue.delete(),
+        [targetDk]: { start: srcShift.start, end: srcShift.end }
+      }
+    }, { merge: true });
+    toast(`Shift déplacé : ${emp.name} ${srcShift.start}→${srcShift.end}`, "success", 2500);
+  } catch (err) {
+    console.error("shiftCardDrop failed:", err);
+    toast("Erreur déplacement : " + (err.message || err.code || err), "error", 5000);
+  }
 }

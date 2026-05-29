@@ -2,7 +2,9 @@
 
 > 📌 **Voir `TODO.md`** à la racine du repo pour la liste vivante des améliorations à venir (sécurité, food cost, vue mobile, tests, etc.).
 
-> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.23.0** — **Salaires & Pourboires : refonte visuelle « ledger pro »**. L'alternance jaune Bochica / bleu Colombie vive est retirée — le tableau passe à un style **tableur comptable sobre** : zébré gris très léger (1 ligne sur 2), pourboires en vert subtil, employés sans pointage en gris pâle (faded), bordures fines neutres, header gris uniforme, total à payer en bold sans fond accent. Le select de section devient text-only en mode « Auto », ne se colore que quand un override est actif. Scope strict à `.payroll-table` — la page Employés & Horaires garde son alternance colorée. Maquettes proposées dans le chat, option 3 sélectionnée par l'utilisateur.
+> ⚠️ **Dernière mise à jour : 29 mai 2026 — v3.24.0** — **Employés & Horaires : refonte en vue calendrier hebdomadaire**. La grille employés × jours est remplacée par une **grille de colonnes-jour**. Chaque jour devient une colonne avec ses cartes shift triées par heure de début (couleur de la barre latérale selon section : ambré cuisine / bleu service). Header de colonne avec compteurs « X pers · Yh ». Bouton « + Ajouter » en bas pour créer un shift. Clic sur une carte → modal d'édition. Glisser une carte vers un autre jour → déplace le shift (avec confirmation si la cible a déjà un shift de cet employé). Panneau totaux compact sous le calendrier (heures, coût, ventes prévues, ventes réelles, écart) avec labels jour en bas. Garde le coverage chart et les team cards inchangés. Maquettes proposées dans le chat, option B sélectionnée.
+>
+> ⚠️ **29 mai 2026 — v3.23.0** — **Salaires & Pourboires : refonte visuelle « ledger pro »**. L'alternance jaune Bochica / bleu Colombie vive est retirée — le tableau passe à un style **tableur comptable sobre** : zébré gris très léger (1 ligne sur 2), pourboires en vert subtil, employés sans pointage en gris pâle (faded), bordures fines neutres, header gris uniforme, total à payer en bold sans fond accent. Le select de section devient text-only en mode « Auto », ne se colore que quand un override est actif. Scope strict à `.payroll-table` — la page Employés & Horaires garde son alternance colorée. Maquettes proposées dans le chat, option 3 sélectionnée par l'utilisateur.
 >
 > ⚠️ **29 mai 2026 — v3.22.0** — **Salaires : protection du bouton « Annuler mes saisies »**. Avant : un seul clic de confirmation pouvait effacer toutes les heures pointées de la semaine — risque d'accident. Maintenant : modale dédiée avec champ texte où l'admin doit taper exactement **EFFACER** pour activer le bouton de suppression. Bouton désactivé sinon. Bordure et fond rouge dans le bandeau d'avertissement. Le bouton final affiche aussi le numéro de la semaine concernée (« Effacer la semaine 22 ») pour éviter d'effacer la mauvaise.
 >
@@ -493,6 +495,47 @@ bochica-inventaire/
 - Pour déboguer : F12 → Console → messages en rouge
 
 ## 📝 CHANGELOG
+
+### 29 mai 2026 — Horaires : refonte en vue calendrier hebdomadaire (v3.24.0) 📅🗓️
+
+Suite à un retour utilisateur (« je le trouve laid et trop chargé aussi »), 3 maquettes ont été proposées dans le chat. L'**option B « calendrier semaine »** a été sélectionnée — paradigme « par jour » au lieu de « par employé ».
+
+**Avant (v3.13.5 → v3.23.x)** : table HTML avec employés en lignes, jours en colonnes (×2 sous-colonnes Entrée/Sortie). Tous les shifts étaient visibles en grille dense avec alternance jaune/bleu vive sur les lignes. Édition inline par dropdown 30 min.
+
+**Après (v3.24.0)** : grille CSS avec **une colonne par jour ouvert**, chaque colonne contenant des cartes shift triées par heure de début.
+
+**Structure d'une colonne-jour** :
+- **Header** : nom du jour + date + compteurs (« 4 pers · 22h »)
+- **Cards shift** : avatar initiales + nom employé + « start → end » + meta (heures + coût)
+- Barre latérale colorée selon section (`is-kitchen` ambré, `is-service` bleu, `is-other` gris)
+- Hover state + drag handle (toute la carte est draggable)
+- **Bouton « + Ajouter »** en bas (dashed → solid au hover) pour créer un nouveau shift
+
+**Interaction**
+- **Clic sur une carte** → ouvre la modal d'édition `openShiftModal(empId, dk)` avec employé fixe, heures éditables, bouton supprimer rouge
+- **Clic sur « + Ajouter »** → modal en mode création avec select employé (filtré pour exclure ceux ayant déjà un shift ce jour-là)
+- **Drag d'une carte vers un autre jour** → handlers `shiftCardDragStart/Over/Drop` qui font le diff Firestore (delete sur ancien jour, write sur nouveau). Confirmation si la cible a déjà un shift de cet employé.
+- L'ancien drag & drop de réordonnement d'employés est retiré (sans objet en vue par jour)
+
+**Modal d'édition de shift (nouveau)**
+- `openShiftModal(empId, dk)` — header avec date longue en français (« mardi 27 mai »), choix employé (select ou input disabled si édition), 2 selects heures (30 min, partagés avec l'ancienne grille)
+- `saveShiftFromModal(dk)` — écrit dans `employees.{id}.shifts.{dk}` via `set merge`
+- `deleteShift(empId, dk)` — utilise `FieldValue.delete()` pour retirer la clé
+
+**Panneau totaux compact (nouveau)**
+- Sous le calendrier : un seul `.card` avec une grille de 5 lignes × N+2 colonnes (label + jours + total semaine) :
+  - Heures · Coût · Ventes prévues · Ventes réelles (inputs) · Écart
+- Ligne dates en bas (sous le grid) pour rappel des jours
+- Format tabular-nums partout, bg accentué sur les totaux semaine
+- Conserve toute la logique métier de l'ancien tfoot (ratio salaires/ventes, ventes réelles éditables, écart coloré vert/rouge)
+
+**Conservé** : `schedule-header` (nav semaine, ratio pill, boutons), coverage chart Chart.js, team cards en bas, toute la logique de calcul
+
+**Implémentation**
+- **JS (`pages-hr.js`)** : `renderEmployes()` refactor du bloc table principal seulement (~210 lignes remplacées par ~110 lignes plus claires). Ajout de ~180 lignes pour `openShiftModal` + `saveShiftFromModal` + `deleteShift` + 4 handlers drag & drop (`shiftCardDragStart/Over/Leave/End/Drop`) + 2 variables d'état locales (`_shiftDragEmpId`, `_shiftDragFromDay`).
+- **CSS (~280 lignes)** : `.schedule-week-cal` (grid `--n-days` dynamique), `.schedule-day-col` (avec state `.is-drop-target`), `.schedule-day-col-head` (compteurs), `.shift-card` (avec variantes section + état `.is-dragging`), `.shift-card-avatar` (initiales 18×18), `.shift-add-btn` (dashed → solid hover), `.schedule-totals-panel` (grid label+jours+total). Dark mode + responsive (2 cols sur 900px, 1 col sur 600px).
+
+**CACHE_VERSION** → `v3.24.0`
 
 ### 29 mai 2026 — Salaires : refonte ledger pro (v3.23.0) 📋🎨
 
