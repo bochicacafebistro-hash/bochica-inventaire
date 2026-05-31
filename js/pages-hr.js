@@ -214,10 +214,20 @@ function renderEmployes() {
                       : sec === "service" ? "is-service" : "is-other";
           const secLabel = sec === "cuisine" ? "Cuisine"
                         : sec === "service" ? "Service" : "Autre";
-          return `<div class="schedule-empgrid-row">
+          return `<div class="schedule-empgrid-row" data-emp-id="${emp.id}"
+              ondragover="empRowDragOver(event,'${emp.id}')"
+              ondragleave="empRowDragLeave(event)"
+              ondrop="empRowDrop(event,'${emp.id}')">
             <!-- Cellule employé (sticky à gauche) -->
             <div class="schedule-empgrid-emp ${secCls}">
-              <div class="schedule-empgrid-emp-name">${esc(emp.name || "")}</div>
+              <div class="schedule-empgrid-emp-row">
+                <span class="schedule-emp-drag-handle" draggable="true"
+                    ondragstart="empRowDragStart(event,'${emp.id}')"
+                    ondragend="empRowDragEnd()"
+                    title="Glisser pour réordonner"
+                    aria-label="Glisser pour réordonner ${esc(emp.name || "")}">${icon("grip-vertical", 12)}</span>
+                <div class="schedule-empgrid-emp-name">${esc(emp.name || "")}</div>
+              </div>
               <div class="schedule-empgrid-emp-meta">
                 <span class="schedule-empgrid-emp-section">${secLabel}</span>
                 ${row.rate ? `<span class="schedule-empgrid-emp-rate">${row.rate.toFixed(2)} $/h${row.isSal ? " · FIXE" : ""}</span>` : ""}
@@ -568,6 +578,12 @@ async function duplicateScheduleToNextWeek() {
 }
 
 // ═ Réordonner les employés (drag & drop) ═══════════════
+// v3.30.0 — Rebranché sur la grille empgrid (v3.24.1+). Les sélecteurs
+// utilisent `[data-emp-id="..."]` au lieu de `tr[data-emp-id="..."]`
+// pour fonctionner avec n'importe quelle structure (table legacy ou
+// .schedule-empgrid-row). L'ordre est persisté dans `employees.sortOrder`
+// via un batch update — le listener Firestore re-trie automatiquement
+// la liste au snapshot suivant (voir firebase-listeners.js).
 let _empDragId = null;
 
 function empRowDragStart(e, id) {
@@ -576,43 +592,45 @@ function empRowDragStart(e, id) {
     e.dataTransfer.effectAllowed = "move";
     try { e.dataTransfer.setData("text/plain", id); } catch (_) {}
   }
-  const tr = document.querySelector(`tr[data-emp-id="${id}"]`);
-  setTimeout(() => tr && tr.classList.add("schedule-row--dragging"), 0);
+  const row = document.querySelector(`[data-emp-id="${id}"]`);
+  setTimeout(() => row && row.classList.add("schedule-row--dragging"), 0);
 }
 
 function empRowDragOver(e, id) {
   if (_empDragId === null || id === _empDragId) return;
   e.preventDefault();
+  e.stopPropagation();
   if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-  const tr = document.querySelector(`tr[data-emp-id="${id}"]`);
-  if (!tr) return;
-  tr.classList.add("schedule-row--drag-over");
-  const rect = tr.getBoundingClientRect();
+  const row = document.querySelector(`[data-emp-id="${id}"]`);
+  if (!row) return;
+  row.classList.add("schedule-row--drag-over");
+  const rect = row.getBoundingClientRect();
   const before = (e.clientY - rect.top) < rect.height / 2;
-  tr.classList.toggle("schedule-row--drop-before", before);
-  tr.classList.toggle("schedule-row--drop-after", !before);
+  row.classList.toggle("schedule-row--drop-before", before);
+  row.classList.toggle("schedule-row--drop-after", !before);
 }
 
 function empRowDragLeave(e) {
-  const tr = e.currentTarget;
-  if (!tr) return;
+  const row = e.currentTarget;
+  if (!row) return;
   const related = e.relatedTarget;
-  if (related && tr.contains(related)) return;
-  tr.classList.remove("schedule-row--drag-over", "schedule-row--drop-before", "schedule-row--drop-after");
+  if (related && row.contains(related)) return;
+  row.classList.remove("schedule-row--drag-over", "schedule-row--drop-before", "schedule-row--drop-after");
 }
 
 function empRowDragEnd() {
-  document.querySelectorAll("tr[data-emp-id]").forEach(tr =>
-    tr.classList.remove("schedule-row--dragging", "schedule-row--drag-over", "schedule-row--drop-before", "schedule-row--drop-after")
+  document.querySelectorAll("[data-emp-id]").forEach(row =>
+    row.classList.remove("schedule-row--dragging", "schedule-row--drag-over", "schedule-row--drop-before", "schedule-row--drop-after")
   );
   _empDragId = null;
 }
 
 async function empRowDrop(e, targetId) {
   e.preventDefault();
+  e.stopPropagation();
   const srcId = _empDragId;
-  const tr = document.querySelector(`tr[data-emp-id="${targetId}"]`);
-  const dropBefore = tr && tr.classList.contains("schedule-row--drop-before");
+  const row = document.querySelector(`[data-emp-id="${targetId}"]`);
+  const dropBefore = row && row.classList.contains("schedule-row--drop-before");
   empRowDragEnd();
   if (!srcId || srcId === targetId) return;
 
@@ -628,10 +646,16 @@ async function empRowDrop(e, targetId) {
   insertAt = Math.max(0, Math.min(insertAt, ids.length));
   ids.splice(insertAt, 0, srcId);
 
-  // Batch update Firestore
-  const batch = db.batch();
-  ids.forEach((id, i) => batch.update(db.collection("employees").doc(id), { sortOrder: i }));
-  await batch.commit();
+  // Batch update Firestore — chaque employé reçoit son nouveau sortOrder
+  try {
+    const batch = db.batch();
+    ids.forEach((id, i) => batch.update(db.collection("employees").doc(id), { sortOrder: i }));
+    await batch.commit();
+    toast("Ordre des employés mis à jour.", "success", 1800);
+  } catch (err) {
+    console.error("empRowDrop failed:", err);
+    toast("Erreur réordonnancement : " + (err.message || err.code || err), "error", 5000);
+  }
 }
 
 function openEmployeeModal(id) {

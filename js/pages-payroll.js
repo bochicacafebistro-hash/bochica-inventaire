@@ -265,8 +265,10 @@ function detectPayrollAnomalies(empRows, isLocked) {
         });
       }
 
-      // 1b. Sortie auto-remplie (v3.29.0) → à valider
+      // 1b. Sortie auto-remplie (v3.29.0) ou shift complet auto-rempli
+      //     pour absence de pointage (v3.29.1) → à valider
       if (autoFilled && d.actualShift?.start && d.actualShift?.end) {
+        const isNoStart = !!d.actualShift?.autoFilledNoStart;
         alerts.push({
           type: "auto-filled-exit",
           severity: "warning",
@@ -274,7 +276,14 @@ function detectPayrollAnomalies(empRows, isLocked) {
           empName: row.emp.name || "",
           dk: d.dk,
           dayLabel: _formatAlertDayLabel(d.dk),
-          message: `Sortie ${d.actualShift.end} auto-remplie depuis l'horaire — cliquer pour valider ou corriger`
+          // Message distinct selon le cas :
+          //   • cas A (sortie seule) : « Sortie X auto-remplie depuis l'horaire »
+          //   • cas B (aucun pointage) : « Aucun pointage — shift X→Y auto-rempli,
+          //     vérifier si l'employé est venu »
+          message: isNoStart
+            ? `Aucun pointage — shift ${d.actualShift.start} → ${d.actualShift.end} auto-rempli depuis l'horaire. Vérifier la présence (ou supprimer si absent)`
+            : `Sortie ${d.actualShift.end} auto-remplie depuis l'horaire — cliquer pour valider ou corriger`,
+          isNoStart
         });
       }
 
@@ -311,26 +320,45 @@ function detectPayrollAnomalies(empRows, isLocked) {
   return alerts;
 }
 
-// ═ Auto-remplissage des sorties manquantes (v3.29.0) ═══
-// Quand un employé a pointé son entrée mais pas sa sortie, et qu'on est
-// au moins 1 h après l'heure de sortie PRÉVUE à l'horaire, on remplit
-// automatiquement la sortie avec l'heure prévue + on marque le shift
-// avec un flag `autoFilled: true`. La carte s'affiche en orange avec
-// un tag « À VALIDER » et apparaît dans le bandeau d'alertes en haut.
+// ═ Auto-remplissage depuis l'horaire planifié (v3.29.0 + v3.29.1) ═══
+//
+// Deux cas couverts :
+//
+//   A) SORTIE OUBLIÉE (v3.29.0) — l'employé a pointé son entrée mais
+//      pas sa sortie. On remplit end = planned.end et on marque
+//      autoFilled = true. Card orange avec tag « À VALIDER ».
+//
+//   B) ABSENCE DE POINTAGE COMPLÈTE (v3.29.1) — l'employé n'a pointé
+//      NI entrée NI sortie. On remplit start = planned.start ET
+//      end = planned.end, on marque autoFilled = true ET
+//      autoFilledNoStart = true. Card orange avec tag « PRÉSENCE ? »
+//      (plus alarmant pour signaler qu'il faut vérifier que l'employé
+//      est bien venu — sinon corriger à 0 h).
+//
+// Condition commune : on déclenche seulement quand on est au moins 1 h
+// après l'heure de sortie PRÉVUE à l'horaire. Pourquoi cette même
+// règle pour le cas B aussi : c'est le moment où on sait définitivement
+// que l'employé ne pointera plus ce jour-là (s'il était venu en retard,
+// il aurait pointé entre temps).
+//
 // L'admin peut soit confirmer (en éditant manuellement → le flag saute
-// automatiquement dans updateActualShift), soit corriger l'heure.
+// automatiquement dans updateActualShift), soit corriger les heures,
+// soit supprimer le shift (si l'employé n'est pas venu = no-show).
 //
 // Cas où on NE FAIT RIEN :
 //   • semaine verrouillée
-//   • shift déjà complet (start ET end remplis sans flag autoFilled)
+//   • shift déjà complet ET pas auto-fillé (rien à faire)
 //   • flag autoFilled déjà présent (déjà traité, on ne touche plus)
-//   • pas de shift planifié (extra sans horaire → on laisse « En cours »)
+//   • pas de shift planifié (extra sans horaire → on laisse « En cours »
+//     ou Congé selon le cas)
 //   • on est encore dans la fenêtre d'attente (< 1 h après l'heure prévue)
+//   • sortie pointée sans entrée (cas rare — on laisse en « Partiel »
+//     pour que l'admin tranche manuellement)
 //
 // Garde-fou anti-boucle : un setter `_autoFillScanInFlight` bloque les
-// scans concurrents. De toute façon, dès qu'on écrit { end, autoFilled }
-// le shift n'est plus « partial » donc le scan suivant ne le redétecte
-// pas — la convergence est garantie en 1 itération.
+// scans concurrents. De toute façon, dès qu'on écrit { start, end, autoFilled }
+// le shift n'est plus dans un des deux cas A/B → le scan suivant ne le
+// redétecte pas. Convergence garantie en 1 itération.
 
 let _autoFillScanInFlight = false;
 
@@ -346,20 +374,41 @@ async function autoFillMissingExits(empRows, isLocked) {
   for (const row of empRows) {
     for (const d of row.daily) {
       const a = d.actualShift;
-      if (!a) continue;
-      // Doit avoir un start, pas de end → shift « en cours »
-      if (!a.start || a.end) continue;
-      // Déjà traité une fois → on ne re-touche pas (sécurité, ne devrait
-      // pas arriver puisqu'un autoFilled aurait son end rempli)
-      if (a.autoFilled) continue;
-      // Doit avoir un planifié avec end (sinon on ne sait pas quoi écrire)
       const p = d.plannedShift;
-      if (!p?.end) continue;
+
+      // Pas de planifié → on ne peut pas deviner les heures, skip
+      if (!p?.start || !p?.end) continue;
+
+      const hasStart = !!a?.start;
+      const hasEnd = !!a?.end;
+
+      // Déjà flagué auto-fillé → ne pas re-toucher (sécurité)
+      if (a?.autoFilled) continue;
+      // Shift déjà complet (sans flag) → rien à faire
+      if (hasStart && hasEnd) continue;
+
+      // Détermine quel cas on traite
+      let newStart, newEnd, isNoStart;
+      if (hasStart && !hasEnd) {
+        // Cas A : sortie oubliée, on remplit end seul
+        newStart = a.start;
+        newEnd = p.end;
+        isNoStart = false;
+      } else if (!hasStart && !hasEnd) {
+        // Cas B : aucun pointage, on remplit start+end
+        newStart = p.start;
+        newEnd = p.end;
+        isNoStart = true;
+      } else {
+        // Cas rare : end sans start (saisie manuelle bizarre) → on laisse partial
+        continue;
+      }
 
       // Construction du timestamp réel de l'heure de sortie planifiée
+      // (point de référence pour le délai 1 h, dans les deux cas A et B)
       const [yy, mo, dd] = d.dk.split("-").map(Number);
       const [eh, em] = p.end.split(":").map(Number);
-      const [sh, sm] = (p.start || "00:00").split(":").map(Number);
+      const [sh, sm] = p.start.split(":").map(Number);
       if (!Number.isFinite(eh) || !Number.isFinite(em)) continue;
       const endDate = new Date(yy, mo - 1, dd, eh, em, 0, 0);
       // Shift de nuit (end ≤ start) → end est le lendemain
@@ -368,7 +417,13 @@ async function autoFillMissingExits(empRows, isLocked) {
       }
       if (now - endDate.getTime() < WAIT_MS) continue; // pas encore l'heure
 
-      candidates.push({ empId: row.emp.id, dk: d.dk, start: a.start, end: p.end });
+      candidates.push({
+        empId: row.emp.id,
+        dk: d.dk,
+        start: newStart,
+        end: newEnd,
+        isNoStart
+      });
     }
   }
 
@@ -380,16 +435,22 @@ async function autoFillMissingExits(empRows, isLocked) {
     const wid = payrollWeekId(ws);
     const ref = db.collection("payroll").doc(wid);
 
-    // Construit le payload nested actualShifts[empId][dk] = {start,end,autoFilled,autoFilledAt}
+    // Construit le payload nested actualShifts[empId][dk]
     const actualShifts = {};
     for (const c of candidates) {
       if (!actualShifts[c.empId]) actualShifts[c.empId] = {};
-      actualShifts[c.empId][c.dk] = {
+      const shift = {
         start: c.start,
         end: c.end,
         autoFilled: true,
         autoFilledAt: now
       };
+      // Seul le cas B (aucun pointage) reçoit le sous-flag —
+      // sert à distinguer dans l'alerte et le rendu de la card
+      if (c.isNoStart) {
+        shift.autoFilledNoStart = true;
+      }
+      actualShifts[c.empId][c.dk] = shift;
     }
 
     await ref.set({
@@ -399,11 +460,16 @@ async function autoFillMissingExits(empRows, isLocked) {
       actualShifts
     }, { merge: true });
 
-    const n = candidates.length;
+    // Toast contextuel selon les deux cas
+    const nSortie = candidates.filter(c => !c.isNoStart).length;
+    const nAbsence = candidates.filter(c => c.isNoStart).length;
+    const parts = [];
+    if (nSortie) parts.push(`${nSortie} sortie${nSortie > 1 ? "s" : ""} oubliée${nSortie > 1 ? "s" : ""}`);
+    if (nAbsence) parts.push(`${nAbsence} présence${nAbsence > 1 ? "s" : ""} non pointée${nAbsence > 1 ? "s" : ""}`);
     toast(
-      `${n} sortie${n > 1 ? "s" : ""} auto-remplie${n > 1 ? "s" : ""} depuis l'horaire prévu — à valider en haut du tableau`,
+      `${parts.join(" + ")} — auto-rempli${candidates.length > 1 ? "s" : ""} depuis l'horaire prévu, à valider en haut du tableau`,
       "warning",
-      5000
+      5500
     );
   } catch (err) {
     console.error("autoFillMissingExits failed:", err);
@@ -693,20 +759,42 @@ function renderSalaires() {
           </div>
         </div>
         <div class="payroll-alerts-list">
-          ${alertsByType["auto-filled-exit"].length > 0 ? `
-            <div class="payroll-alerts-group">
-              <div class="payroll-alerts-group-head">
-                ${icon("refresh", 14)} Sortie auto-remplie à valider (${alertsByType["auto-filled-exit"].length})
-              </div>
-              ${alertsByType["auto-filled-exit"].map(a => `
-                <div class="payroll-alert payroll-alert--warning is-auto-filled">
-                  <span class="payroll-alert-day">${a.dayLabel}</span>
-                  <strong class="payroll-alert-emp">${esc(a.empName)}</strong>
-                  <span class="payroll-alert-msg">${esc(a.message)}</span>
+          ${alertsByType["auto-filled-exit"].length > 0 ? (() => {
+            // Sépare les deux cas pour clarté visuelle :
+            //   • PRÉSENCE ? (autoFilledNoStart) = aucun pointage, à vérifier
+            //   • À VALIDER (sortie seule) = entrée pointée, sortie remplie auto
+            const noStartList = alertsByType["auto-filled-exit"].filter(a => a.isNoStart);
+            const exitOnlyList = alertsByType["auto-filled-exit"].filter(a => !a.isNoStart);
+            return `
+            ${noStartList.length > 0 ? `
+              <div class="payroll-alerts-group">
+                <div class="payroll-alerts-group-head">
+                  ${icon("alert", 14)} Présence à vérifier — aucun pointage (${noStartList.length})
                 </div>
-              `).join("")}
-            </div>
-          ` : ""}
+                ${noStartList.map(a => `
+                  <div class="payroll-alert payroll-alert--warning is-auto-filled is-no-start">
+                    <span class="payroll-alert-day">${a.dayLabel}</span>
+                    <strong class="payroll-alert-emp">${esc(a.empName)}</strong>
+                    <span class="payroll-alert-msg">${esc(a.message)}</span>
+                  </div>
+                `).join("")}
+              </div>
+            ` : ""}
+            ${exitOnlyList.length > 0 ? `
+              <div class="payroll-alerts-group">
+                <div class="payroll-alerts-group-head">
+                  ${icon("refresh", 14)} Sortie auto-remplie à valider (${exitOnlyList.length})
+                </div>
+                ${exitOnlyList.map(a => `
+                  <div class="payroll-alert payroll-alert--warning is-auto-filled">
+                    <span class="payroll-alert-day">${a.dayLabel}</span>
+                    <strong class="payroll-alert-emp">${esc(a.empName)}</strong>
+                    <span class="payroll-alert-msg">${esc(a.message)}</span>
+                  </div>
+                `).join("")}
+              </div>
+            ` : ""}`;
+          })() : ""}
           ${alertsByType["missing-exit"].length > 0 ? `
             <div class="payroll-alerts-group">
               <div class="payroll-alerts-group-head">
@@ -911,34 +999,41 @@ function renderSalaires() {
               const dayTipPart = d.dayTip > 0
                 ? `<div class="shift-card-tip" title="Pourboire reçu ce jour">+${fmtMoney(d.dayTip)}</div>`
                 : "";
-              // v3.29.0 — Sortie auto-remplie depuis l'horaire planifié : la
-              // carte passe en orange avec un tag « À VALIDER ». Le flag
-              // disparaît automatiquement dès que l'admin réédite via le modal
-              // (updateActualShift efface autoFilled à chaque écriture manuelle).
+              // v3.29.0 / v3.29.1 — Auto-rempli depuis l'horaire planifié :
+              // la carte passe en orange avec un tag distinct selon le cas.
+              //   • Sortie seule oubliée → tag « À VALIDER »
+              //   • Aucun pointage (autoFilledNoStart) → tag « PRÉSENCE ? »
+              //     plus alarmant, signale qu'il faut vérifier que l'employé
+              //     est bien venu (sinon supprimer le shift)
+              // Le flag disparaît dès que l'admin réédite via le modal.
               const isAutoFilled = !!d.actualShift?.autoFilled;
+              const isAutoFilledNoStart = !!d.actualShift?.autoFilledNoStart;
+              const autoFilledTitle = isAutoFilledNoStart
+                ? `Aucun pointage — shift auto-rempli depuis l'horaire (${d.plannedShift?.start || "—"} → ${d.plannedShift?.end || "—"}). Vérifier la présence ou supprimer si absent`
+                : `Sortie auto-remplie depuis l'horaire (${d.plannedShift?.end || "—"}) — cliquer pour valider ou corriger`;
               const cellTitle = isAutoFilled
-                ? `Sortie auto-remplie depuis l'horaire (${d.plannedShift?.end || "—"}) — cliquer pour valider ou corriger`
+                ? autoFilledTitle
                 : d.isDifferent
                 ? `Modifié — planifié : ${d.plannedShift?.start || "—"}→${d.plannedShift?.end || "—"}`
                 : "";
-              return `<div class="schedule-empgrid-cell ${d.isDifferent ? "is-modified" : ""} ${isAutoFilled ? "is-auto-filled" : ""}"
+              return `<div class="schedule-empgrid-cell ${d.isDifferent ? "is-modified" : ""} ${isAutoFilled ? "is-auto-filled" : ""} ${isAutoFilledNoStart ? "is-auto-filled-no-start" : ""}"
                   data-day-key="${dk}"
                   title="${cellTitle}"
                   ${isLocked ? "" : `ondragover="payrollShiftDragOver(event,'${dk}')"
                   ondragleave="payrollShiftDragLeave(event)"
                   ondrop="payrollShiftDrop(event,'${row.emp.id}','${dk}')"`}>
-                <div class="shift-card shift-card--compact ${groupClass} ${isAutoFilled ? "shift-card--auto-filled" : ""}"
+                <div class="shift-card shift-card--compact ${groupClass} ${isAutoFilled ? "shift-card--auto-filled" : ""} ${isAutoFilledNoStart ? "shift-card--auto-filled-no-start" : ""}"
                     ${isLocked ? "" : `draggable="true"
                     data-emp-id="${row.emp.id}"
                     data-from-day="${dk}"
                     ondragstart="payrollShiftDragStart(event,'${row.emp.id}','${dk}')"
                     ondragend="payrollShiftDragEnd(event)"
                     onclick="openPayrollShiftModal('${row.emp.id}','${dk}')"`}
-                    title="${isAutoFilled ? "Sortie auto-remplie — cliquer pour valider" : "Cliquer pour modifier · Glisser pour déplacer"}">
+                    title="${isAutoFilled ? autoFilledTitle : "Cliquer pour modifier · Glisser pour déplacer"}">
                   <div class="shift-card-time">${d.actualShift.start} → ${d.actualShift.end}</div>
                   <div class="shift-card-meta">
                     ${isAutoFilled
-                      ? `<span class="shift-card-autofill-tag">À VALIDER</span>`
+                      ? `<span class="shift-card-autofill-tag ${isAutoFilledNoStart ? "shift-card-autofill-tag--no-start" : ""}">${isAutoFilledNoStart ? "PRÉSENCE ?" : "À VALIDER"}</span>`
                       : `<span>${fmtHours(d.hours)}h</span>
                          ${dayTipPart || `<span class="shift-card-cost">${d.tipHours > 0 ? fmtHours(d.tipHours) + "h★" : ""}</span>`}`}
                   </div>
@@ -1074,11 +1169,13 @@ async function updateActualShift(empId, dk, field, value) {
     const newShift = {
       start: field === "start" ? (value || "") : (currentShift.start || ""),
       end:   field === "end"   ? (value || "") : (currentShift.end   || ""),
-      // v3.29.0 — Toute édition manuelle compte comme une validation : on
-      // efface le flag autoFilled + autoFilledAt s'ils existaient. Si le
-      // flag n'était pas là, FieldValue.delete() est un no-op.
+      // v3.29.0 / v3.29.1 — Toute édition manuelle compte comme une
+      // validation : on efface les flags autoFilled + autoFilledAt +
+      // autoFilledNoStart s'ils existaient. Si l'un était absent,
+      // FieldValue.delete() est un no-op silencieux.
       autoFilled: firebase.firestore.FieldValue.delete(),
-      autoFilledAt: firebase.firestore.FieldValue.delete()
+      autoFilledAt: firebase.firestore.FieldValue.delete(),
+      autoFilledNoStart: firebase.firestore.FieldValue.delete()
     };
 
     const ws = getWeekStart(payrollWeekOffset);

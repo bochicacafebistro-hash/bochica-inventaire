@@ -1705,7 +1705,7 @@ tr:last-child td{border-bottom:none}
   .coverage-tab{padding:6px 10px;font-size:12px}
 }
 
-/* États du drag & drop sur une ligne employé */
+/* États du drag & drop sur une ligne employé (table legacy) */
 .schedule-row--dragging td{opacity:.4}
 .schedule-row--drag-over{position:relative}
 .schedule-row--drop-before td:first-child::before,
@@ -1723,6 +1723,75 @@ tr:last-child td{border-bottom:none}
 }
 .schedule-row--drop-before td:first-child::before{top:-2px}
 .schedule-row--drop-after td:first-child::after{bottom:-2px}
+
+/* ═══════════════════════════════════════════════════════════════
+   v3.30.0 — Drag & drop des employés dans la grille empgrid
+   ═══════════════════════════════════════════════════════════════
+   La grille .schedule-empgrid-row (display:contents) n'a pas de
+   `td` à colorer. On utilise le drag handle (.schedule-emp-drag-handle)
+   pour initier le drag et la 1ère cellule (.schedule-empgrid-emp)
+   comme ancre pour les indicateurs de drop avant/après. */
+
+.schedule-emp-drag-handle{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:18px;
+  height:18px;
+  border-radius:var(--radius-sm);
+  color:var(--text3);
+  cursor:grab;
+  flex-shrink:0;
+  opacity:.4;
+  transition:opacity var(--transition-fast), background var(--transition-fast);
+  margin-right:4px;
+}
+.schedule-empgrid-emp:hover .schedule-emp-drag-handle{
+  opacity:1;
+}
+.schedule-emp-drag-handle:hover{
+  background:rgba(var(--accent-rgb),.15);
+  color:var(--text);
+}
+.schedule-emp-drag-handle:active{
+  cursor:grabbing;
+}
+/* Wrapper qui groupe handle + nom sur une même ligne */
+.schedule-empgrid-emp-row{
+  display:flex;
+  align-items:center;
+  gap:2px;
+}
+/* États visuels du drag — opacity réduite sur la rangée entière
+   (display:contents ne permet pas de styler la rangée elle-même,
+   donc on applique l'opacité à toutes les cellules enfants via le sélecteur
+   de descendant ; au DOM la classe est posée sur le wrapper). */
+.schedule-empgrid-row.schedule-row--dragging > *{
+  opacity:.4;
+}
+.schedule-empgrid-row.schedule-row--drag-over .schedule-empgrid-emp,
+.schedule-empgrid-row.schedule-row--drop-before .schedule-empgrid-emp,
+.schedule-empgrid-row.schedule-row--drop-after  .schedule-empgrid-emp{
+  position:relative;
+}
+/* Ligne ambrée pleine largeur de la cellule employé pour indiquer le
+   point d'insertion. La cellule employé est sticky à gauche, donc reste
+   visible et l'admin voit clairement « ici, avant/après cette ligne ». */
+.schedule-empgrid-row.schedule-row--drop-before .schedule-empgrid-emp::before,
+.schedule-empgrid-row.schedule-row--drop-after  .schedule-empgrid-emp::after{
+  content:"";
+  position:absolute;
+  left:0;
+  right:0;
+  height:3px;
+  background:var(--accent);
+  border-radius:2px;
+  pointer-events:none;
+  box-shadow:0 0 8px rgba(var(--accent-rgb),.6);
+  z-index:5;
+}
+.schedule-empgrid-row.schedule-row--drop-before .schedule-empgrid-emp::before{ top:-2px; }
+.schedule-empgrid-row.schedule-row--drop-after  .schedule-empgrid-emp::after { bottom:-2px; }
 .schedule-td--cell{
   /* Fond géré par .schedule-emp-row (basé sur --emp-rgb de l'employé) */
   padding:1px !important;
@@ -9729,13 +9798,34 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   padding:1px 6px;
   border-radius:var(--radius-sm);
 }
+/* v3.29.1 — Cas plus alarmant : aucun pointage du tout (autoFilledNoStart).
+   Tag rouge brique pour signaler qu'il faut vérifier que l'employé est
+   bien venu (sinon supprimer le shift). Distinct du tag orange « À VALIDER »
+   utilisé quand l'employé a au moins pointé son entrée. */
+.shift-card-autofill-tag--no-start{
+  background:#c2410c; /* orange-rouge plus saturé */
+}
+/* La carte elle-même prend une bordure gauche un peu plus marquée pour
+   les cas no-start (signalétique cohérente avec les alertes). */
+.shift-card.shift-card--auto-filled-no-start{
+  border-left-color:#c2410c !important;
+  border-left-width:4px !important;
+}
 .schedule-empgrid-cell.is-auto-filled{
   /* Léger fond orange sur la cellule entière pour bien démarquer */
   background:rgba(217,119,6,.04);
 }
-/* Item d'alerte auto-fill : icône zap colorée pour distinguer */
+.schedule-empgrid-cell.is-auto-filled-no-start{
+  /* Cas no-start : fond très légèrement plus rouge-orange */
+  background:rgba(194,65,12,.06);
+}
+/* Item d'alerte auto-fill : bordure gauche un peu plus marquée */
 .payroll-alert.is-auto-filled{
   border-left-width:4px;
+}
+.payroll-alert.is-no-start{
+  border-left-color:#c2410c;
+  background:rgba(194,65,12,.08);
 }
 
 [data-theme="dark"] .shift-card.shift-card--auto-filled{
@@ -9749,8 +9839,22 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   background:#f59e0b;
   color:#1a1410;
 }
+[data-theme="dark"] .shift-card-autofill-tag--no-start{
+  background:#ea580c;
+  color:#fff;
+}
+[data-theme="dark"] .shift-card.shift-card--auto-filled-no-start{
+  border-left-color:#ea580c !important;
+}
 [data-theme="dark"] .schedule-empgrid-cell.is-auto-filled{
   background:rgba(217,119,6,.08);
+}
+[data-theme="dark"] .schedule-empgrid-cell.is-auto-filled-no-start{
+  background:rgba(234,88,12,.12);
+}
+[data-theme="dark"] .payroll-alert.is-no-start{
+  background:rgba(234,88,12,.16);
+  border-left-color:#ea580c;
 }
 
 /* ═══════════════════════════════════════════════════════════════
