@@ -168,7 +168,8 @@ function renderEmployes() {
           <!-- Actions fréquentes (visibles pour tous les admins) -->
           <button class="btn-secondary btn-sm" onclick="openOpenDaysModal()" title="Choisir les jours d'ouverture">${icon("calendar", 14)} Jours ouverts</button>
           <button class="btn-secondary btn-sm" onclick="duplicateScheduleToNextWeek()" title="Copier cet horaire vers la semaine suivante">${icon("copy", 14)} Copier → S${weekNum + 1}</button>
-          <button class="btn-secondary btn-sm" onclick="exportScheduleAsPNG()" title="Télécharger une image PNG de l'horaire pour partager avec l'équipe (sans aucune donnée financière)">${icon("download", 14)} PNG pour équipe</button>
+          <button class="btn-secondary btn-sm" onclick="exportScheduleAsPNG()" title="Télécharger une image PNG de l'horaire pour partager avec l'équipe (sans aucune donnée financière, exclut les employés en congé toute la semaine)">${icon("download", 14)} PNG pour équipe</button>
+          ${userRole === "global_admin" ? `<button class="btn-secondary btn-sm" onclick="exportScheduleAsPNGAdmin()" title="Rapport admin complet : taux horaire, coût par shift, totaux semaine, ventes prévues. À usage interne — ne pas partager avec l'équipe.">${icon("download", 14)} PNG admin</button>` : ""}
           <div class="schedule-ratio-pill" title="Ratio salaires / ventes : les Ventes prévues sont recalculées instantanément">
             <span class="schedule-ratio-pill__label">${icon("trending-up", 14)} Ratio</span>
             <input id="sched-ratio" type="number" min="1" max="100" step="0.5" value="${(ratio * 100).toFixed(1)}" onchange="updateSalesRatio(this.value)" oninput="updateSalesRatioLive(this.value)" aria-label="Ratio salaires sur ventes"/>
@@ -1266,8 +1267,26 @@ async function exportScheduleAsPNG() {
   const visibleIdx = [0,1,2,3,4,5,6].filter(i => openDays.includes(i));
   const weekDays = visibleIdx.map(i => weekDaysAll[i]);
 
+  // v3.32.0 — On exclut les employés qui n'ont AUCUN shift sur les jours
+  // visibles (ex: employé en vacances ou en congé toute la semaine).
+  // Inutile de polluer le PNG affiché à l'équipe avec une ligne « Congé
+  // Congé Congé… ». Si tu veux quand même voir ces employés, utilise
+  // le rapport admin complet.
+  const empsWithShifts = employees.filter(emp => {
+    const shifts = emp.shifts || {};
+    return weekDays.some(d => {
+      const s = shifts[dayKey(d)];
+      return !!(s && s.start && s.end);
+    });
+  });
+
+  if (empsWithShifts.length === 0) {
+    toast("Aucun employé n'a de shift cette semaine — rien à exporter.", "warning", 4500);
+    return;
+  }
+
   // Récupère les shifts par employé (sans aucune donnée financière)
-  const rows = employees.map(emp => {
+  const rows = empsWithShifts.map(emp => {
     const shifts = emp.shifts || {};
     const sec = (emp.section || "service");
     const daily = weekDays.map(d => {
@@ -1358,6 +1377,211 @@ async function exportScheduleAsPNG() {
     toast("Image PNG téléchargée — prête à partager avec l'équipe.", "success", 4000);
   } catch (err) {
     console.error("exportScheduleAsPNG failed:", err);
+    toast("Erreur génération PNG : " + (err.message || err), "error", 5000);
+  } finally {
+    container.remove();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// v3.32.0 — Export PNG admin (version complète, INTERNE)
+// ═══════════════════════════════════════════════════════════════
+// Version enrichie du PNG horaire à usage interne admin : inclut
+// le taux horaire, le coût $ par shift, les totaux heures+salaire
+// par employé, les totaux semaine (heures, masse salariale, ventes
+// prévues si dispo). Comme la version équipe, on exclut les employés
+// sans aucun shift sur la semaine. Badge « INTERNE — NE PAS PARTAGER »
+// en haut pour éviter qu'il finisse dans le groupe SMS de l'équipe.
+
+async function exportScheduleAsPNGAdmin() {
+  if (typeof window.html2canvas !== "function") {
+    toast("La bibliothèque PNG n'est pas chargée. Recharge la page.", "error");
+    return;
+  }
+  toast("Préparation du rapport admin…", "info", 2000);
+
+  const weekStart = getWeekStart(scheduleWeekOffset);
+  const weekDaysAll = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
+  });
+  const weekEnd = weekDaysAll[6];
+  const weekNum = getISOWeek(weekDaysAll[3]);
+  const weekLabel = `${weekDaysAll[0].toLocaleDateString("fr-CA", { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString("fr-CA", { month: "short", day: "numeric", year: "numeric" })}`;
+
+  const openDays = Array.isArray(scheduleSettings.openDays) ? scheduleSettings.openDays : [0,1,2,3,4,5,6];
+  const visibleIdx = [0,1,2,3,4,5,6].filter(i => openDays.includes(i));
+  const weekDays = visibleIdx.map(i => weekDaysAll[i]);
+  const nbOpenDays = weekDays.length || 1;
+
+  // Filtre : exclure les employés sans aucun shift sur la semaine
+  // (vacances, congé toute la semaine) — cohérent avec le PNG équipe.
+  const empsWithShifts = employees.filter(emp => {
+    const shifts = emp.shifts || {};
+    return weekDays.some(d => {
+      const s = shifts[dayKey(d)];
+      return !!(s && s.start && s.end);
+    });
+  });
+
+  if (empsWithShifts.length === 0) {
+    toast("Aucun employé n'a de shift cette semaine — rien à exporter.", "warning", 4500);
+    return;
+  }
+
+  // ─ Calcul des shifts + coûts par employé ─
+  // Réplique la logique de renderHoraires (empRows) pour la PNG.
+  const dayTotalsHours = new Array(weekDays.length).fill(0);
+  const dayTotalsCost = new Array(weekDays.length).fill(0);
+  const rows = empsWithShifts.map(emp => {
+    const shifts = emp.shifts || {};
+    const rate = Number(emp.hourlyRate) || 0;
+    const isSal = !!emp.isSalaried;
+    const fixedHours = Number(emp.fixedWeeklyHours) || 0;
+    const weeklyFixedPay = isSal ? fixedHours * rate : null;
+    const dailyFixedCost = isSal ? weeklyFixedPay / nbOpenDays : null;
+    const sec = (emp.section || "service");
+    const daily = weekDays.map((d, col) => {
+      const s = shifts[dayKey(d)];
+      const hours = hoursFromShift(s);
+      const cost = isSal ? dailyFixedCost : hours * rate;
+      dayTotalsHours[col] += hours;
+      dayTotalsCost[col] += cost;
+      return { shift: s, hours, cost };
+    });
+    const totalHours = daily.reduce((sum, d) => sum + d.hours, 0);
+    const totalPay = isSal ? weeklyFixedPay : totalHours * rate;
+    return { emp, rate, isSal, fixedHours, section: sec, daily, totalHours, totalPay };
+  });
+
+  const weekTotalHours = dayTotalsHours.reduce((a, b) => a + b, 0);
+  const weekTotalCost = dayTotalsCost.reduce((a, b) => a + b, 0);
+
+  // Ratio salaires/ventes + ventes prévues
+  const ratio = Number(scheduleSettings.salaryRatio) || 0.30;
+  const expectedSales = ratio > 0 ? (weekTotalCost / ratio) : 0;
+  const actualSales = scheduleSettings.actualSales || {};
+  const weekActualSales = weekDays.reduce((sum, d) => sum + (Number(actualSales[dayKey(d)]) || 0), 0);
+
+  // Construit un DOM off-screen pour l'export
+  const container = document.createElement("div");
+  container.id = "_schedule-png-export-admin";
+  container.style.cssText = `
+    position:fixed; left:-99999px; top:0; z-index:-1;
+    background:#fdf6e7; padding:32px;
+    font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    color:#0e0d0c; width:1400px;
+  `;
+  container.innerHTML = `
+    <div style="text-align:center; margin-bottom:20px; padding-bottom:16px; border-bottom:2px solid #0e0d0c">
+      <div style="font-family:'Bebas Neue',Impact,sans-serif; font-size:42px; letter-spacing:.08em; line-height:1">BOCHICA</div>
+      <div style="font-size:13px; color:#6e5f50; margin-top:2px">Restaurant Colombien</div>
+      <div style="margin-top:8px">
+        <div style="display:inline-block; height:3px; width:60px; background:#F7B32C"></div><div style="display:inline-block; height:3px; width:60px; background:#4a90e2"></div><div style="display:inline-block; height:3px; width:60px; background:#e74c3c"></div>
+      </div>
+      <div style="font-size:26px; font-weight:700; margin-top:14px">Horaire ADMIN — Semaine ${weekNum}</div>
+      <div style="font-size:14px; color:#444; margin-top:2px">${weekLabel}</div>
+      <div style="display:inline-block; margin-top:10px; padding:4px 12px; background:#9f1239; color:#fff; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; border-radius:4px">INTERNE — Ne pas partager</div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:200px repeat(${visibleIdx.length}, 1fr) 130px; gap:1px; background:#c8bca5; border:1px solid #c8bca5; border-radius:8px; overflow:hidden">
+      <!-- Header -->
+      <div style="background:#ede3d2; padding:12px; font-size:12px; font-weight:600; color:#444; text-transform:uppercase; letter-spacing:.05em">Employé · Taux</div>
+      ${weekDays.map((d, k) => `<div style="background:#ede3d2; padding:12px; text-align:center">
+        <div style="font-size:11px; font-weight:600; color:#444; text-transform:uppercase; letter-spacing:.05em">${DAYS_FR[visibleIdx[k]]}</div>
+        <div style="font-size:18px; font-weight:700; margin-top:2px">${d.getDate()}/${d.getMonth() + 1}</div>
+        <div style="font-size:10px; color:#666; margin-top:2px">${fmtHours(dayTotalsHours[k])}h · ${fmtMoney(dayTotalsCost[k])}</div>
+      </div>`).join("")}
+      <div style="background:#ede3d2; padding:12px; text-align:center; font-size:12px; font-weight:600; color:#444; text-transform:uppercase; letter-spacing:.05em">Total emp.</div>
+
+      <!-- Lignes employés -->
+      ${rows.map(row => {
+        const isKitchen = row.section === "cuisine";
+        const isService = row.section === "service";
+        const accentColor = isKitchen ? "#BA7517" : isService ? "#378ADD" : "#888780";
+        const secLabel = isKitchen ? "Cuisine" : isService ? "Service" : "Autre";
+        return `
+          <div style="background:#fff; padding:12px; border-left:4px solid ${accentColor}; display:flex; flex-direction:column; justify-content:center; min-height:80px">
+            <div style="font-size:15px; font-weight:700; line-height:1.2">${esc(row.emp.name || "")}</div>
+            <div style="font-size:11px; font-weight:600; color:#666; text-transform:uppercase; letter-spacing:.05em; margin-top:3px">${secLabel}</div>
+            <div style="font-size:12px; color:#0e0d0c; margin-top:3px; font-weight:600">${row.rate.toFixed(2)} $/h${row.isSal ? " · FIXE" : ""}</div>
+          </div>
+          ${row.daily.map(d => {
+            if (!d.shift || !d.shift.start || !d.shift.end) {
+              return `<div style="background:#fff; padding:10px; display:flex; align-items:center; justify-content:center; min-height:80px">
+                <div style="font-size:13px; color:#999; font-style:italic">Congé</div>
+              </div>`;
+            }
+            const tintBg = isKitchen ? "rgba(186,117,23,.10)" : isService ? "rgba(55,138,221,.08)" : "#f5f1e8";
+            return `<div style="background:#fff; padding:8px; display:flex; align-items:center; justify-content:center; min-height:80px">
+              <div style="background:${tintBg}; border-left:4px solid ${accentColor}; padding:8px 12px; border-radius:8px; text-align:center; min-width:100px">
+                <div style="font-size:15px; font-weight:700; color:#0e0d0c; letter-spacing:.02em">${d.shift.start} → ${d.shift.end}</div>
+                <div style="font-size:11px; color:#444; margin-top:3px">${fmtHours(d.hours)}h · ${fmtMoney(d.cost)}</div>
+              </div>
+            </div>`;
+          }).join("")}
+          <!-- Cellule totaux par employé -->
+          <div style="background:#fff; padding:10px; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:80px; border-left:1px solid #e5d9c4">
+            <div style="font-size:13px; font-weight:700; color:#0e0d0c">${fmtHours(row.totalHours)}h</div>
+            <div style="font-size:14px; font-weight:800; color:${accentColor}; margin-top:3px">${fmtMoney(row.totalPay)}</div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+
+    <!-- Panneau de totaux semaine -->
+    <div style="margin-top:18px; padding:16px; background:#fff; border:1.5px solid #c8bca5; border-radius:10px">
+      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; text-align:center">
+        <div>
+          <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Heures totales</div>
+          <div style="font-size:22px; font-weight:800; color:#0e0d0c; margin-top:4px">${fmtHours(weekTotalHours)}h</div>
+        </div>
+        <div>
+          <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Masse salariale</div>
+          <div style="font-size:22px; font-weight:800; color:#0e0d0c; margin-top:4px">${fmtMoney(weekTotalCost)}</div>
+        </div>
+        <div>
+          <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Ventes prévues</div>
+          <div style="font-size:22px; font-weight:800; color:#0e0d0c; margin-top:4px">${fmtMoney(expectedSales)}</div>
+          <div style="font-size:10px; color:#666; margin-top:2px">à ratio ${(ratio * 100).toFixed(1)}%</div>
+        </div>
+        <div>
+          <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Ventes réelles</div>
+          <div style="font-size:22px; font-weight:800; color:${weekActualSales > 0 ? "#0e0d0c" : "#999"}; margin-top:4px">${weekActualSales > 0 ? fmtMoney(weekActualSales) : "—"}</div>
+          ${weekActualSales > 0 ? `<div style="font-size:10px; color:#666; margin-top:2px">ratio réel ${(weekTotalCost / weekActualSales * 100).toFixed(1)}%</div>` : ""}
+        </div>
+      </div>
+      ${empsWithShifts.length < employees.length
+        ? `<div style="margin-top:14px; padding-top:12px; border-top:1px dashed #c8bca5; font-size:11px; color:#6e5f50; text-align:center; font-style:italic">
+            ${employees.length - empsWithShifts.length} employé${employees.length - empsWithShifts.length > 1 ? "s" : ""} en congé toute la semaine non affiché${employees.length - empsWithShifts.length > 1 ? "s" : ""}
+          </div>`
+        : ""}
+    </div>
+
+    <div style="margin-top:18px; padding-top:14px; border-top:1px dashed #c8bca5; display:flex; justify-content:space-between; font-size:11px; color:#6e5f50">
+      <div>Bochica Café Bistro — Document interne admin</div>
+      <div>Généré le ${new Date().toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })} à ${new Date().toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" })}</div>
+    </div>
+  `;
+  document.body.appendChild(container);
+
+  try {
+    await new Promise(r => setTimeout(r, 100));
+    const canvas = await html2canvas(container, {
+      scale: 2,
+      backgroundColor: "#fdf6e7",
+      logging: false,
+      useCORS: true
+    });
+    const url = canvas.toDataURL("image/png");
+    const link = document.createElement("a");
+    link.download = `Bochica_HoraireAdmin_Sem${weekNum}_${dayKey(weekStart)}.png`;
+    link.href = url;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast("Rapport admin PNG téléchargé — pour usage interne seulement.", "success", 4000);
+  } catch (err) {
+    console.error("exportScheduleAsPNGAdmin failed:", err);
     toast("Erreur génération PNG : " + (err.message || err), "error", 5000);
   } finally {
     container.remove();
