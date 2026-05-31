@@ -34,9 +34,9 @@ const AUTH_DISPLAY_NAMES = {
 const ROLE_PERMISSIONS = {
   global_admin: {
     canAccess: ["dashboard", "inventaire", "rapport", "taches", "employes", "salaires", "simulations",
-                "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "fournisseurs", "rapports", "pointage"],
+                "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "factures", "fournisseurs", "rapports", "pointage"],
     canWrite: ["dashboard", "inventaire", "rapport", "taches", "employes", "salaires", "simulations",
-               "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "fournisseurs", "rapports", "pointage"],
+               "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "factures", "fournisseurs", "rapports", "pointage"],
     homePage: "dashboard"
   },
   chef: {

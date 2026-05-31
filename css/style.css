@@ -10145,3 +10145,407 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 [data-theme="dark"] .preview-banner-msg strong{
   color:var(--accent);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   v3.33.0 — Module Factures
+   ═══════════════════════════════════════════════════════════════
+   Style cohérent avec les autres modules (Soumissions, Dépenses).
+   Palette Bochica + statuts colorés clairs (brouillon gris, envoyée
+   bleue, payée verte, annulée rouge). */
+
+/* ─ KPI cards en haut de la liste ─ */
+.invoice-kpis{
+  display:grid;
+  grid-template-columns:repeat(4, 1fr);
+  gap:var(--sp-3);
+  margin-bottom:var(--sp-4);
+}
+.invoice-kpi{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  padding:var(--sp-4);
+  border-left:4px solid var(--text3);
+}
+.invoice-kpi.is-paid{ border-left-color:#1f7a1f; }
+.invoice-kpi.is-pending{ border-left-color:#4a90e2; }
+.invoice-kpi.is-draft{ border-left-color:var(--text3); }
+.invoice-kpi-label{
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text2);
+  display:flex;
+  align-items:center;
+  gap:4px;
+}
+.invoice-kpi-value{
+  font-family:'Bebas Neue', Impact, sans-serif;
+  font-size:32px;
+  color:var(--text);
+  letter-spacing:.02em;
+  margin-top:4px;
+  line-height:1;
+}
+.invoice-kpi-sub{
+  font-size:11px;
+  color:var(--text3);
+  margin-top:2px;
+}
+@media (max-width:720px){
+  .invoice-kpis{ grid-template-columns:1fr 1fr; }
+}
+
+/* ─ Toolbar : onglets + recherche ─ */
+.invoice-toolbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:var(--sp-3);
+  margin-bottom:var(--sp-3);
+  flex-wrap:wrap;
+}
+.invoice-tabs{
+  display:flex;
+  gap:4px;
+  flex-wrap:wrap;
+}
+.invoice-tab{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 12px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-pill);
+  cursor:pointer;
+  font-family:var(--font-body);
+  font-size:12px;
+  font-weight:600;
+  color:var(--text2);
+  transition:all var(--transition-fast);
+}
+.invoice-tab:hover{
+  background:var(--surface2);
+  color:var(--text);
+}
+.invoice-tab.is-active{
+  background:var(--accent);
+  color:var(--accent-text);
+  border-color:var(--accent);
+}
+.invoice-tab-count{
+  background:rgba(0,0,0,.12);
+  padding:1px 7px;
+  border-radius:var(--radius-pill);
+  font-size:10px;
+  font-weight:700;
+}
+.invoice-tab.is-active .invoice-tab-count{ background:rgba(0,0,0,.25); }
+
+.invoice-search{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  padding:6px 12px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-pill);
+  min-width:240px;
+}
+.invoice-search input{
+  border:none;
+  background:transparent;
+  outline:none;
+  flex:1;
+  font-family:var(--font-body);
+  font-size:13px;
+  color:var(--text);
+}
+
+/* ─ Cartes factures dans la liste ─ */
+.invoice-list{
+  display:flex;
+  flex-direction:column;
+  gap:var(--sp-3);
+}
+.invoice-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-left:4px solid var(--text3);
+  border-radius:var(--radius-lg);
+  padding:var(--sp-4);
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  transition:transform var(--transition-fast), box-shadow var(--transition-fast);
+}
+.invoice-card:hover{
+  transform:translateY(-1px);
+  box-shadow:var(--shadow-md);
+}
+.invoice-card.is-draft{ border-left-color:#94a3b8; }
+.invoice-card.is-sent{ border-left-color:#4a90e2; }
+.invoice-card.is-paid{ border-left-color:#1f7a1f; }
+.invoice-card.is-cancelled{ border-left-color:#a23a36; opacity:.7; }
+.invoice-card.is-overdue{ background:linear-gradient(90deg, rgba(231,76,60,.04), transparent 30%); }
+
+.invoice-card-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:var(--sp-3);
+  flex-wrap:wrap;
+}
+.invoice-card-number{
+  font-family:'JetBrains Mono', monospace;
+  font-size:13px;
+  font-weight:700;
+  color:var(--text3);
+  letter-spacing:.04em;
+}
+.invoice-card-client{
+  font-family:var(--font-heading);
+  font-size:20px;
+  color:var(--text);
+  letter-spacing:.02em;
+  margin-top:2px;
+}
+.invoice-card-company{
+  font-family:var(--font-body);
+  font-size:13px;
+  font-weight:400;
+  color:var(--text2);
+}
+.invoice-card-status{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-end;
+  gap:4px;
+}
+.invoice-status-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  padding:3px 10px;
+  border-radius:var(--radius-pill);
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+.invoice-status-pill.is-draft{ background:#e2e8f0; color:#475569; }
+.invoice-status-pill.is-sent{ background:rgba(74,144,226,.15); color:#2c5f9e; }
+.invoice-status-pill.is-paid{ background:rgba(31,122,31,.15); color:#1f7a1f; }
+.invoice-status-pill.is-cancelled{ background:rgba(162,58,54,.12); color:#a23a36; }
+
+.invoice-overdue-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  padding:1px 8px;
+  background:#e74c3c;
+  color:#fff;
+  font-family:var(--font-body);
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  border-radius:var(--radius-sm);
+}
+
+.invoice-card-meta{
+  display:flex;
+  gap:var(--sp-4);
+  flex-wrap:wrap;
+  align-items:center;
+  font-family:var(--font-body);
+  font-size:12px;
+  color:var(--text2);
+}
+.invoice-card-meta svg{ vertical-align:-2px; margin-right:2px; }
+.invoice-card-total{
+  margin-left:auto;
+  font-family:'Bebas Neue', Impact, sans-serif;
+  font-size:22px;
+  color:var(--text);
+  letter-spacing:.02em;
+}
+.invoice-card-actions{
+  display:flex;
+  gap:var(--sp-2);
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+/* ─ Modal d'édition ─ */
+.invoice-modal-num{
+  font-family:'JetBrains Mono', monospace;
+  font-size:13px;
+  color:var(--text3);
+  font-weight:400;
+  margin-left:8px;
+}
+.invoice-modal-section{
+  font-family:var(--font-heading);
+  font-size:14px;
+  color:var(--text2);
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  margin:var(--sp-4) 0 var(--sp-2);
+  display:flex;
+  align-items:center;
+  gap:6px;
+  border-bottom:1px solid var(--border);
+  padding-bottom:6px;
+}
+.invoice-modal-section-hint{
+  margin-left:auto;
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:400;
+  text-transform:none;
+  letter-spacing:0;
+  color:var(--text3);
+  font-style:italic;
+}
+.invoice-add-line{
+  margin-left:auto;
+}
+.invoice-modal-grid-2{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:var(--sp-3);
+}
+.invoice-modal-grid-3{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:var(--sp-3);
+}
+@media (max-width:600px){
+  .invoice-modal-grid-2,
+  .invoice-modal-grid-3{ grid-template-columns:1fr; }
+}
+
+/* ─ Lignes de facture (tableau dynamique) ─ */
+.invoice-lines{
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  overflow:hidden;
+}
+.invoice-lines-header,
+.invoice-line{
+  display:grid;
+  grid-template-columns:1fr 70px 100px 90px 32px;
+  gap:6px;
+  align-items:center;
+  padding:8px 10px;
+}
+.invoice-lines-header{
+  background:var(--surface2);
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  color:var(--text2);
+}
+.invoice-line{
+  border-top:1px solid var(--border);
+}
+.invoice-line input{
+  border:1px solid transparent;
+  background:transparent;
+  padding:4px 6px;
+  border-radius:var(--radius-sm);
+  font-family:var(--font-body);
+  font-size:13px;
+  color:var(--text);
+  width:100%;
+}
+.invoice-line input:focus{
+  outline:none;
+  border-color:var(--accent);
+  background:var(--surface);
+}
+.inv-line-total{
+  font-weight:700;
+  text-align:right;
+  font-variant-numeric:tabular-nums;
+  color:var(--text);
+}
+.inv-line-remove{
+  background:transparent;
+  border:none;
+  color:var(--text3);
+  cursor:pointer;
+  padding:4px;
+  border-radius:var(--radius-sm);
+  transition:all var(--transition-fast);
+}
+.inv-line-remove:hover:not(:disabled){
+  background:rgba(162,58,54,.10);
+  color:#a23a36;
+}
+.inv-line-remove:disabled{
+  opacity:.3;
+  cursor:not-allowed;
+}
+@media (max-width:600px){
+  .invoice-lines-header{ display:none; }
+  .invoice-line{
+    grid-template-columns:1fr 60px;
+    grid-template-rows:auto auto auto;
+    gap:6px;
+  }
+  .inv-line-desc{ grid-column:1/-1; }
+}
+
+/* ─ Totaux dans le modal ─ */
+.invoice-totals{
+  margin-top:var(--sp-3);
+  background:var(--surface2);
+  border-radius:var(--radius-md);
+  padding:var(--sp-3);
+  max-width:320px;
+  margin-left:auto;
+}
+.invoice-totals-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:4px 0;
+  font-family:var(--font-body);
+  font-size:13px;
+  color:var(--text);
+  font-variant-numeric:tabular-nums;
+}
+.invoice-totals-row strong{ font-weight:700; }
+.invoice-totals-row--final{
+  border-top:2px solid var(--text);
+  margin-top:6px;
+  padding-top:8px;
+  font-size:16px;
+}
+.invoice-totals-row--final strong{
+  font-family:'Bebas Neue', Impact, sans-serif;
+  font-size:22px;
+  letter-spacing:.02em;
+  color:var(--text);
+}
+
+/* ─ Dropdown section label (réutilisable) ─ */
+.dropdown-section-label{
+  font-family:var(--font-body);
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text3);
+  padding:6px 10px 2px;
+}
+
+[data-theme="dark"] .invoice-status-pill.is-draft{ background:#334155; color:#cbd5e1; }

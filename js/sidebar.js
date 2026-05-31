@@ -37,6 +37,7 @@ function getNavStructure() {
       type: "section", id: "finance", icon: "wallet", label: "Finances",
       items: [
         { icon: "wallet", label: t("nav_expenses"), page: "depenses" },
+        { icon: "receipt", label: "Factures", page: "factures" },
         { icon: "shield-check", label: "TPS/TVQ", page: "taxes" },
         { icon: "bar-chart", label: "Rapports mensuels", page: "rapports" }
       ]
@@ -60,7 +61,7 @@ const PAGE_TO_SECTION = {
   inventaire: "inventory", rapport: "inventory", shopping: "inventory",
   employes: "hr", salaires: "hr", simulations: "hr", taches: "hr",
   menu: "kitchen", ingredients: "kitchen", recettes: "kitchen",
-  depenses: "finance", taxes: "finance", rapports: "finance",
+  depenses: "finance", factures: "finance", taxes: "finance", rapports: "finance",
   evenements: "clients", soumissions: "clients"
 };
 
@@ -317,6 +318,7 @@ function renderPage() {
   else if (activePage === "shopping") pc.innerHTML = renderShoppingList();
   else if (activePage === "evenements") pc.innerHTML = renderEvents();
   else if (activePage === "soumissions") pc.innerHTML = renderQuotes();
+  else if (activePage === "factures") pc.innerHTML = renderInvoices();
   else if (activePage === "fournisseurs") pc.innerHTML = renderFournisseurs();
   else if (activePage === "pointage") {
     // S'abonner au doc payroll de la semaine courante pour lire l'état des

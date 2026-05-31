@@ -58,6 +58,21 @@ let _editingQuoteOptions = [];
 //             le 1er template fait foi à l'affichage)
 let quoteTemplates = [];
 
+// Factures (v3.33.0) — admin uniquement
+// Chaque facture : { id, invoiceNumber ("FAC-2026-001"), clientName, clientCompany,
+//                    clientAddress, clientPhone, clientEmail,
+//                    invoiceDate (YYYY-MM-DD), dueDate (YYYY-MM-DD),
+//                    lines: [{ id (local), description, quantity, unitPrice }],
+//                    tpsRate (default 0.05), tvqRate (default 0.09975),
+//                    notes, status ("brouillon"/"envoyee"/"payee"/"annulee"),
+//                    paidAt (timestamp), paidRevenueId (id du doc /revenues créé auto, ou null),
+//                    createdAt, updatedAt, createdBy }
+let invoices = [];
+let invoicesFilterStatus = "all";   // "all" | "brouillon" | "envoyee" | "payee" | "annulee"
+let invoicesSearchQuery = "";       // recherche (numéro, nom client, contact)
+// État du formulaire d'édition des lignes (in-memory, perdu à la fermeture du modal)
+let _editingInvoiceLines = [];
+
 // Sections de la sidebar actuellement ouvertes (accordéons).
 // Au login, on auto-ouvre la section contenant la home page. L'utilisateur
 // peut ensuite ouvrir/fermer comme il veut pendant la session. Pas persisté

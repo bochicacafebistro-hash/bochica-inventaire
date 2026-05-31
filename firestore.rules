@@ -115,6 +115,12 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // ── /invoices : factures (v3.33.0) ──
+    // Données financières + contacts clients — admin uniquement
+    match /invoices/{doc=**} {
+      allow read, write: if isAdmin();
+    }
+
     // ── /quoteTemplates : forfaits par défaut (offres tarifaires) ──
     // Lecture admin + chef (le chef peut voir les forfaits offerts),
     // écriture admin uniquement

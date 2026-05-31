@@ -98,6 +98,15 @@ db.collection("quotes").onSnapshot(snap => {
   if (err && err.code !== "permission-denied") console.warn("listener quotes:", err);
 });
 
+// Factures (admin only — v3.33.0)
+db.collection("invoices").onSnapshot(snap => {
+  invoices = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+  if (shouldRender("invoices", "factures")) renderPage();
+}, err => {
+  if (err && err.code !== "permission-denied") console.warn("listener invoices:", err);
+});
+
 // Templates de forfaits (admin + chef — base des soumissions)
 db.collection("quoteTemplates").onSnapshot(snap => {
   quoteTemplates = snap.docs.map(d => ({ id: d.id, ...d.data() }))
