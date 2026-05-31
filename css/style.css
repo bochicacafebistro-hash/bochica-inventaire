@@ -9698,6 +9698,62 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   v3.29.0 — Card shift auto-remplie « À VALIDER » (orange)
+   ═══════════════════════════════════════════════════════════════
+   Quand un employé pointe son entrée mais oublie sa sortie, le
+   système auto-remplit la sortie avec l'heure prévue à l'horaire
+   1 h après son passage. La carte passe en orange ambré avec un
+   tag « À VALIDER » pour que l'admin la repère immédiatement. Le
+   flag saute dès qu'on édite via le modal (validation par action).
+   Couleur cohérente avec le bandeau d'alertes existant (v3.19.0). */
+
+.shift-card.shift-card--auto-filled{
+  background:rgba(217,119,6,.12) !important;
+  border-style:solid !important;
+  border-color:rgba(217,119,6,.55) !important;
+  border-left-width:3px !important;
+  position:relative;
+}
+.shift-card.shift-card--auto-filled .shift-card-time{
+  color:#a35400;
+  font-weight:800;
+}
+.shift-card-autofill-tag{
+  font-family:var(--font-body);
+  font-size:9px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#fff;
+  background:#d97706;
+  padding:1px 6px;
+  border-radius:var(--radius-sm);
+}
+.schedule-empgrid-cell.is-auto-filled{
+  /* Léger fond orange sur la cellule entière pour bien démarquer */
+  background:rgba(217,119,6,.04);
+}
+/* Item d'alerte auto-fill : icône zap colorée pour distinguer */
+.payroll-alert.is-auto-filled{
+  border-left-width:4px;
+}
+
+[data-theme="dark"] .shift-card.shift-card--auto-filled{
+  background:rgba(217,119,6,.20) !important;
+  border-color:rgba(217,119,6,.65) !important;
+}
+[data-theme="dark"] .shift-card.shift-card--auto-filled .shift-card-time{
+  color:#ffba6e;
+}
+[data-theme="dark"] .shift-card-autofill-tag{
+  background:#f59e0b;
+  color:#1a1410;
+}
+[data-theme="dark"] .schedule-empgrid-cell.is-auto-filled{
+  background:rgba(217,119,6,.08);
+}
+
+/* ═══════════════════════════════════════════════════════════════
    v3.27.2 — Délimitation visuelle des employés dans la grille
    ═══════════════════════════════════════════════════════════════
    La cellule totaux à droite (multi-lignes blanches) rendait la

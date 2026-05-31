@@ -226,8 +226,12 @@ function resetPayrollWeek() {
 // oubli ou une erreur. Retourne [] si la semaine est verrouillée (les
 // anomalies passées ont déjà été traitées au moment du verrou).
 //
-// 3 types d'alertes :
+// 4 types d'alertes :
 //   • "missing-exit"          → entrée pointée mais pas sortie sur un jour passé
+//                               (cas où l'auto-fill n'a pas pu agir — pas de
+//                               shift planifié à l'horaire, ex: extra)
+//   • "auto-filled-exit"      → sortie auto-remplie depuis le planifié (v3.29.0),
+//                               à valider par l'admin
 //   • "long-shift"            → shift > 14 h (probable oubli de pointer sortie)
 //   • "scheduled-not-punched" → planifié mais aucun pointage sur un jour passé
 //
@@ -245,8 +249,10 @@ function detectPayrollAnomalies(empRows, isLocked) {
   for (const row of empRows) {
     for (const d of row.daily) {
       const isPast = d.dk < todayDk;
+      const autoFilled = !!d.actualShift?.autoFilled;
 
-      // 1. Entrée sans sortie sur jour passé → oubli de pointage sortie
+      // 1a. Entrée sans sortie sur jour passé → oubli de pointage sortie
+      //     (cas où aucun auto-fill possible, typiquement extras sans horaire)
       if (isPast && d.actualShift?.start && !d.actualShift?.end) {
         alerts.push({
           type: "missing-exit",
@@ -259,8 +265,23 @@ function detectPayrollAnomalies(empRows, isLocked) {
         });
       }
 
+      // 1b. Sortie auto-remplie (v3.29.0) → à valider
+      if (autoFilled && d.actualShift?.start && d.actualShift?.end) {
+        alerts.push({
+          type: "auto-filled-exit",
+          severity: "warning",
+          empId: row.emp.id,
+          empName: row.emp.name || "",
+          dk: d.dk,
+          dayLabel: _formatAlertDayLabel(d.dk),
+          message: `Sortie ${d.actualShift.end} auto-remplie depuis l'horaire — cliquer pour valider ou corriger`
+        });
+      }
+
       // 2. Shift > 14 h → probablement oubli de pointer sortie ou erreur de saisie
-      if (d.actualShift?.start && d.actualShift?.end && d.hours > 14) {
+      //    (on skip les auto-fillés : ils sont déjà signalés au-dessus,
+      //    pas la peine de doubler)
+      if (!autoFilled && d.actualShift?.start && d.actualShift?.end && d.hours > 14) {
         alerts.push({
           type: "long-shift",
           severity: "warning",
@@ -288,6 +309,109 @@ function detectPayrollAnomalies(empRows, isLocked) {
   }
 
   return alerts;
+}
+
+// ═ Auto-remplissage des sorties manquantes (v3.29.0) ═══
+// Quand un employé a pointé son entrée mais pas sa sortie, et qu'on est
+// au moins 1 h après l'heure de sortie PRÉVUE à l'horaire, on remplit
+// automatiquement la sortie avec l'heure prévue + on marque le shift
+// avec un flag `autoFilled: true`. La carte s'affiche en orange avec
+// un tag « À VALIDER » et apparaît dans le bandeau d'alertes en haut.
+// L'admin peut soit confirmer (en éditant manuellement → le flag saute
+// automatiquement dans updateActualShift), soit corriger l'heure.
+//
+// Cas où on NE FAIT RIEN :
+//   • semaine verrouillée
+//   • shift déjà complet (start ET end remplis sans flag autoFilled)
+//   • flag autoFilled déjà présent (déjà traité, on ne touche plus)
+//   • pas de shift planifié (extra sans horaire → on laisse « En cours »)
+//   • on est encore dans la fenêtre d'attente (< 1 h après l'heure prévue)
+//
+// Garde-fou anti-boucle : un setter `_autoFillScanInFlight` bloque les
+// scans concurrents. De toute façon, dès qu'on écrit { end, autoFilled }
+// le shift n'est plus « partial » donc le scan suivant ne le redétecte
+// pas — la convergence est garantie en 1 itération.
+
+let _autoFillScanInFlight = false;
+
+async function autoFillMissingExits(empRows, isLocked) {
+  if (isLocked) return;
+  if (_autoFillScanInFlight) return;
+  if (!payrollWeekData) return; // doc semaine pas encore chargé
+
+  const now = Date.now();
+  const WAIT_MS = 60 * 60 * 1000; // 1 h
+  const candidates = [];
+
+  for (const row of empRows) {
+    for (const d of row.daily) {
+      const a = d.actualShift;
+      if (!a) continue;
+      // Doit avoir un start, pas de end → shift « en cours »
+      if (!a.start || a.end) continue;
+      // Déjà traité une fois → on ne re-touche pas (sécurité, ne devrait
+      // pas arriver puisqu'un autoFilled aurait son end rempli)
+      if (a.autoFilled) continue;
+      // Doit avoir un planifié avec end (sinon on ne sait pas quoi écrire)
+      const p = d.plannedShift;
+      if (!p?.end) continue;
+
+      // Construction du timestamp réel de l'heure de sortie planifiée
+      const [yy, mo, dd] = d.dk.split("-").map(Number);
+      const [eh, em] = p.end.split(":").map(Number);
+      const [sh, sm] = (p.start || "00:00").split(":").map(Number);
+      if (!Number.isFinite(eh) || !Number.isFinite(em)) continue;
+      const endDate = new Date(yy, mo - 1, dd, eh, em, 0, 0);
+      // Shift de nuit (end ≤ start) → end est le lendemain
+      if (eh < sh || (eh === sh && em <= sm)) {
+        endDate.setDate(endDate.getDate() + 1);
+      }
+      if (now - endDate.getTime() < WAIT_MS) continue; // pas encore l'heure
+
+      candidates.push({ empId: row.emp.id, dk: d.dk, start: a.start, end: p.end });
+    }
+  }
+
+  if (candidates.length === 0) return;
+
+  _autoFillScanInFlight = true;
+  try {
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    const ref = db.collection("payroll").doc(wid);
+
+    // Construit le payload nested actualShifts[empId][dk] = {start,end,autoFilled,autoFilledAt}
+    const actualShifts = {};
+    for (const c of candidates) {
+      if (!actualShifts[c.empId]) actualShifts[c.empId] = {};
+      actualShifts[c.empId][c.dk] = {
+        start: c.start,
+        end: c.end,
+        autoFilled: true,
+        autoFilledAt: now
+      };
+    }
+
+    await ref.set({
+      weekId: wid,
+      weekStart: dayKey(ws),
+      updatedAt: now,
+      actualShifts
+    }, { merge: true });
+
+    const n = candidates.length;
+    toast(
+      `${n} sortie${n > 1 ? "s" : ""} auto-remplie${n > 1 ? "s" : ""} depuis l'horaire prévu — à valider en haut du tableau`,
+      "warning",
+      5000
+    );
+  } catch (err) {
+    console.error("autoFillMissingExits failed:", err);
+    // Pas de toast en cas d'échec : c'est un mécanisme de fond, mieux
+    // vaut être silencieux que de spammer l'admin.
+  } finally {
+    _autoFillScanInFlight = false;
+  }
 }
 
 // Format "Mar 26/5" pour les alertes — court et clair
@@ -459,10 +583,18 @@ function renderSalaires() {
   // État verrouillage de la semaine
   const isLocked = !!payrollWeekData?.locked;
 
+  // ─ Auto-remplissage des sorties manquantes (v3.29.0) ─
+  // Fire-and-forget : ne bloque pas le rendu HTML. Si des shifts sont
+  // auto-remplis, l'écriture Firestore déclenchera un re-render via
+  // le listener payroll (snap → renderPage()), et les cards seront
+  // marquées en orange « À VALIDER » au render suivant.
+  Promise.resolve().then(() => autoFillMissingExits(empRows, isLocked));
+
   // ─ Détection d'anomalies (v3.19.0) ────────────────
   const alerts = detectPayrollAnomalies(empRows, isLocked);
   const alertsByType = {
     "missing-exit": alerts.filter(a => a.type === "missing-exit"),
+    "auto-filled-exit": alerts.filter(a => a.type === "auto-filled-exit"),
     "long-shift": alerts.filter(a => a.type === "long-shift"),
     "scheduled-not-punched": alerts.filter(a => a.type === "scheduled-not-punched")
   };
@@ -561,6 +693,20 @@ function renderSalaires() {
           </div>
         </div>
         <div class="payroll-alerts-list">
+          ${alertsByType["auto-filled-exit"].length > 0 ? `
+            <div class="payroll-alerts-group">
+              <div class="payroll-alerts-group-head">
+                ${icon("refresh", 14)} Sortie auto-remplie à valider (${alertsByType["auto-filled-exit"].length})
+              </div>
+              ${alertsByType["auto-filled-exit"].map(a => `
+                <div class="payroll-alert payroll-alert--warning is-auto-filled">
+                  <span class="payroll-alert-day">${a.dayLabel}</span>
+                  <strong class="payroll-alert-emp">${esc(a.empName)}</strong>
+                  <span class="payroll-alert-msg">${esc(a.message)}</span>
+                </div>
+              `).join("")}
+            </div>
+          ` : ""}
           ${alertsByType["missing-exit"].length > 0 ? `
             <div class="payroll-alerts-group">
               <div class="payroll-alerts-group-head">
@@ -765,27 +911,36 @@ function renderSalaires() {
               const dayTipPart = d.dayTip > 0
                 ? `<div class="shift-card-tip" title="Pourboire reçu ce jour">+${fmtMoney(d.dayTip)}</div>`
                 : "";
-              const cellTitle = d.isDifferent
+              // v3.29.0 — Sortie auto-remplie depuis l'horaire planifié : la
+              // carte passe en orange avec un tag « À VALIDER ». Le flag
+              // disparaît automatiquement dès que l'admin réédite via le modal
+              // (updateActualShift efface autoFilled à chaque écriture manuelle).
+              const isAutoFilled = !!d.actualShift?.autoFilled;
+              const cellTitle = isAutoFilled
+                ? `Sortie auto-remplie depuis l'horaire (${d.plannedShift?.end || "—"}) — cliquer pour valider ou corriger`
+                : d.isDifferent
                 ? `Modifié — planifié : ${d.plannedShift?.start || "—"}→${d.plannedShift?.end || "—"}`
                 : "";
-              return `<div class="schedule-empgrid-cell ${d.isDifferent ? "is-modified" : ""}"
+              return `<div class="schedule-empgrid-cell ${d.isDifferent ? "is-modified" : ""} ${isAutoFilled ? "is-auto-filled" : ""}"
                   data-day-key="${dk}"
                   title="${cellTitle}"
                   ${isLocked ? "" : `ondragover="payrollShiftDragOver(event,'${dk}')"
                   ondragleave="payrollShiftDragLeave(event)"
                   ondrop="payrollShiftDrop(event,'${row.emp.id}','${dk}')"`}>
-                <div class="shift-card shift-card--compact ${groupClass}"
+                <div class="shift-card shift-card--compact ${groupClass} ${isAutoFilled ? "shift-card--auto-filled" : ""}"
                     ${isLocked ? "" : `draggable="true"
                     data-emp-id="${row.emp.id}"
                     data-from-day="${dk}"
                     ondragstart="payrollShiftDragStart(event,'${row.emp.id}','${dk}')"
                     ondragend="payrollShiftDragEnd(event)"
                     onclick="openPayrollShiftModal('${row.emp.id}','${dk}')"`}
-                    title="Cliquer pour modifier · Glisser pour déplacer">
+                    title="${isAutoFilled ? "Sortie auto-remplie — cliquer pour valider" : "Cliquer pour modifier · Glisser pour déplacer"}">
                   <div class="shift-card-time">${d.actualShift.start} → ${d.actualShift.end}</div>
                   <div class="shift-card-meta">
-                    <span>${fmtHours(d.hours)}h</span>
-                    ${dayTipPart || `<span class="shift-card-cost">${d.tipHours > 0 ? fmtHours(d.tipHours) + "h★" : ""}</span>`}
+                    ${isAutoFilled
+                      ? `<span class="shift-card-autofill-tag">À VALIDER</span>`
+                      : `<span>${fmtHours(d.hours)}h</span>
+                         ${dayTipPart || `<span class="shift-card-cost">${d.tipHours > 0 ? fmtHours(d.tipHours) + "h★" : ""}</span>`}`}
                   </div>
                 </div>
               </div>`;
@@ -918,7 +1073,12 @@ async function updateActualShift(empId, dk, field, value) {
     const currentShift = getActualShift(empId, dk) || {};
     const newShift = {
       start: field === "start" ? (value || "") : (currentShift.start || ""),
-      end:   field === "end"   ? (value || "") : (currentShift.end   || "")
+      end:   field === "end"   ? (value || "") : (currentShift.end   || ""),
+      // v3.29.0 — Toute édition manuelle compte comme une validation : on
+      // efface le flag autoFilled + autoFilledAt s'ils existaient. Si le
+      // flag n'était pas là, FieldValue.delete() est un no-op.
+      autoFilled: firebase.firestore.FieldValue.delete(),
+      autoFilledAt: firebase.firestore.FieldValue.delete()
     };
 
     const ws = getWeekStart(payrollWeekOffset);
