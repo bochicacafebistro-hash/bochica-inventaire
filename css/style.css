@@ -10549,3 +10549,63 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 
 [data-theme="dark"] .invoice-status-pill.is-draft{ background:#334155; color:#cbd5e1; }
+
+/* ═══════════════════════════════════════════════════════════════
+   v3.34.0 — Panneau totaux Salaires : sans / avec pourboires
+   ═══════════════════════════════════════════════════════════════
+   La cellule total à droite contient maintenant 2 lignes empilées :
+   « Sans pourb. » (sumGross) et « Avec pourb. » (sumTotal, en gros).
+   Aide à distinguer ce que l'admin paie de sa poche du total reçu
+   par l'équipe quand les pourboires sont inclus. */
+
+.payroll-totals-final{
+  display:flex !important;
+  flex-direction:column;
+  justify-content:center;
+  align-items:stretch;
+  gap:3px;
+  padding:6px 8px !important;
+  background:var(--surface2) !important;
+}
+.payroll-totals-final-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+  gap:8px;
+  font-variant-numeric:tabular-nums;
+}
+.payroll-totals-final-lbl{
+  font-family:var(--font-body);
+  font-size:10px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  color:var(--text3);
+}
+.payroll-totals-final-amt{
+  font-family:'Inter', system-ui, sans-serif;
+  font-weight:700;
+  font-size:13px;
+  color:var(--text);
+}
+.payroll-totals-final-row--big{
+  padding-top:3px;
+  border-top:1px solid var(--border);
+}
+.payroll-totals-final-row--big .payroll-totals-final-lbl{
+  color:var(--text2);
+  font-weight:700;
+}
+.payroll-totals-final-row--big .payroll-totals-final-amt{
+  font-family:'Bebas Neue', Impact, sans-serif;
+  font-size:18px;
+  letter-spacing:.02em;
+  color:var(--text);
+}
+
+[data-theme="dark"] .payroll-totals-final{
+  background:rgba(247,179,44,.08) !important;
+}
+[data-theme="dark"] .payroll-totals-final-row--big{
+  border-top-color:rgba(247,179,44,.30);
+}

@@ -1101,6 +1101,10 @@ function renderSalaires() {
       </div>
 
       <!-- ══ Panneau totaux (mêmes colonnes que la grille du haut) ══ -->
+      <!-- v3.34.0 : la cellule total éclatée en 2 lignes pour distinguer
+           clairement « sans pourboires » (= salaires bruts, ce que tu paies
+           en chèque) de « avec pourboires » (montant total reçu par
+           l'équipe en incluant les tips distribués). -->
       <div class="schedule-totals-panel payroll-totals-panel" style="--n-days:${weekDays.length};">
         <div class="schedule-totals-grid">
           <div class="schedule-totals-label">Totaux semaine</div>
@@ -1108,9 +1112,18 @@ function renderSalaires() {
             ${empRows.length} employé${empRows.length > 1 ? "s" : ""} ·
             ${fmtHours(sumActualHours)}h pointées / ${fmtHours(sumPlannedHours)}h planifiées
             · Écart ${(sumActualHours - sumPlannedHours) > 0 ? "+" : ""}${fmtHours(sumActualHours - sumPlannedHours)}h
-            · Salaires ${fmtMoney(sumGross)} · Pourboires ${fmtMoney(sumTips)}
+            · Pourboires distribués ${fmtMoney(sumTips)}
           </div>
-          <div class="schedule-totals-val schedule-totals-val--total">${fmtMoney(sumTotal)}</div>
+          <div class="schedule-totals-val schedule-totals-val--total payroll-totals-final">
+            <div class="payroll-totals-final-row" title="Salaires bruts uniquement — ce qui sort de tes poches">
+              <span class="payroll-totals-final-lbl">Sans pourb.</span>
+              <span class="payroll-totals-final-amt">${fmtMoney(sumGross)}</span>
+            </div>
+            <div class="payroll-totals-final-row payroll-totals-final-row--big" title="Salaires + pourboires distribués — total reçu par l'équipe">
+              <span class="payroll-totals-final-lbl">Avec pourb.</span>
+              <span class="payroll-totals-final-amt">${fmtMoney(sumTotal)}</span>
+            </div>
+          </div>
         </div>
       </div>
 
