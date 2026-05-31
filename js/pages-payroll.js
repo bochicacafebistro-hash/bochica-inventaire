@@ -303,7 +303,9 @@ function detectPayrollAnomalies(empRows, isLocked) {
       }
 
       // 3. Planifié mais pas pointé sur jour passé → no-show ou oubli de pointer entrée
-      if (isPast && !d.actualShift?.start && !d.actualShift?.end && d.plannedShift?.start && d.plannedShift?.end) {
+      //    Skip si markedAbsent : l'admin a déjà confirmé que l'employé n'est pas
+      //    venu, donc plus d'alerte (la cellule grise « ABSENT » suffit comme signal).
+      if (isPast && !d.actualShift?.start && !d.actualShift?.end && !d.actualShift?.markedAbsent && d.plannedShift?.start && d.plannedShift?.end) {
         alerts.push({
           type: "scheduled-not-punched",
           severity: "info",
@@ -384,6 +386,9 @@ async function autoFillMissingExits(empRows, isLocked) {
 
       // Déjà flagué auto-fillé → ne pas re-toucher (sécurité)
       if (a?.autoFilled) continue;
+      // v3.31.0 — Marqué absent par l'admin → ne JAMAIS re-remplir,
+      // même si le planifié existe. C'est exactement à ça que sert le flag.
+      if (a?.markedAbsent) continue;
       // Shift déjà complet (sans flag) → rien à faire
       if (hasStart && hasEnd) continue;
 
@@ -946,9 +951,33 @@ function renderSalaires() {
               const endVal = d.actualShift?.end || "";
               const filled = startVal && endVal;
               const partial = (startVal && !endVal) || (!startVal && endVal);
+              const isMarkedAbsent = !!d.actualShift?.markedAbsent;
               const dk = d.dk;
               const empName = esc(row.emp.name || "");
               const dayName = DAYS_FR[visibleIdx[k]];
+
+              // ─ Cas 0 : ABSENCE CONFIRMÉE (v3.31.0) ─
+              // L'admin a explicitement marqué l'employé comme absent.
+              // Card grise distincte du Congé bleuté (qui dit « pas encore
+              // pointé »). Clic pour ré-ouvrir le modal et soit retirer le
+              // statut, soit finalement saisir des heures.
+              if (isMarkedAbsent) {
+                const plannedHint = d.plannedShift?.start && d.plannedShift?.end
+                  ? `${d.plannedShift.start} → ${d.plannedShift.end} prévu`
+                  : "";
+                return `<div class="schedule-empgrid-cell schedule-empgrid-cell--absent"
+                    data-day-key="${dk}"
+                    title="Employé marqué absent — aucune heure comptée. Cliquer pour modifier."
+                    ${isLocked ? "" : `ondragover="payrollShiftDragOver(event,'${dk}')"
+                    ondragleave="payrollShiftDragLeave(event)"
+                    ondrop="payrollShiftDrop(event,'${row.emp.id}','${dk}')"`}>
+                  <div class="shift-card shift-card--absent"
+                      ${isLocked ? "" : `onclick="openPayrollShiftModal('${row.emp.id}','${dk}')"`}>
+                    <div class="shift-absent-label">${icon("user-x", 12)} ABSENT</div>
+                    ${plannedHint ? `<div class="shift-absent-sub">${plannedHint}</div>` : `<div class="shift-absent-sub">Pas compté</div>`}
+                  </div>
+                </div>`;
+              }
 
               // ─ Cas 1 : shift PARTIEL (entrée pointée sans sortie, ou inverse) ─
               // Affiche une carte spéciale « en cours » pour ne PAS confondre avec
@@ -1169,13 +1198,16 @@ async function updateActualShift(empId, dk, field, value) {
     const newShift = {
       start: field === "start" ? (value || "") : (currentShift.start || ""),
       end:   field === "end"   ? (value || "") : (currentShift.end   || ""),
-      // v3.29.0 / v3.29.1 — Toute édition manuelle compte comme une
-      // validation : on efface les flags autoFilled + autoFilledAt +
-      // autoFilledNoStart s'ils existaient. Si l'un était absent,
-      // FieldValue.delete() est un no-op silencieux.
+      // v3.29.0 / v3.29.1 / v3.31.0 — Toute édition manuelle compte
+      // comme une validation : on efface les flags autoFilled +
+      // autoFilledAt + autoFilledNoStart + markedAbsent + markedAbsentAt
+      // s'ils existaient. Si l'un était absent, FieldValue.delete()
+      // est un no-op silencieux.
       autoFilled: firebase.firestore.FieldValue.delete(),
       autoFilledAt: firebase.firestore.FieldValue.delete(),
-      autoFilledNoStart: firebase.firestore.FieldValue.delete()
+      autoFilledNoStart: firebase.firestore.FieldValue.delete(),
+      markedAbsent: firebase.firestore.FieldValue.delete(),
+      markedAbsentAt: firebase.firestore.FieldValue.delete()
     };
 
     const ws = getWeekStart(payrollWeekOffset);
@@ -1201,7 +1233,11 @@ async function updateActualShift(empId, dk, field, value) {
   }
 }
 
-// Efface complètement le shift d'un employé pour un jour (les deux champs)
+// Efface complètement le shift d'un employé pour un jour (les deux champs).
+// ⚠ v3.31.0 — Si l'employé était auparavant absent à ce jour-là, ça efface
+// AUSSI le flag markedAbsent. La cellule redevient vide, ce qui peut
+// déclencher l'auto-fill au prochain render si planifié + délai dépassé.
+// Pour confirmer définitivement une absence, utiliser markEmployeeAbsent().
 async function clearActualShift(empId, dk) {
   try {
     const ws = getWeekStart(payrollWeekOffset);
@@ -1221,6 +1257,68 @@ async function clearActualShift(empId, dk) {
     console.error("clearActualShift failed:", err);
     toast("Erreur : " + (err.message || err.code || err), "error", 5000);
   }
+}
+
+// ═ v3.31.0 — Marquer un employé absent pour un jour donné ═══
+// L'admin confirme que l'employé n'est pas venu. Aucune heure n'est
+// comptée pour ce jour (ni salaire ni pourboire), et l'auto-fill ne
+// touchera PLUS cette cellule même si elle reste dans son délai habituel.
+//
+// Stockage : { markedAbsent: true, markedAbsentAt: timestamp } dans
+// actualShifts[empId][dk]. Tous les autres champs (start, end, autoFilled,
+// autoFilledNoStart, autoFilledAt) sont effacés via FieldValue.delete().
+//
+// Pour retirer le statut « absent », l'admin peut soit éditer les heures
+// via le modal (updateActualShift efface markedAbsent), soit appeler
+// unmarkEmployeeAbsent ci-dessous (qui supprime complètement la cellule).
+async function markEmployeeAbsent(empId, dk) {
+  if (payrollWeekData?.locked) {
+    toast("Semaine verrouillée — déverrouille avant.", "warning");
+    return;
+  }
+  try {
+    const now = Date.now();
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    const ref = db.collection("payroll").doc(wid);
+    await ref.set({
+      weekId: wid,
+      weekStart: dayKey(ws),
+      updatedAt: now,
+      actualShifts: {
+        [empId]: {
+          [dk]: {
+            // On garde un objet présent (pas FieldValue.delete) pour bloquer
+            // l'auto-fill : la cellule n'est plus « vide » au sens Firestore.
+            start: firebase.firestore.FieldValue.delete(),
+            end: firebase.firestore.FieldValue.delete(),
+            autoFilled: firebase.firestore.FieldValue.delete(),
+            autoFilledAt: firebase.firestore.FieldValue.delete(),
+            autoFilledNoStart: firebase.firestore.FieldValue.delete(),
+            markedAbsent: true,
+            markedAbsentAt: now
+          }
+        }
+      }
+    }, { merge: true });
+    toast("Employé marqué absent — aucune heure comptée pour ce jour.", "success", 2500);
+  } catch (err) {
+    console.error("markEmployeeAbsent failed:", err);
+    toast("Erreur : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// Retire le statut « absent » d'un jour donné — la cellule redevient vide
+// (et l'auto-fill peut éventuellement la re-remplir si conditions OK).
+// Utile si l'admin a marqué par erreur, ou si l'employé est finalement venu.
+async function unmarkEmployeeAbsent(empId, dk) {
+  if (payrollWeekData?.locked) {
+    toast("Semaine verrouillée — déverrouille avant.", "warning");
+    return;
+  }
+  // Supprime entièrement la cellule — clearActualShift fait exactement ça
+  await clearActualShift(empId, dk);
+  toast("Statut « absent » retiré pour ce jour.", "success", 2000);
 }
 
 // Met à jour le pourboire reçu pour un jour donné.
@@ -2893,6 +2991,8 @@ function openPayrollShiftModal(empId, dk) {
   const startVal = currentShift.start || "";
   const endVal = currentShift.end || "";
   const hasShift = !!(startVal && endVal);
+  const isAbsent = !!currentShift.markedAbsent;
+  const isAutoFilled = !!currentShift.autoFilled;
   // Date longue
   const [yy, mm, ddNum] = dk.split("-").map(Number);
   const dateObj = new Date(yy, mm - 1, ddNum);
@@ -2902,15 +3002,26 @@ function openPayrollShiftModal(empId, dk) {
   const plannedHint = plannedShift?.start && plannedShift?.end
     ? `<span style="color:var(--text3);font-size:11px;font-style:italic;margin-left:6px">Prévu : ${plannedShift.start} → ${plannedShift.end}</span>`
     : "";
+  // Bandeau d'état contextuel (auto-rempli / absent confirmé)
+  const stateBanner = isAbsent
+    ? `<div class="payroll-modal-state-banner is-absent">
+        ${icon("user-x", 14)} <strong>Employé absent</strong> — aucune heure comptée pour ce jour. Saisir des heures ci-dessous (ou utiliser « Retirer absent ») si l'employé est finalement venu.
+      </div>`
+    : isAutoFilled
+    ? `<div class="payroll-modal-state-banner is-autofilled">
+        ${icon("refresh", 14)} <strong>Heures auto-remplies depuis l'horaire prévu</strong> — vérifier puis enregistrer pour valider. Si l'employé n'est pas venu du tout, cliquer « Marquer absent ».
+      </div>`
+    : "";
 
-  showModal(`<div class="modal" style="max-width:440px">
+  showModal(`<div class="modal" style="max-width:480px">
     <div class="modal-header">
-      <h3>${icon("clock", 18)} ${hasShift ? "Modifier le shift" : "Saisir un shift"}</h3>
+      <h3>${icon("clock", 18)} ${isAbsent ? "Cellule \"Absent\"" : hasShift ? "Modifier le shift" : "Saisir un shift"}</h3>
       <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
     </div>
     <p style="color:var(--text2);font-size:13px;margin:0 0 var(--sp-3);text-transform:capitalize">
       ${icon("user", 12)} <strong>${esc(emp.name || "")}</strong> · ${dayLabel}${plannedHint}
     </p>
+    ${stateBanner}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin-top:var(--sp-2)">
       <label>Entrée
         <select id="payroll-shift-start">${buildPayrollTimeOptions(startVal)}</select>
@@ -2919,11 +3030,16 @@ function openPayrollShiftModal(empId, dk) {
         <select id="payroll-shift-end">${buildPayrollTimeOptions(endVal)}</select>
       </label>
     </div>
-    <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3)">
-      ${hasShift ? `<button class="btn-cancel" style="color:#a23a36" onclick="deletePayrollShift('${empId}','${dk}')">${icon("trash", 14)} Supprimer</button>` : `<div></div>`}
-      <div style="display:flex;gap:var(--sp-2)">
+    <div class="modal-actions payroll-modal-actions">
+      <div class="payroll-modal-actions-left">
+        ${isAbsent
+          ? `<button class="btn-cancel payroll-modal-unabsent" onclick="unmarkEmployeeAbsent('${empId}','${dk}');closeModal()" title="Retirer le statut absent — la cellule redevient vide">${icon("undo", 14)} Retirer absent</button>`
+          : `<button class="btn-cancel payroll-modal-mark-absent" onclick="markEmployeeAbsent('${empId}','${dk}');closeModal()" title="L'employé n'est pas venu — aucune heure comptée">${icon("user-x", 14)} Marquer absent</button>`}
+        ${hasShift && !isAbsent ? `<button class="btn-cancel" style="color:#a23a36" onclick="deletePayrollShift('${empId}','${dk}')" title="Effacer les heures saisies (l'auto-fill pourra re-remplir si conditions)">${icon("trash", 14)} Effacer</button>` : ""}
+      </div>
+      <div class="payroll-modal-actions-right">
         <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
-        <button class="btn btn-primary" onclick="savePayrollShiftFromModal('${empId}','${dk}')">${icon("check", 14)} ${hasShift ? "Enregistrer" : "Ajouter"}</button>
+        <button class="btn btn-primary" onclick="savePayrollShiftFromModal('${empId}','${dk}')">${icon("check", 14)} ${isAbsent ? "Saisir heures" : hasShift ? "Enregistrer" : "Ajouter"}</button>
       </div>
     </div>
   </div>`);

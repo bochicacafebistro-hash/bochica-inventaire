@@ -9858,6 +9858,143 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   v3.31.0 — Card « ABSENT » (admin a confirmé l'absence)
+   ═══════════════════════════════════════════════════════════════
+   Distincte du Congé bleuté (qui veut dire « pas encore pointé,
+   peut-être en retard ») : gris-rouge pour signaler que c'est un
+   no-show confirmé, aucune heure ne sera comptée. Fond très pâle
+   pour rester discret dans la grille (l'absence est un état stable
+   contrairement aux warnings orange).
+   La card est cliquable pour rouvrir le modal et éventuellement
+   retirer le statut ou saisir des heures si l'employé est venu. */
+
+.shift-card.shift-card--absent{
+  background:rgba(159,18,57,.06);
+  border:1.5px dashed rgba(159,18,57,.40);
+  color:#7a1733;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:6px 4px;
+  text-align:center;
+  transition:background var(--transition-fast), border-color var(--transition-fast);
+}
+.shift-card.shift-card--absent:hover{
+  background:rgba(159,18,57,.10);
+  border-color:rgba(159,18,57,.60);
+}
+.shift-absent-label{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  font-family:var(--font-body);
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#9f1239;
+}
+.shift-absent-sub{
+  font-family:var(--font-body);
+  font-size:10px;
+  color:var(--text3);
+  margin-top:2px;
+  line-height:1.2;
+  font-style:italic;
+}
+.schedule-empgrid-cell.schedule-empgrid-cell--absent{
+  background:rgba(159,18,57,.02);
+}
+
+[data-theme="dark"] .shift-card.shift-card--absent{
+  background:rgba(244,114,182,.10);
+  border-color:rgba(244,114,182,.40);
+  color:#fbcfe8;
+}
+[data-theme="dark"] .shift-card.shift-card--absent:hover{
+  background:rgba(244,114,182,.15);
+  border-color:rgba(244,114,182,.60);
+}
+[data-theme="dark"] .shift-absent-label{
+  color:#fbcfe8;
+}
+[data-theme="dark"] .schedule-empgrid-cell.schedule-empgrid-cell--absent{
+  background:rgba(244,114,182,.04);
+}
+
+/* Bandeau d'état contextuel dans le modal d'édition (haut du modal) */
+.payroll-modal-state-banner{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+  padding:10px 12px;
+  border-radius:var(--radius-md);
+  font-family:var(--font-body);
+  font-size:12px;
+  line-height:1.4;
+  margin-bottom:var(--sp-3);
+  border-left:3px solid;
+}
+.payroll-modal-state-banner.is-absent{
+  background:rgba(159,18,57,.08);
+  border-left-color:#9f1239;
+  color:#7a1733;
+}
+.payroll-modal-state-banner.is-autofilled{
+  background:rgba(217,119,6,.10);
+  border-left-color:#d97706;
+  color:#92400e;
+}
+[data-theme="dark"] .payroll-modal-state-banner.is-absent{
+  background:rgba(244,114,182,.12);
+  color:#fbcfe8;
+}
+[data-theme="dark"] .payroll-modal-state-banner.is-autofilled{
+  background:rgba(245,158,11,.14);
+  color:#fbbf24;
+}
+
+/* Layout des actions du modal — 2 groupes (gauche : suppression/absent,
+   droite : annuler/enregistrer) qui passent en colonne sur mobile. */
+.modal-actions.payroll-modal-actions{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:var(--sp-2);
+  margin-top:var(--sp-3);
+  flex-wrap:wrap;
+}
+.payroll-modal-actions-left,
+.payroll-modal-actions-right{
+  display:flex;
+  gap:var(--sp-2);
+  flex-wrap:wrap;
+}
+.payroll-modal-mark-absent{
+  color:#9f1239;
+}
+.payroll-modal-mark-absent:hover{
+  background:rgba(159,18,57,.08);
+}
+.payroll-modal-unabsent{
+  color:#2c5f9e;
+}
+.payroll-modal-unabsent:hover{
+  background:rgba(74,144,226,.10);
+}
+[data-theme="dark"] .payroll-modal-mark-absent{
+  color:#fda4af;
+}
+[data-theme="dark"] .payroll-modal-mark-absent:hover{
+  background:rgba(244,114,182,.14);
+}
+[data-theme="dark"] .payroll-modal-unabsent{
+  color:#8fc1ff;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    v3.27.2 — Délimitation visuelle des employés dans la grille
    ═══════════════════════════════════════════════════════════════
    La cellule totaux à droite (multi-lignes blanches) rendait la
