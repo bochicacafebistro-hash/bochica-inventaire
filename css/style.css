@@ -10662,3 +10662,14 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 .emp-schedule-empgrid .schedule-empgrid-cell.is-today-col{
   background:rgba(var(--accent-rgb),.04);
 }
+
+/* Horaire employé : PAS de colonne « Heures » à droite (on n'affiche pas
+   le nombre d'heures travaillées). On retire donc la colonne total du grid. */
+.emp-schedule-empgrid{
+  grid-template-columns:160px repeat(var(--n-days, 5), minmax(110px, 1fr));
+}
+@media (max-width:1000px){
+  .emp-schedule-empgrid{
+    grid-template-columns:130px repeat(var(--n-days, 5), minmax(95px, 1fr));
+  }
+}

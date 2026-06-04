@@ -1,7 +1,7 @@
 # 📌 TODO — Bochica Inventaire
 
 > Liste vivante des améliorations identifiées mais pas encore implémentées.
-> Mise à jour : **29 mai 2026**
+> Mise à jour : **4 juin 2026**
 
 ---
 
@@ -68,6 +68,7 @@
 - [ ] **Rotation/expiration de session** : forcer une réauthentification périodique (ex : tous les 30 jours), surtout pour `global_admin`.
 - [ ] **Confirmation par mot de passe** avant les actions critiques (suppression de masse, verrouillage de paie, export). Pattern « danger zone ».
 - [ ] **Limitation des tentatives de login** : Firebase Auth a déjà du rate-limiting mais on peut afficher des messages clairs après N échecs.
+- [ ] **Cacher les taux/salaires côté base pour le rôle Employé** *(demandé le 4 juin 2026 — à faire un autre jour)* : actuellement les vues employé (`accueil`, `mon-horaire`, v3.35.0) **n'affichent jamais** les taux ni montants, mais les champs `hourlyRate` / `fixedWeeklyHours` des docs `/employees` restent **lisibles côté BD** par tout compte connecté (un employé peut les voir via la console du navigateur). Chantier : (1) restreindre la lecture de ces champs dans `firestore.rules` — p. ex. déplacer les données de rémunération dans une sous-collection ou un doc séparé `/employeesComp/{id}` accessible **admin only**, en gardant `/employees` (nom, section, PIN, shifts) lisible par tous ; (2) adapter `pages-hr.js`/`pages-payroll.js`/`pages-simulations.js` pour lire la rémunération depuis la nouvelle source ; (3) mettre à jour `firebase-listeners.js` (nouveau listener admin only) ; (4) publier les nouvelles `firestore.rules` dans la Console Firebase. ⚠️ Bien tester que les pages admin (salaires, sim, horaires) lisent toujours les taux correctement après la migration.
 
 ---
 

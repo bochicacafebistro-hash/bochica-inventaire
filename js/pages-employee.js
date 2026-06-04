@@ -220,15 +220,13 @@ function renderEmployeeSchedule() {
 
   const empList = (typeof employees !== "undefined" ? employees : []);
 
-  // Pré-calcul : lignes employés avec leurs shifts du jour + heures (durée).
+  // Pré-calcul : lignes employés avec leurs shifts du jour.
+  // (On n'affiche PAS le nombre d'heures travaillées — seulement les
+  //  plages entrée→sortie, qui constituent l'horaire lui-même.)
   const empRows = empList.map(emp => {
     const shifts = emp.shifts || {};
-    const daily = weekDays.map(d => {
-      const s = shifts[dayKey(d)];
-      return { shift: s, hours: hoursFromShift(s) };
-    });
-    const totalHours = daily.reduce((sum, d) => sum + d.hours, 0);
-    return { emp, daily, totalHours };
+    const daily = weekDays.map(d => ({ shift: shifts[dayKey(d)] }));
+    return { emp, daily };
   });
 
   // Compteur de personnes par jour (pour le header)
@@ -270,7 +268,6 @@ function renderEmployeeSchedule() {
               <div class="schedule-empgrid-day-count">${dayCounts[k]} pers</div>
             </div>`;
           }).join("")}
-          <div class="schedule-empgrid-total-head">Heures</div>
         </div>
 
         ${empRows.map(row => {
@@ -300,15 +297,9 @@ function renderEmployeeSchedule() {
               return `<div class="schedule-empgrid-cell ${isToday ? "is-today-col" : ""}">
                 <div class="shift-card shift-card--compact shift-card--readonly ${secCls}">
                   <div class="shift-card-time">${s.start} → ${s.end}</div>
-                  <div class="shift-card-meta">
-                    <span>${fmtHours(d.hours)}h</span>
-                  </div>
                 </div>
               </div>`;
             }).join("")}
-            <div class="schedule-empgrid-total">
-              <div class="schedule-empgrid-total-hrs">${row.totalHours ? fmtHours(row.totalHours) + "h" : "—"}</div>
-            </div>
           </div>`;
         }).join("")}
       </div>
