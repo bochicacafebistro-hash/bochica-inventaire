@@ -7,6 +7,10 @@
 // L'ordre est important (affichage de haut en bas).
 function getNavStructure() {
   return [
+    // Vues employé (visibles seulement pour le rôle « employee » via canAccess).
+    // Placées en haut : elles forment l'accueil de l'équipe.
+    { type: "link", icon: "bar-chart", label: "Accueil", page: "accueil" },
+    { type: "link", icon: "clock", label: "Mon horaire", page: "mon-horaire" },
     { type: "link", icon: "bar-chart", label: t("nav_dashboard"), page: "dashboard" },
     {
       type: "section", id: "inventory", icon: "package", label: "Inventaire",
@@ -209,6 +213,8 @@ function renderPage() {
   // dans body deviendrait orphelin quand son parent est remplacé par innerHTML=...)
   if (typeof closeAllDrops === "function" && openDropId) closeAllDrops();
   const pageMeta = {
+    accueil:     { label: "Accueil",            icon: "bar-chart" },
+    "mon-horaire": { label: "Mon horaire",      icon: "clock" },
     dashboard:   { label: t("nav_dashboard"),   icon: "bar-chart" },
     inventaire:  { label: t("nav_inventaire"),  icon: "package" },
     taches:      { label: t("nav_tasks"),       icon: "clipboard" },
@@ -269,7 +275,13 @@ function renderPage() {
     </div></div>`;
     return;
   }
-  if (activePage === "dashboard") {
+  if (activePage === "accueil") {
+    pc.innerHTML = renderEmployeeDashboard();
+  }
+  else if (activePage === "mon-horaire") {
+    pc.innerHTML = renderEmployeeSchedule();
+  }
+  else if (activePage === "dashboard") {
     pc.innerHTML = renderDashboard();
     // Init sparklines après l'injection DOM
     setTimeout(() => { if (typeof initDashSparklines === "function") initDashSparklines(); }, 50);

@@ -45,8 +45,10 @@ const ROLE_PERMISSIONS = {
     homePage: "inventaire"
   },
   employee: {
-    canAccess: ["inventaire", "pointage"],
-    canWrite:  ["inventaire", "pointage"], // écriture = mise à jour du stock + pointage
+    // accueil = tableau de bord employé · mon-horaire = horaire hebdo lecture seule
+    // (deux vues allégées sans données financières — v3.35.0)
+    canAccess: ["accueil", "mon-horaire", "inventaire", "pointage"],
+    canWrite:  ["inventaire", "pointage"], // écriture = mise à jour du stock + pointage (les 2 nouvelles pages sont en lecture seule)
     homePage: "pointage" // v3.17.2 : la tablette permanente s'ouvre directement sur le pointage
   }
 };

@@ -10609,3 +10609,56 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 [data-theme="dark"] .payroll-totals-final-row--big{
   border-top-color:rgba(247,179,44,.30);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PAGES EMPLOYÉ — tableau de bord + horaire (vues allégées, sans $)
+   ═══════════════════════════════════════════════════════════════ */
+.emp-dash-hello{
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:var(--font-mono); font-size:11px; text-transform:uppercase;
+  letter-spacing:.06em; color:var(--text3);
+  background:rgba(var(--accent-rgb),.10);
+  border:1px solid rgba(var(--accent-rgb),.25);
+  padding:6px 12px; border-radius:var(--radius-pill); white-space:nowrap;
+}
+.emp-dash-hello svg{ color:var(--accent-warm); }
+
+/* Bande des 7 jours dans le bloc « Horaire de l'équipe » */
+.emp-week-strip{ display:grid; grid-template-columns:repeat(7,1fr); gap:4px; }
+.emp-week-strip__day{
+  display:flex; flex-direction:column; align-items:center; gap:1px;
+  padding:6px 2px; border:1px solid var(--border); border-radius:var(--radius-sm);
+  background:var(--surface); cursor:pointer; transition:var(--transition-fast);
+}
+.emp-week-strip__day:hover{ border-color:var(--accent); background:var(--accent-soft); }
+.emp-week-strip__day.is-today{
+  border-color:rgba(var(--accent-rgb),.5); background:rgba(var(--accent-rgb),.08);
+}
+.emp-week-strip__dow{
+  font-family:var(--font-mono); font-size:9px; text-transform:uppercase;
+  letter-spacing:.04em; color:var(--text3);
+}
+.emp-week-strip__count{
+  font-family:"Bebas Neue",sans-serif; font-size:20px; line-height:1; color:var(--text);
+}
+.emp-week-strip__day.is-today .emp-week-strip__count{ color:var(--accent-warm); }
+.emp-week-strip__lbl{ font-size:8px; color:var(--text3); text-transform:uppercase; }
+
+/* Note de bas de page de l'horaire employé */
+.emp-schedule-note{
+  display:flex; align-items:center; gap:6px; margin-top:12px;
+  font-size:var(--fs-sm); color:var(--text3); font-style:italic;
+}
+.emp-schedule-note svg{ flex-shrink:0; color:var(--text3); }
+
+/* Cartes shift en lecture seule : pas de pointeur ni d'effet de survol */
+.shift-card--readonly{ cursor:default !important; }
+.shift-card--readonly:hover{ transform:none !important; box-shadow:none !important; }
+
+/* Colonne « aujourd'hui » mise en valeur dans la grille employé */
+.emp-schedule-empgrid .schedule-empgrid-day-head.is-today{
+  background:rgba(var(--accent-rgb),.10);
+}
+.emp-schedule-empgrid .schedule-empgrid-cell.is-today-col{
+  background:rgba(var(--accent-rgb),.04);
+}

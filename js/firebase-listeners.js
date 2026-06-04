@@ -47,7 +47,7 @@ db.collection("logs").orderBy("ts", "desc").limit(300).onSnapshot(snap => {
 db.collection("employees").onSnapshot(snap => {
   employees = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
-  if (shouldRender("employees", "employes", "salaires", "simulations", "dashboard")) renderPage();
+  if (shouldRender("employees", "employes", "salaires", "simulations", "dashboard", "accueil", "mon-horaire")) renderPage();
 });
 
 db.collection("tasks").onSnapshot(snap => {
@@ -85,7 +85,7 @@ db.collection("shoppingList").onSnapshot(snap => {
 db.collection("events").onSnapshot(snap => {
   events = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-  if (shouldRender("events", "evenements", "dashboard")) renderPage();
+  if (shouldRender("events", "evenements", "dashboard", "accueil")) renderPage();
 });
 
 // Soumissions (admin only — devis pour clients)
@@ -147,7 +147,7 @@ db.collection("settings").doc("schedule").onSnapshot(snap => {
     actualSales: data.actualSales || {},
     openDays: Array.isArray(data.openDays) ? data.openDays : [0, 1, 2, 3, 4, 5, 6]
   };
-  if (shouldRender("settings/schedule", "employes", "salaires", "simulations")) renderPage();
+  if (shouldRender("settings/schedule", "employes", "salaires", "simulations", "mon-horaire")) renderPage();
 });
 
 // Paramètres paie : pourcentages cuisine/service + fenêtre de service par défaut
