@@ -11,6 +11,8 @@ function getNavStructure() {
     // Placées en haut : elles forment l'accueil de l'équipe.
     { type: "link", icon: "bar-chart", label: "Accueil", page: "accueil" },
     { type: "link", icon: "clock", label: "Mon horaire", page: "mon-horaire" },
+    // Ouverture / Fermeture : visible employés + admin (v3.36.0).
+    { type: "link", icon: "clipboard", label: "Ouverture / Fermeture", page: "ouverture-fermeture" },
     { type: "link", icon: "bar-chart", label: t("nav_dashboard"), page: "dashboard" },
     {
       type: "section", id: "inventory", icon: "package", label: "Inventaire",
@@ -26,7 +28,8 @@ function getNavStructure() {
         { icon: "users", label: t("nav_employees"), page: "employes" },
         { icon: "dollar-sign", label: t("nav_salaires"), page: "salaires" },
         { icon: "trending-up", label: "Simulation paie", page: "simulations" },
-        { icon: "clipboard", label: t("nav_tasks"), page: "taches" }
+        { icon: "clipboard", label: t("nav_tasks"), page: "taches" },
+        { icon: "clipboard", label: "Tâches du jour", page: "taches-jour" }
       ]
     },
     {
@@ -63,7 +66,7 @@ function getNavStructure() {
 // Mapping page → id de section, pour auto-ouvrir la bonne section après une navigation
 const PAGE_TO_SECTION = {
   inventaire: "inventory", rapport: "inventory", shopping: "inventory",
-  employes: "hr", salaires: "hr", simulations: "hr", taches: "hr",
+  employes: "hr", salaires: "hr", simulations: "hr", taches: "hr", "taches-jour": "hr",
   menu: "kitchen", ingredients: "kitchen", recettes: "kitchen",
   depenses: "finance", factures: "finance", taxes: "finance", rapports: "finance",
   evenements: "clients", soumissions: "clients"
@@ -215,6 +218,8 @@ function renderPage() {
   const pageMeta = {
     accueil:     { label: "Accueil",            icon: "bar-chart" },
     "mon-horaire": { label: "Mon horaire",      icon: "clock" },
+    "ouverture-fermeture": { label: "Ouverture / Fermeture", icon: "clipboard" },
+    "taches-jour": { label: "Tâches du jour",   icon: "clipboard" },
     dashboard:   { label: t("nav_dashboard"),   icon: "bar-chart" },
     inventaire:  { label: t("nav_inventaire"),  icon: "package" },
     taches:      { label: t("nav_tasks"),       icon: "clipboard" },
@@ -280,6 +285,12 @@ function renderPage() {
   }
   else if (activePage === "mon-horaire") {
     pc.innerHTML = renderEmployeeSchedule();
+  }
+  else if (activePage === "ouverture-fermeture") {
+    pc.innerHTML = renderOpenClose();
+  }
+  else if (activePage === "taches-jour") {
+    pc.innerHTML = renderDailyTasksAdmin();
   }
   else if (activePage === "dashboard") {
     pc.innerHTML = renderDashboard();

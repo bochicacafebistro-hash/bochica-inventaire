@@ -33,9 +33,9 @@ const AUTH_DISPLAY_NAMES = {
 // rester "Employe" en permanence sur la tablette).
 const ROLE_PERMISSIONS = {
   global_admin: {
-    canAccess: ["dashboard", "inventaire", "rapport", "taches", "employes", "salaires", "simulations",
+    canAccess: ["dashboard", "inventaire", "rapport", "taches", "taches-jour", "ouverture-fermeture", "employes", "salaires", "simulations",
                 "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "factures", "fournisseurs", "rapports", "pointage"],
-    canWrite: ["dashboard", "inventaire", "rapport", "taches", "employes", "salaires", "simulations",
+    canWrite: ["dashboard", "inventaire", "rapport", "taches", "taches-jour", "ouverture-fermeture", "employes", "salaires", "simulations",
                "depenses", "taxes", "menu", "ingredients", "recettes", "shopping", "evenements", "soumissions", "factures", "fournisseurs", "rapports", "pointage"],
     homePage: "dashboard"
   },
@@ -45,10 +45,11 @@ const ROLE_PERMISSIONS = {
     homePage: "inventaire"
   },
   employee: {
-    // accueil = tableau de bord employé · mon-horaire = horaire hebdo lecture seule
-    // (deux vues allégées sans données financières — v3.35.0)
-    canAccess: ["accueil", "mon-horaire", "inventaire", "pointage"],
-    canWrite:  ["inventaire", "pointage"], // écriture = mise à jour du stock + pointage (les 2 nouvelles pages sont en lecture seule)
+    // accueil = tableau de bord employé (avec tâches du jour cochables) ·
+    // mon-horaire = horaire hebdo lecture seule · ouverture-fermeture = listes
+    // de référence (v3.36.0). Vues allégées sans données financières.
+    canAccess: ["accueil", "mon-horaire", "ouverture-fermeture", "inventaire", "pointage"],
+    canWrite:  ["inventaire", "pointage", "accueil"], // accueil : cocher les tâches du jour (écriture /dailyTasks)
     homePage: "pointage" // v3.17.2 : la tablette permanente s'ouvre directement sur le pointage
   }
 };

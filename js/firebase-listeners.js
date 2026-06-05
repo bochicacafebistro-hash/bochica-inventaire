@@ -55,6 +55,24 @@ db.collection("tasks").onSnapshot(snap => {
   if (shouldRender("tasks", "taches", "inventaire", "dashboard")) renderPage();
 });
 
+// Tâches du jour (v3.36.0) — définies par l'admin, cochées par les employés.
+// Re-render l'accueil employé + la page admin de gestion.
+db.collection("dailyTasks").onSnapshot(snap => {
+  dailyTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
+  if (shouldRender("dailyTasks", "accueil", "taches-jour")) renderPage();
+});
+
+// Listes ouverture/fermeture (v3.36.0) — doc settings/openClose (référence).
+db.collection("settings").doc("openClose").onSnapshot(snap => {
+  const data = snap.exists ? snap.data() : {};
+  openCloseLists = {
+    opening: Array.isArray(data.opening) ? data.opening : [],
+    closing: Array.isArray(data.closing) ? data.closing : []
+  };
+  if (shouldRender("settings/openClose", "ouverture-fermeture")) renderPage();
+});
+
 db.collection("menu").onSnapshot(snap => {
   menuItems = snap.docs.map(d => ({ id: d.id, ...d.data() }));
   if (shouldRender("menu", "menu", "recettes", "dashboard")) renderPage();

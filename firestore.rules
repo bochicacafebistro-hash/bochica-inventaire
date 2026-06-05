@@ -76,6 +76,22 @@ service cloud.firestore {
       allow update: if isAuthed();
     }
 
+    // ── /dailyTasks : tâches du jour (v3.36.0) ────────
+    // Définies par l'admin (titre, type), cochées par les employés sur
+    // l'accueil. Lecture par tous les authentifiés. Création/suppression et
+    // modification du contenu (titre, type, ordre) = admin only. Les non-admin
+    // peuvent UNIQUEMENT changer l'état de complétion (champs ci-dessous), ce
+    // qui permet à un employé de cocher une tâche sans pouvoir l'éditer.
+    match /dailyTasks/{doc=**} {
+      allow read:   if isAuthed();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || (isAuthed() && _dailyTaskToggleOnly());
+    }
+    function _dailyTaskToggleOnly() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['done', 'doneAt', 'doneDate', 'doneBy', 'lastCompletedDate', 'lastCompletedBy', 'updatedAt']);
+    }
+
     // ── /menu : items du menu ─────────────────────────
     match /menu/{doc=**} {
       allow read:  if isAuthed();

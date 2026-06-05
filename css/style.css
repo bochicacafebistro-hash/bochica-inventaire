@@ -10673,3 +10673,108 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
     grid-template-columns:130px repeat(var(--n-days, 5), minmax(95px, 1fr));
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   OPÉRATIONS (v3.36.0) — Tâches du jour + Ouverture / Fermeture
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Conteneur d'actions à droite d'un .toolbar */
+.toolbar-actions{ display:flex; align-items:center; gap:var(--sp-2); flex-wrap:wrap; }
+
+/* Modale large (éditeur 2 colonnes ouverture/fermeture) */
+.modal--wide{ max-width:760px; width:calc(100vw - 32px); }
+
+/* ── Bloc « Tâches de la journée » sur l'accueil (cochable) ── */
+.daily-task-item{
+  display:flex; align-items:center; gap:var(--sp-2);
+  width:100%; text-align:left;
+  background:none; border:none;
+  padding:6px 6px; border-radius:var(--radius-sm);
+  cursor:pointer; font:inherit; color:var(--text);
+  transition:background var(--transition-fast);
+}
+.daily-task-item:hover{ background:var(--surface2); }
+.daily-task-item:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+.daily-task-check{
+  flex-shrink:0; width:20px; height:20px; border-radius:50%;
+  border:2px solid var(--border-strong, rgba(14,13,12,.25));
+  display:inline-flex; align-items:center; justify-content:center;
+  color:#fff; transition:all var(--transition-fast);
+}
+.daily-task-label{
+  flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  font-size:var(--fs-sm);
+}
+.daily-task-tag{
+  flex-shrink:0; font-size:9px; font-weight:700; letter-spacing:.04em;
+  padding:2px 6px; border-radius:var(--radius-pill);
+  background:var(--surface3); color:var(--text2);
+}
+.daily-task-tag--once{ background:var(--accent-soft); color:var(--accent-warm); }
+.daily-task-item.is-done .daily-task-check{
+  background:var(--status-green, #7dbf66);
+  border-color:var(--status-green, #7dbf66);
+}
+.daily-task-item.is-done .daily-task-label{
+  text-decoration:line-through; color:var(--text3);
+}
+.dark .daily-task-item:hover{ background:rgba(245,241,232,.06); }
+.dark .daily-task-check{ border-color:rgba(245,241,232,.3); }
+
+/* ── Page admin « Tâches du jour » ── */
+.ops-admin-intro{
+  font-size:var(--fs-sm); color:var(--text2); line-height:1.6;
+  margin:0 0 var(--sp-4); display:flex; gap:6px; align-items:flex-start;
+}
+.ops-admin-card{ margin-bottom:var(--sp-4); }
+.ops-admin-section-title{
+  display:flex; align-items:center; gap:8px;
+  font-size:var(--fs-md); margin:0 0 var(--sp-3);
+}
+.ops-admin-count{
+  font-size:var(--fs-xs); font-weight:700; color:var(--text2);
+  background:var(--surface2); border-radius:var(--radius-pill);
+  padding:1px 9px; margin-left:auto;
+}
+.ops-admin-list{ display:flex; flex-direction:column; }
+.ops-admin-item{
+  display:flex; align-items:center; gap:var(--sp-3);
+  padding:10px 4px; border-bottom:1px solid var(--border);
+}
+.ops-admin-item:last-child{ border-bottom:none; }
+.ops-admin-item__status{
+  flex-shrink:0; width:22px; height:22px; border-radius:50%;
+  display:inline-flex; align-items:center; justify-content:center;
+  border:2px solid var(--border-strong, rgba(14,13,12,.2)); color:#fff;
+}
+.ops-admin-item__status.is-done{
+  background:var(--status-green, #7dbf66); border-color:var(--status-green, #7dbf66);
+}
+.ops-admin-item__title{ flex:1; font-size:var(--fs-base); }
+.ops-admin-item.is-done-today .ops-admin-item__title{ color:var(--text3); }
+.ops-admin-item__actions{ display:flex; gap:4px; flex-shrink:0; }
+.dark .ops-admin-item__status{ border-color:rgba(245,241,232,.25); }
+
+/* ── Page « Ouverture / Fermeture » (référence) ── */
+.openclose-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);
+}
+.openclose-col{ border-top:3px solid var(--border); }
+.openclose-col--open{ border-top-color:var(--accent); }
+.openclose-col--close{ border-top-color:#4a90e2; }
+.openclose-col__title{
+  display:flex; align-items:center; gap:8px;
+  font-size:var(--fs-md); margin:0 0 var(--sp-3);
+  padding-bottom:var(--sp-2); border-bottom:1px solid var(--border);
+}
+.openclose-list{
+  margin:0; padding-left:1.4em; line-height:1.7;
+  font-size:var(--fs-base); color:var(--text);
+}
+.openclose-list li{ margin-bottom:6px; }
+.openclose-edit-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);
+}
+@media (max-width:760px){
+  .openclose-grid, .openclose-edit-grid{ grid-template-columns:1fr; }
+}

@@ -30,8 +30,10 @@ function empSectionLabel(sec) {
 // ═══════════════════════════════════════════════════════════════
 // TABLEAU DE BORD EMPLOYÉ — accueil
 // ───────────────────────────────────────────────────────────────
-// 4 blocs : En service aujourd'hui · Prochains événements ·
-// Horaire de l'équipe (cette semaine) · Produits à réapprovisionner.
+// 3 blocs : En service aujourd'hui · Prochains événements ·
+// Tâches de la journée (cochables, défini dans pages-ops.js).
+// (v3.36.0 : retrait des blocs « Horaire de l'équipe » et
+//  « À réapprovisionner » à la demande — l'horaire a déjà sa page.)
 // ═══════════════════════════════════════════════════════════════
 function renderEmployeeDashboard() {
   const now = new Date();
@@ -63,28 +65,9 @@ function renderEmployeeDashboard() {
     })
     .slice(0, 6);
 
-  // ── Bloc 3 : aperçu horaire de l'équipe cette semaine (compteurs par jour) ──
-  const weekStart = getWeekStart(0); // toujours la semaine en cours
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
-  });
-  const weekStrip = weekDays.map((d, i) => {
-    const dk = dayKey(d);
-    const count = empList.filter(emp => {
-      const s = (emp.shifts || {})[dk];
-      return s && s.start && s.end;
-    }).length;
-    return { dow: i, date: d, dk, count, isToday: dk === todayStr };
-  });
-
-  // ── Bloc 4 : produits à réapprovisionner (rouge/jaune, non archivés) ──
-  const lowProducts = (typeof products !== "undefined" ? products : [])
-    .filter(p => !p.archived && ["red", "yellow"].includes(getStatus(p)))
-    .sort((a, b) => {
-      const so = (STATUS_ORDER[getStatus(a)] ?? 9) - (STATUS_ORDER[getStatus(b)] ?? 9);
-      if (so !== 0) return so;
-      return (a.name || "").localeCompare(b.name || "");
-    });
+  // ── Bloc 3 : tâches de la journée → délégué à renderDailyTasksBlock()
+  //    (défini dans pages-ops.js). Remplace l'ancien aperçu d'horaire +
+  //    la liste « à réapprovisionner » retirés en v3.36.0.
 
   // Label jour court relatif pour les événements
   const eventDayLabel = (dateStr) => {
@@ -144,42 +127,8 @@ function renderEmployeeDashboard() {
           </div>
         </div>
 
-        <!-- Bloc 3 : Horaire de l'équipe cette semaine -->
-        <div class="dash-today-block">
-          <div class="dash-today-block__title">${icon("clock", 12)} Horaire de l'équipe (cette semaine)</div>
-          <div class="dash-today-block__list">
-            <div class="emp-week-strip">
-              ${weekStrip.map(d => `
-                <button class="emp-week-strip__day ${d.isToday ? "is-today" : ""}" onclick="navTo('mon-horaire')" title="Voir l'horaire complet">
-                  <span class="emp-week-strip__dow">${DAYS_FR[d.dow]}</span>
-                  <span class="emp-week-strip__count">${d.count}</span>
-                  <span class="emp-week-strip__lbl">pers</span>
-                </button>
-              `).join("")}
-            </div>
-            <button class="btn-secondary btn-sm" style="margin-top:8px;align-self:flex-start" onclick="navTo('mon-horaire')">${icon("calendar", 14)} Voir mon horaire complet</button>
-          </div>
-        </div>
-
-        <!-- Bloc 4 : Produits à réapprovisionner -->
-        <div class="dash-today-block">
-          <div class="dash-today-block__title">${icon("package", 12)} À réapprovisionner (${lowProducts.length})</div>
-          <div class="dash-today-block__list">
-            ${lowProducts.length === 0
-              ? `<div class="dash-today-empty">Stock au complet ✨</div>`
-              : lowProducts.slice(0, 8).map(p => {
-                  const st = getStatus(p);
-                  const dot = st === "red" ? "#d9534f" : "#b45309";
-                  return `<div class="dash-today-item" onclick="navTo('inventaire')" style="cursor:pointer">
-                    <span style="width:6px;height:6px;border-radius:50%;background:${dot};flex-shrink:0"></span>
-                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(p.name || "—")}</span>
-                    <span class="dash-today-item__time">${st === "red" ? "Vide" : "Bas"}</span>
-                  </div>`;
-                }).join("")
-                + (lowProducts.length > 8 ? `<div class="dash-today-empty">+ ${lowProducts.length - 8} autres — voir Inventaire</div>` : "")
-            }
-          </div>
-        </div>
+        <!-- Bloc 3 : Tâches de la journée (cochables) -->
+        ${typeof renderDailyTasksBlock === "function" ? renderDailyTasksBlock() : ""}
       </div>
     </div>
   </div>`;

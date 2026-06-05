@@ -8,7 +8,7 @@
  * Pour invalider le cache après un déploiement : incrémenter CACHE_VERSION.
  */
 
-const CACHE_VERSION = 'v3.35.0';
+const CACHE_VERSION = 'v3.36.0';
 const CACHE_NAME = `bochica-inventaire-${CACHE_VERSION}`;
 
 // Ressources de l'app shell (cachées dès l'installation)
@@ -38,6 +38,7 @@ const APP_SHELL = [
   '/js/pages-rapports.js',
   '/js/pages-dashboard.js',
   '/js/pages-employee.js',
+  '/js/pages-ops.js',
   '/js/sidebar.js',
   '/js/auth.js',
   '/js/firebase-listeners.js',

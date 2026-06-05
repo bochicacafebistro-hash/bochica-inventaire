@@ -80,6 +80,14 @@ let _editingInvoiceLines = [];
 // section pertinente ouverte au démarrage).
 let expandedNavSections = new Set();
 
+// ── Opérations (v3.36.0) ──────────────────────────────
+// Tâches du jour (collection /dailyTasks) : définies par l'admin, cochées
+// par les employés sur l'accueil. type "recurring" (reset chaque jour via
+// lastCompletedDate) ou "once" (done=true permanent, doneDate pour l'affichage).
+let dailyTasks = [];
+// Listes de référence ouverture/fermeture (doc /settings/openClose).
+let openCloseLists = { opening: [], closing: [] };
+
 let isAdmin = false, isLoggedIn = false, darkMode = false;
 let userRole = null; // "global_admin" | "chef" | "employee" | null
 let loggedInUser = null; // { id, name, role } pour traçabilité
