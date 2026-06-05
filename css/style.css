@@ -10778,3 +10778,19 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 @media (max-width:760px){
   .openclose-grid, .openclose-edit-grid{ grid-template-columns:1fr; }
 }
+
+/* ── Accueil employé : groupes par section + couleur événements (v3.36.1) ── */
+.dash-sec-group{ display:flex; flex-direction:column; gap:4px; }
+.dash-sec-group + .dash-sec-group{ margin-top:8px; }
+.dash-sec-divider{
+  display:flex; align-items:center; gap:6px;
+  font-size:10px; font-weight:800; letter-spacing:.06em; text-transform:uppercase;
+  padding:2px 2px 1px;
+}
+.dash-sec-dot{ width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+.dash-sec-count{
+  font-family:var(--font-mono); font-size:10px; font-weight:700;
+  opacity:.7; margin-left:2px;
+}
+/* Item avec barre latérale colorée (section ou type d'événement) */
+.dash-today-item--sec{ border-left:3px solid var(--border); padding-left:8px; }

@@ -27,6 +27,21 @@ function empSectionLabel(sec) {
   return sec === "cuisine" ? "Cuisine" : sec === "service" ? "Service" : "Autre";
 }
 
+// Couleur d'un type d'événement (réutilise les variables CSS de la page admin
+// Événements pour une cohérence visuelle). Fallback neutre si type inconnu.
+function empEventColor(type) {
+  const map = {
+    reservation:  "var(--ev-reservation)",
+    karaoke:      "var(--ev-karaoke)",
+    spectacle:    "var(--ev-spectacle)",
+    hors_bochica: "var(--ev-hors-bochica)",
+    ferie:        "var(--ev-ferie)",
+    interne:      "var(--ev-interne)",
+    special:      "var(--ev-spectacle)" // rétrocompat ancien type
+  };
+  return map[type] || "var(--text3)";
+}
+
 // ═══════════════════════════════════════════════════════════════
 // TABLEAU DE BORD EMPLOYÉ — accueil
 // ───────────────────────────────────────────────────────────────
@@ -52,6 +67,19 @@ function renderEmployeeDashboard() {
     })
     .filter(Boolean)
     .sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+
+  // Regroupement par section (cuisine / service / autre) pour repérer
+  // d'un coup d'œil qui est où. Chaque groupe a sa couleur + son séparateur.
+  const inServiceBuckets = { cuisine: [], service: [], other: [] };
+  shiftsToday.forEach(s => {
+    const k = s.section === "cuisine" ? "cuisine" : s.section === "service" ? "service" : "other";
+    inServiceBuckets[k].push(s);
+  });
+  const inServiceGroups = [
+    { key: "cuisine", label: "Cuisine" },
+    { key: "service", label: "Service" },
+    { key: "other",   label: "Autre" }
+  ].filter(g => inServiceBuckets[g.key].length > 0);
 
   // ── Bloc 2 : prochains événements (aujourd'hui → +30 j, non annulés) ──
   const in30 = new Date(now); in30.setDate(in30.getDate() + 30);
@@ -97,12 +125,20 @@ function renderEmployeeDashboard() {
           <div class="dash-today-block__list">
             ${shiftsToday.length === 0
               ? `<div class="dash-today-empty">Aucun shift planifié aujourd'hui</div>`
-              : shiftsToday.slice(0, 8).map(s => `<div class="dash-today-item">
-                  <span style="width:6px;height:6px;border-radius:50%;background:${empSectionColor(s.section)};flex-shrink:0"></span>
-                  <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</span>
-                  <span class="dash-today-item__time">${s.start}${s.end ? "–" + s.end : ""}</span>
-                </div>`).join("")
-                + (shiftsToday.length > 8 ? `<div class="dash-today-empty">+ ${shiftsToday.length - 8} autres</div>` : "")
+              : inServiceGroups.map(g => {
+                  const color = empSectionColor(g.key);
+                  const members = inServiceBuckets[g.key];
+                  return `<div class="dash-sec-group">
+                    <div class="dash-sec-divider" style="color:${color}">
+                      <span class="dash-sec-dot" style="background:${color}"></span>
+                      ${g.label} <span class="dash-sec-count">${members.length}</span>
+                    </div>
+                    ${members.map(s => `<div class="dash-today-item dash-today-item--sec" style="border-left-color:${color}">
+                      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(s.name)}</span>
+                      <span class="dash-today-item__time">${s.start}${s.end ? "–" + s.end : ""}</span>
+                    </div>`).join("")}
+                  </div>`;
+                }).join("")
             }
           </div>
         </div>
@@ -116,9 +152,10 @@ function renderEmployeeDashboard() {
               : upcomingEvents.map(e => {
                   const isToday = e.date === todayStr;
                   const cap = Number(e.capacity) > 0 ? `${e.capacity} pers` : "";
-                  return `<div class="dash-today-item ${isToday ? "is-today" : ""}">
+                  const evColor = empEventColor(e.type);
+                  return `<div class="dash-today-item dash-today-item--sec ${isToday ? "is-today" : ""}" style="border-left-color:${evColor}" title="${esc(tEventTypeShort ? tEventTypeShort(e.type) : "")}">
                     <span class="dash-today-item__day">${eventDayLabel(e.date)}</span>
-                    <span style="display:inline-flex;align-items:center;color:${empSectionColor("")}">${icon(eventTypeIcon(e.type), 12)}</span>
+                    <span style="display:inline-flex;align-items:center;color:${evColor};flex-shrink:0">${icon(eventTypeIcon(e.type), 13)}</span>
                     <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(e.name || "Sans nom")}</span>
                     ${cap ? `<span class="dash-today-item__time">${cap}</span>` : (e.time ? `<span class="dash-today-item__time">${e.time}</span>` : "")}
                   </div>`;
