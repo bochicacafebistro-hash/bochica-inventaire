@@ -261,6 +261,100 @@ const TRANSLATIONS = {
   section_packaging:     { fr: "Emballage",           es: "Embalaje" },
   section_bar:           { fr: "Bar",                 es: "Bar" },
   section_other:         { fr: "Autre",               es: "Otro" },
+  section_service:       { fr: "Service",             es: "Servicio" },
+
+  // ── Générique ─────────────────────────────────────
+  err_prefix:            { fr: "Erreur",               es: "Error" },
+
+  // ── Opérations : tâches du jour + ouverture/fermeture ──
+  ops_daily_title:       { fr: "Tâches de la journée", es: "Tareas del día" },
+  ops_no_tasks_today:    { fr: "Aucune tâche pour aujourd'hui ✨", es: "Ninguna tarea para hoy ✨" },
+  ops_uncheck:           { fr: "Cliquer pour décocher", es: "Clic para desmarcar" },
+  ops_mark_done:         { fr: "Marquer comme complété", es: "Marcar como completado" },
+  ops_done_today:        { fr: "Complétée aujourd'hui", es: "Completada hoy" },
+  ops_not_done:          { fr: "Pas encore complétée",  es: "Aún no completada" },
+  ops_admin_title:       { fr: "Tâches du jour",        es: "Tareas del día" },
+  ops_new_task:          { fr: "Nouvelle tâche",        es: "Nueva tarea" },
+  ops_admin_intro:       { fr: "Ces tâches s'affichent sur l'accueil des employés, qui peuvent les cocher. Les <strong>récurrentes</strong> réapparaissent chaque jour (le coché se réinitialise à minuit). Les <strong>ponctuelles</strong> sont à faire une seule fois.", es: "Estas tareas aparecen en el inicio de los empleados, que pueden marcarlas. Las <strong>recurrentes</strong> reaparecen cada día (el marcado se reinicia a medianoche). Las <strong>puntuales</strong> se hacen una sola vez." },
+  ops_recurring_title:   { fr: "Récurrentes (chaque jour)", es: "Recurrentes (cada día)" },
+  ops_no_recurring:      { fr: "Aucune tâche récurrente. Clique « Nouvelle tâche ».", es: "Ninguna tarea recurrente. Haz clic en « Nueva tarea »." },
+  ops_once_title:        { fr: "Ponctuelles (une seule fois)", es: "Puntuales (una sola vez)" },
+  ops_no_once:           { fr: "Aucune tâche ponctuelle.", es: "Ninguna tarea puntual." },
+  ops_edit_task:         { fr: "Modifier la tâche",     es: "Editar la tarea" },
+  ops_new_task_modal:    { fr: "Nouvelle tâche du jour", es: "Nueva tarea del día" },
+  ops_task_label:        { fr: "Intitulé de la tâche",  es: "Título de la tarea" },
+  ops_task_placeholder:  { fr: "Ex. Vérifier les températures du frigo", es: "Ej. Verificar las temperaturas del refrigerador" },
+  ops_type:              { fr: "Type",                  es: "Tipo" },
+  ops_type_recurring:    { fr: "Récurrente (chaque jour)", es: "Recurrente (cada día)" },
+  ops_type_once:         { fr: "Ponctuelle (une seule fois)", es: "Puntual (una sola vez)" },
+  ops_enter_title:       { fr: "Entre un intitulé de tâche.", es: "Ingresa un título de tarea." },
+  ops_task_saved:        { fr: "Tâche enregistrée.",    es: "Tarea guardada." },
+  ops_delete_task_title: { fr: "Supprimer la tâche",    es: "Eliminar la tarea" },
+  ops_delete_task_confirm:{ fr: "Supprimer « {name} » ? Cette action est définitive.", es: "¿Eliminar « {name} »? Esta acción es definitiva." },
+  ops_task_deleted:      { fr: "Tâche supprimée.",      es: "Tarea eliminada." },
+  ops_openclose_title:   { fr: "Ouverture / Fermeture", es: "Apertura / Cierre" },
+  ops_edit_lists:        { fr: "Modifier les listes",   es: "Editar las listas" },
+  ops_opening:           { fr: "À l'ouverture",         es: "En la apertura" },
+  ops_closing:           { fr: "À la fermeture",        es: "En el cierre" },
+  ops_opening_empty:     { fr: "Liste d'ouverture non définie.", es: "Lista de apertura no definida." },
+  ops_closing_empty:     { fr: "Liste de fermeture non définie.", es: "Lista de cierre no definida." },
+  ops_openclose_note:    { fr: "Liste de référence — à vérifier à chaque ouverture et fermeture du restaurant.", es: "Lista de referencia — verificar en cada apertura y cierre del restaurante." },
+  ops_edit_lists_title:  { fr: "Modifier les listes d'ouverture / fermeture", es: "Editar las listas de apertura / cierre" },
+  ops_edit_lists_hint:   { fr: "Une ligne = un élément de la liste. Les lignes vides sont ignorées.", es: "Una línea = un elemento de la lista. Las líneas vacías se ignoran." },
+  ops_opening_ph:        { fr: "Allumer la friteuse\nVérifier la caisse\nSortir les chaises de terrasse", es: "Encender la freidora\nVerificar la caja\nSacar las sillas de la terraza" },
+  ops_closing_ph:        { fr: "Fermer la caisse\nNettoyer la plancha\nSortir les poubelles", es: "Cerrar la caja\nLimpiar la plancha\nSacar la basura" },
+  ops_lists_saved:       { fr: "Listes enregistrées.",  es: "Listas guardadas." },
+
+  // ── Accueil & horaire employé ─────────────────────
+  emp_welcome:           { fr: "Bienvenue chez Bochica", es: "Bienvenido a Bochica" },
+  emp_in_service:        { fr: "En service aujourd'hui", es: "En servicio hoy" },
+  emp_no_shift_today:    { fr: "Aucun shift planifié aujourd'hui", es: "Ningún turno planificado hoy" },
+  emp_upcoming_events:   { fr: "Prochains événements",  es: "Próximos eventos" },
+  emp_no_events_30:      { fr: "Aucun événement dans les 30 jours", es: "Ningún evento en los próximos 30 días" },
+  emp_no_name:           { fr: "Sans nom",              es: "Sin nombre" },
+  day_today_short:       { fr: "Auj.",                  es: "Hoy" },
+  day_tomorrow_short:    { fr: "Demain",                es: "Mañana" },
+  sched_week_title:      { fr: "Horaire de la semaine", es: "Horario de la semana" },
+  sched_no_published:    { fr: "Aucun horaire publié pour le moment.", es: "Ningún horario publicado por ahora." },
+  sched_week_num:        { fr: "Semaine {n}",           es: "Semana {n}" },
+  sched_this_week:       { fr: "Cette semaine",         es: "Esta semana" },
+  sched_prev_week:       { fr: "Semaine précédente",    es: "Semana anterior" },
+  sched_next_week:       { fr: "Semaine suivante",      es: "Semana siguiente" },
+  sched_col_employee:    { fr: "Employé",               es: "Empleado" },
+  sched_persons:         { fr: "{n} pers",              es: "{n} pers" },
+  sched_note:            { fr: "Horaire indicatif de la semaine. Pour toute question, voir un responsable.", es: "Horario indicativo de la semana. Para cualquier pregunta, consulta a un responsable." },
+
+  // ── Pointage (kiosque PIN) ────────────────────────
+  punch_title:           { fr: "Pointage",            es: "Fichaje" },
+  punch_subtitle:        { fr: "Entrez votre PIN à 4 chiffres pour marquer votre entrée ou sortie", es: "Ingresa tu PIN de 4 dígitos para marcar tu entrada o salida" },
+  punch_dots_aria:       { fr: "{n} chiffres saisis sur 4", es: "{n} dígitos ingresados de 4" },
+  punch_keypad_aria:     { fr: "Clavier numérique",    es: "Teclado numérico" },
+  punch_aria_clear:      { fr: "Effacer",              es: "Borrar" },
+  punch_aria_validate:   { fr: "Valider",              es: "Validar" },
+  punch_hint:            { fr: "L'admin configure ton PIN dans <strong>Employés &amp; Horaires</strong> → ta fiche.", es: "El admin configura tu PIN en <strong>Empleados y Horarios</strong> → tu ficha." },
+  punch_no_today:        { fr: "Aucun pointage aujourd'hui", es: "Sin fichaje hoy" },
+  punch_entry:           { fr: "Entrée",               es: "Entrada" },
+  punch_exit:            { fr: "Sortie",               es: "Salida" },
+  punch_not_me:          { fr: "Pas moi",              es: "No soy yo" },
+  punch_hello:           { fr: "Bonjour",              es: "Hola" },
+  punch_in:              { fr: "ENTRÉE",               es: "ENTRADA" },
+  punch_out:             { fr: "SORTIE",               es: "SALIDA" },
+  punch_btn_in_title:    { fr: "Marquer ton heure d'entrée", es: "Marcar tu hora de entrada" },
+  punch_btn_out_title:   { fr: "Marquer ton heure de sortie", es: "Marcar tu hora de salida" },
+  punch_replace:         { fr: "(remplacer {t})",      es: "(reemplazar {t})" },
+  punch_action_sub:      { fr: "Choisis ENTRÉE pour marquer ton début de quart, SORTIE pour marquer ta fin. Tu peux re-pointer si tu t'es trompé — la dernière saisie écrase la précédente.", es: "Elige ENTRADA para marcar el inicio de tu turno, SALIDA para marcar el final. Puedes volver a fichar si te equivocaste — el último registro reemplaza al anterior." },
+  punch_recorded:        { fr: "ENREGISTRÉE",          es: "REGISTRADA" },
+  punch_at:              { fr: "à {t}",                es: "a las {t}" },
+  punch_wish_in:         { fr: "Bon shift !",          es: "¡Buen turno!" },
+  punch_wish_out:        { fr: "Bonne soirée et merci !", es: "¡Buena noche y gracias!" },
+  punch_next:            { fr: "Suivant",              es: "Siguiente" },
+  punch_pin_unknown:     { fr: "PIN non reconnu",      es: "PIN no reconocido" },
+  punch_pin_unknown_full:{ fr: "PIN non reconnu — vérifie avec l'admin.", es: "PIN no reconocido — verifica con el admin." },
+  punch_enter_4:         { fr: "Saisis un PIN à 4 chiffres.", es: "Ingresa un PIN de 4 dígitos." },
+  punch_err_internal:    { fr: "Erreur interne (dayKey). Avise l'admin.", es: "Error interno (dayKey). Avisa al admin." },
+  punch_err_save:        { fr: "Erreur d'enregistrement. Réessaie ou avise l'admin.", es: "Error al guardar. Inténtalo de nuevo o avisa al admin." },
+  punch_tz_label:        { fr: "jour système :",       es: "día del sistema:" },
+  punch_tz_title:        { fr: "Fuseau horaire détecté + clé du jour utilisée par le système. Si la date affichée ne correspond pas à aujourd'hui réel, le pointage tombera sur le mauvais jour — préviens l'admin.", es: "Zona horaria detectada + clave del día usada por el sistema. Si la fecha mostrada no corresponde al día real de hoy, el fichaje caerá en el día equivocado — avisa al admin." },
 
   // ── Unités ────────────────────────────────────────
   unit_box:              { fr: "boîte",               es: "caja" },
@@ -342,6 +436,7 @@ const TRANSLATIONS = {
   rec_field_steps_hint:  { fr: "Numérotez ou décrivez chaque étape sur une ligne", es: "Numera o describe cada paso en una línea" },
   rec_field_tips:        { fr: "Conseils du chef (optionnel)", es: "Consejos del chef (opcional)" },
   rec_total_time:        { fr: "Temps total",         es: "Tiempo total" },
+  rec_total_items:       { fr: "plats avec recette",  es: "platos con receta" },
   rec_minutes:           { fr: "min",                 es: "min" },
   rec_servings_label:    { fr: "portion",             es: "porción" },
   rec_servings_label_pl: { fr: "portions",            es: "porciones" },
@@ -494,6 +589,16 @@ function setUILang(lang) {
 }
 
 function getUILang() { return uiLang; }
+
+// Locale pour toLocaleDateString/toLocaleTimeString selon la langue UI.
+function uiLocale() { return uiLang === "es" ? "es-ES" : "fr-CA"; }
+
+// Nom court de jour localisé (0=Lun … 6=Dim, comme DAYS_FR).
+const _DAYS_SHORT = {
+  fr: ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"],
+  es: ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+};
+function tDayShort(i) { return (_DAYS_SHORT[uiLang] || _DAYS_SHORT.fr)[i] || ""; }
 
 // Traduit une section par défaut, garde les sections personnalisées intactes
 function tSection(name) {

@@ -62,14 +62,14 @@ function renderDailyTasksBlock() {
   const doneCount = list.filter(t => isDailyTaskDoneToday(t, todayStr)).length;
 
   return `<div class="dash-today-block">
-    <div class="dash-today-block__title">${icon("clipboard", 12)} Tâches de la journée (${doneCount}/${list.length})</div>
+    <div class="dash-today-block__title">${icon("clipboard", 12)} ${t("ops_daily_title")} (${doneCount}/${list.length})</div>
     <div class="dash-today-block__list">
       ${list.length === 0
-        ? `<div class="dash-today-empty">Aucune tâche pour aujourd'hui ✨</div>`
+        ? `<div class="dash-today-empty">${t("ops_no_tasks_today")}</div>`
         : list.map(task => {
             const done = isDailyTaskDoneToday(task, todayStr);
             const isOnce = task.type === "once";
-            return `<button class="daily-task-item ${done ? "is-done" : ""}" onclick="toggleDailyTask('${task.id}')" aria-pressed="${done}" title="${done ? "Cliquer pour décocher" : "Marquer comme complété"}">
+            return `<button class="daily-task-item ${done ? "is-done" : ""}" onclick="toggleDailyTask('${task.id}')" aria-pressed="${done}" title="${done ? t("ops_uncheck") : t("ops_mark_done")}">
               <span class="daily-task-check">${done ? icon("check", 13) : ""}</span>
               <span class="daily-task-label">${esc(task.title || "—")}</span>
               ${isOnce ? `<span class="daily-task-tag daily-task-tag--once">1×</span>` : ""}
@@ -102,7 +102,7 @@ async function toggleDailyTask(id) {
     await db.collection("dailyTasks").doc(id).update(patch);
   } catch (err) {
     console.error("toggleDailyTask:", err);
-    toast("Erreur : " + (err.message || err.code || err), "error", 5000);
+    toast(t("err_prefix") + " : " + (err.message || err.code || err), "error", 5000);
   }
 }
 
@@ -120,41 +120,41 @@ function renderDailyTasksAdmin() {
   const itemRow = (task) => {
     const done = isDailyTaskDoneToday(task, todayStr);
     return `<div class="ops-admin-item ${done ? "is-done-today" : ""}">
-      <span class="ops-admin-item__status ${done ? "is-done" : ""}" title="${done ? "Complétée aujourd'hui" : "Pas encore complétée"}">
+      <span class="ops-admin-item__status ${done ? "is-done" : ""}" title="${done ? t("ops_done_today") : t("ops_not_done")}">
         ${done ? icon("check", 13) : ""}
       </span>
       <span class="ops-admin-item__title">${esc(task.title || "—")}</span>
       <div class="ops-admin-item__actions">
-        <button class="btn-icon-only" onclick="openDailyTaskModal('${task.id}')" title="Modifier" aria-label="Modifier">${icon("pencil", 15)}</button>
-        <button class="btn-icon-only" onclick="deleteDailyTask('${task.id}')" title="Supprimer" aria-label="Supprimer">${icon("trash", 15)}</button>
+        <button class="btn-icon-only" onclick="openDailyTaskModal('${task.id}')" title="${t("edit")}" aria-label="${t("edit")}">${icon("pencil", 15)}</button>
+        <button class="btn-icon-only" onclick="deleteDailyTask('${task.id}')" title="${t("delete")}" aria-label="${t("delete")}">${icon("trash", 15)}</button>
       </div>
     </div>`;
   };
 
   return `<div class="page">
     <div class="toolbar">
-      <h2 class="page-title">${icon("clipboard", 20)} Tâches du jour</h2>
+      <h2 class="page-title">${icon("clipboard", 20)} ${t("ops_admin_title")}</h2>
       <div class="toolbar-actions">
-        <button class="btn btn-primary btn-sm" onclick="openDailyTaskModal(null)">${icon("plus", 14)} Nouvelle tâche</button>
+        <button class="btn btn-primary btn-sm" onclick="openDailyTaskModal(null)">${icon("plus", 14)} ${t("ops_new_task")}</button>
       </div>
     </div>
 
-    <p class="ops-admin-intro">${icon("info", 13)} Ces tâches s'affichent sur l'accueil des employés, qui peuvent les cocher. Les <strong>récurrentes</strong> réapparaissent chaque jour (le coché se réinitialise à minuit). Les <strong>ponctuelles</strong> sont à faire une seule fois.</p>
+    <p class="ops-admin-intro">${icon("info", 13)} ${t("ops_admin_intro")}</p>
 
     <div class="card ops-admin-card">
-      <h3 class="ops-admin-section-title">${icon("refresh", 15)} Récurrentes (chaque jour) <span class="ops-admin-count">${recurring.length}</span></h3>
+      <h3 class="ops-admin-section-title">${icon("refresh", 15)} ${t("ops_recurring_title")} <span class="ops-admin-count">${recurring.length}</span></h3>
       <div class="ops-admin-list">
         ${recurring.length === 0
-          ? `<div class="dash-today-empty">Aucune tâche récurrente. Clique « Nouvelle tâche ».</div>`
+          ? `<div class="dash-today-empty">${t("ops_no_recurring")}</div>`
           : recurring.map(itemRow).join("")}
       </div>
     </div>
 
     <div class="card ops-admin-card">
-      <h3 class="ops-admin-section-title">${icon("check-circle", 15)} Ponctuelles (une seule fois) <span class="ops-admin-count">${once.length}</span></h3>
+      <h3 class="ops-admin-section-title">${icon("check", 15)} ${t("ops_once_title")} <span class="ops-admin-count">${once.length}</span></h3>
       <div class="ops-admin-list">
         ${once.length === 0
-          ? `<div class="dash-today-empty">Aucune tâche ponctuelle.</div>`
+          ? `<div class="dash-today-empty">${t("ops_no_once")}</div>`
           : once.map(itemRow).join("")}
       </div>
     </div>
@@ -167,28 +167,28 @@ function openDailyTaskModal(id) {
   const type = task?.type || "recurring";
   showModal(`<div class="modal">
     <div class="modal-header">
-      <h3>${task ? "Modifier la tâche" : "Nouvelle tâche du jour"}</h3>
-      <button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button>
+      <h3>${task ? t("ops_edit_task") : t("ops_new_task_modal")}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
     </div>
-    <label>Intitulé de la tâche
-      <input id="dt-title" value="${esc(task?.title || "")}" placeholder="Ex. Vérifier les températures du frigo" autofocus/>
+    <label>${t("ops_task_label")}
+      <input id="dt-title" value="${esc(task?.title || "")}" placeholder="${t("ops_task_placeholder")}" autofocus/>
     </label>
-    <label>Type
+    <label>${t("ops_type")}
       <select id="dt-type">
-        <option value="recurring" ${type === "recurring" ? "selected" : ""}>Récurrente (chaque jour)</option>
-        <option value="once" ${type === "once" ? "selected" : ""}>Ponctuelle (une seule fois)</option>
+        <option value="recurring" ${type === "recurring" ? "selected" : ""}>${t("ops_type_recurring")}</option>
+        <option value="once" ${type === "once" ? "selected" : ""}>${t("ops_type_once")}</option>
       </select>
     </label>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveDailyTask('${id || ""}')">${icon("check", 14)} Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveDailyTask('${id || ""}')">${icon("check", 14)} ${t("save")}</button>
     </div>
   </div>`);
 }
 
 async function saveDailyTask(id) {
   const title = (document.getElementById("dt-title").value || "").trim();
-  if (!title) return toast("Entre un intitulé de tâche.", "error");
+  if (!title) return toast(t("ops_enter_title"), "error");
   const type = document.getElementById("dt-type").value === "once" ? "once" : "recurring";
   try {
     if (id) {
@@ -205,23 +205,23 @@ async function saveDailyTask(id) {
       });
     }
     closeModal();
-    toast("Tâche enregistrée.", "success");
+    toast(t("ops_task_saved"), "success");
   } catch (err) {
     console.error("saveDailyTask:", err);
-    toast("Erreur sauvegarde : " + (err.message || err.code || err), "error", 5000);
+    toast(t("err_prefix") + " : " + (err.message || err.code || err), "error", 5000);
   }
 }
 
 function deleteDailyTask(id) {
   const task = (dailyTasks || []).find(t => t.id === id);
   if (!task) return;
-  openConfirm("Supprimer la tâche", `Supprimer « ${esc(task.title || "")} » ? Cette action est définitive.`, async () => {
+  openConfirm(t("ops_delete_task_title"), t("ops_delete_task_confirm", { name: esc(task.title || "") }), async () => {
     try {
       await db.collection("dailyTasks").doc(id).delete();
-      toast("Tâche supprimée.", "success");
+      toast(t("ops_task_deleted"), "success");
     } catch (err) {
       console.error("deleteDailyTask:", err);
-      toast("Erreur suppression : " + (err.message || err.code || err), "error", 5000);
+      toast(t("err_prefix") + " : " + (err.message || err.code || err), "error", 5000);
     }
   }, true);
 }
@@ -249,24 +249,24 @@ function renderOpenClose() {
 
   return `<div class="page">
     <div class="toolbar">
-      <h2 class="page-title">${icon("clipboard", 20)} Ouverture / Fermeture</h2>
+      <h2 class="page-title">${icon("clipboard", 20)} ${t("ops_openclose_title")}</h2>
       ${isAdmin ? `<div class="toolbar-actions">
-        <button class="btn btn-primary btn-sm" onclick="openOpenCloseEditor()">${icon("pencil", 14)} Modifier les listes</button>
+        <button class="btn btn-primary btn-sm" onclick="openOpenCloseEditor()">${icon("pencil", 14)} ${t("ops_edit_lists")}</button>
       </div>` : ""}
     </div>
 
     <div class="openclose-grid">
       <div class="card openclose-col openclose-col--open">
-        <h3 class="openclose-col__title">${icon("sun", 16)} À l'ouverture</h3>
-        ${refList(opening, "Liste d'ouverture non définie.")}
+        <h3 class="openclose-col__title">${icon("sun", 16)} ${t("ops_opening")}</h3>
+        ${refList(opening, t("ops_opening_empty"))}
       </div>
       <div class="card openclose-col openclose-col--close">
-        <h3 class="openclose-col__title">${icon("moon", 16)} À la fermeture</h3>
-        ${refList(closing, "Liste de fermeture non définie.")}
+        <h3 class="openclose-col__title">${icon("moon", 16)} ${t("ops_closing")}</h3>
+        ${refList(closing, t("ops_closing_empty"))}
       </div>
     </div>
 
-    <p class="emp-schedule-note">${icon("info", 13)} Liste de référence — à vérifier à chaque ouverture et fermeture du restaurant.</p>
+    <p class="emp-schedule-note">${icon("info", 13)} ${t("ops_openclose_note")}</p>
   </div>`;
 }
 

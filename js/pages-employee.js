@@ -24,7 +24,7 @@ function empSectionColor(sec) {
   return sec === "cuisine" ? "#7dbf66" : sec === "service" ? "#4a90e2" : "#94a3b8";
 }
 function empSectionLabel(sec) {
-  return sec === "cuisine" ? "Cuisine" : sec === "service" ? "Service" : "Autre";
+  return sec === "cuisine" ? t("section_kitchen") : sec === "service" ? t("section_service") : t("section_other");
 }
 
 // Couleur d'un type d'événement (réutilise les variables CSS de la page admin
@@ -53,8 +53,8 @@ function empEventColor(type) {
 function renderEmployeeDashboard() {
   const now = new Date();
   const todayStr = dayKey(now); // YYYY-MM-DD en heure locale
-  const dayName = now.toLocaleDateString("fr-CA", { weekday: "long" });
-  const dateLong = now.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+  const dayName = now.toLocaleDateString(uiLocale(), { weekday: "long" });
+  const dateLong = now.toLocaleDateString(uiLocale(), { day: "numeric", month: "long", year: "numeric" });
   const dayDisplay = dayName.charAt(0).toUpperCase() + dayName.slice(1);
 
   // ── Bloc 1 : employés en service aujourd'hui ──────────────────
@@ -76,9 +76,9 @@ function renderEmployeeDashboard() {
     inServiceBuckets[k].push(s);
   });
   const inServiceGroups = [
-    { key: "cuisine", label: "Cuisine" },
-    { key: "service", label: "Service" },
-    { key: "other",   label: "Autre" }
+    { key: "cuisine", label: t("section_kitchen") },
+    { key: "service", label: t("section_service") },
+    { key: "other",   label: t("section_other") }
   ].filter(g => inServiceBuckets[g.key].length > 0);
 
   // ── Bloc 2 : prochains événements (aujourd'hui → +30 j, non annulés) ──
@@ -99,12 +99,13 @@ function renderEmployeeDashboard() {
 
   // Label jour court relatif pour les événements
   const eventDayLabel = (dateStr) => {
-    if (dateStr === todayStr) return "Auj.";
+    if (dateStr === todayStr) return t("day_today_short");
     const ed = new Date(dateStr + "T00:00:00");
     const tomorrow = new Date(now); tomorrow.setDate(tomorrow.getDate() + 1);
-    if (dateStr === dayKey(tomorrow)) return "Demain";
-    const days = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
-    return `${days[ed.getDay()]} ${ed.getDate()}`;
+    if (dateStr === dayKey(tomorrow)) return t("day_tomorrow_short");
+    const dayShort = ed.toLocaleDateString(uiLocale(), { weekday: "short" }).replace(".", "");
+    const cap = dayShort.charAt(0).toUpperCase() + dayShort.slice(1);
+    return `${cap} ${ed.getDate()}`;
   };
 
   return `<div class="page">
@@ -114,17 +115,17 @@ function renderEmployeeDashboard() {
           <h2 class="dash-today-widget__date">${dayDisplay}<small>${dateLong}</small></h2>
         </div>
         <div class="emp-dash-hello">
-          ${icon("utensils", 18)} <span>Bienvenue chez Bochica</span>
+          ${icon("utensils", 18)} <span>${t("emp_welcome")}</span>
         </div>
       </div>
 
       <div class="dash-today-widget__grid">
         <!-- Bloc 1 : En service aujourd'hui -->
         <div class="dash-today-block">
-          <div class="dash-today-block__title">${icon("users", 12)} En service aujourd'hui (${shiftsToday.length})</div>
+          <div class="dash-today-block__title">${icon("users", 12)} ${t("emp_in_service")} (${shiftsToday.length})</div>
           <div class="dash-today-block__list">
             ${shiftsToday.length === 0
-              ? `<div class="dash-today-empty">Aucun shift planifié aujourd'hui</div>`
+              ? `<div class="dash-today-empty">${t("emp_no_shift_today")}</div>`
               : inServiceGroups.map(g => {
                   const color = empSectionColor(g.key);
                   const members = inServiceBuckets[g.key];
@@ -145,10 +146,10 @@ function renderEmployeeDashboard() {
 
         <!-- Bloc 2 : Prochains événements -->
         <div class="dash-today-block">
-          <div class="dash-today-block__title">${icon("calendar", 12)} Prochains événements (${upcomingEvents.length})</div>
+          <div class="dash-today-block__title">${icon("calendar", 12)} ${t("emp_upcoming_events")} (${upcomingEvents.length})</div>
           <div class="dash-today-block__list">
             ${upcomingEvents.length === 0
-              ? `<div class="dash-today-empty">Aucun événement dans les 30 jours</div>`
+              ? `<div class="dash-today-empty">${t("emp_no_events_30")}</div>`
               : upcomingEvents.map(e => {
                   const isToday = e.date === todayStr;
                   const cap = Number(e.capacity) > 0 ? `${e.capacity} pers` : "";
@@ -156,7 +157,7 @@ function renderEmployeeDashboard() {
                   return `<div class="dash-today-item dash-today-item--sec ${isToday ? "is-today" : ""}" style="border-left-color:${evColor}" title="${esc(tEventTypeShort ? tEventTypeShort(e.type) : "")}">
                     <span class="dash-today-item__day">${eventDayLabel(e.date)}</span>
                     <span style="display:inline-flex;align-items:center;color:${evColor};flex-shrink:0">${icon(eventTypeIcon(e.type), 13)}</span>
-                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(e.name || "Sans nom")}</span>
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(e.name || t("emp_no_name"))}</span>
                     ${cap ? `<span class="dash-today-item__time">${cap}</span>` : (e.time ? `<span class="dash-today-item__time">${e.time}</span>` : "")}
                   </div>`;
                 }).join("")
@@ -194,7 +195,7 @@ function renderEmployeeSchedule() {
     const d = new Date(weekStart); d.setDate(d.getDate() + i); return d;
   });
   const weekNum = getISOWeek(weekDaysAll[3]); // jeudi = référence semaine ISO
-  const weekLabel = `${weekDaysAll[0].toLocaleDateString("fr-CA", { month: "short", day: "numeric" })} – ${weekDaysAll[6].toLocaleDateString("fr-CA", { month: "short", day: "numeric", year: "numeric" })}`;
+  const weekLabel = `${weekDaysAll[0].toLocaleDateString(uiLocale(), { month: "short", day: "numeric" })} – ${weekDaysAll[6].toLocaleDateString(uiLocale(), { month: "short", day: "numeric", year: "numeric" })}`;
   const todayStr = dayKey(new Date());
 
   // Jours ouverts (mêmes réglages que la page admin, fallback = tous)
@@ -222,36 +223,36 @@ function renderEmployeeSchedule() {
 
   return `<div class="page">
     <div class="toolbar">
-      <h2 class="page-title">${icon("clock", 20)} Horaire de la semaine</h2>
+      <h2 class="page-title">${icon("clock", 20)} ${t("sched_week_title")}</h2>
     </div>
 
     ${empList.length === 0
-      ? `<div class="empty"><div class="empty-state-icon">${icon("clock", 36)}</div>Aucun horaire publié pour le moment.</div>`
+      ? `<div class="empty"><div class="empty-state-icon">${icon("clock", 36)}</div>${t("sched_no_published")}</div>`
       : `
       <!-- Sélecteur de semaine (lecture seule) -->
       <div class="schedule-header">
         <div class="schedule-nav">
-          <button class="btn-icon-only" onclick="changeEmpSchedWeek(-1)" aria-label="Semaine précédente" title="Semaine précédente">${icon("chevron-left", 16)}</button>
+          <button class="btn-icon-only" onclick="changeEmpSchedWeek(-1)" aria-label="${t("sched_prev_week")}" title="${t("sched_prev_week")}">${icon("chevron-left", 16)}</button>
           <div class="schedule-week-label">
-            <div class="schedule-week-num">Semaine ${weekNum}</div>
+            <div class="schedule-week-num">${t("sched_week_num", { n: weekNum })}</div>
             <div class="schedule-week-dates">${weekLabel}</div>
-            ${empSchedWeekOffset !== 0 ? `<button class="schedule-today-btn" onclick="resetEmpSchedWeek()">Cette semaine</button>` : `<div class="schedule-today-tag">Cette semaine</div>`}
+            ${empSchedWeekOffset !== 0 ? `<button class="schedule-today-btn" onclick="resetEmpSchedWeek()">${t("sched_this_week")}</button>` : `<div class="schedule-today-tag">${t("sched_this_week")}</div>`}
           </div>
-          <button class="btn-icon-only" onclick="changeEmpSchedWeek(1)" aria-label="Semaine suivante" title="Semaine suivante">${icon("chevron-right", 16)}</button>
+          <button class="btn-icon-only" onclick="changeEmpSchedWeek(1)" aria-label="${t("sched_next_week")}" title="${t("sched_next_week")}">${icon("chevron-right", 16)}</button>
         </div>
       </div>
 
       <!-- Grille employés × jours (lecture seule, sans donnée financière) -->
       <div class="schedule-empgrid emp-schedule-empgrid" style="--n-days:${nCols};">
         <div class="schedule-empgrid-header">
-          <div class="schedule-empgrid-emp-head">Employé</div>
+          <div class="schedule-empgrid-emp-head">${t("sched_col_employee")}</div>
           ${weekDays.map((d, k) => {
             const dowIdx = visibleIdx[k];
             const isToday = dayKey(d) === todayStr;
             return `<div class="schedule-empgrid-day-head ${isToday ? "is-today" : ""}">
-              <div class="schedule-empgrid-day-name">${DAYS_FR[dowIdx]}</div>
+              <div class="schedule-empgrid-day-name">${tDayShort(dowIdx)}</div>
               <div class="schedule-empgrid-day-date">${d.getDate()}/${d.getMonth() + 1}</div>
-              <div class="schedule-empgrid-day-count">${dayCounts[k]} pers</div>
+              <div class="schedule-empgrid-day-count">${t("sched_persons", { n: dayCounts[k] })}</div>
             </div>`;
           }).join("")}
         </div>
@@ -276,7 +277,7 @@ function renderEmployeeSchedule() {
               if (!hasShift) {
                 return `<div class="schedule-empgrid-cell schedule-empgrid-cell--empty ${isToday ? "is-today-col" : ""}">
                   <div class="shift-card shift-card--off shift-card--readonly">
-                    <div class="shift-off-label">Congé</div>
+                    <div class="shift-off-label">${t("shift_off")}</div>
                   </div>
                 </div>`;
               }
@@ -290,7 +291,7 @@ function renderEmployeeSchedule() {
         }).join("")}
       </div>
 
-      <p class="emp-schedule-note">${icon("info", 13)} Horaire indicatif de la semaine. Pour toute question, voir un responsable.</p>
+      <p class="emp-schedule-note">${icon("info", 13)} ${t("sched_note")}</p>
       `
     }
   </div>`;

@@ -47,7 +47,7 @@ function _punchNowFull() {
 
 // Date longue façon "Mardi 26 mai 2026"
 function _punchDateLong() {
-  return new Date().toLocaleDateString("fr-CA", {
+  return new Date().toLocaleDateString(uiLocale(), {
     weekday: "long", day: "numeric", month: "long", year: "numeric"
   });
 }
@@ -72,8 +72,8 @@ function renderPunch() {
   // creuser (problème de fuseau au niveau OS, navigateur, ou code).
   const tzGuess = Intl.DateTimeFormat().resolvedOptions().timeZone || "?";
   const todayDk = dayKey(new Date());
-  const tzBadge = `<div class="punch-tz-badge" title="Fuseau horaire détecté + clé du jour utilisée par le système. Si la date affichée ne correspond pas à aujourd'hui réel, le pointage tombera sur le mauvais jour — préviens l'admin.">
-    ${tzGuess} · jour système : ${todayDk}
+  const tzBadge = `<div class="punch-tz-badge" title="${t("punch_tz_title")}">
+    ${tzGuess} · ${t("punch_tz_label")} ${todayDk}
   </div>`;
 
   return `<div class="page page--wide page--punch">
@@ -103,17 +103,17 @@ function renderPunchKeypadHTML() {
   ];
 
   return `<div class="punch-keypad-screen">
-    <h1 class="punch-title">${icon("clock", 32)} Pointage</h1>
-    <p class="punch-subtitle">Entrez votre PIN à 4 chiffres pour marquer votre entrée ou sortie</p>
-    <div class="punch-pin-dots" aria-label="${_punchPin.length} chiffres saisis sur 4">${dots}</div>
-    <div class="punch-keypad" role="group" aria-label="Clavier numérique">
+    <h1 class="punch-title">${icon("clock", 32)} ${t("punch_title")}</h1>
+    <p class="punch-subtitle">${t("punch_subtitle")}</p>
+    <div class="punch-pin-dots" aria-label="${t("punch_dots_aria", { n: _punchPin.length })}">${dots}</div>
+    <div class="punch-keypad" role="group" aria-label="${t("punch_keypad_aria")}">
       ${keys.map(k => {
-        if (k.type === "clear") return `<button class="punch-key punch-key--clear" onclick="punchKeyClear()" aria-label="Effacer">${icon("arrow-left", 28)}</button>`;
-        if (k.type === "ok")    return `<button class="punch-key punch-key--ok" onclick="punchKeyOk()" aria-label="Valider" ${_punchPin.length === 4 ? "" : "disabled"}>${icon("check", 28)}</button>`;
+        if (k.type === "clear") return `<button class="punch-key punch-key--clear" onclick="punchKeyClear()" aria-label="${t("punch_aria_clear")}">${icon("arrow-left", 28)}</button>`;
+        if (k.type === "ok")    return `<button class="punch-key punch-key--ok" onclick="punchKeyOk()" aria-label="${t("punch_aria_validate")}" ${_punchPin.length === 4 ? "" : "disabled"}>${icon("check", 28)}</button>`;
         return `<button class="punch-key punch-key--digit" onclick="punchKeyDigit('${k.v}')" aria-label="${k.v}">${k.v}</button>`;
       }).join("")}
     </div>
-    <p class="punch-hint">L'admin configure ton PIN dans <strong>Employés &amp; Horaires</strong> → ta fiche.</p>
+    <p class="punch-hint">${t("punch_hint")}</p>
   </div>`;
 }
 
@@ -132,23 +132,23 @@ function renderPunchEmployeeHTML() {
   const hasEnd = !!(todayShift && todayShift.end);
 
   const groupBadge = (emp.section || "service") === "cuisine"
-    ? `<span class="punch-emp-section punch-emp-section--cuisine">${icon("utensils", 12)} Cuisine</span>`
-    : `<span class="punch-emp-section punch-emp-section--service">${icon("users", 12)} Service</span>`;
+    ? `<span class="punch-emp-section punch-emp-section--cuisine">${icon("utensils", 12)} ${t("section_kitchen")}</span>`
+    : `<span class="punch-emp-section punch-emp-section--service">${icon("users", 12)} ${t("section_service")}</span>`;
 
   // Bloc info état : ce qui a déjà été pointé aujourd'hui
   let stateInfo;
   if (!hasStart && !hasEnd) {
     stateInfo = `<div class="punch-state-info punch-state-info--empty">
-      ${icon("info", 14)} Aucun pointage aujourd'hui
+      ${icon("info", 14)} ${t("punch_no_today")}
     </div>`;
   } else {
     stateInfo = `<div class="punch-state-info">
       ${hasStart ? `<span class="punch-state-item punch-state-item--entree">
-        ${icon("log-in", 14)} Entrée :
+        ${icon("log-in", 14)} ${t("punch_entry")} :
         <span class="punch-state-item-time">${todayShift.start}</span>
       </span>` : ""}
       ${hasEnd ? `<span class="punch-state-item punch-state-item--sortie">
-        ${icon("log-out", 14)} Sortie :
+        ${icon("log-out", 14)} ${t("punch_exit")} :
         <span class="punch-state-item-time">${todayShift.end}</span>
       </span>` : ""}
     </div>`;
@@ -157,47 +157,47 @@ function renderPunchEmployeeHTML() {
   const nowHHMM = _punchNowHHMM();
 
   return `<div class="punch-employee-screen">
-    <button class="punch-back-btn" onclick="punchBackToKeypad()" aria-label="Retour">${icon("arrow-left", 18)} Pas moi</button>
+    <button class="punch-back-btn" onclick="punchBackToKeypad()" aria-label="${t("close")}">${icon("arrow-left", 18)} ${t("punch_not_me")}</button>
     <div class="punch-greeting">
-      <div class="punch-greeting-hello">Bonjour</div>
+      <div class="punch-greeting-hello">${t("punch_hello")}</div>
       <div class="punch-greeting-name">${esc(emp.name || "")}</div>
       ${groupBadge}
     </div>
     ${stateInfo}
     <div class="punch-buttons-row">
-      <button class="punch-main-btn is-entree" onclick="punchDoAction('entree')" title="Marquer ton heure d'entrée${hasStart ? ` (remplacera l'entrée existante à ${todayShift.start})` : ""}">
+      <button class="punch-main-btn is-entree" onclick="punchDoAction('entree')" title="${t("punch_btn_in_title")}${hasStart ? " " + t("punch_replace", { t: todayShift.start }) : ""}">
         ${icon("log-in", 36)}
-        <span class="punch-main-btn-label">ENTRÉE</span>
+        <span class="punch-main-btn-label">${t("punch_in")}</span>
         <span class="punch-main-btn-time">${nowHHMM}</span>
-        ${hasStart ? `<span class="punch-main-btn-state">(remplacer ${todayShift.start})</span>` : ""}
+        ${hasStart ? `<span class="punch-main-btn-state">${t("punch_replace", { t: todayShift.start })}</span>` : ""}
       </button>
-      <button class="punch-main-btn is-sortie" onclick="punchDoAction('sortie')" title="Marquer ton heure de sortie${hasEnd ? ` (remplacera la sortie existante à ${todayShift.end})` : ""}">
+      <button class="punch-main-btn is-sortie" onclick="punchDoAction('sortie')" title="${t("punch_btn_out_title")}${hasEnd ? " " + t("punch_replace", { t: todayShift.end }) : ""}">
         ${icon("log-out", 36)}
-        <span class="punch-main-btn-label">SORTIE</span>
+        <span class="punch-main-btn-label">${t("punch_out")}</span>
         <span class="punch-main-btn-time">${nowHHMM}</span>
-        ${hasEnd ? `<span class="punch-main-btn-state">(remplacer ${todayShift.end})</span>` : ""}
+        ${hasEnd ? `<span class="punch-main-btn-state">${t("punch_replace", { t: todayShift.end })}</span>` : ""}
       </button>
     </div>
-    <p class="punch-action-sub">Choisis ENTRÉE pour marquer ton début de quart, SORTIE pour marquer ta fin. Tu peux re-pointer si tu t'es trompé — la dernière saisie écrase la précédente.</p>
+    <p class="punch-action-sub">${t("punch_action_sub")}</p>
   </div>`;
 }
 
 // ─ Écran 3 : confirmation post-punch (3s) ─────────────────
 function renderPunchConfirmedHTML() {
   const emp = _punchEmployee;
-  const actLabel = _punchAction === "entree" ? "ENTRÉE" : "SORTIE";
+  const actLabel = _punchAction === "entree" ? t("punch_in") : t("punch_out");
   const actCls = _punchAction === "entree" ? "is-entree" : "is-sortie";
   const actIcon = _punchAction === "entree" ? "log-in" : "log-out";
   const wish = _punchAction === "entree"
-    ? "Bon shift !"
-    : "Bonne soirée et merci !";
+    ? t("punch_wish_in")
+    : t("punch_wish_out");
   return `<div class="punch-confirmed-screen ${actCls}">
     <div class="punch-confirmed-check">${icon("check", 96)}</div>
-    <div class="punch-confirmed-label">${icon(actIcon, 22)} ${actLabel} ENREGISTRÉE</div>
+    <div class="punch-confirmed-label">${icon(actIcon, 22)} ${actLabel} ${t("punch_recorded")}</div>
     <div class="punch-confirmed-name">${esc(emp?.name || "")}</div>
-    <div class="punch-confirmed-time">à ${_punchActionTime || _punchNowHHMM()}</div>
+    <div class="punch-confirmed-time">${t("punch_at", { t: _punchActionTime || _punchNowHHMM() })}</div>
     <div class="punch-confirmed-wish">${wish}</div>
-    <button class="punch-tap-anywhere" onclick="punchReset()">Suivant ${icon("arrow-right", 14)}</button>
+    <button class="punch-tap-anywhere" onclick="punchReset()">${t("punch_next")} ${icon("arrow-right", 14)}</button>
   </div>`;
 }
 
@@ -205,8 +205,8 @@ function renderPunchConfirmedHTML() {
 function renderPunchErrorHTML() {
   return `<div class="punch-error-screen">
     <div class="punch-error-icon">${icon("alert", 96)}</div>
-    <div class="punch-error-msg">${esc(_punchErrMessage || "PIN non reconnu")}</div>
-    <button class="punch-tap-anywhere" onclick="punchReset()">Suivant ${icon("arrow-right", 14)}</button>
+    <div class="punch-error-msg">${esc(_punchErrMessage || t("punch_pin_unknown"))}</div>
+    <button class="punch-tap-anywhere" onclick="punchReset()">${t("punch_next")} ${icon("arrow-right", 14)}</button>
   </div>`;
 }
 
@@ -243,13 +243,13 @@ function punchKeyClear() {
 function punchKeyOk() {
   if (_punchState !== "keypad") return;
   if (_punchPin.length !== 4) {
-    toast("Saisis un PIN à 4 chiffres.", "warning");
+    toast(t("punch_enter_4"), "warning");
     return;
   }
   // Match contre la liste des employés
   const emp = (employees || []).find(e => e.pin && String(e.pin).trim() === _punchPin);
   if (!emp) {
-    _punchErrMessage = "PIN non reconnu — vérifie avec l'admin.";
+    _punchErrMessage = t("punch_pin_unknown_full");
     _punchState = "error";
     renderPage();
     _punchAutoResetTimer = setTimeout(punchReset, 2200);
@@ -296,7 +296,7 @@ async function punchDoAction(action) {
   const expectedDk = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
   if (dk !== expectedDk) {
     console.error(`Punch refusé : dayKey(${dk}) ≠ jour local courant (${expectedDk}).`);
-    _punchErrMessage = "Erreur interne (dayKey). Avise l'admin.";
+    _punchErrMessage = t("punch_err_internal");
     _punchState = "error";
     renderPage();
     _punchAutoResetTimer = setTimeout(punchReset, 3000);
@@ -341,7 +341,7 @@ async function punchDoAction(action) {
     _punchAutoResetTimer = setTimeout(punchReset, 1800);
   } catch (err) {
     console.error("Punch failed:", err);
-    _punchErrMessage = "Erreur d'enregistrement. Réessaie ou avise l'admin.";
+    _punchErrMessage = t("punch_err_save");
     _punchState = "error";
     renderPage();
     _punchAutoResetTimer = setTimeout(punchReset, 2500);
