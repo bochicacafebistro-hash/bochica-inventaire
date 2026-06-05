@@ -69,10 +69,16 @@ function renderDailyTasksBlock() {
         : list.map(task => {
             const done = isDailyTaskDoneToday(task, todayStr);
             const isOnce = task.type === "once";
-            return `<button class="daily-task-item ${done ? "is-done" : ""}" onclick="toggleDailyTask('${task.id}')" aria-pressed="${done}" title="${done ? t("ops_uncheck") : t("ops_mark_done")}">
-              <span class="daily-task-check">${done ? icon("check", 13) : ""}</span>
-              <span class="daily-task-label">${esc(task.title || "—")}</span>
-              ${isOnce ? `<span class="daily-task-tag daily-task-tag--once">1×</span>` : ""}
+            const time = (task.time || "").trim();
+            const note = (task.note || "").trim();
+            return `<button class="daily-task-card ${done ? "is-done" : ""}" onclick="toggleDailyTask('${task.id}')" aria-pressed="${done}" title="${done ? t("ops_uncheck") : t("ops_mark_done")}">
+              <div class="daily-task-card__main">
+                <span class="daily-task-check">${done ? icon("check", 13) : ""}</span>
+                <span class="daily-task-label">${esc(task.title || "—")}</span>
+                ${time ? `<span class="daily-task-time">${icon("clock", 11)} ${esc(time)}</span>` : ""}
+                ${isOnce ? `<span class="daily-task-tag daily-task-tag--once">1×</span>` : ""}
+              </div>
+              ${note ? `<div class="daily-task-note">${esc(note)}</div>` : ""}
             </button>`;
           }).join("")
       }
@@ -119,11 +125,19 @@ function renderDailyTasksAdmin() {
 
   const itemRow = (task) => {
     const done = isDailyTaskDoneToday(task, todayStr);
+    const time = (task.time || "").trim();
+    const note = (task.note || "").trim();
     return `<div class="ops-admin-item ${done ? "is-done-today" : ""}">
       <span class="ops-admin-item__status ${done ? "is-done" : ""}" title="${done ? t("ops_done_today") : t("ops_not_done")}">
         ${done ? icon("check", 13) : ""}
       </span>
-      <span class="ops-admin-item__title">${esc(task.title || "—")}</span>
+      <div class="ops-admin-item__body">
+        <div class="ops-admin-item__title">
+          ${esc(task.title || "—")}
+          ${time ? `<span class="daily-task-time">${icon("clock", 11)} ${esc(time)}</span>` : ""}
+        </div>
+        ${note ? `<div class="ops-admin-item__note">${esc(note)}</div>` : ""}
+      </div>
       <div class="ops-admin-item__actions">
         <button class="btn-icon-only" onclick="openDailyTaskModal('${task.id}')" title="${t("edit")}" aria-label="${t("edit")}">${icon("pencil", 15)}</button>
         <button class="btn-icon-only" onclick="deleteDailyTask('${task.id}')" title="${t("delete")}" aria-label="${t("delete")}">${icon("trash", 15)}</button>
@@ -173,11 +187,19 @@ function openDailyTaskModal(id) {
     <label>${t("ops_task_label")}
       <input id="dt-title" value="${esc(task?.title || "")}" placeholder="${t("ops_task_placeholder")}" autofocus/>
     </label>
-    <label>${t("ops_type")}
-      <select id="dt-type">
-        <option value="recurring" ${type === "recurring" ? "selected" : ""}>${t("ops_type_recurring")}</option>
-        <option value="once" ${type === "once" ? "selected" : ""}>${t("ops_type_once")}</option>
-      </select>
+    <div class="form-row">
+      <label>${t("ops_type")}
+        <select id="dt-type">
+          <option value="recurring" ${type === "recurring" ? "selected" : ""}>${t("ops_type_recurring")}</option>
+          <option value="once" ${type === "once" ? "selected" : ""}>${t("ops_type_once")}</option>
+        </select>
+      </label>
+      <label>${t("ops_task_time")}
+        <input id="dt-time" type="time" value="${esc(task?.time || "")}"/>
+      </label>
+    </div>
+    <label>${t("ops_task_note")}
+      <textarea id="dt-note" style="height:70px" placeholder="${t("ops_task_note_ph")}">${task?.note || ""}</textarea>
     </label>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
@@ -190,14 +212,16 @@ async function saveDailyTask(id) {
   const title = (document.getElementById("dt-title").value || "").trim();
   if (!title) return toast(t("ops_enter_title"), "error");
   const type = document.getElementById("dt-type").value === "once" ? "once" : "recurring";
+  const time = (document.getElementById("dt-time").value || "").trim();
+  const note = (document.getElementById("dt-note").value || "").trim();
   try {
     if (id) {
-      await db.collection("dailyTasks").doc(id).update({ title, type, updatedAt: Date.now() });
+      await db.collection("dailyTasks").doc(id).update({ title, type, time, note, updatedAt: Date.now() });
     } else {
       const nid = genId();
       const maxOrder = (dailyTasks || []).reduce((m, t) => Math.max(m, t.sortOrder ?? 0), -1);
       await db.collection("dailyTasks").doc(nid).set({
-        id: nid, title, type,
+        id: nid, title, type, time, note,
         sortOrder: maxOrder + 1,
         done: false,
         lastCompletedDate: null,
@@ -227,11 +251,39 @@ function deleteDailyTask(id) {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// PAGE — « Ouverture / Fermeture » (listes de référence)
+// PAGE — « Ouverture / Fermeture » (cases à cocher, reset quotidien)
 // ───────────────────────────────────────────────────────────────
 // Visible employés + admin. Deux colonnes : à l'ouverture / à la
-// fermeture. Lecture seule pour tous ; l'admin a un bouton pour éditer.
+// fermeture. Les items sont COCHABLES par tous — l'état est stocké
+// par jour (/dailyChecklistState/{YYYY-MM-DD}) donc il se réinitialise
+// automatiquement chaque jour (nouveau doc = aucune case cochée).
+// L'admin définit les items via « Modifier les listes ».
 // ═══════════════════════════════════════════════════════════════
+
+// ID stable dérivé d'un texte (pour les items legacy + clé de complétion).
+function slugId(text) {
+  let h = 0;
+  const s = String(text || "");
+  for (let i = 0; i < s.length; i++) { h = (h * 31 + s.charCodeAt(i)) | 0; }
+  return "i" + (h >>> 0).toString(36);
+}
+
+// Abonnement au doc de complétion du JOUR courant (idempotent, géré par date).
+function subscribeChecklistToday() {
+  if (typeof db === "undefined") return;
+  const today = dayKey(new Date());
+  if (_checklistSubscribedDate === today && _checklistUnsub) return;
+  if (_checklistUnsub) { _checklistUnsub(); _checklistUnsub = null; }
+  _checklistSubscribedDate = today;
+  _checklistUnsub = db.collection("dailyChecklistState").doc(today).onSnapshot(snap => {
+    const d = snap.exists ? snap.data() : {};
+    dailyChecklistToday = { date: today, opening: d.opening || {}, closing: d.closing || {} };
+    if (activePage === "ouverture-fermeture") renderPage();
+  }, err => {
+    if (err && err.code !== "permission-denied") console.warn("listener dailyChecklistState:", err);
+  });
+}
+
 function getOpenCloseLists() {
   const o = (typeof openCloseLists !== "undefined" && openCloseLists) ? openCloseLists : {};
   return {
@@ -240,12 +292,26 @@ function getOpenCloseLists() {
   };
 }
 
+function isChecklistItemDone(list, id) {
+  const m = dailyChecklistToday && dailyChecklistToday[list];
+  return !!(m && m[id]);
+}
+
 function renderOpenClose() {
+  subscribeChecklistToday();
   const { opening, closing } = getOpenCloseLists();
 
-  const refList = (items, emptyMsg) => items.length === 0
-    ? `<div class="dash-today-empty">${emptyMsg}</div>`
-    : `<ol class="openclose-list">${items.map(it => `<li>${esc(it)}</li>`).join("")}</ol>`;
+  const checkList = (items, list, emptyMsg) => {
+    if (items.length === 0) return `<div class="dash-today-empty">${emptyMsg}</div>`;
+    return `<div class="openclose-list">${items.map(it => {
+      const done = isChecklistItemDone(list, it.id);
+      return `<button class="openclose-check ${done ? "is-done" : ""}" onclick="toggleChecklistItem('${list}','${it.id}')" aria-pressed="${done}" title="${done ? t("ops_uncheck") : t("ops_mark_done")}">
+        <span class="openclose-check__box">${done ? icon("check", 13) : ""}</span>
+        <span class="openclose-check__label">${esc(it.text)}</span>
+      </button>`;
+    }).join("")}</div>`;
+  };
+  const doneCount = (items, list) => items.filter(it => isChecklistItemDone(list, it.id)).length;
 
   return `<div class="page">
     <div class="toolbar">
@@ -257,12 +323,12 @@ function renderOpenClose() {
 
     <div class="openclose-grid">
       <div class="card openclose-col openclose-col--open">
-        <h3 class="openclose-col__title">${icon("sun", 16)} ${t("ops_opening")}</h3>
-        ${refList(opening, t("ops_opening_empty"))}
+        <h3 class="openclose-col__title">${icon("sun", 16)} ${t("ops_opening")} ${opening.length ? `<span class="openclose-progress">${doneCount(opening, "opening")}/${opening.length}</span>` : ""}</h3>
+        ${checkList(opening, "opening", t("ops_opening_empty"))}
       </div>
       <div class="card openclose-col openclose-col--close">
-        <h3 class="openclose-col__title">${icon("moon", 16)} ${t("ops_closing")}</h3>
-        ${refList(closing, t("ops_closing_empty"))}
+        <h3 class="openclose-col__title">${icon("moon", 16)} ${t("ops_closing")} ${closing.length ? `<span class="openclose-progress">${doneCount(closing, "closing")}/${closing.length}</span>` : ""}</h3>
+        ${checkList(closing, "closing", t("ops_closing_empty"))}
       </div>
     </div>
 
@@ -270,42 +336,71 @@ function renderOpenClose() {
   </div>`;
 }
 
+// ── Cocher / décocher un item (tous les rôles) — écrit dans le doc du jour ──
+async function toggleChecklistItem(list, id) {
+  if (list !== "opening" && list !== "closing") return;
+  const today = dayKey(new Date());
+  const done = isChecklistItemDone(list, id);
+  try {
+    const value = done ? firebase.firestore.FieldValue.delete() : true;
+    await db.collection("dailyChecklistState").doc(today).set({
+      date: today,
+      [list]: { [id]: value },
+      updatedAt: Date.now()
+    }, { merge: true });
+  } catch (err) {
+    console.error("toggleChecklistItem:", err);
+    toast(t("err_prefix") + " : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
 // ── Éditeur admin des deux listes (une ligne = un item) ────────
 function openOpenCloseEditor() {
   const { opening, closing } = getOpenCloseLists();
+  const toText = (items) => items.map(it => it.text).join("\n");
   showModal(`<div class="modal modal--wide">
     <div class="modal-header">
-      <h3>Modifier les listes d'ouverture / fermeture</h3>
-      <button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button>
+      <h3>${t("ops_edit_lists_title")}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
     </div>
-    <p style="color:var(--text2);font-size:13px;margin:0 0 12px;line-height:1.5">Une ligne = un élément de la liste. Les lignes vides sont ignorées.</p>
+    <p style="color:var(--text2);font-size:13px;margin:0 0 12px;line-height:1.5">${t("ops_edit_lists_hint")}</p>
     <div class="openclose-edit-grid">
-      <label>${icon("sun", 14)} À l'ouverture
-        <textarea id="oc-opening" style="height:220px;line-height:1.6" placeholder="Allumer la friteuse&#10;Vérifier la caisse&#10;Sortir les chaises de terrasse">${opening.join("\n")}</textarea>
+      <label>${icon("sun", 14)} ${t("ops_opening")}
+        <textarea id="oc-opening" style="height:220px;line-height:1.6" placeholder="${esc(t("ops_opening_ph"))}">${toText(opening)}</textarea>
       </label>
-      <label>${icon("moon", 14)} À la fermeture
-        <textarea id="oc-closing" style="height:220px;line-height:1.6" placeholder="Fermer la caisse&#10;Nettoyer la plancha&#10;Sortir les poubelles">${closing.join("\n")}</textarea>
+      <label>${icon("moon", 14)} ${t("ops_closing")}
+        <textarea id="oc-closing" style="height:220px;line-height:1.6" placeholder="${esc(t("ops_closing_ph"))}">${toText(closing)}</textarea>
       </label>
     </div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveOpenClose()">${icon("check", 14)} Enregistrer</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveOpenClose()">${icon("check", 14)} ${t("save")}</button>
     </div>
   </div>`);
 }
 
 async function saveOpenClose() {
-  const parse = (v) => (v || "").split("\n").map(s => s.trim()).filter(Boolean);
-  const opening = parse(document.getElementById("oc-opening").value);
-  const closing = parse(document.getElementById("oc-closing").value);
+  // Construit les items {id, text} en préservant l'id existant si le texte est
+  // inchangé (pour ne pas perdre les cases déjà cochées aujourd'hui).
+  const buildItems = (raw, existing) => {
+    const byText = {};
+    (existing || []).forEach(it => { byText[it.text] = it.id; });
+    return (raw || "").split("\n").map(s => s.trim()).filter(Boolean).map(text => ({
+      id: byText[text] || genId(),
+      text
+    }));
+  };
+  const cur = getOpenCloseLists();
+  const opening = buildItems(document.getElementById("oc-opening").value, cur.opening);
+  const closing = buildItems(document.getElementById("oc-closing").value, cur.closing);
   try {
     await db.collection("settings").doc("openClose").set({
       opening, closing, updatedAt: Date.now()
     }, { merge: true });
     closeModal();
-    toast("Listes enregistrées.", "success");
+    toast(t("ops_lists_saved"), "success");
   } catch (err) {
     console.error("saveOpenClose:", err);
-    toast("Erreur sauvegarde : " + (err.message || err.code || err), "error", 5000);
+    toast(t("err_prefix") + " : " + (err.message || err.code || err), "error", 5000);
   }
 }

@@ -63,13 +63,15 @@ db.collection("dailyTasks").onSnapshot(snap => {
   if (shouldRender("dailyTasks", "accueil", "taches-jour")) renderPage();
 });
 
-// Listes ouverture/fermeture (v3.36.0) — doc settings/openClose (référence).
+// Listes ouverture/fermeture (v3.36.0) — doc settings/openClose.
+// Items normalisés en {id, text} (compat ascendante : anciennes chaînes simples).
 db.collection("settings").doc("openClose").onSnapshot(snap => {
   const data = snap.exists ? snap.data() : {};
-  openCloseLists = {
-    opening: Array.isArray(data.opening) ? data.opening : [],
-    closing: Array.isArray(data.closing) ? data.closing : []
-  };
+  const norm = (arr) => (Array.isArray(arr) ? arr : []).map(it =>
+    (typeof it === "string") ? { id: (typeof slugId === "function" ? slugId(it) : it), text: it }
+                             : { id: it.id || (typeof slugId === "function" ? slugId(it.text || "") : ""), text: it.text || "" }
+  ).filter(it => it.text);
+  openCloseLists = { opening: norm(data.opening), closing: norm(data.closing) };
   if (shouldRender("settings/openClose", "ouverture-fermeture")) renderPage();
 });
 

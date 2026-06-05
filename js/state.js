@@ -85,8 +85,13 @@ let expandedNavSections = new Set();
 // par les employés sur l'accueil. type "recurring" (reset chaque jour via
 // lastCompletedDate) ou "once" (done=true permanent, doneDate pour l'affichage).
 let dailyTasks = [];
-// Listes de référence ouverture/fermeture (doc /settings/openClose).
+// Listes ouverture/fermeture (doc /settings/openClose) — items {id, text}.
 let openCloseLists = { opening: [], closing: [] };
+// État de complétion du jour (doc /dailyChecklistState/{YYYY-MM-DD}) — se
+// réinitialise chaque jour (nouveau doc = vide). { date, opening:{id:true}, closing:{id:true} }
+let dailyChecklistToday = { date: null, opening: {}, closing: {} };
+let _checklistUnsub = null;          // unsubscribe du listener du jour courant
+let _checklistSubscribedDate = null; // date actuellement abonnée (anti-réabo en boucle)
 
 let isAdmin = false, isLoggedIn = false, darkMode = false;
 let userRole = null; // "global_admin" | "chef" | "employee" | null

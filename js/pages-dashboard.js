@@ -505,6 +505,19 @@ function renderDashTodayWidget(now, todayStr) {
   // Couleurs par section pour les pills employés
   const sectionColor = (sec) => sec === "cuisine" ? "#7dbf66" : sec === "service" ? "#4a90e2" : "#94a3b8";
 
+  // Regroupement des employés en shift par section (même visuel que l'accueil
+  // employé) — cuisine / service / autre, avec séparateur + barre coloré.
+  const shiftBuckets = { cuisine: [], service: [], other: [] };
+  shiftsToday.forEach(s => {
+    const k = s.section === "cuisine" ? "cuisine" : s.section === "service" ? "service" : "other";
+    shiftBuckets[k].push(s);
+  });
+  const shiftGroups = [
+    { key: "cuisine", label: t("section_kitchen") },
+    { key: "service", label: t("section_service") },
+    { key: "other",   label: t("section_other") }
+  ].filter(g => shiftBuckets[g.key].length > 0);
+
   return `<div class="dash-today-widget">
     <div class="dash-today-widget__head">
       <div>
@@ -518,18 +531,25 @@ function renderDashTodayWidget(now, todayStr) {
       </div>
     </div>
     <div class="dash-today-widget__grid">
-      <!-- Employés en shift aujourd'hui -->
+      <!-- Employés en shift aujourd'hui (groupés par section) -->
       <div class="dash-today-block">
-        <div class="dash-today-block__title">${icon("users", 12)} En shift aujourd'hui (${shiftsToday.length})</div>
+        <div class="dash-today-block__title">${icon("users", 12)} ${t("emp_in_service")} (${shiftsToday.length})</div>
         <div class="dash-today-block__list">
           ${shiftsToday.length === 0
-            ? `<div class="dash-today-empty">Aucun shift planifié</div>`
-            : shiftsToday.slice(0, 5).map(s => `<div class="dash-today-item">
-                <span style="width:6px;height:6px;border-radius:50%;background:${sectionColor(s.section)};flex-shrink:0"></span>
-                <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(s.name)}</span>
-                <span class="dash-today-item__time">${s.start}${s.end ? "–" + s.end : ""}</span>
-              </div>`).join("")
-              + (shiftsToday.length > 5 ? `<div class="dash-today-empty">+ ${shiftsToday.length - 5} autres</div>` : "")
+            ? `<div class="dash-today-empty">${t("emp_no_shift_today")}</div>`
+            : shiftGroups.map(g => {
+                const color = sectionColor(g.key);
+                return `<div class="dash-sec-group">
+                  <div class="dash-sec-divider" style="color:${color}">
+                    <span class="dash-sec-dot" style="background:${color}"></span>
+                    ${g.label} <span class="dash-sec-count">${shiftBuckets[g.key].length}</span>
+                  </div>
+                  ${shiftBuckets[g.key].map(s => `<div class="dash-today-item dash-today-item--sec" style="border-left-color:${color}">
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${esc(s.name)}</span>
+                    <span class="dash-today-item__time">${s.start}${s.end ? "–" + s.end : ""}</span>
+                  </div>`).join("")}
+                </div>`;
+              }).join("")
           }
         </div>
       </div>

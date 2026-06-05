@@ -92,6 +92,15 @@ service cloud.firestore {
         .hasOnly(['done', 'doneAt', 'doneDate', 'doneBy', 'lastCompletedDate', 'lastCompletedBy', 'updatedAt']);
     }
 
+    // ── /dailyChecklistState : complétion ouverture/fermeture par jour (v3.36.2) ──
+    // Un doc par jour (id = "YYYY-MM-DD") qui n'enregistre QUE l'état coché des
+    // items d'ouverture/fermeture. Réinitialisé naturellement chaque jour (nouveau
+    // doc). Tous les rôles authentifiés peuvent cocher (lecture + écriture).
+    match /dailyChecklistState/{doc=**} {
+      allow read:  if isAuthed();
+      allow write: if isAuthed();
+    }
+
     // ── /menu : items du menu ─────────────────────────
     match /menu/{doc=**} {
       allow read:  if isAuthed();

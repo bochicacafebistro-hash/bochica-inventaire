@@ -10794,3 +10794,69 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 /* Item avec barre latérale colorée (section ou type d'événement) */
 .dash-today-item--sec{ border-left:3px solid var(--border); padding-left:8px; }
+
+/* ── Tâches du jour : cartes avec détails (v3.36.2) ── */
+.daily-task-card{
+  display:flex; flex-direction:column; gap:4px;
+  width:100%; text-align:left; background:var(--surface); border:none;
+  border:1px solid var(--border); border-left:3px solid var(--border);
+  padding:8px 10px; border-radius:var(--radius-sm);
+  cursor:pointer; font:inherit; color:var(--text);
+  transition:background var(--transition-fast), border-color var(--transition-fast);
+}
+.daily-task-card:hover{ background:var(--surface2); }
+.daily-task-card:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+.daily-task-card.is-done{ border-left-color:var(--status-green,#7dbf66); opacity:.85; }
+.daily-task-card__main{ display:flex; align-items:center; gap:8px; }
+.daily-task-card.is-done .daily-task-check{
+  background:var(--status-green,#7dbf66); border-color:var(--status-green,#7dbf66);
+}
+.daily-task-card.is-done .daily-task-label{ text-decoration:line-through; color:var(--text3); }
+.daily-task-time{
+  display:inline-flex; align-items:center; gap:3px; flex-shrink:0;
+  font-family:var(--font-mono); font-size:10px; font-weight:600;
+  color:var(--accent-warm); background:var(--accent-soft);
+  padding:1px 6px; border-radius:var(--radius-pill);
+}
+.daily-task-note{
+  font-size:var(--fs-xs); color:var(--text2); line-height:1.45;
+  padding-left:28px; white-space:pre-wrap;
+}
+.daily-task-card.is-done .daily-task-note{ color:var(--text3); }
+.dark .daily-task-card:hover{ background:rgba(245,241,232,.06); }
+
+/* Liste admin tâches du jour : corps + note */
+.ops-admin-item__body{ flex:1; display:flex; flex-direction:column; gap:2px; min-width:0; }
+.ops-admin-item__body .ops-admin-item__title{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.ops-admin-item__note{ font-size:var(--fs-xs); color:var(--text2); line-height:1.45; white-space:pre-wrap; }
+
+/* ── Ouverture/Fermeture : cases à cocher (v3.36.2) ── */
+.openclose-progress{
+  font-family:var(--font-mono); font-size:11px; font-weight:700;
+  color:var(--text2); background:var(--surface2);
+  border-radius:var(--radius-pill); padding:1px 8px; margin-left:auto;
+}
+.openclose-col__title{ display:flex; align-items:center; }
+.openclose-list{ display:flex; flex-direction:column; gap:6px; margin:0; padding:0; }
+.openclose-check{
+  display:flex; align-items:flex-start; gap:10px; width:100%; text-align:left;
+  background:var(--surface); border:1px solid var(--border);
+  padding:9px 11px; border-radius:var(--radius-sm);
+  cursor:pointer; font:inherit; color:var(--text);
+  transition:background var(--transition-fast);
+}
+.openclose-check:hover{ background:var(--surface2); }
+.openclose-check:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+.openclose-check__box{
+  flex-shrink:0; width:22px; height:22px; border-radius:6px;
+  border:2px solid var(--border-strong, rgba(14,13,12,.25));
+  display:inline-flex; align-items:center; justify-content:center;
+  color:#fff; transition:all var(--transition-fast);
+}
+.openclose-check__label{ flex:1; font-size:var(--fs-base); line-height:1.4; padding-top:1px; }
+.openclose-check.is-done .openclose-check__box{
+  background:var(--status-green,#7dbf66); border-color:var(--status-green,#7dbf66);
+}
+.openclose-check.is-done .openclose-check__label{ text-decoration:line-through; color:var(--text3); }
+.dark .openclose-check:hover{ background:rgba(245,241,232,.06); }
+.dark .openclose-check__box{ border-color:rgba(245,241,232,.3); }
