@@ -224,6 +224,38 @@ async function restoreEmployee(id) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Annuler (undo) — pile des derniers changements d'horaire (v3.39.0)
+// ═══════════════════════════════════════════════════════════════
+// Pile en mémoire (réinitialisée au rechargement). Chaque action annulable
+// capture l'état AVANT modification et enregistre une fonction qui le restaure.
+// On garde au maximum SCHEDULE_UNDO_MAX entrées (les plus anciennes tombent).
+let _scheduleUndo = [];
+const SCHEDULE_UNDO_MAX = 5;
+
+function pushScheduleUndo(label, restoreFn) {
+  _scheduleUndo.push({ label, restoreFn });
+  if (_scheduleUndo.length > SCHEDULE_UNDO_MAX) _scheduleUndo.shift();
+}
+async function undoLastSchedule() {
+  const entry = _scheduleUndo.pop();
+  if (!entry) { toast("Rien à annuler.", "info", 2000); return; }
+  try {
+    await entry.restoreFn();
+    toast(`Annulé : ${entry.label}`, "success", 2800);
+  } catch (err) {
+    console.error("undoLastSchedule failed:", err);
+    _scheduleUndo.push(entry); // échec → on remet l'entrée
+    toast("Erreur lors de l'annulation : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+// Restaure (ou supprime si absent) un quart d'un employé pour un jour donné.
+function _restoreShiftFn(empId, dk, prevShift) {
+  return () => db.collection("employees").doc(empId).set({
+    shifts: { [dk]: prevShift ? { ...prevShift } : firebase.firestore.FieldValue.delete() }
+  }, { merge: true });
+}
+
 // Navigation semaine
 function changeScheduleWeek(delta) {
   scheduleWeekOffset += delta;
@@ -314,6 +346,7 @@ function renderEmployes() {
         </div>
         <div class="schedule-actions">
           <!-- Actions fréquentes (visibles pour tous les admins) -->
+          <button class="btn-secondary btn-sm" onclick="undoLastSchedule()" ${_scheduleUndo.length === 0 ? "disabled" : ""} title="Annuler le dernier changement (Ctrl/Cmd+Z) — jusqu'à ${SCHEDULE_UNDO_MAX} en arrière">${icon("undo", 14)} Annuler${_scheduleUndo.length ? ` (${_scheduleUndo.length})` : ""}</button>
           <button class="btn-secondary btn-sm" onclick="openOpenDaysModal()" title="Choisir les jours d'ouverture">${icon("calendar", 14)} Jours ouverts</button>
           <button class="btn-secondary btn-sm" onclick="openTimeOffModal()" title="Marquer un employé en congé sur une ou plusieurs journées (bloque l'assignation de quarts)">${icon("sun", 14)} Ajouter un congé</button>
           <button class="btn-secondary btn-sm" onclick="duplicateScheduleToNextWeek()" title="Copier cet horaire vers la semaine suivante">${icon("copy", 14)} Copier → S${weekNum + 1}</button>
@@ -324,16 +357,6 @@ function renderEmployes() {
             <input id="sched-ratio" type="number" min="1" max="100" step="0.5" value="${(ratio * 100).toFixed(1)}" onchange="updateSalesRatio(this.value)" oninput="updateSalesRatioLive(this.value)" aria-label="Ratio salaires sur ventes"/>
             <span class="schedule-ratio-pill__unit">%</span>
           </div>
-          ${userRole === "global_admin" ? `
-            <!-- Actions avancées (rares) regroupées dans un menu ⋯ -->
-            <div class="menu-wrap">
-              <button class="btn-secondary btn-sm" onclick="toggleDrop('sched-adv')" aria-label="Actions avancées" title="Actions avancées">${icon("more-horizontal", 14)} Plus</button>
-              <div class="dropdown" id="drop-sched-adv">
-                <button onclick="applyPayrollConfigs();closeAllDrops()">${icon("dollar-sign", 14)} Appliquer salaires fixes</button>
-                <button onclick="seedScheduleFromTemplate();closeAllDrops()">${icon("download", 14)} Importer horaire type</button>
-              </div>
-            </div>
-          ` : ""}
         </div>
       </div>
 
