@@ -181,6 +181,8 @@ async function hideEmpFromScheduleWeek(empId) {
       weekHidden: { [weekKey]: next }
     }, { merge: true });
     const emp = employees.find(e => e.id === empId);
+    pushScheduleUndo(`Retrait de ${emp ? emp.name : "l'employé"} (cette semaine)`, () =>
+      db.collection("settings").doc("schedule").set({ weekHidden: { [weekKey]: cur } }, { merge: true }));
     toast(`${emp ? emp.name : "Employé"} retiré de cette semaine (réversible).`, "success", 3000);
   } catch (err) {
     console.error("hideEmpFromScheduleWeek failed:", err);
@@ -189,11 +191,15 @@ async function hideEmpFromScheduleWeek(empId) {
 }
 async function unhideEmpFromScheduleWeek(empId) {
   const weekKey = scheduleWeekKey();
-  const next = getScheduleWeekHidden(weekKey).filter(id => id !== empId);
+  const cur = getScheduleWeekHidden(weekKey);
+  const next = cur.filter(id => id !== empId);
   try {
     await db.collection("settings").doc("schedule").set({
       weekHidden: { [weekKey]: next }
     }, { merge: true });
+    const emp = employees.find(e => e.id === empId);
+    pushScheduleUndo(`Réaffichage de ${emp ? emp.name : "l'employé"}`, () =>
+      db.collection("settings").doc("schedule").set({ weekHidden: { [weekKey]: cur } }, { merge: true }));
   } catch (err) {
     console.error("unhideEmpFromScheduleWeek failed:", err);
     toast("Erreur : " + (err.message || err.code || err), "error", 5000);
@@ -208,6 +214,8 @@ function askDeleteEmployee(id, name) {
     async () => {
       await db.collection("employees").doc(id).update({ archived: true, archivedAt: Date.now() });
       await addLog(name, "Employé archivé", "");
+      pushScheduleUndo(`Suppression de ${name}`, () =>
+        db.collection("employees").doc(id).update({ archived: false, archivedAt: firebase.firestore.FieldValue.delete() }));
     },
     true
   );
@@ -866,9 +874,12 @@ async function empRowDrop(e, targetId) {
   // Écrit l'ordre dans settings/schedule.weekOrder[weekKey] (par semaine).
   try {
     const weekKey = scheduleWeekKey();
+    const prevOrder = getScheduleWeekOrder(weekKey); // pour l'annulation
     await db.collection("settings").doc("schedule").set({
       weekOrder: { [weekKey]: ids }
     }, { merge: true });
+    pushScheduleUndo("Réordonnancement des employés", () =>
+      db.collection("settings").doc("schedule").set({ weekOrder: { [weekKey]: prevOrder } }, { merge: true }));
     toast("Ordre mis à jour (cette semaine seulement).", "success", 2200);
   } catch (err) {
     console.error("empRowDrop failed:", err);
@@ -1370,11 +1381,14 @@ async function saveShiftFromModal(dk) {
   const start = document.getElementById("shift-start").value;
   const end = document.getElementById("shift-end").value;
   if (!start || !end) return toast("Saisis l'entrée et la sortie.", "warning");
+  const empPrev = employees.find(e => e.id === empId);
+  const prevShift = empPrev ? (empPrev.shifts || {})[dk] : null; // pour l'annulation
   try {
     // Écrit start + end ensemble pour ne rien perdre.
     await db.collection("employees").doc(empId).set({
       shifts: { [dk]: { start, end } }
     }, { merge: true });
+    pushScheduleUndo(prevShift ? "Modification d'un quart" : "Ajout d'un quart", _restoreShiftFn(empId, dk, prevShift));
     closeModal();
     toast("Shift enregistré.", "success", 2500);
   } catch (err) {
@@ -1385,12 +1399,15 @@ async function saveShiftFromModal(dk) {
 
 // Supprime un shift (depuis la modale d'édition).
 async function deleteShift(empId, dk) {
+  const empPrev = employees.find(e => e.id === empId);
+  const prevShift = empPrev ? (empPrev.shifts || {})[dk] : null; // pour l'annulation
   try {
     // Pour supprimer la clé d'un map Firestore, on utilise FieldValue.delete()
     // en nesting dans un set merge:true.
     await db.collection("employees").doc(empId).set({
       shifts: { [dk]: firebase.firestore.FieldValue.delete() }
     }, { merge: true });
+    pushScheduleUndo("Suppression d'un quart", _restoreShiftFn(empId, dk, prevShift));
     closeModal();
     toast("Shift supprimé.", "success", 2500);
   } catch (err) {
@@ -1455,6 +1472,8 @@ async function shiftCardDrop(e, targetDk) {
   if (tgtShift && tgtShift.start && tgtShift.end) {
     if (!confirm(`${emp.name} a déjà un shift ${tgtShift.start}→${tgtShift.end} ce jour-là. Le remplacer par ${srcShift.start}→${srcShift.end} ?`)) return;
   }
+  const prevFrom = srcShift ? { ...srcShift } : null;       // pour l'annulation
+  const prevTgt = (tgtShift && tgtShift.start) ? { ...tgtShift } : null;
   try {
     await db.collection("employees").doc(empId).set({
       shifts: {
@@ -1462,6 +1481,13 @@ async function shiftCardDrop(e, targetDk) {
         [targetDk]: { start: srcShift.start, end: srcShift.end }
       }
     }, { merge: true });
+    pushScheduleUndo("Déplacement d'un quart", () =>
+      db.collection("employees").doc(empId).set({
+        shifts: {
+          [fromDk]: prevFrom ? { ...prevFrom } : firebase.firestore.FieldValue.delete(),
+          [targetDk]: prevTgt ? { ...prevTgt } : firebase.firestore.FieldValue.delete()
+        }
+      }, { merge: true }));
     toast(`Shift déplacé : ${emp.name} ${srcShift.start}→${srcShift.end}`, "success", 2500);
   } catch (err) {
     console.error("shiftCardDrop failed:", err);
@@ -1552,15 +1578,21 @@ async function saveTimeOffFromModal() {
 
   const emp = employees.find(e => e.id === empId);
   const existingShifts = emp ? (emp.shifts || {}) : {};
+  const existingTimeOff = emp ? (emp.timeOff || {}) : {};
 
   const timeOffPayload = {};
   const shiftsPayload = {};
+  // Captures pour l'annulation : état précédent des jours touchés
+  const undoTimeOff = {};
+  const undoShifts = {};
   let removedShifts = 0;
   const now = Date.now();
   for (const dk of days) {
     timeOffPayload[dk] = { type, note, createdAt: now };
+    undoTimeOff[dk] = existingTimeOff[dk] ? { ...existingTimeOff[dk] } : firebase.firestore.FieldValue.delete();
     if (existingShifts[dk] && existingShifts[dk].start && existingShifts[dk].end) {
       shiftsPayload[dk] = firebase.firestore.FieldValue.delete();
+      undoShifts[dk] = { ...existingShifts[dk] };
       removedShifts++;
     }
   }
@@ -1570,6 +1602,11 @@ async function saveTimeOffFromModal() {
     if (removedShifts > 0) payload.shifts = shiftsPayload;
     await db.collection("employees").doc(empId).set(payload, { merge: true });
     await addLog("—", "Congé ajouté", `${emp ? emp.name : empId} · ${days.length} jour(s) · ${leaveTypeLabel(type)}`);
+    pushScheduleUndo(`Congé de ${emp ? emp.name : "l'employé"} (${days.length} j)`, () => {
+      const restore = { timeOff: undoTimeOff };
+      if (removedShifts > 0) restore.shifts = undoShifts;
+      return db.collection("employees").doc(empId).set(restore, { merge: true });
+    });
     closeModal();
     let msg = `Congé enregistré · ${days.length} jour${days.length > 1 ? "s" : ""}`;
     if (removedShifts > 0) msg += ` · ${removedShifts} quart${removedShifts > 1 ? "s" : ""} retiré${removedShifts > 1 ? "s" : ""}`;
@@ -1617,10 +1654,15 @@ async function updateTimeOffCell(empId, dk) {
   const type = (document.getElementById("toc-type") || {}).value || "vacances";
   const note = ((document.getElementById("toc-note") || {}).value || "").trim();
   const existing = getTimeOff(empId, dk) || {};
+  const prev = getTimeOff(empId, dk); // pour l'annulation (objet complet ou null)
   try {
     await db.collection("employees").doc(empId).set({
       timeOff: { [dk]: { type, note, createdAt: existing.createdAt || Date.now() } }
     }, { merge: true });
+    pushScheduleUndo("Modification d'un congé", () =>
+      db.collection("employees").doc(empId).set({
+        timeOff: { [dk]: prev ? { ...prev } : firebase.firestore.FieldValue.delete() }
+      }, { merge: true }));
     closeModal();
     toast("Congé mis à jour.", "success", 2500);
   } catch (err) {
@@ -1631,10 +1673,15 @@ async function updateTimeOffCell(empId, dk) {
 
 // Retire le congé d'un jour (la journée redevient assignable).
 async function removeTimeOff(empId, dk) {
+  const prev = getTimeOff(empId, dk); // pour l'annulation
   try {
     await db.collection("employees").doc(empId).set({
       timeOff: { [dk]: firebase.firestore.FieldValue.delete() }
     }, { merge: true });
+    pushScheduleUndo("Retrait d'un congé", () =>
+      db.collection("employees").doc(empId).set({
+        timeOff: { [dk]: prev ? { ...prev } : firebase.firestore.FieldValue.delete() }
+      }, { merge: true }));
     closeModal();
     toast("Congé retiré.", "success", 2500);
   } catch (err) {

@@ -941,6 +941,18 @@ document.addEventListener("keydown", e => {
     openCmdK();
     return;
   }
+  // Annuler avec Cmd+Z / Ctrl+Z — uniquement sur la page Horaires, hors saisie
+  if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key.toLowerCase() === "z") {
+    if (!isLoggedIn) return;
+    const tag = (e.target && e.target.tagName) || "";
+    if (/^(INPUT|TEXTAREA|SELECT)$/.test(tag) || (e.target && e.target.isContentEditable)) return;
+    if (document.querySelector(".modal-overlay")) return; // pas pendant une modale
+    if (typeof activePage !== "undefined" && activePage === "employes" && typeof undoLastSchedule === "function") {
+      e.preventDefault();
+      undoLastSchedule();
+    }
+    return;
+  }
   // Si command palette ouverte
   if (document.getElementById("cmdk-modal")) {
     if (e.key === "Escape") {
