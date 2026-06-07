@@ -117,6 +117,113 @@ function buildLeaveTypeOptions(selected) {
     .join("");
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Employés actifs / archivés + ordre & masquage par semaine (v3.38.0)
+// ═══════════════════════════════════════════════════════════════
+// Suppression d'un employé = ARCHIVAGE (archived:true) : sa fiche, ses
+// horaires et ses paies passées sont CONSERVÉS. Un archivé n'apparaît
+// plus dans les vues courantes, SAUF dans une semaine passée où il a
+// travaillé (pour préserver l'historique).
+//
+// Ordre et masquage par semaine (Horaires) — stockés dans settings/schedule :
+//   • weekOrder[weekKey]  = [empId, …]  ordre d'affichage pour cette semaine
+//   • weekHidden[weekKey] = [empId, …]  employés masqués pour cette semaine
+// weekKey = clé du lundi (dayKey du début de semaine), comme actualSales.
+
+// Employés non archivés (liste de travail courante).
+function activeEmployees() {
+  return (typeof employees !== "undefined" ? employees : []).filter(e => !e.archived);
+}
+// Un employé a-t-il un quart (start+end) sur l'un des jours donnés ?
+function empWorkedOnDays(emp, days) {
+  const sh = (emp && emp.shifts) || {};
+  return days.some(d => { const s = sh[dayKey(d)]; return s && s.start && s.end; });
+}
+// Clé de la semaine d'horaire affichée (lundi).
+function scheduleWeekKey(offset) {
+  return dayKey(getWeekStart(typeof offset === "number" ? offset : scheduleWeekOffset));
+}
+// Ordre / masqués d'une semaine d'horaire.
+function getScheduleWeekOrder(weekKey) {
+  const m = (scheduleSettings && scheduleSettings.weekOrder) || {};
+  return Array.isArray(m[weekKey]) ? m[weekKey] : [];
+}
+function getScheduleWeekHidden(weekKey) {
+  const m = (scheduleSettings && scheduleSettings.weekHidden) || {};
+  return Array.isArray(m[weekKey]) ? m[weekKey] : [];
+}
+// Liste ordonnée + filtrée des employés visibles pour une semaine d'horaire.
+function visibleScheduleEmployees(weekDays, weekKey) {
+  const hidden = new Set(getScheduleWeekHidden(weekKey));
+  const order = getScheduleWeekOrder(weekKey);
+  const orderIdx = id => { const i = order.indexOf(id); return i === -1 ? Infinity : i; };
+  return (typeof employees !== "undefined" ? employees : [])
+    .filter(emp => {
+      if (hidden.has(emp.id)) return false;
+      if (!emp.archived) return true;
+      return empWorkedOnDays(emp, weekDays); // archivé : seulement s'il a travaillé
+    })
+    .sort((a, b) => {
+      const ai = orderIdx(a.id), bi = orderIdx(b.id);
+      if (ai !== bi) return ai - bi;
+      return (a.sortOrder || 0) - (b.sortOrder || 0);
+    });
+}
+
+// ─ Masquer / réafficher un employé pour la semaine d'horaire courante ─
+async function hideEmpFromScheduleWeek(empId) {
+  const weekKey = scheduleWeekKey();
+  const cur = getScheduleWeekHidden(weekKey);
+  if (cur.includes(empId)) return;
+  const next = [...cur, empId];
+  try {
+    await db.collection("settings").doc("schedule").set({
+      weekHidden: { [weekKey]: next }
+    }, { merge: true });
+    const emp = employees.find(e => e.id === empId);
+    toast(`${emp ? emp.name : "Employé"} retiré de cette semaine (réversible).`, "success", 3000);
+  } catch (err) {
+    console.error("hideEmpFromScheduleWeek failed:", err);
+    toast("Erreur : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+async function unhideEmpFromScheduleWeek(empId) {
+  const weekKey = scheduleWeekKey();
+  const next = getScheduleWeekHidden(weekKey).filter(id => id !== empId);
+  try {
+    await db.collection("settings").doc("schedule").set({
+      weekHidden: { [weekKey]: next }
+    }, { merge: true });
+  } catch (err) {
+    console.error("unhideEmpFromScheduleWeek failed:", err);
+    toast("Erreur : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// ─ Archivage (suppression douce) d'un employé ─
+function askDeleteEmployee(id, name) {
+  openConfirm(
+    "🗑️ Retirer l'employé",
+    `Retirer « ${esc(name)} » de l'équipe active ?<br><br>Son <strong>historique est conservé</strong> : il restera visible dans les horaires et paies des semaines passées où il a travaillé. Tu pourras le restaurer via « Voir les archivés ».`,
+    async () => {
+      await db.collection("employees").doc(id).update({ archived: true, archivedAt: Date.now() });
+      await addLog(name, "Employé archivé", "");
+    },
+    true
+  );
+}
+async function restoreEmployee(id) {
+  try {
+    await db.collection("employees").doc(id).update({ archived: false, archivedAt: firebase.firestore.FieldValue.delete() });
+    const emp = employees.find(e => e.id === id);
+    await addLog(emp ? emp.name : id, "Employé restauré", "");
+    toast("Employé restauré.", "success", 2500);
+  } catch (err) {
+    console.error("restoreEmployee failed:", err);
+    toast("Erreur : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
 // Navigation semaine
 function changeScheduleWeek(delta) {
   scheduleWeekOffset += delta;
@@ -150,7 +257,12 @@ function renderEmployes() {
   const dayTotalsHours = new Array(nCols).fill(0);
   const dayTotalsCost = new Array(nCols).fill(0);
   const nbOpenDays = nCols || 1;
-  const empRows = employees.map(emp => {
+  // Liste visible pour CETTE semaine : ordre par semaine, masqués retirés,
+  // archivés présents seulement s'ils ont travaillé la semaine (historique).
+  const weekKey = scheduleWeekKey();
+  const weekEmps = visibleScheduleEmployees(weekDays, weekKey);
+  const weekHiddenIds = getScheduleWeekHidden(weekKey);
+  const empRows = weekEmps.map(emp => {
     const shifts = emp.shifts || {};
     const rate = Number(emp.hourlyRate) || 0;
     const isSal = !!emp.isSalaried;
@@ -225,6 +337,17 @@ function renderEmployes() {
         </div>
       </div>
 
+      ${weekHiddenIds.length > 0 ? `
+      <!-- ══ Bandeau : employés masqués pour cette semaine ══ -->
+      <div class="week-hidden-banner">
+        <span class="week-hidden-label">${icon("eye-off", 13)} Masqué${weekHiddenIds.length > 1 ? "s" : ""} cette semaine :</span>
+        ${weekHiddenIds.map(id => {
+          const e = employees.find(x => x.id === id);
+          if (!e) return "";
+          return `<button class="week-hidden-chip" onclick="unhideEmpFromScheduleWeek('${id}')" title="Réafficher dans cette semaine">${esc(e.name || "?")} ${icon("plus", 11)}</button>`;
+        }).join("")}
+      </div>` : ""}
+
       <!-- ══ Grille employés × jours avec cartes shift (v3.24.1) ══ -->
       <!-- Liste des employés à gauche, 7 colonnes jour, totaux à droite. -->
       <div class="schedule-empgrid" style="--n-days:${nCols};">
@@ -257,14 +380,16 @@ function renderEmployes() {
               ondragleave="empRowDragLeave(event)"
               ondrop="empRowDrop(event,'${emp.id}')">
             <!-- Cellule employé (sticky à gauche) -->
-            <div class="schedule-empgrid-emp ${secCls}">
+            <div class="schedule-empgrid-emp ${secCls} ${emp.archived ? "is-archived-emp" : ""}">
               <div class="schedule-empgrid-emp-row">
                 <span class="schedule-emp-drag-handle" draggable="true"
                     ondragstart="empRowDragStart(event,'${emp.id}')"
                     ondragend="empRowDragEnd()"
-                    title="Glisser pour réordonner"
+                    title="Glisser pour réordonner (cette semaine)"
                     aria-label="Glisser pour réordonner ${esc(emp.name || "")}">${icon("grip-vertical", 12)}</span>
                 <div class="schedule-empgrid-emp-name">${esc(emp.name || "")}</div>
+                ${emp.archived ? `<span class="emp-archived-badge" title="Employé archivé — affiché car il a travaillé cette semaine">${icon("archive", 10)} Archivé</span>` : ""}
+                <button class="emp-week-remove" onclick="hideEmpFromScheduleWeek('${emp.id}')" title="Retirer de cette semaine (n'affecte pas les autres semaines ni la fiche)" aria-label="Retirer ${esc(emp.name || "")} de cette semaine">${icon("x", 12)}</button>
               </div>
               <div class="schedule-empgrid-emp-meta">
                 <span class="schedule-empgrid-emp-section">${secLabel}</span>
@@ -417,7 +542,7 @@ function renderEmployes() {
       <!-- ══ Cartes équipe ══ -->
       <h3 class="section-title">Équipe</h3>
       <div class="card-grid">
-        ${employees.map(emp => `<div class="card team-card">
+        ${activeEmployees().slice().sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0)).map(emp => `<div class="card team-card">
           <div class="team-card__head">
             <div class="team-card__info">
               <div class="team-card__name">${icon("user", 14)} ${esc(emp.name || "")}</div>
@@ -432,11 +557,24 @@ function renderEmployes() {
               <button onclick="openEmployeeModal('${emp.id}');closeAllDrops()">${icon("pencil", 14)} Modifier</button>
               <button onclick="duplicateItem('employees','${emp.id}');closeAllDrops()">${icon("copy", 14)} Dupliquer</button>
               <div class="sep"></div>
-              <button class="text-danger" onclick="askDelete('employees','${emp.id}','${esc(emp.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
+              <button class="text-danger" onclick="askDeleteEmployee('${emp.id}','${esc(emp.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
             </div></div>
           </div>
         </div>`).join("")}
-      </div>`}
+      </div>
+
+      ${(() => {
+        const archived = (employees || []).filter(e => e.archived);
+        if (archived.length === 0) return "";
+        return `<div class="archived-emps-banner">
+          <div class="archived-emps-head">${icon("archive", 14)} ${archived.length} employé${archived.length > 1 ? "s" : ""} archivé${archived.length > 1 ? "s" : ""} <span class="archived-emps-hint">(conservé${archived.length > 1 ? "s" : ""} dans l'historique)</span></div>
+          <div class="archived-emps-list">
+            ${archived.map(e => `<span class="archived-emp-chip">${esc(e.name || "?")}
+              <button onclick="restoreEmployee('${e.id}')" title="Restaurer dans l'équipe active">${icon("upload", 11)} Restaurer</button>
+            </span>`).join("")}
+          </div>
+        </div>`;
+      })()}`}
   </div>`;
 }
 
@@ -575,8 +713,8 @@ async function duplicateScheduleToNextWeek() {
     const d = new Date(weekStart); d.setDate(d.getDate() + 7 + i); return dayKey(d);
   });
 
-  // Vérifier si la source a au moins un shift
-  const hasSource = employees.some(emp => {
+  // Vérifier si la source a au moins un shift (employés actifs seulement)
+  const hasSource = activeEmployees().some(emp => {
     const shifts = emp.shifts || {};
     return curDates.some(dk => shifts[dk] && shifts[dk].start);
   });
@@ -586,7 +724,7 @@ async function duplicateScheduleToNextWeek() {
   }
 
   // Vérifier si la cible contient déjà des données
-  const nextHasData = employees.some(emp => {
+  const nextHasData = activeEmployees().some(emp => {
     const shifts = emp.shifts || {};
     return nextDates.some(dk => shifts[dk] && shifts[dk].start);
   });
@@ -596,7 +734,7 @@ async function duplicateScheduleToNextWeek() {
 
   const doCopy = async () => {
     const batch = db.batch();
-    for (const emp of employees) {
+    for (const emp of activeEmployees()) {
       const shifts = { ...(emp.shifts || {}) };
       let changed = false;
       curDates.forEach((curDk, i) => {
@@ -688,8 +826,10 @@ async function empRowDrop(e, targetId) {
   empRowDragEnd();
   if (!srcId || srcId === targetId) return;
 
-  // Recomposer l'ordre des IDs
-  const ids = employees.map(emp => emp.id);
+  // Recomposer l'ordre des IDs à partir de l'ordre AFFICHÉ (lignes visibles
+  // de la semaine courante) — l'ordre est sauvé PAR SEMAINE, pas globalement.
+  const ids = Array.from(document.querySelectorAll(".schedule-empgrid-row[data-emp-id]"))
+    .map(r => r.getAttribute("data-emp-id"));
   const srcIdx = ids.indexOf(srcId);
   const tgtIdx = ids.indexOf(targetId);
   if (srcIdx < 0 || tgtIdx < 0) return;
@@ -700,12 +840,13 @@ async function empRowDrop(e, targetId) {
   insertAt = Math.max(0, Math.min(insertAt, ids.length));
   ids.splice(insertAt, 0, srcId);
 
-  // Batch update Firestore — chaque employé reçoit son nouveau sortOrder
+  // Écrit l'ordre dans settings/schedule.weekOrder[weekKey] (par semaine).
   try {
-    const batch = db.batch();
-    ids.forEach((id, i) => batch.update(db.collection("employees").doc(id), { sortOrder: i }));
-    await batch.commit();
-    toast("Ordre des employés mis à jour.", "success", 1800);
+    const weekKey = scheduleWeekKey();
+    await db.collection("settings").doc("schedule").set({
+      weekOrder: { [weekKey]: ids }
+    }, { merge: true });
+    toast("Ordre mis à jour (cette semaine seulement).", "success", 2200);
   } catch (err) {
     console.error("empRowDrop failed:", err);
     toast("Erreur réordonnancement : " + (err.message || err.code || err), "error", 5000);
@@ -1148,8 +1289,9 @@ function openShiftModal(empId, dk) {
   const endVal = existingShift?.end || "";
 
   // Employés sans shift CE jour-là (pour l'option création) — exclut ceux qui
-  // ont déjà un shift le même jour (un seul shift par employé par jour).
-  const availableEmps = isEdit ? employees.slice() : employees.filter(e => {
+  // ont déjà un shift le même jour (un seul shift par employé par jour) et
+  // les employés archivés (hors équipe active).
+  const availableEmps = isEdit ? employees.slice() : activeEmployees().filter(e => {
     const s = (e.shifts || {})[dk];
     return !(s && s.start && s.end);
   });
@@ -1330,7 +1472,7 @@ function openTimeOffModal(prefillEmpId, prefillDk) {
            <input type="hidden" id="to-emp-id" value="${prefillEmpId}"/>`
         : `<select id="to-emp-id" autofocus>
             <option value="">— Choisir un employé —</option>
-            ${employees.slice().sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0)).map(e => `<option value="${e.id}">${esc(e.name || "")}</option>`).join("")}
+            ${activeEmployees().slice().sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0)).map(e => `<option value="${e.id}">${esc(e.name || "")}</option>`).join("")}
           </select>`
       }
     </label>

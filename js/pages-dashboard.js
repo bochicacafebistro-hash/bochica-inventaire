@@ -442,6 +442,7 @@ function renderDashTodayWidget(now, todayStr) {
 
   // Employés en shift aujourd'hui (depuis employees.shifts indexés par date YYYY-MM-DD)
   const shiftsToday = (typeof employees !== "undefined" ? employees : [])
+    .filter(emp => !emp.archived)
     .map(emp => {
       const s = (emp.shifts || {})[todayStr];
       if (!s || !s.start) return null;
@@ -476,7 +477,7 @@ function renderDashTodayWidget(now, todayStr) {
   let weekGross = 0;
   let weekSales = 0;
   if (typeof employees !== "undefined") {
-    employees.forEach(emp => {
+    employees.filter(emp => !emp.archived).forEach(emp => {
       const rate = Number(emp.hourlyRate) || 0;
       if (emp.isSalaried) {
         weekGross += (Number(emp.fixedWeeklyHours) || 0) * rate;

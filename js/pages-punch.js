@@ -247,7 +247,7 @@ function punchKeyOk() {
     return;
   }
   // Match contre la liste des employés
-  const emp = (employees || []).find(e => e.pin && String(e.pin).trim() === _punchPin);
+  const emp = (employees || []).find(e => !e.archived && e.pin && String(e.pin).trim() === _punchPin);
   if (!emp) {
     _punchErrMessage = t("punch_pin_unknown_full");
     _punchState = "error";

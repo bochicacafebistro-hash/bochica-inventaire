@@ -866,7 +866,7 @@ function updateCmdKResults(query) {
     {
       title: t("search_section_employees"),
       icon: "users",
-      items: employees.filter(e => (e.name || "").toLowerCase().includes(q)).slice(0, 5)
+      items: employees.filter(e => !e.archived && (e.name || "").toLowerCase().includes(q)).slice(0, 5)
         .map(e => ({ label: e.name, sub: e.role || "", page: "employes" }))
     },
     {

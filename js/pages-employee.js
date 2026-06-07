@@ -58,7 +58,7 @@ function renderEmployeeDashboard() {
   const dayDisplay = dayName.charAt(0).toUpperCase() + dayName.slice(1);
 
   // ── Bloc 1 : employés en service aujourd'hui ──────────────────
-  const empList = (typeof employees !== "undefined" ? employees : []);
+  const empList = (typeof activeEmployees === "function" ? activeEmployees() : (typeof employees !== "undefined" ? employees : []));
   const shiftsToday = empList
     .map(emp => {
       const s = (emp.shifts || {})[todayStr];
@@ -205,7 +205,7 @@ function renderEmployeeSchedule() {
   const weekDays = visibleIdx.map(i => weekDaysAll[i]);
   const nCols = visibleIdx.length;
 
-  const empList = (typeof employees !== "undefined" ? employees : []);
+  const empList = (typeof activeEmployees === "function" ? activeEmployees() : (typeof employees !== "undefined" ? employees : []));
 
   // Pré-calcul : lignes employés avec leurs shifts du jour.
   // (On n'affiche PAS le nombre d'heures travaillées — seulement les

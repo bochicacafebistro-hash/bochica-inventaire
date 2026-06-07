@@ -165,7 +165,9 @@ db.collection("settings").doc("schedule").onSnapshot(snap => {
   scheduleSettings = {
     salesRatio: typeof data.salesRatio === "number" ? data.salesRatio : 0.32,
     actualSales: data.actualSales || {},
-    openDays: Array.isArray(data.openDays) ? data.openDays : [0, 1, 2, 3, 4, 5, 6]
+    openDays: Array.isArray(data.openDays) ? data.openDays : [0, 1, 2, 3, 4, 5, 6],
+    weekOrder: data.weekOrder || {},
+    weekHidden: data.weekHidden || {}
   };
   if (shouldRender("settings/schedule", "employes", "salaires", "simulations", "mon-horaire")) renderPage();
 });

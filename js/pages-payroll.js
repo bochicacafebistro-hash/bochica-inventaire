@@ -75,9 +75,26 @@ function getManualEmployees() {
 // Liste fusionnée employés réels + extras + tri par empOrder.
 // Si empOrder est absent ou incomplet, fallback sur l'ordre "réels d'abord
 // (par sortOrder), puis extras dans leur ordre d'insertion".
+// Employés masqués pour la semaine de paie courante.
+function getPayrollHidden() {
+  return Array.isArray(payrollWeekData?.hiddenEmps) ? payrollWeekData.hiddenEmps : [];
+}
+// Un employé a-t-il des heures réelles saisies cette semaine de paie ?
+function hasActualThisPayrollWeek(empId) {
+  const a = (payrollWeekData?.actualShifts || {})[empId];
+  return !!(a && Object.keys(a).length > 0);
+}
 function getAllPayrollEmployees() {
   const manual = getManualEmployees();
-  const all = [...employees, ...manual];
+  const hidden = new Set(getPayrollHidden());
+  // Employés réels : on retire les masqués de la semaine, et les archivés
+  // SAUF s'ils ont des heures cette semaine (préservation de l'historique).
+  const reals = (typeof employees !== "undefined" ? employees : []).filter(e => {
+    if (hidden.has(e.id)) return false;
+    if (!e.archived) return true;
+    return hasActualThisPayrollWeek(e.id);
+  });
+  const all = [...reals, ...manual.filter(m => !hidden.has(m.id))];
   const order = Array.isArray(payrollWeekData?.empOrder) ? payrollWeekData.empOrder : [];
   if (order.length === 0) return all;
   // Tri stable : on respecte l'ordre déclaré pour ceux qui sont dans order,
@@ -98,6 +115,42 @@ function getAllPayrollEmployees() {
 function isManualEmployee(emp) {
   if (!emp) return false;
   return getManualEmployees().some(m => m.id === emp.id);
+}
+
+// ─ Masquer / réafficher un employé pour la semaine de paie courante ─
+// Stocké dans payroll/{weekId}.hiddenEmps[]. N'affecte pas les autres semaines.
+async function hideEmpFromPayrollWeek(empId) {
+  if (payrollWeekData?.locked) return toast("Semaine verrouillée — déverrouille d'abord.", "warning");
+  const cur = getPayrollHidden();
+  if (cur.includes(empId)) return;
+  try {
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    await db.collection("payroll").doc(wid).set({
+      weekId: wid, weekStart: dayKey(ws),
+      hiddenEmps: [...cur, empId],
+      updatedAt: Date.now()
+    }, { merge: true });
+    const emp = employees.find(e => e.id === empId);
+    toast(`${emp ? emp.name : "Employé"} retiré de cette semaine de paie (réversible).`, "success", 3000);
+  } catch (err) {
+    console.error("hideEmpFromPayrollWeek failed:", err);
+    toast("Erreur : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+async function unhideEmpFromPayrollWeek(empId) {
+  try {
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    await db.collection("payroll").doc(wid).set({
+      weekId: wid, weekStart: dayKey(ws),
+      hiddenEmps: getPayrollHidden().filter(id => id !== empId),
+      updatedAt: Date.now()
+    }, { merge: true });
+  } catch (err) {
+    console.error("unhideEmpFromPayrollWeek failed:", err);
+    toast("Erreur : " + (err.message || err.code || err), "error", 5000);
+  }
 }
 
 // ID de semaine ISO au format "YYYY-Wnn" (ex: "2026-W18")
@@ -892,6 +945,19 @@ function renderSalaires() {
         </div>
       </div>
 
+      ${(() => {
+        const hiddenIds = getPayrollHidden();
+        if (hiddenIds.length === 0) return "";
+        return `<div class="week-hidden-banner">
+          <span class="week-hidden-label">${icon("eye-off", 13)} Masqué${hiddenIds.length > 1 ? "s" : ""} cette semaine :</span>
+          ${hiddenIds.map(id => {
+            const e = employees.find(x => x.id === id);
+            if (!e) return "";
+            return `<button class="week-hidden-chip" onclick="unhideEmpFromPayrollWeek('${id}')" title="Réafficher dans cette semaine de paie">${esc(e.name || "?")} ${icon("plus", 11)}</button>`;
+          }).join("")}
+        </div>`;
+      })()}
+
       <!-- ══ Grille empgrid Salaires & Pourboires (v3.27.0) ══ -->
       <div class="schedule-empgrid payroll-empgrid" style="--n-days:${weekDays.length};">
         <!-- Header -->
@@ -927,12 +993,14 @@ function renderSalaires() {
             ondrop="payrollRowDrop(event,'${row.emp.id}')"
             ondragend="payrollRowDragEnd(event)"`}>
             <!-- Cellule employé : drag + nom + EXTRA + section + rate + trash -->
-            <div class="schedule-empgrid-emp payroll-empgrid-emp ${groupClass}">
+            <div class="schedule-empgrid-emp payroll-empgrid-emp ${groupClass} ${row.emp.archived ? "is-archived-emp" : ""}">
               <div class="payroll-empgrid-emp-row">
                 ${isLocked ? "" : `<span class="payroll-drag-handle" draggable="true" ondragstart="payrollRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 12)}</span>`}
                 <span class="schedule-empgrid-emp-name">${esc(row.emp.name || "")}</span>
                 ${row.isManual ? `<span class="payroll-manual-badge">EXTRA</span>` : ""}
+                ${row.emp.archived ? `<span class="emp-archived-badge" title="Employé archivé — affiché car il a des heures cette semaine">${icon("archive", 10)} Archivé</span>` : ""}
                 ${row.isManual && !isLocked ? `<button class="payroll-manual-del" onclick="removeManualEmployee('${row.emp.id}')" title="Retirer cet extra" aria-label="Retirer cet extra">${icon("trash", 11)}</button>` : ""}
+                ${!row.isManual && !isLocked ? `<button class="emp-week-remove" onclick="hideEmpFromPayrollWeek('${row.emp.id}')" title="Retirer de cette semaine de paie (n'affecte pas les autres semaines)" aria-label="Retirer ${esc(row.emp.name || "")} de cette semaine">${icon("x", 12)}</button>` : ""}
               </div>
               <div class="payroll-empgrid-emp-meta">
                 <select class="payroll-section-select ${groupClass} ${isOverridden ? "is-overridden" : ""}"

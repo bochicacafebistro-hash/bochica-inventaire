@@ -9370,6 +9370,103 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   v3.38.0 — Ordre/masquage par semaine + employés archivés
+   ═══════════════════════════════════════════════════════════════ */
+/* Bouton « retirer de cette semaine » sur la cellule employé (hover) */
+.schedule-empgrid-emp{ position:relative; }
+.emp-week-remove{
+  position:absolute;
+  top:4px; right:4px;
+  display:inline-flex;
+  align-items:center; justify-content:center;
+  width:18px; height:18px;
+  padding:0;
+  border:none;
+  border-radius:var(--radius-sm);
+  background:transparent;
+  color:var(--text3);
+  cursor:pointer;
+  opacity:0;
+  transition:all var(--transition-fast);
+}
+.schedule-empgrid-emp:hover .emp-week-remove{ opacity:.7; }
+.emp-week-remove:hover{ opacity:1; background:rgba(217,83,79,.14); color:#d9534f; }
+.emp-archived-badge{
+  display:inline-flex; align-items:center; gap:2px;
+  font-family:var(--font-mono);
+  font-size:9px; font-weight:600;
+  text-transform:uppercase; letter-spacing:.03em;
+  padding:1px 5px;
+  border-radius:var(--radius-pill);
+  background:var(--surface3);
+  color:var(--text3);
+  margin-left:4px;
+}
+.schedule-empgrid-emp.is-archived-emp{ opacity:.78; }
+
+/* Bandeau « masqués cette semaine » */
+.week-hidden-banner{
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px;
+  padding:8px 12px;
+  margin-bottom:var(--sp-3);
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+}
+.week-hidden-label{
+  display:inline-flex; align-items:center; gap:5px;
+  font-size:12px; font-weight:600; color:var(--text2);
+}
+.week-hidden-chip{
+  display:inline-flex; align-items:center; gap:4px;
+  font-size:12px; font-weight:600;
+  padding:3px 9px;
+  border:1px dashed var(--border-strong, rgba(14,13,12,.25));
+  border-radius:var(--radius-pill);
+  background:var(--surface);
+  color:var(--text);
+  cursor:pointer;
+  transition:all var(--transition-fast);
+}
+.week-hidden-chip:hover{ border-color:var(--accent); border-style:solid; background:var(--accent-soft); color:var(--accent-text); }
+
+/* Bandeau employés archivés (bas de page Équipe) */
+.archived-emps-banner{
+  margin-top:var(--sp-4);
+  padding:12px 14px;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+}
+.archived-emps-head{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:13px; font-weight:700; color:var(--text2);
+  margin-bottom:8px;
+}
+.archived-emps-hint{ font-weight:400; color:var(--text3); }
+.archived-emps-list{ display:flex; flex-wrap:wrap; gap:8px; }
+.archived-emp-chip{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:12px; font-weight:600; color:var(--text);
+  padding:4px 6px 4px 10px;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-pill);
+}
+.archived-emp-chip button{
+  display:inline-flex; align-items:center; gap:3px;
+  font-size:11px; font-weight:600;
+  padding:2px 8px;
+  border:none;
+  border-radius:var(--radius-pill);
+  background:var(--accent-soft);
+  color:var(--accent-warm);
+  cursor:pointer;
+  transition:all var(--transition-fast);
+}
+.archived-emp-chip button:hover{ background:var(--accent); color:var(--accent-text); }
+
+/* ═══════════════════════════════════════════════════════════════
    v3.26.0 — Adaptations empgrid pour Simulation paie
    ═══════════════════════════════════════════════════════════════
    La grille empgrid de la sim est plus large : cellule employé

@@ -291,7 +291,8 @@ async function confirmCreateSimFromPlanned() {
   const baseWeekRef = `${weekStart.getFullYear()}-W${String(weekNum).padStart(2, "0")}`;
 
   // Snapshot des employés : conversion shifts par date → par index de jour
-  const empSnapshots = employees.map(emp => ({
+  // (employés archivés exclus du scénario de base)
+  const empSnapshots = (typeof activeEmployees === "function" ? activeEmployees() : employees).map(emp => ({
     id: emp.id,
     name: emp.name || "",
     section: emp.section || "service",

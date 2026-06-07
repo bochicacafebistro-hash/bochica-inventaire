@@ -216,7 +216,7 @@ async function cycleTaskStatus(id, current) {
 // ── Modal Tâche ───────────────────────────────────────
 function openTaskModal(id, defaultCol) {
   const tk = id ? tasks.find(x => x.id === id) : null;
-  const empNames = employees.map(e => e.name || "").filter(Boolean);
+  const empNames = employees.filter(e => !e.archived).map(e => e.name || "").filter(Boolean);
   showModal(`<div class="modal">
     <div class="modal-header"><h3>${tk ? t("task_modal_edit") : t("task_modal_add")}</h3><button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button></div>
     <label>${t("task_field_title")}<input id="t-title" value="${esc(tk?.title || "")}"/></label>
