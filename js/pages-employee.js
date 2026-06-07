@@ -271,9 +271,22 @@ function renderEmployeeSchedule() {
               </div>
             </div>
             ${row.daily.map((d, k) => {
-              const isToday = dayKey(weekDays[k]) === todayStr;
+              const dkCell = dayKey(weekDays[k]);
+              const isToday = dkCell === todayStr;
               const s = d.shift;
               const hasShift = s && s.start && s.end;
+              // ─ Congé approuvé ─
+              const leave = (typeof getTimeOff === "function") ? getTimeOff(emp.id, dkCell) : null;
+              if (leave && !hasShift) {
+                const lm = (typeof leaveTypeMeta === "function") ? leaveTypeMeta(leave.type) : { color: "#0d9488" };
+                const lLabel = (typeof leaveTypeLabel === "function") ? leaveTypeLabel(leave.type) : t("shift_leave");
+                return `<div class="schedule-empgrid-cell schedule-empgrid-cell--leave ${isToday ? "is-today-col" : ""}">
+                  <div class="shift-card shift-card--leave shift-card--readonly" style="--leave-color:${lm.color}">
+                    <div class="shift-leave-label">${icon("sun", 11)} ${t("shift_leave")}</div>
+                    <div class="shift-leave-type">${esc(lLabel)}</div>
+                  </div>
+                </div>`;
+              }
               if (!hasShift) {
                 return `<div class="schedule-empgrid-cell schedule-empgrid-cell--empty ${isToday ? "is-today-col" : ""}">
                   <div class="shift-card shift-card--off shift-card--readonly">

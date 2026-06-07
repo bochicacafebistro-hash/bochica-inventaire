@@ -81,6 +81,42 @@ function buildTimeOptions(selectedValue) {
   return html;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Congés approuvés (v3.37.0)
+// ═══════════════════════════════════════════════════════════════
+// Modèle : employees[id].timeOff[dk] = { type, note, createdAt }
+// Un jour en congé est VERROUILLÉ : on ne peut pas y assigner de quart
+// (horaire + salaires) et il s'affiche « Congé » partout.
+
+// Retourne l'objet congé d'un employé pour un jour (ou null).
+function getTimeOff(empId, dk) {
+  const emp = employees.find(e => e.id === empId);
+  if (!emp) return null;
+  return (emp.timeOff || {})[dk] || null;
+}
+// Raccourci booléen.
+function isTimeOff(empId, dk) {
+  return !!getTimeOff(empId, dk);
+}
+// Métadonnées d'un type de congé (objet de LEAVE_TYPES) — fallback « Congé ».
+function leaveTypeMeta(type) {
+  return (typeof LEAVE_TYPES !== "undefined" ? LEAVE_TYPES : []).find(l => l.id === type)
+    || { id: type || "", label: "Congé", labelEs: "Descanso", color: "#0d9488" };
+}
+// Libellé localisé d'un type de congé (FR/ES selon la locale UI si dispo).
+function leaveTypeLabel(type) {
+  const m = leaveTypeMeta(type);
+  const es = (typeof uiLang !== "undefined" && uiLang === "es");
+  return es ? m.labelEs : m.label;
+}
+// Options <select> des types de congé.
+function buildLeaveTypeOptions(selected) {
+  const sel = selected || "vacances";
+  return (typeof LEAVE_TYPES !== "undefined" ? LEAVE_TYPES : [])
+    .map(l => `<option value="${l.id}" ${l.id === sel ? "selected" : ""}>${l.label}</option>`)
+    .join("");
+}
+
 // Navigation semaine
 function changeScheduleWeek(delta) {
   scheduleWeekOffset += delta;
@@ -167,6 +203,7 @@ function renderEmployes() {
         <div class="schedule-actions">
           <!-- Actions fréquentes (visibles pour tous les admins) -->
           <button class="btn-secondary btn-sm" onclick="openOpenDaysModal()" title="Choisir les jours d'ouverture">${icon("calendar", 14)} Jours ouverts</button>
+          <button class="btn-secondary btn-sm" onclick="openTimeOffModal()" title="Marquer un employé en congé sur une ou plusieurs journées (bloque l'assignation de quarts)">${icon("sun", 14)} Ajouter un congé</button>
           <button class="btn-secondary btn-sm" onclick="duplicateScheduleToNextWeek()" title="Copier cet horaire vers la semaine suivante">${icon("copy", 14)} Copier → S${weekNum + 1}</button>
           <button class="btn-secondary btn-sm" onclick="exportScheduleAsPNG()" title="Télécharger une image PNG de l'horaire pour partager avec l'équipe (sans aucune donnée financière, exclut les employés en congé toute la semaine)">${icon("download", 14)} PNG pour équipe</button>
           ${userRole === "global_admin" ? `<button class="btn-secondary btn-sm" onclick="exportScheduleAsPNGAdmin()" title="Rapport admin complet : taux horaire, coût par shift, totaux semaine, ventes prévues. À usage interne — ne pas partager avec l'équipe.">${icon("download", 14)} PNG admin</button>` : ""}
@@ -239,6 +276,22 @@ function renderEmployes() {
               const dk = dayKey(weekDays[k]);
               const s = d.shift;
               const hasShift = s && s.start && s.end;
+              // ─ Congé approuvé : carte verrouillée, pas de quart possible ─
+              const leave = getTimeOff(row.emp.id, dk);
+              if (leave) {
+                const lm = leaveTypeMeta(leave.type);
+                const noteTxt = leave.note ? ` — ${esc(leave.note)}` : "";
+                return `<div class="schedule-empgrid-cell schedule-empgrid-cell--leave"
+                    data-day-key="${dk}"
+                    title="En congé (${esc(leaveTypeLabel(leave.type))})${noteTxt} — aucun quart possible ce jour-là. Cliquer pour modifier ou retirer.">
+                  <div class="shift-card shift-card--leave"
+                      style="--leave-color:${lm.color}"
+                      onclick="openTimeOffCellModal('${row.emp.id}','${dk}')">
+                    <div class="shift-leave-label">${icon("sun", 11)} Congé</div>
+                    <div class="shift-leave-type">${esc(leaveTypeLabel(leave.type))}</div>
+                  </div>
+                </div>`;
+              }
               if (!hasShift) {
                 return `<div class="schedule-empgrid-cell schedule-empgrid-cell--empty"
                     data-day-key="${dk}"
@@ -248,7 +301,7 @@ function renderEmployes() {
                   <div class="shift-card shift-card--off"
                       onclick="openShiftModal('${row.emp.id}','${dk}')"
                       title="Aucun shift ce jour-là — cliquer pour ajouter">
-                    <div class="shift-off-label">Congé</div>
+                    <div class="shift-off-label">Libre</div>
                     <div class="shift-off-add">${icon("plus", 11)} Ajouter</div>
                   </div>
                 </div>`;
@@ -1128,7 +1181,10 @@ function openShiftModal(empId, dk) {
       </label>
     </div>
     <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3)">
-      ${isEdit ? `<button class="btn-cancel" style="color:#a23a36" onclick="deleteShift('${empId}','${dk}')">${icon("trash", 14)} Supprimer</button>` : `<div></div>`}
+      <div style="display:flex;gap:var(--sp-2)">
+        ${(isEdit && startVal && endVal) ? `<button class="btn-cancel" style="color:#a23a36" onclick="deleteShift('${empId}','${dk}')">${icon("trash", 14)} Supprimer</button>` : ""}
+        ${isEdit ? `<button class="btn-cancel" onclick="closeModal();openTimeOffModal('${empId}','${dk}')" title="Marquer cette journée en congé (retire le quart s'il y en a un)">${icon("sun", 14)} Marquer en congé</button>` : ""}
+      </div>
       <div style="display:flex;gap:var(--sp-2)">
         <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
         <button class="btn btn-primary" onclick="saveShiftFromModal('${dk}')">${icon("check", 14)} ${isEdit ? "Enregistrer" : "Ajouter"}</button>
@@ -1142,6 +1198,10 @@ async function saveShiftFromModal(dk) {
   const empIdEl = document.getElementById("shift-emp-id");
   const empId = empIdEl ? empIdEl.value : "";
   if (!empId) return toast("Choisis un employé.", "warning");
+  if (isTimeOff(empId, dk)) {
+    const emp = employees.find(e => e.id === empId);
+    return toast(`${emp ? emp.name : "Cet employé"} est en congé ce jour-là — retire le congé d'abord pour assigner un quart.`, "warning", 4500);
+  }
   const start = document.getElementById("shift-start").value;
   const end = document.getElementById("shift-end").value;
   if (!start || !end) return toast("Saisis l'entrée et la sortie.", "warning");
@@ -1219,6 +1279,10 @@ async function shiftCardDrop(e, targetDk) {
   if (!empId || !fromDk || fromDk === targetDk) return;
   const emp = employees.find(x => x.id === empId);
   if (!emp) return;
+  // Cible en congé → on bloque (un jour de congé ne peut pas recevoir de quart)
+  if (isTimeOff(empId, targetDk)) {
+    return toast(`${emp.name} est en congé ce jour-là — impossible d'y déplacer un quart.`, "warning", 4000);
+  }
   const srcShift = (emp.shifts || {})[fromDk];
   if (!srcShift || !srcShift.start || !srcShift.end) return;
   // Si la cible a déjà un shift pour cet employé, on demande confirmation
@@ -1237,6 +1301,180 @@ async function shiftCardDrop(e, targetDk) {
   } catch (err) {
     console.error("shiftCardDrop failed:", err);
     toast("Erreur déplacement : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// Congés approuvés — modals de saisie (v3.37.0)
+// ═══════════════════════════════════════════════════════════════
+
+// Modal principal : marquer un employé en congé sur une plage de dates.
+// prefillEmpId / prefillDk (optionnels) — viennent du raccourci « Marquer
+// en congé » d'une cellule de la grille (employé + jour figés).
+function openTimeOffModal(prefillEmpId, prefillDk) {
+  const emp = prefillEmpId ? employees.find(e => e.id === prefillEmpId) : null;
+  const fixedEmp = !!emp;
+  const defDate = prefillDk || dayKey(new Date());
+
+  showModal(`<div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <h3>${icon("sun", 18)} Ajouter un congé</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
+    </div>
+    <p style="color:var(--text2);font-size:13px;margin:0 0 var(--sp-3)">
+      Les journées choisies seront verrouillées : impossible d'y assigner un quart. Les quarts déjà présents ces jours-là seront retirés.
+    </p>
+    <label>Employé
+      ${fixedEmp
+        ? `<input type="text" value="${esc(emp.name || "")}" disabled style="background:var(--surface2);color:var(--text2);cursor:not-allowed"/>
+           <input type="hidden" id="to-emp-id" value="${prefillEmpId}"/>`
+        : `<select id="to-emp-id" autofocus>
+            <option value="">— Choisir un employé —</option>
+            ${employees.slice().sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0)).map(e => `<option value="${e.id}">${esc(e.name || "")}</option>`).join("")}
+          </select>`
+      }
+    </label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin-top:var(--sp-2)">
+      <label>Du
+        <input type="date" id="to-start" value="${defDate}"/>
+      </label>
+      <label>Au
+        <input type="date" id="to-end" value="${defDate}"/>
+      </label>
+    </div>
+    <label style="margin-top:var(--sp-2);display:block">Type
+      <select id="to-type">${buildLeaveTypeOptions("vacances")}</select>
+    </label>
+    <label style="margin-top:var(--sp-2);display:block">Note (optionnel)
+      <input type="text" id="to-note" placeholder="ex. demandé le 1er mai" maxlength="120"/>
+    </label>
+    <div class="modal-actions" style="display:flex;justify-content:flex-end;gap:var(--sp-2);margin-top:var(--sp-3)">
+      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveTimeOffFromModal()">${icon("check", 14)} Enregistrer</button>
+    </div>
+  </div>`);
+}
+
+// Liste les clés jour "YYYY-MM-DD" entre deux dates incluses (max 366).
+function _dkRange(startDk, endDk) {
+  const [sy, sm, sd] = startDk.split("-").map(Number);
+  const [ey, em, ed] = endDk.split("-").map(Number);
+  const start = new Date(sy, sm - 1, sd);
+  const end = new Date(ey, em - 1, ed);
+  if (end < start) return [];
+  const out = [];
+  const cur = new Date(start);
+  let guard = 0;
+  while (cur <= end && guard < 366) {
+    out.push(dayKey(cur));
+    cur.setDate(cur.getDate() + 1);
+    guard++;
+  }
+  return out;
+}
+
+// Sauve le congé saisi dans la modale (plage de dates).
+async function saveTimeOffFromModal() {
+  const empId = (document.getElementById("to-emp-id") || {}).value || "";
+  if (!empId) return toast("Choisis un employé.", "warning");
+  const startDk = (document.getElementById("to-start") || {}).value || "";
+  const endDk = (document.getElementById("to-end") || {}).value || "";
+  if (!startDk || !endDk) return toast("Choisis les dates de début et de fin.", "warning");
+  const days = _dkRange(startDk, endDk);
+  if (days.length === 0) return toast("La date de fin doit être après la date de début.", "warning");
+  const type = (document.getElementById("to-type") || {}).value || "vacances";
+  const note = ((document.getElementById("to-note") || {}).value || "").trim();
+
+  const emp = employees.find(e => e.id === empId);
+  const existingShifts = emp ? (emp.shifts || {}) : {};
+
+  const timeOffPayload = {};
+  const shiftsPayload = {};
+  let removedShifts = 0;
+  const now = Date.now();
+  for (const dk of days) {
+    timeOffPayload[dk] = { type, note, createdAt: now };
+    if (existingShifts[dk] && existingShifts[dk].start && existingShifts[dk].end) {
+      shiftsPayload[dk] = firebase.firestore.FieldValue.delete();
+      removedShifts++;
+    }
+  }
+
+  try {
+    const payload = { timeOff: timeOffPayload };
+    if (removedShifts > 0) payload.shifts = shiftsPayload;
+    await db.collection("employees").doc(empId).set(payload, { merge: true });
+    await addLog("—", "Congé ajouté", `${emp ? emp.name : empId} · ${days.length} jour(s) · ${leaveTypeLabel(type)}`);
+    closeModal();
+    let msg = `Congé enregistré · ${days.length} jour${days.length > 1 ? "s" : ""}`;
+    if (removedShifts > 0) msg += ` · ${removedShifts} quart${removedShifts > 1 ? "s" : ""} retiré${removedShifts > 1 ? "s" : ""}`;
+    toast(msg, "success", 4000);
+  } catch (err) {
+    console.error("saveTimeOffFromModal failed:", err);
+    toast("Erreur sauvegarde congé : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// Modal d'une cellule en congé : modifier le type / la note ou retirer.
+function openTimeOffCellModal(empId, dk) {
+  const emp = employees.find(e => e.id === empId);
+  const leave = getTimeOff(empId, dk);
+  if (!emp || !leave) return;
+  const [yy, mm, ddNum] = dk.split("-").map(Number);
+  const dayLabel = new Date(yy, mm - 1, ddNum).toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
+
+  showModal(`<div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h3>${icon("sun", 18)} Congé — ${esc(emp.name || "")}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
+    </div>
+    <p style="color:var(--text2);font-size:13px;margin:0 0 var(--sp-3);text-transform:capitalize">
+      ${icon("calendar", 12)} ${dayLabel}
+    </p>
+    <label>Type
+      <select id="toc-type">${buildLeaveTypeOptions(leave.type)}</select>
+    </label>
+    <label style="margin-top:var(--sp-2);display:block">Note (optionnel)
+      <input type="text" id="toc-note" value="${esc(leave.note || "")}" maxlength="120"/>
+    </label>
+    <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3)">
+      <button class="btn-cancel" style="color:#a23a36" onclick="removeTimeOff('${empId}','${dk}')">${icon("trash", 14)} Retirer le congé</button>
+      <div style="display:flex;gap:var(--sp-2)">
+        <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+        <button class="btn btn-primary" onclick="updateTimeOffCell('${empId}','${dk}')">${icon("check", 14)} Enregistrer</button>
+      </div>
+    </div>
+  </div>`);
+}
+
+// Met à jour le type / la note d'un seul jour de congé.
+async function updateTimeOffCell(empId, dk) {
+  const type = (document.getElementById("toc-type") || {}).value || "vacances";
+  const note = ((document.getElementById("toc-note") || {}).value || "").trim();
+  const existing = getTimeOff(empId, dk) || {};
+  try {
+    await db.collection("employees").doc(empId).set({
+      timeOff: { [dk]: { type, note, createdAt: existing.createdAt || Date.now() } }
+    }, { merge: true });
+    closeModal();
+    toast("Congé mis à jour.", "success", 2500);
+  } catch (err) {
+    console.error("updateTimeOffCell failed:", err);
+    toast("Erreur : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// Retire le congé d'un jour (la journée redevient assignable).
+async function removeTimeOff(empId, dk) {
+  try {
+    await db.collection("employees").doc(empId).set({
+      timeOff: { [dk]: firebase.firestore.FieldValue.delete() }
+    }, { merge: true });
+    closeModal();
+    toast("Congé retiré.", "success", 2500);
+  } catch (err) {
+    console.error("removeTimeOff failed:", err);
+    toast("Erreur : " + (err.message || err.code || err), "error", 5000);
   }
 }
 

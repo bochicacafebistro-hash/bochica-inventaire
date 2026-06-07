@@ -9316,6 +9316,60 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   v3.37.0 — Carte « Congé » approuvé (jour verrouillé)
+   ═══════════════════════════════════════════════════════════════
+   Distincte de --off (jour libre, dashed) : carte pleine teintée
+   avec la couleur du type de congé (--leave-color), barre latérale
+   marquée, look « verrouillé ». Cliquable (admin) pour modifier. */
+.shift-card.shift-card--leave{
+  --leave-color:#0d9488;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  padding:6px 8px;
+  background:color-mix(in srgb, var(--leave-color) 12%, transparent);
+  border:1px solid color-mix(in srgb, var(--leave-color) 35%, transparent);
+  border-left:3px solid var(--leave-color);
+  border-top-left-radius:0;
+  border-bottom-left-radius:0;
+  border-top-right-radius:var(--radius-md);
+  border-bottom-right-radius:var(--radius-md);
+  color:var(--leave-color);
+  cursor:pointer;
+  transition:all var(--transition-base);
+  min-height:44px;
+}
+.shift-card.shift-card--leave.shift-card--readonly{
+  cursor:default;
+}
+.shift-card.shift-card--leave:not(.shift-card--readonly):hover{
+  background:color-mix(in srgb, var(--leave-color) 20%, transparent);
+  border-color:var(--leave-color);
+}
+.shift-leave-label{
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  line-height:1;
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  margin-bottom:2px;
+}
+.shift-leave-type{
+  font-family:var(--font-body);
+  font-size:9px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  opacity:.85;
+}
+
+/* ═══════════════════════════════════════════════════════════════
    v3.26.0 — Adaptations empgrid pour Simulation paie
    ═══════════════════════════════════════════════════════════════
    La grille empgrid de la sim est plus large : cellule employé

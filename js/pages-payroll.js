@@ -305,7 +305,8 @@ function detectPayrollAnomalies(empRows, isLocked) {
       // 3. Planifié mais pas pointé sur jour passé → no-show ou oubli de pointer entrée
       //    Skip si markedAbsent : l'admin a déjà confirmé que l'employé n'est pas
       //    venu, donc plus d'alerte (la cellule grise « ABSENT » suffit comme signal).
-      if (isPast && !d.actualShift?.start && !d.actualShift?.end && !d.actualShift?.markedAbsent && d.plannedShift?.start && d.plannedShift?.end) {
+      const onLeave = (typeof isTimeOff === "function") && isTimeOff(row.emp.id, d.dk);
+      if (isPast && !onLeave && !d.actualShift?.start && !d.actualShift?.end && !d.actualShift?.markedAbsent && d.plannedShift?.start && d.plannedShift?.end) {
         alerts.push({
           type: "scheduled-not-punched",
           severity: "info",
@@ -380,6 +381,8 @@ async function autoFillMissingExits(empRows, isLocked) {
 
       // Pas de planifié → on ne peut pas deviner les heures, skip
       if (!p?.start || !p?.end) continue;
+      // Employé en congé approuvé ce jour-là → ne jamais auto-remplir
+      if ((typeof isTimeOff === "function") && isTimeOff(row.emp.id, d.dk)) continue;
 
       const hasStart = !!a?.start;
       const hasEnd = !!a?.end;
@@ -1001,6 +1004,23 @@ function renderSalaires() {
                     <div class="shift-card-meta">
                       <span class="shift-card-partial-tag">${inProgress ? "En cours" : "Partiel"}</span>
                     </div>
+                  </div>
+                </div>`;
+              }
+
+              // ─ Cas 1.5 : congé approuvé (et aucun pointage réel) ─
+              // Si l'employé a quand même pointé malgré le congé, on laisse
+              // les cas filled/partial gérer l'affichage (on le voit travailler).
+              const leave = (typeof getTimeOff === "function") ? getTimeOff(row.emp.id, dk) : null;
+              if (leave && !filled) {
+                const lm = (typeof leaveTypeMeta === "function") ? leaveTypeMeta(leave.type) : { color: "#0d9488" };
+                const lLabel = (typeof leaveTypeLabel === "function") ? leaveTypeLabel(leave.type) : "Congé";
+                return `<div class="schedule-empgrid-cell schedule-empgrid-cell--leave"
+                    data-day-key="${dk}"
+                    title="En congé (${esc(lLabel)})${leave.note ? " — " + esc(leave.note) : ""} — aucune heure à saisir">
+                  <div class="shift-card shift-card--leave" style="--leave-color:${lm.color}">
+                    <div class="shift-leave-label">${icon("sun", 11)} Congé</div>
+                    <div class="shift-leave-type">${esc(lLabel)}</div>
                   </div>
                 </div>`;
               }

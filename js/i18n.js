@@ -219,7 +219,8 @@ const TRANSLATIONS = {
   shift_morning:         { fr: "Matin",               es: "Mañana" },
   shift_evening:         { fr: "Soir",                es: "Tarde" },
   shift_day:             { fr: "Journée",             es: "Día" },
-  shift_off:             { fr: "Congé",               es: "Libre" },
+  shift_off:             { fr: "Libre",               es: "Libre" },
+  shift_leave:           { fr: "Congé",               es: "Descanso" },
 
   // ── Salaires & Pourboires ────────────────────────
   pay_title:             { fr: "Salaires & Pourboires", es: "Salarios y Propinas" },
@@ -622,7 +623,7 @@ function tShift(label) {
     "Matin": t("shift_morning"),
     "Soir": t("shift_evening"),
     "Journée": t("shift_day"),
-    "Congé": t("shift_off"),
+    "Congé": t("shift_leave"),
   };
   return map[label] || label;
 }

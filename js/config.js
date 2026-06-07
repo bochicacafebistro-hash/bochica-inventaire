@@ -111,3 +111,15 @@ const SHIFT_TYPES = [
   { label: "Journée", color: "#22c55e" },
   { label: "Congé",   color: "#94a3b8" }
 ];
+
+// ── Types de congé / absence approuvée (v3.37.0) ──────
+// Un congé approuvé est stocké dans employees[id].timeOff[dk] = { type, note, createdAt }
+// (dk = clé jour "YYYY-MM-DD"). Il VERROUILLE le jour : impossible d'assigner
+// un quart ce jour-là (horaire ET salaires), et il s'affiche « Congé » partout.
+// `id` = valeur stockée · `label` FR · `labelEs` ES · `color` = teinte de la carte.
+const LEAVE_TYPES = [
+  { id: "vacances",   label: "Vacances",   labelEs: "Vacaciones", color: "#0d9488" },
+  { id: "maladie",    label: "Maladie",    labelEs: "Enfermedad", color: "#d97706" },
+  { id: "personnel",  label: "Personnel",  labelEs: "Personal",   color: "#7c3aed" },
+  { id: "sans_solde", label: "Sans solde", labelEs: "Sin sueldo", color: "#64748b" }
+];
