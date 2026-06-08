@@ -1809,12 +1809,13 @@ async function exportScheduleAsPNG() {
   const visibleIdx = [0,1,2,3,4,5,6].filter(i => openDays.includes(i));
   const weekDays = visibleIdx.map(i => weekDaysAll[i]);
 
-  // v3.32.0 — On exclut les employés qui n'ont AUCUN shift sur les jours
-  // visibles (ex: employé en vacances ou en congé toute la semaine).
-  // Inutile de polluer le PNG affiché à l'équipe avec une ligne « Congé
-  // Congé Congé… ». Si tu veux quand même voir ces employés, utilise
-  // le rapport admin complet.
-  const empsWithShifts = employees.filter(emp => {
+  // v3.43.1 — Même ordre que l'affichage : on part de la liste visible de la
+  // semaine (ordre par semaine `weekOrder`, masqués `weekHidden` retirés,
+  // archivés seulement s'ils ont travaillé) puis on exclut ceux sans aucun
+  // shift sur les jours visibles (vacances/congé toute la semaine) — pour ne
+  // pas polluer le PNG équipe avec une ligne « Congé Congé Congé… ».
+  const weekKey = dayKey(weekStart);
+  const empsWithShifts = visibleScheduleEmployees(weekDays, weekKey).filter(emp => {
     const shifts = emp.shifts || {};
     return weekDays.some(d => {
       const s = shifts[dayKey(d)];
@@ -1955,9 +1956,12 @@ async function exportScheduleAsPNGAdmin() {
   const weekDays = visibleIdx.map(i => weekDaysAll[i]);
   const nbOpenDays = weekDays.length || 1;
 
-  // Filtre : exclure les employés sans aucun shift sur la semaine
-  // (vacances, congé toute la semaine) — cohérent avec le PNG équipe.
-  const empsWithShifts = employees.filter(emp => {
+  // v3.43.1 — Même ordre que l'affichage (visibleScheduleEmployees : ordre par
+  // semaine, masqués retirés, archivés gérés) puis exclusion des employés sans
+  // aucun shift sur la semaine (vacances/congé) — cohérent avec le PNG équipe.
+  const weekKey = dayKey(weekStart);
+  const weekVisibleEmps = visibleScheduleEmployees(weekDays, weekKey);
+  const empsWithShifts = weekVisibleEmps.filter(emp => {
     const shifts = emp.shifts || {};
     return weekDays.some(d => {
       const s = shifts[dayKey(d)];
@@ -1999,7 +2003,10 @@ async function exportScheduleAsPNGAdmin() {
   const weekTotalCost = dayTotalsCost.reduce((a, b) => a + b, 0);
 
   // Ratio salaires/ventes + ventes prévues
-  const ratio = Number(scheduleSettings.salaryRatio) || 0.30;
+  // ⚠ Doit lire le MÊME champ que la page web (settings/schedule.salesRatio,
+  // défaut 0.32). Avant v3.43.1 ce code lisait `salaryRatio` (champ inexistant)
+  // → retombait toujours sur 0.30, d'où des ventes prévues différentes du web.
+  const ratio = Number(scheduleSettings.salesRatio) || 0.32;
   const expectedSales = ratio > 0 ? (weekTotalCost / ratio) : 0;
   const actualSales = scheduleSettings.actualSales || {};
   const weekActualSales = weekDays.reduce((sum, d) => sum + (Number(actualSales[dayKey(d)]) || 0), 0);
@@ -2092,9 +2099,9 @@ async function exportScheduleAsPNGAdmin() {
           ${weekActualSales > 0 ? `<div style="font-size:10px; color:#666; margin-top:2px">ratio réel ${(weekTotalCost / weekActualSales * 100).toFixed(1)}%</div>` : ""}
         </div>
       </div>
-      ${empsWithShifts.length < employees.length
+      ${empsWithShifts.length < weekVisibleEmps.length
         ? `<div style="margin-top:14px; padding-top:12px; border-top:1px dashed #c8bca5; font-size:11px; color:#6e5f50; text-align:center; font-style:italic">
-            ${employees.length - empsWithShifts.length} employé${employees.length - empsWithShifts.length > 1 ? "s" : ""} en congé toute la semaine non affiché${employees.length - empsWithShifts.length > 1 ? "s" : ""}
+            ${weekVisibleEmps.length - empsWithShifts.length} employé${weekVisibleEmps.length - empsWithShifts.length > 1 ? "s" : ""} en congé toute la semaine non affiché${weekVisibleEmps.length - empsWithShifts.length > 1 ? "s" : ""}
           </div>`
         : ""}
     </div>
