@@ -1300,12 +1300,14 @@ function openSimShiftModal(simId, empId, dow) {
     </p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin-top:var(--sp-2)">
       <label>Entrée
-        <select id="sim-shift-start">${buildTimeOptions(startVal)}</select>
+        ${timeInputHTML("sim-shift-start", startVal)}
       </label>
       <label>Sortie
-        <select id="sim-shift-end">${buildTimeOptions(endVal)}</select>
+        ${timeInputHTML("sim-shift-end", endVal)}
       </label>
     </div>
+    <p class="time-input-hint">${icon("info", 11)} Tape l'heure exacte (ex. 17:04) ou choisis aux 15 min dans la liste.</p>
+    ${timeDatalistHTML()}
     <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3)">
       ${hasShift ? `<button class="btn-cancel" style="color:#a23a36" onclick="deleteSimShift('${simId}','${empId}',${dow})">${icon("trash", 14)} Supprimer</button>` : `<div></div>`}
       <div style="display:flex;gap:var(--sp-2)">
@@ -1317,8 +1319,9 @@ function openSimShiftModal(simId, empId, dow) {
 }
 
 async function saveSimShiftFromModal(simId, empId, dow) {
-  const start = document.getElementById("sim-shift-start").value;
-  const end = document.getElementById("sim-shift-end").value;
+  const start = normalizeTimeInput(document.getElementById("sim-shift-start").value);
+  const end = normalizeTimeInput(document.getElementById("sim-shift-end").value);
+  if (start === null || end === null) return toast("Heure invalide — utilise le format hh:mm (ex. 17:04).", "warning");
   if (!start || !end) return toast("Saisis l'entrée et la sortie.", "warning");
   // updateSimShift est asynchrone et accepte un seul champ à la fois — on l'appelle deux fois
   await updateSimShift(simId, empId, dow, "start", start);

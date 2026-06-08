@@ -3125,12 +3125,14 @@ function openPayrollShiftModal(empId, dk) {
     ${stateBanner}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin-top:var(--sp-2)">
       <label>Entrée
-        <select id="payroll-shift-start">${buildPayrollTimeOptions(startVal)}</select>
+        ${timeInputHTML("payroll-shift-start", startVal)}
       </label>
       <label>Sortie
-        <select id="payroll-shift-end">${buildPayrollTimeOptions(endVal)}</select>
+        ${timeInputHTML("payroll-shift-end", endVal)}
       </label>
     </div>
+    <p class="time-input-hint">${icon("info", 11)} Tape l'heure exacte (ex. 17:04) ou choisis aux 15 min dans la liste.</p>
+    ${timeDatalistHTML()}
     <div class="modal-actions payroll-modal-actions">
       <div class="payroll-modal-actions-left">
         ${isAbsent
@@ -3147,8 +3149,9 @@ function openPayrollShiftModal(empId, dk) {
 }
 
 async function savePayrollShiftFromModal(empId, dk) {
-  const start = document.getElementById("payroll-shift-start").value;
-  const end = document.getElementById("payroll-shift-end").value;
+  const start = normalizeTimeInput(document.getElementById("payroll-shift-start").value);
+  const end = normalizeTimeInput(document.getElementById("payroll-shift-end").value);
+  if (start === null || end === null) return toast("Heure invalide — utilise le format hh:mm (ex. 17:04).", "warning");
   if (!start || !end) return toast("Saisis l'entrée et la sortie.", "warning");
   // updateActualShift gère le read-then-write pour ne rien effacer
   await updateActualShift(empId, dk, "start", start);

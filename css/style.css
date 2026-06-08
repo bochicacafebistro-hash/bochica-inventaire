@@ -4257,6 +4257,34 @@ textarea.md-input{
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23f5f1e8' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
 }
 
+/* v3.40.0 — Champ heure typable (clavier précis + suggestions 15 min) */
+/* Utilisé dans les modals Salaires / Horaire / Simulation. */
+.time-input{
+  width:100%;
+  font-family:var(--font-mono);
+  font-size:var(--fs-md);
+  font-weight:600;
+  text-align:center;
+  letter-spacing:.04em;
+  font-feature-settings:"tnum";
+}
+.time-input::placeholder{
+  font-weight:400;
+  letter-spacing:normal;
+  color:var(--text3);
+}
+/* Petit rappel sous les champs heure dans les modals */
+.time-input-hint{
+  display:flex;
+  align-items:center;
+  gap:5px;
+  margin:8px 0 0;
+  font-size:11px;
+  font-style:italic;
+  color:var(--text3);
+}
+.time-input-hint svg{flex-shrink:0}
+
 /* ─────────────────────────────────────────────────────────── */
 /* v3.15.0 — Extras (employés ad-hoc) + multiplicateur + drag */
 /* ─────────────────────────────────────────────────────────── */

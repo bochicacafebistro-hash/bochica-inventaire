@@ -1,6 +1,52 @@
 // ── Utilitaires ───────────────────────────────────────
 function genId() { return Math.random().toString(36).slice(2, 10); }
 
+// ── Saisie d'heure : clavier précis + suggestions 15 min ──────────
+// (v3.40.0) Champ partagé par les modals Salaires, Horaire et Simulation.
+// On utilise un <input type="text"> couplé à un <datalist> plutôt qu'un
+// <select> rigide : l'utilisateur peut TAPER l'heure exacte à la minute
+// (ex. un punch réel à 17:04) OU piger une valeur aux 15 min dans la liste
+// déroulante. La saisie est normalisée au format HH:MM au blur et à
+// l'enregistrement. Accepte "17:04", "1704", "17h04", "17" → "17:00", etc.
+const TIME_OPTIONS_15 = (() => {
+  const arr = [];
+  for (let h = 0; h < 24; h++)
+    for (let m = 0; m < 60; m += 15)
+      arr.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+  return arr;
+})();
+
+// <datalist> partagé — à inclure UNE fois dans le HTML d'un modal.
+function timeDatalistHTML(id = "time-opts-15") {
+  return `<datalist id="${id}">${TIME_OPTIONS_15.map(v => `<option value="${v}"></option>`).join("")}</datalist>`;
+}
+
+// Champ de saisie d'heure (clavier + suggestions). Normalise au blur.
+function timeInputHTML(id, value, listId = "time-opts-15") {
+  const v = value || "";
+  return `<input type="text" id="${id}" list="${listId}" value="${v}" class="time-input"
+    inputmode="numeric" autocomplete="off" placeholder="hh:mm" maxlength="5"
+    onblur="const _n=normalizeTimeInput(this.value); if(_n!==null)this.value=_n;" />`;
+}
+
+// Normalise une saisie libre en "HH:MM". Retourne "" si vide, null si invalide.
+function normalizeTimeInput(raw) {
+  if (raw == null) return "";
+  let s = String(raw).trim().toLowerCase().replace(/[hH]/g, ":").replace(/\./g, ":");
+  if (s === "" || s === "—" || s === "-") return "";
+  let h, m, mt;
+  if ((mt = s.match(/^(\d{1,2}):(\d{1,2})$/))) { h = +mt[1]; m = +mt[2]; }
+  else if ((mt = s.match(/^(\d{1,2})$/))) { h = +mt[1]; m = 0; }
+  else if ((mt = s.match(/^(\d{3,4})$/))) {
+    const d = mt[1];
+    if (d.length === 3) { h = +d.slice(0, 1); m = +d.slice(1); }
+    else { h = +d.slice(0, 2); m = +d.slice(2); }
+  } else return null;
+  if (!Number.isInteger(h) || !Number.isInteger(m)) return null;
+  if (h < 0 || h > 23 || m < 0 || m > 59) return null;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
 // ── Permissions par rôle ──────────────────────────────
 // (L'auth est gérée par Firebase Auth — voir auth.js)
 function canAccess(page) {
