@@ -89,10 +89,22 @@ function buildTimeOptions(selectedValue) {
 // (horaire + salaires) et il s'affiche « Congé » partout.
 
 // Retourne l'objet congé d'un employé pour un jour (ou null).
+// v3.42.0 : en plus des congés saisis manuellement par l'admin
+// (employees[id].timeOff), on tient compte des DEMANDES DE CONGÉ APPROUVÉES
+// de journée complète (collection /leaveRequests). Résultat : un congé
+// approuvé verrouille le jour et s'affiche « Vacances / Maladie / … » partout
+// (Horaire, Salaires, Mon horaire) sans dupliquer le code d'affichage.
+// L'objet renvoyé porte `_fromRequest:true` + `_requestId` quand il vient
+// d'une demande (pour router le clic vers la page Demandes de congé).
 function getTimeOff(empId, dk) {
   const emp = employees.find(e => e.id === empId);
-  if (!emp) return null;
-  return (emp.timeOff || {})[dk] || null;
+  const manual = emp && (emp.timeOff || {})[dk];
+  if (manual) return manual;
+  if (typeof getApprovedFullDayLeave === "function") {
+    const r = getApprovedFullDayLeave(empId, dk);
+    if (r) return { type: r.type, note: r.reason || "", createdAt: r.requestedAt, _fromRequest: true, _requestId: r.id };
+  }
+  return null;
 }
 // Raccourci booléen.
 function isTimeOff(empId, dk) {
@@ -437,17 +449,25 @@ function renderEmployes() {
               if (leave) {
                 const lm = leaveTypeMeta(leave.type);
                 const noteTxt = leave.note ? ` — ${esc(leave.note)}` : "";
+                const fromReq = !!leave._fromRequest;
+                const clickAttr = fromReq
+                  ? `onclick="navTo('demandes-conge')"`
+                  : `onclick="openTimeOffCellModal('${row.emp.id}','${dk}')"`;
+                const titleTxt = fromReq
+                  ? `Congé approuvé via une demande (${esc(leaveTypeLabel(leave.type))})${noteTxt} — gérer dans « Demandes de congé ».`
+                  : `En congé (${esc(leaveTypeLabel(leave.type))})${noteTxt} — aucun quart possible ce jour-là. Cliquer pour modifier ou retirer.`;
                 return `<div class="schedule-empgrid-cell schedule-empgrid-cell--leave"
                     data-day-key="${dk}"
-                    title="En congé (${esc(leaveTypeLabel(leave.type))})${noteTxt} — aucun quart possible ce jour-là. Cliquer pour modifier ou retirer.">
+                    title="${titleTxt}">
                   <div class="shift-card shift-card--leave"
                       style="--leave-color:${lm.color}"
-                      onclick="openTimeOffCellModal('${row.emp.id}','${dk}')">
-                    <div class="shift-leave-label">${icon("sun", 11)} Congé</div>
-                    <div class="shift-leave-type">${esc(leaveTypeLabel(leave.type))}</div>
+                      ${clickAttr}>
+                    <div class="shift-leave-label">${icon("sun", 11)} ${fromReq ? "Congé approuvé" : "Congé"}</div>
+                    <div class="shift-leave-type">${esc(leaveTypeLabel(leave.type))}${fromReq ? ` <span class="shift-leave-req">${icon("user", 9)}</span>` : ""}</div>
                   </div>
                 </div>`;
               }
+              const partialBadge = (typeof partialLeaveBadgeHTML === "function") ? partialLeaveBadgeHTML(row.emp.id, dk) : "";
               if (!hasShift) {
                 return `<div class="schedule-empgrid-cell schedule-empgrid-cell--empty"
                     data-day-key="${dk}"
@@ -459,6 +479,7 @@ function renderEmployes() {
                       title="Aucun shift ce jour-là — cliquer pour ajouter">
                     <div class="shift-off-label">Libre</div>
                     <div class="shift-off-add">${icon("plus", 11)} Ajouter</div>
+                    ${partialBadge}
                   </div>
                 </div>`;
               }
@@ -480,6 +501,7 @@ function renderEmployes() {
                     <span>${fmtHours(d.hours)}h</span>
                     <span class="shift-card-cost">${fmtMoney(d.cost)}</span>
                   </div>
+                  ${partialBadge}
                 </div>
               </div>`;
             }).join("")}

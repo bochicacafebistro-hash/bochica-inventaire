@@ -172,3 +172,29 @@ let _payrollUnsub = null;
 // ID de la semaine actuellement abonnée — évite les ré-abonnements en boucle
 // (sinon chaque snapshot déclenche renderPage qui re-subscribe = boucle infinie)
 let _payrollSubscribedWid = null;
+
+// ── Demandes de congé / vacances (v3.42.0) ────────────
+// Collection /leaveRequests. L'employé s'identifie par PIN (comme le pointage),
+// choisit des jours sur un calendrier et soumet une demande. Règle des 2 semaines :
+//   • date visée à > 14 jours  → status "approved" (auto, autoApproved:true)
+//   • date visée à ≤ 14 jours  → status "pending"  (à approuver par le superviseur)
+// Chaque demande : { id, empId, empName, type (vacances/maladie/personnel/sans_solde),
+//   kind ("full" | "partial"),
+//   dates: [dk, …]              (jours visés, journée complète),
+//   partial: { dk, mode ("late"|"early"), time }  (congé partiel : entrer plus tard / finir plus tôt),
+//   status ("approved"|"pending"|"rejected"), autoApproved (bool),
+//   reason, requestedAt, decidedAt, decidedBy }
+let leaveRequests = [];
+// État UI de la page employé « Demande de congé » (local, non persisté)
+let _leavePin = "";
+let _leaveEmployee = null;        // employé identifié par PIN
+let _leaveStep = "keypad";        // "keypad" | "calendar"
+let _leaveMonthOffset = 0;        // 0 = mois courant
+let _leaveSelectedDays = [];      // [dk, …] jours sélectionnés dans le calendrier
+let _leaveType = "vacances";      // type choisi
+let _leaveKind = "full";          // "full" | "partial"
+let _leavePartialMode = "early";  // "early" (finir tôt) | "late" (entrer tard)
+let _leavePartialTime = "";       // heure du congé partiel (HH:MM)
+let _leaveReason = "";            // motif optionnel
+// Filtre de statut de la page admin « Demandes de congé »
+let leaveAdminFilter = "pending"; // "pending" | "approved" | "rejected" | "all"

@@ -55,6 +55,19 @@ db.collection("tasks").onSnapshot(snap => {
   if (shouldRender("tasks", "taches", "inventaire", "dashboard")) renderPage();
 });
 
+// Demandes de congé (v3.42.0) — créées par les employés (identifiés par PIN),
+// gérées par l'admin. Re-render les pages de congé, les horaires (un congé
+// approuvé s'y affiche), le dashboard (bandeau de notification), et rafraîchit
+// la pastille de compteur dans la sidebar à chaque snapshot.
+db.collection("leaveRequests").onSnapshot(snap => {
+  leaveRequests = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+    .sort((a, b) => (Number(b.requestedAt) || 0) - (Number(a.requestedAt) || 0));
+  if (typeof buildSidebar === "function" && isLoggedIn) buildSidebar(); // maj badge
+  if (shouldRender("leaveRequests", "demandes-conge", "demande-conge", "employes", "salaires", "mon-horaire", "dashboard")) renderPage();
+}, err => {
+  if (err && err.code !== "permission-denied") console.warn("listener leaveRequests:", err);
+});
+
 // Tâches du jour (v3.36.0) — définies par l'admin, cochées par les employés.
 // Re-render l'accueil employé + la page admin de gestion.
 db.collection("dailyTasks").onSnapshot(snap => {

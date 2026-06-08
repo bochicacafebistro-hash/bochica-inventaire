@@ -11,6 +11,8 @@ function getNavStructure() {
     // Placées en haut : elles forment l'accueil de l'équipe.
     { type: "link", icon: "bar-chart", label: "Accueil", page: "accueil" },
     { type: "link", icon: "clock", label: "Mon horaire", page: "mon-horaire" },
+    // Demande de congé : visible employés (kiosque PIN). v3.42.0
+    { type: "link", icon: "sun", label: "Demande de congé", page: "demande-conge" },
     // Ouverture / Fermeture : visible employés + admin (v3.36.0).
     { type: "link", icon: "clipboard", label: "Ouverture / Fermeture", page: "ouverture-fermeture" },
     { type: "link", icon: "bar-chart", label: t("nav_dashboard"), page: "dashboard" },
@@ -28,6 +30,7 @@ function getNavStructure() {
         { icon: "users", label: t("nav_employees"), page: "employes" },
         { icon: "dollar-sign", label: t("nav_salaires"), page: "salaires" },
         { icon: "trending-up", label: "Simulation paie", page: "simulations" },
+        { icon: "sun", label: "Demandes de congé", page: "demandes-conge", badge: (typeof pendingLeaveRequests === "function" ? pendingLeaveRequests().length : 0) },
         { icon: "clipboard", label: t("nav_tasks"), page: "taches" },
         { icon: "clipboard", label: "Tâches du jour", page: "taches-jour" }
       ]
@@ -66,7 +69,7 @@ function getNavStructure() {
 // Mapping page → id de section, pour auto-ouvrir la bonne section après une navigation
 const PAGE_TO_SECTION = {
   inventaire: "inventory", rapport: "inventory", shopping: "inventory",
-  employes: "hr", salaires: "hr", simulations: "hr", taches: "hr", "taches-jour": "hr",
+  employes: "hr", salaires: "hr", simulations: "hr", "demandes-conge": "hr", taches: "hr", "taches-jour": "hr",
   menu: "kitchen", ingredients: "kitchen", recettes: "kitchen",
   depenses: "finance", factures: "finance", taxes: "finance", rapports: "finance",
   evenements: "clients", soumissions: "clients"
@@ -97,17 +100,21 @@ function buildSidebar() {
     const items = g.items.filter(it => canAccess(it.page));
     if (items.length === 0) return null;
     if (items.length === 1) {
-      // Promouvoir l'item unique en lien direct
-      return { type: "link", icon: items[0].icon, label: items[0].label, page: items[0].page };
+      // Promouvoir l'item unique en lien direct (en conservant un éventuel badge)
+      return { type: "link", icon: items[0].icon, label: items[0].label, page: items[0].page, badge: items[0].badge };
     }
     return { ...g, items };
   }).filter(Boolean);
+
+  // Petite pastille de compteur (ex. demandes de congé en attente)
+  const badgeHTML = (n) => (n > 0 ? `<span class="nav-badge" aria-label="${n} en attente">${n}</span>` : "");
 
   nav.innerHTML = filtered.map(g => {
     if (g.type === "link") {
       return `<div class="nav-item ${activePage === g.page ? "active" : ""}" onclick="navTo('${g.page}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navTo('${g.page}')}">
         <span class="icon">${icon(g.icon, 18)}</span>
         <span>${g.label}</span>
+        ${badgeHTML(g.badge)}
       </div>`;
     }
     // Section accordéon
@@ -117,12 +124,14 @@ function buildSidebar() {
       <button class="nav-section-toggle" onclick="toggleNavSection('${g.id}')" aria-expanded="${isOpen}" type="button">
         <span class="icon">${icon(g.icon, 16)}</span>
         <span class="nav-section-label">${g.label}</span>
+        ${!isOpen ? badgeHTML(g.items.reduce((s, it) => s + (it.badge || 0), 0)) : ""}
         <span class="nav-section-chevron">${icon("chevron-right", 14)}</span>
       </button>
       <div class="nav-section-items" role="region">
         ${g.items.map(it => `<div class="nav-item nav-subitem ${activePage === it.page ? "active" : ""}" onclick="navTo('${it.page}')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();navTo('${it.page}')}">
           <span class="icon">${icon(it.icon, 16)}</span>
           <span>${it.label}</span>
+          ${badgeHTML(it.badge)}
         </div>`).join("")}
       </div>
     </div>`;
@@ -219,6 +228,8 @@ function renderPage() {
     accueil:     { label: "Accueil",            icon: "bar-chart" },
     "mon-horaire": { label: "Mon horaire",      icon: "clock" },
     "ouverture-fermeture": { label: "Ouverture / Fermeture", icon: "clipboard" },
+    "demande-conge": { label: "Demande de congé",  icon: "sun" },
+    "demandes-conge": { label: "Demandes de congé", icon: "sun" },
     "taches-jour": { label: "Tâches du jour",   icon: "clipboard" },
     dashboard:   { label: t("nav_dashboard"),   icon: "bar-chart" },
     inventaire:  { label: t("nav_inventaire"),  icon: "package" },
@@ -288,6 +299,12 @@ function renderPage() {
   }
   else if (activePage === "ouverture-fermeture") {
     pc.innerHTML = renderOpenClose();
+  }
+  else if (activePage === "demande-conge") {
+    pc.innerHTML = renderLeaveRequest();
+  }
+  else if (activePage === "demandes-conge") {
+    pc.innerHTML = renderLeaveAdmin();
   }
   else if (activePage === "taches-jour") {
     pc.innerHTML = renderDailyTasksAdmin();

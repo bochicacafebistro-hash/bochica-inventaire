@@ -701,6 +701,8 @@ function renderSalaires() {
   const actualSales = scheduleSettings.actualSales || {};
   const weekSales = weekDays.reduce((sum, d) => sum + (Number(actualSales[dayKey(d)]) || 0), 0);
   const salesRatio = weekSales > 0 ? (sumGross / weekSales) : 0;
+  // % de pourboires sur les ventes de la semaine (pourboires entrés ÷ ventes)
+  const tipPctSales = weekSales > 0 ? (totalTips / weekSales) : 0;
   // Couleur du ratio : vert < 32%, jaune 32-40%, rouge > 40% (cibles typiques restaurant)
   const ratioCls = salesRatio === 0 ? "is-empty"
     : salesRatio < 0.32 ? "is-good"
@@ -1201,6 +1203,7 @@ function renderSalaires() {
             ${fmtHours(sumActualHours)}h pointées / ${fmtHours(sumPlannedHours)}h planifiées
             · Écart ${(sumActualHours - sumPlannedHours) > 0 ? "+" : ""}${fmtHours(sumActualHours - sumPlannedHours)}h
             · Pourboires distribués ${fmtMoney(sumTips)}
+            ${weekSales > 0 ? `· <strong style="color:var(--accent);font-style:normal" title="Pourboires entrés ÷ ventes de la semaine">${(tipPctSales * 100).toFixed(1)} % des ventes en pourboires</strong>` : ""}
           </div>
           <div class="schedule-totals-val schedule-totals-val--total payroll-totals-final">
             <div class="payroll-totals-final-row" title="Salaires bruts uniquement — ce qui sort de tes poches">
@@ -2184,6 +2187,10 @@ function generatePayrollPDF() {
   const sumTips = empRows.reduce((s, r) => s + r.tipShare, 0);
   const sumTotal = empRows.reduce((s, r) => s + r.totalPay, 0);
   const sumActualHours = empRows.reduce((s, r) => s + r.totalHours, 0);
+  // Ventes réelles de la semaine + % de pourboires sur ventes
+  const _actualSales = (typeof scheduleSettings !== "undefined" && scheduleSettings.actualSales) || {};
+  const weekSales = weekDays.reduce((s, d) => s + (Number(_actualSales[dayKey(d)]) || 0), 0);
+  const tipPctSales = weekSales > 0 ? (totalTips / weekSales) : 0;
 
   // ─ Setup jsPDF — landscape Letter ─────────────────────
   const { jsPDF } = window.jspdf;
@@ -2281,14 +2288,16 @@ function generatePayrollPDF() {
   paintBackground();
   drawFullHeader();
 
-  // ─ KPI cards (4 cards en haut) ──────────────────────
+  // ─ KPI cards (5 cards en haut) ──────────────────────
+  // "Salaires bruts" = total AVANT pourboire ; "Total à payer" = total APRÈS.
   const kpis = [
     { label: "Total à payer", value: fmtMoney(sumTotal), color: COLOR_ACCENT },
     { label: "Salaires bruts", value: fmtMoney(sumGross), color: COLOR_BLUE },
     { label: "Pourboires distribués", value: fmtMoney(sumTips), color: COLOR_GREEN },
+    { label: "% pourb. / ventes", value: weekSales > 0 ? `${(tipPctSales * 100).toFixed(1)} %` : "—", color: COLOR_ACCENT },
     { label: "Heures totales", value: `${fmtHours(sumActualHours)} h`, color: COLOR_TEXT }
   ];
-  const cardW = (contentW - 3 * 4) / 4;
+  const cardW = (contentW - 4 * 4) / 5;
   const cardH = 14;
   kpis.forEach((k, i) => {
     const cx = M + i * (cardW + 4);
@@ -2734,9 +2743,14 @@ async function _computePayrollWeekData(offset) {
     hours: empRows.reduce((s, r) => s + r.totalHours, 0)
   };
 
+  // Ventes réelles de la semaine + % de pourboires sur ventes
+  const _actualSales = (scheduleSettings && scheduleSettings.actualSales) || {};
+  const weekSales = weekDays.reduce((s, d) => s + (Number(_actualSales[dayKey(d)]) || 0), 0);
+  const tipPctSales = weekSales > 0 ? (totalTips / weekSales) : 0;
+
   return {
     weekStart, weekEnd, weekNum, weekLabel, startLabel, endLabel,
-    weekDays, visibleIdx,
+    weekDays, visibleIdx, weekSales, tipPctSales,
     empRows, sums,
     tipsByDay, totalTips, poolCuisine, poolService,
     tipShares
@@ -2908,27 +2922,40 @@ async function generateBiWeeklyPDF() {
   });
   y += cardH + 6;
 
-  // ─ Sous-totaux par semaine (mini cards) ────────────
-  ensureSpace(22);
+  // ─ Fiche par semaine : 2 totaux (avant/après pourboire) + % pourboires/ventes ─
+  ensureSpace(30);
   doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...COLOR_TEXT);
   doc.text("Détail par semaine", M, y);
   y += 4;
   const halfW = (contentW - 6) / 2;
-  [[w1, "Semaine"], [w2, "Semaine"]].forEach(([w, lbl], i) => {
+  const ficheH = 23;
+  [w1, w2].forEach((w, i) => {
     const cx = M + i * (halfW + 6);
     doc.setFillColor(...COLOR_HEADER_FILL);
     doc.setDrawColor(...COLOR_BORDER);
     doc.setLineWidth(0.3);
-    doc.roundedRect(cx, y, halfW, 16, 1.5, 1.5, "FD");
+    doc.roundedRect(cx, y, halfW, ficheH, 1.5, 1.5, "FD");
+    // En-tête : Semaine N (gauche) + dates (droite)
     doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...COLOR_TEXT);
-    doc.text(`${lbl} ${w.weekNum}`, cx + 4, y + 5);
+    doc.text(`Semaine ${w.weekNum}`, cx + 4, y + 5.5);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...COLOR_TEXT_LIGHT);
-    doc.text(w.weekLabel, cx + 4, y + 9);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...COLOR_TEXT);
-    const lineY = y + 13;
-    doc.text(`${fmtHours(w.sums.hours)}h · Sal ${fmtMoney(w.sums.gross)} · Pourb ${fmtMoney(w.sums.tips)} · Total ${fmtMoney(w.sums.total)}`, cx + 4, lineY);
+    doc.text(w.weekLabel, cx + halfW - 4, y + 5.5, { align: "right" });
+    // Les 2 totaux : avant pourboire (salaires bruts) / après pourboire (total versé)
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...COLOR_TEXT);
+    doc.text("Avant pourb.", cx + 4, y + 11.5);
+    doc.text(fmtMoney(w.sums.gross), cx + 38, y + 11.5);
+    doc.setFont("helvetica", "bold"); doc.setTextColor(...COLOR_TEXT);
+    doc.text("Après pourb.", cx + 4, y + 16.5);
+    doc.text(fmtMoney(w.sums.total), cx + 38, y + 16.5);
+    // Ligne contextuelle : heures · ventes · pourboires · % des ventes
+    doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...COLOR_TEXT_LIGHT);
+    const pctTxt = w.weekSales > 0 ? `${(w.tipPctSales * 100).toFixed(1)} % des ventes en pourb.` : "ventes non saisies";
+    doc.text(
+      `${fmtHours(w.sums.hours)}h · Ventes ${w.weekSales > 0 ? fmtMoney(w.weekSales) : "—"} · Pourb ${fmtMoney(w.sums.tips)} · ${pctTxt}`,
+      cx + 4, y + 21
+    );
   });
-  y += 16 + 6;
+  y += ficheH + 6;
 
   // ─ Tableau récap par employé : Nom | Section | Hrs S1 | Hrs S2 | Hrs Tot | Sal S1 | Sal S2 | Pourb S1 | Pourb S2 | Total à payer
   ensureSpace(11);

@@ -101,6 +101,22 @@ service cloud.firestore {
       allow write: if isAuthed();
     }
 
+    // ── /leaveRequests : demandes de congé / vacances (v3.42.0) ──
+    // L'employé s'identifie par PIN dans l'app (compte partagé "Employe"),
+    // choisit des jours sur un calendrier et soumet une demande. Comme pour le
+    // pointage, l'identité (empId) est posée côté app, pas par le compte Firebase.
+    //   - lecture : tous les authentifiés (l'horaire/les salaires doivent
+    //     afficher les congés approuvés ; l'employé voit ses propres demandes)
+    //   - création : tout authentifié (l'auto-approbation > 2 sem. est gérée
+    //     côté app, même modèle de confiance que le pointage par PIN)
+    //   - modification / suppression : admin seulement (approuver / refuser /
+    //     retirer une demande)
+    match /leaveRequests/{doc=**} {
+      allow read:   if isAuthed();
+      allow create: if isAuthed();
+      allow update, delete: if isAdmin();
+    }
+
     // ── /menu : items du menu ─────────────────────────
     match /menu/{doc=**} {
       allow read:  if isAuthed();

@@ -269,6 +269,8 @@ function renderDashboard() {
       <p class="dash-greeting__sub">${t("dash_welcome", { name: userName })}</p>
     </div>
 
+    ${(typeof renderLeaveDashboardBanner === "function") ? renderLeaveDashboardBanner() : ""}
+
     ${todayWidget}
 
     <!-- Stats principales avec comparaison -->
