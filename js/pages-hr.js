@@ -297,6 +297,12 @@ function renderEmployes() {
   const weekLabel = `${weekDaysAll[0].toLocaleDateString("fr-CA", { month: "short", day: "numeric" })} – ${weekEnd.toLocaleDateString("fr-CA", { month: "short", day: "numeric", year: "numeric" })}`;
 
   const ratio = Number(scheduleSettings.salesRatio) || 0.32;
+  // Options du sélecteur de ratio : 25 % → 40 % (v3.43.2). Si la valeur courante
+  // tombe hors de cette plage (réglage antérieur), on l'ajoute pour ne pas la perdre.
+  const curRatioPct = Math.round(ratio * 100);
+  const ratioOptions = [];
+  for (let p = 25; p <= 40; p++) ratioOptions.push(p);
+  if (!ratioOptions.includes(curRatioPct)) { ratioOptions.push(curRatioPct); ratioOptions.sort((a, b) => a - b); }
   const openDays = Array.isArray(scheduleSettings.openDays) ? scheduleSettings.openDays : [0, 1, 2, 3, 4, 5, 6];
   // Indices de jours ouverts (0=Lun, 6=Dim)
   const visibleIdx = [0, 1, 2, 3, 4, 5, 6].filter(i => openDays.includes(i));
@@ -374,8 +380,9 @@ function renderEmployes() {
           ${userRole === "global_admin" ? `<button class="btn-secondary btn-sm" onclick="exportScheduleAsPNGAdmin()" title="Rapport admin complet : taux horaire, coût par shift, totaux semaine, ventes prévues. À usage interne — ne pas partager avec l'équipe.">${icon("download", 14)} PNG admin</button>` : ""}
           <div class="schedule-ratio-pill" title="Ratio salaires / ventes : les Ventes prévues sont recalculées instantanément">
             <span class="schedule-ratio-pill__label">${icon("trending-up", 14)} Ratio</span>
-            <input id="sched-ratio" type="number" min="1" max="100" step="0.5" value="${(ratio * 100).toFixed(1)}" onchange="updateSalesRatio(this.value)" oninput="updateSalesRatioLive(this.value)" aria-label="Ratio salaires sur ventes"/>
-            <span class="schedule-ratio-pill__unit">%</span>
+            <select id="sched-ratio" class="schedule-ratio-pill__select" onchange="updateSalesRatio(this.value)" aria-label="Ratio salaires sur ventes">
+              ${ratioOptions.map(p => `<option value="${p}" ${p === curRatioPct ? "selected" : ""}>${p} %</option>`).join("")}
+            </select>
           </div>
         </div>
       </div>
@@ -1783,6 +1790,35 @@ async function removeTimeOff(empId, dk) {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// Téléchargement d'un canvas en PNG — robuste aux téléchargements répétés
+// ═══════════════════════════════════════════════════════════════
+// v3.43.2 — Avant, on faisait `canvas.toDataURL()` + `<a href="data:...">`.
+// Chrome étouffe/bloque les téléchargements répétés de grosses data-URI
+// jusqu'à une navigation (reload) → après un 1er export, le 2e ne partait
+// plus tant qu'on n'avait pas rechargé la page. On passe par un **Blob +
+// objectURL** (révoqué après coup), ce qui n'est pas soumis à ce blocage.
+function _downloadCanvasPNG(canvas, filename) {
+  return new Promise((resolve, reject) => {
+    try {
+      canvas.toBlob(blob => {
+        if (!blob) { reject(new Error("Génération du PNG impossible (toBlob a renvoyé null).")); return; }
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.download = filename;
+        link.href = url;
+        link.rel = "noopener";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        // Révoque l'URL après un court délai pour laisser le download démarrer.
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        resolve();
+      }, "image/png");
+    } catch (e) { reject(e); }
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
 // v3.25.0 — Export PNG d'horaire (version publique pour employés)
 // ═══════════════════════════════════════════════════════════════
 // Génère une image PNG propre de l'horaire de la semaine pour partage
@@ -1840,7 +1876,10 @@ async function exportScheduleAsPNG() {
     return { emp, section: sec, daily };
   });
 
-  // Construit un DOM off-screen avec un style minimaliste destiné à l'export
+  // Construit un DOM off-screen avec un style minimaliste destiné à l'export.
+  // Nettoyage défensif : retire un éventuel conteneur resté d'un export précédent
+  // (si un finally n'a pas tourné) pour éviter tout doublon d'id.
+  document.getElementById("_schedule-png-export")?.remove();
   const container = document.createElement("div");
   container.id = "_schedule-png-export";
   container.style.cssText = `
@@ -1910,13 +1949,7 @@ async function exportScheduleAsPNG() {
       logging: false,
       useCORS: true
     });
-    const url = canvas.toDataURL("image/png");
-    const link = document.createElement("a");
-    link.download = `Bochica_Horaire_Sem${weekNum}_${dayKey(weekStart)}.png`;
-    link.href = url;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    await _downloadCanvasPNG(canvas, `Bochica_Horaire_Sem${weekNum}_${dayKey(weekStart)}.png`);
     toast("Image PNG téléchargée — prête à partager avec l'équipe.", "success", 4000);
   } catch (err) {
     console.error("exportScheduleAsPNG failed:", err);
@@ -2011,7 +2044,8 @@ async function exportScheduleAsPNGAdmin() {
   const actualSales = scheduleSettings.actualSales || {};
   const weekActualSales = weekDays.reduce((sum, d) => sum + (Number(actualSales[dayKey(d)]) || 0), 0);
 
-  // Construit un DOM off-screen pour l'export
+  // Construit un DOM off-screen pour l'export (nettoyage défensif d'abord).
+  document.getElementById("_schedule-png-export-admin")?.remove();
   const container = document.createElement("div");
   container.id = "_schedule-png-export-admin";
   container.style.cssText = `
@@ -2121,13 +2155,7 @@ async function exportScheduleAsPNGAdmin() {
       logging: false,
       useCORS: true
     });
-    const url = canvas.toDataURL("image/png");
-    const link = document.createElement("a");
-    link.download = `Bochica_HoraireAdmin_Sem${weekNum}_${dayKey(weekStart)}.png`;
-    link.href = url;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    await _downloadCanvasPNG(canvas, `Bochica_HoraireAdmin_Sem${weekNum}_${dayKey(weekStart)}.png`);
     toast("Rapport admin PNG téléchargé — pour usage interne seulement.", "success", 4000);
   } catch (err) {
     console.error("exportScheduleAsPNGAdmin failed:", err);

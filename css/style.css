@@ -1168,8 +1168,8 @@ tr:last-child td{border-bottom:none}
   font-size:var(--fs-sm);
   font-weight:600;
 }
-.schedule-ratio-pill input{
-  width:46px;
+.schedule-ratio-pill input,
+.schedule-ratio-pill__select{
   border:none;
   background:transparent;
   font-family:var(--font-heading);
@@ -1180,6 +1180,18 @@ tr:last-child td{border-bottom:none}
   outline:none;
   -moz-appearance:textfield;
 }
+.schedule-ratio-pill input{width:46px;}
+.schedule-ratio-pill__select{
+  appearance:none;
+  -webkit-appearance:none;
+  -moz-appearance:none;
+  cursor:pointer;
+  padding-right:14px;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23F7B32C' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;
+  background-position:right center;
+}
+.schedule-ratio-pill__select option{color:var(--text);}
 .schedule-ratio-pill input::-webkit-outer-spin-button,
 .schedule-ratio-pill input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
 .schedule-ratio-pill__unit{
