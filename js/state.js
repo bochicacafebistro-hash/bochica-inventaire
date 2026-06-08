@@ -14,6 +14,13 @@ let products = [], suppliers = [], customSections = [], logs = [];
 // Si vide/absente en BD, fallback sur [...DEFAULT_SECTIONS, ...customSections].
 let allSections = [];
 let employees = [], tasks = [], menuItems = [], expenses = [];
+// v3.43.0 — Rémunération séparée pour la confidentialité des salaires.
+// hourlyRate / isSalaried / fixedWeeklyHours vivent dans /employeesComp
+// (admin only) et NON dans /employees (lisible par tous). Cette map est
+// fusionnée dans `employees` côté admin via _applyEmployeeComp() pour que
+// toutes les lectures existantes de emp.hourlyRate continuent de marcher.
+// Pour un non-admin, /employeesComp est refusé → la map reste vide.
+let employeesComp = {}; // { empId: { hourlyRate, isSalaried, fixedWeeklyHours } }
 let ingredients = []; // Ingrédients de menu (avec coûts, séparés des produits d'inventaire)
 let recipes = [];    // Livre de cuisine — recettes pour préparation (sans coûts)
 let recipeFilter = "all"; // Filtre actif sur page Recettes

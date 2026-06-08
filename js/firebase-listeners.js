@@ -45,9 +45,26 @@ db.collection("logs").orderBy("ts", "desc").limit(300).onSnapshot(snap => {
 });
 
 db.collection("employees").onSnapshot(snap => {
-  employees = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-    .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
+  const raw = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+  employees = raw.slice().sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
+  // v3.43.0 — Fusion de la rémunération (/employeesComp) dans les objets emp,
+  // puis migration unique de toute rémunération encore présente dans /employees.
+  if (typeof _applyEmployeeComp === "function") _applyEmployeeComp();
+  if (isAdmin && typeof migrateEmployeeComp === "function") migrateEmployeeComp(raw);
   if (shouldRender("employees", "employes", "salaires", "simulations", "dashboard", "accueil", "mon-horaire")) renderPage();
+});
+
+// Rémunération des employés (admin only) — v3.43.0. Collection séparée pour la
+// confidentialité des salaires. Pour les non-admin, ce listener est refusé
+// (permission-denied) → les taux restent absents de leurs vues. À chaque
+// snapshot on refusionne dans `employees` et on re-render les pages concernées.
+db.collection("employeesComp").onSnapshot(snap => {
+  employeesComp = {};
+  snap.docs.forEach(d => { employeesComp[d.id] = d.data(); });
+  if (typeof _applyEmployeeComp === "function") _applyEmployeeComp();
+  if (shouldRender("employeesComp", "employes", "salaires", "simulations", "dashboard")) renderPage();
+}, err => {
+  if (err && err.code !== "permission-denied") console.warn("listener employeesComp:", err);
 });
 
 db.collection("tasks").onSnapshot(snap => {

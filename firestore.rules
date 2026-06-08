@@ -63,9 +63,20 @@ service cloud.firestore {
     }
 
     // ── /employees : fiches employés + shifts ─────────
+    // Lisible par tous les authentifiés (noms, sections, PIN, shifts, congés)
+    // car le pointage, l'accueil employé et « Mon horaire » en ont besoin.
+    // ⚠ La RÉMUNÉRATION (taux, salaire fixe) N'EST PLUS ici — voir /employeesComp.
     match /employees/{doc=**} {
       allow read:  if isAuthed();
       allow write: if isAdmin();
+    }
+
+    // ── /employeesComp : rémunération (admin only) — v3.43.0 ──
+    // hourlyRate / isSalaried / fixedWeeklyHours déplacés ici pour que les
+    // employés (qui peuvent lire /employees) ne puissent PAS voir les salaires
+    // via la base / la console du navigateur. Lecture + écriture admin seulement.
+    match /employeesComp/{doc=**} {
+      allow read, write: if isAdmin();
     }
 
     // ── /tasks : Kanban tâches ────────────────────────

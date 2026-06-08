@@ -961,6 +961,64 @@ function openEmployeeModal(id) {
   </div>`);
 }
 
+// ═══════════════════════════════════════════════════════════════
+// Rémunération séparée (confidentialité des salaires) — v3.43.0
+// ═══════════════════════════════════════════════════════════════
+// hourlyRate / isSalaried / fixedWeeklyHours sont stockés dans /employeesComp
+// (admin only) au lieu de /employees (lisible par tous). On les FUSIONNE dans
+// le tableau `employees` en mémoire pour que toutes les lectures existantes de
+// emp.hourlyRate continuent de fonctionner sans toucher aux dizaines de sites.
+
+// Fusionne la rémunération (employeesComp) dans les objets de `employees`.
+function _applyEmployeeComp() {
+  const comp = (typeof employeesComp !== "undefined" && employeesComp) || {};
+  for (const e of (typeof employees !== "undefined" ? employees : [])) {
+    const c = comp[e.id];
+    if (c) {
+      e.hourlyRate = Number(c.hourlyRate) || 0;
+      e.isSalaried = !!c.isSalaried;
+      e.fixedWeeklyHours = Number(c.fixedWeeklyHours) || 0;
+    }
+  }
+}
+
+// Migration unique (admin) : pour chaque employé dont la fiche /employees
+// contient ENCORE des champs de rémunération, on les copie dans /employeesComp
+// puis on les RETIRE de /employees (pour qu'ils ne soient plus exposés).
+// Idempotent : une fois migré, l'employé n'a plus ces champs → ignoré.
+// `rawEmps` = docs bruts du snapshot /employees (avant fusion en mémoire).
+let _compMigrationInFlight = false;
+async function migrateEmployeeComp(rawEmps) {
+  if (!isAdmin || _compMigrationInFlight) return;
+  const targets = (rawEmps || []).filter(e =>
+    ("hourlyRate" in e) || ("isSalaried" in e) || ("fixedWeeklyHours" in e));
+  if (targets.length === 0) return;
+  _compMigrationInFlight = true;
+  const FV = firebase.firestore.FieldValue;
+  try {
+    for (const e of targets) {
+      // 1) Sauver la rémunération dans la collection séparée (admin only)
+      await db.collection("employeesComp").doc(e.id).set({
+        hourlyRate: Number(e.hourlyRate) || 0,
+        isSalaried: !!e.isSalaried,
+        fixedWeeklyHours: Number(e.fixedWeeklyHours) || 0,
+        updatedAt: Date.now()
+      }, { merge: true });
+      // 2) Retirer les champs de /employees (ne plus les exposer)
+      await db.collection("employees").doc(e.id).update({
+        hourlyRate: FV.delete(),
+        isSalaried: FV.delete(),
+        fixedWeeklyHours: FV.delete()
+      });
+    }
+    console.log(`Rémunération : ${targets.length} employé(s) migré(s) vers /employeesComp.`);
+  } catch (err) {
+    console.error("migrateEmployeeComp failed:", err);
+  } finally {
+    _compMigrationInFlight = false;
+  }
+}
+
 async function saveEmployee(id) {
   const name = document.getElementById("e-name").value.trim();
   if (!name) return toast(t("err_enter_name"), "error");
@@ -978,27 +1036,36 @@ async function saveEmployee(id) {
         : `Ce PIN est déjà utilisé par ${conflict.name}.`, "error");
     }
   }
+  // Données « publiques » (lisibles par tous les authentifiés) — SANS rémunération
   const data = {
     name,
     role: document.getElementById("e-role").value,
     section: document.getElementById("e-section").value || "service",
     phone: document.getElementById("e-phone").value,
     email: document.getElementById("e-email").value,
-    hourlyRate: Number(document.getElementById("e-hourly-rate").value) || 0,
-    isSalaried: document.getElementById("e-is-salaried").checked,
-    fixedWeeklyHours: Number(document.getElementById("e-fixed-hours").value) || 0,
     pin,
     notes: document.getElementById("e-notes").value
   };
-  if (id) await db.collection("employees").doc(id).update(data);
-  else {
-    const nid = genId();
+  // Rémunération (confidentielle) → collection séparée /employeesComp (admin only)
+  const comp = {
+    hourlyRate: Number(document.getElementById("e-hourly-rate").value) || 0,
+    isSalaried: document.getElementById("e-is-salaried").checked,
+    fixedWeeklyHours: Number(document.getElementById("e-fixed-hours").value) || 0,
+    updatedAt: Date.now()
+  };
+  let empId = id;
+  if (id) {
+    await db.collection("employees").doc(id).update(data);
+  } else {
+    empId = genId();
     // sortOrder : placer le nouvel employé à la fin de la liste
     const maxSort = employees.reduce((m, e) => Math.max(m, e.sortOrder || 0), 0);
-    await db.collection("employees").doc(nid).set({
-      ...data, id: nid, shifts: {}, sortOrder: maxSort + 1
+    await db.collection("employees").doc(empId).set({
+      ...data, id: empId, shifts: {}, sortOrder: maxSort + 1
     });
   }
+  // Écrit la rémunération à part (jamais dans /employees → invisible aux employés)
+  await db.collection("employeesComp").doc(empId).set(comp, { merge: true });
   closeModal();
 }
 
