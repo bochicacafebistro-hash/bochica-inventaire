@@ -9448,6 +9448,53 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   background:var(--surface);
 }
 
+/* v3.45.3 — Jour FERMÉ dans la sim : colonne verrouillée, employés « en congé » */
+.schedule-empgrid-day-head--closed{
+  background:var(--surface3);
+  opacity:.7;
+}
+.schedule-empgrid-day-closed{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  margin-top:2px;
+  font-size:9px;
+  font-weight:600;
+  color:var(--text3);
+  text-transform:none;
+  letter-spacing:0;
+}
+.schedule-empgrid-cell.schedule-empgrid-cell--closed{
+  background:repeating-linear-gradient(135deg,
+    var(--surface2) 0, var(--surface2) 6px,
+    var(--surface3) 6px, var(--surface3) 12px);
+  cursor:not-allowed;
+}
+.shift-card.shift-card--closed{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-height:44px;
+  padding:6px 8px;
+  background:transparent;
+  border:0.5px solid var(--border);
+  border-radius:var(--radius-md);
+  color:var(--text3);
+  cursor:not-allowed;
+  opacity:.65;
+}
+.shift-card.shift-card--closed .shift-off-label{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  margin-bottom:0;
+}
+.schedule-totals-val.schedule-totals-val--closed{
+  color:var(--text3);
+  opacity:.5;
+}
+
 /* ═══════════════════════════════════════════════════════════════
    v3.37.0 — Carte « Congé » approuvé (jour verrouillé)
    ═══════════════════════════════════════════════════════════════

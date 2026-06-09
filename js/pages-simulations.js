@@ -500,6 +500,11 @@ function renderSimulationEditorHTML(sim) {
 
   const openDays = simEffectiveOpenDays(sim.simulation);
   const visibleIdx = [0,1,2,3,4,5,6].filter(i => openDays.includes(i));
+  // v3.45.3 — on affiche TOUJOURS les 7 jours ; les jours fermés sont verrouillés
+  // (tous les employés « en congé », non modifiables). `visibleIdx` reste l'ensemble
+  // des jours OUVERTS (sert à savoir si un jour est éditable).
+  const allIdx = [0, 1, 2, 3, 4, 5, 6];
+  const isDayOpen = (dow) => visibleIdx.includes(dow);
   // v3.45.0 — fenêtre d'ouverture par jour (affichée dans l'en-tête de la grille)
   const serviceHours = sim.simulation?.serviceHours || {};
 
@@ -590,11 +595,17 @@ function renderSimulationEditorHTML(sim) {
     </div>
 
     <!-- ═ Grille employés × jours (v3.26.0 — empgrid comme Horaires) ═ -->
-    <div class="schedule-empgrid sim-empgrid" style="--n-days:${visibleIdx.length};">
+    <div class="schedule-empgrid sim-empgrid" style="--n-days:7;">
       <!-- Header -->
       <div class="schedule-empgrid-header">
         <div class="schedule-empgrid-emp-head">Employé · Taux · Section</div>
-        ${visibleIdx.map(dow => {
+        ${allIdx.map(dow => {
+          if (!isDayOpen(dow)) {
+            return `<div class="schedule-empgrid-day-head schedule-empgrid-day-head--closed">
+              <div class="schedule-empgrid-day-name">${DAYS_FR[dow]}</div>
+              <div class="schedule-empgrid-day-closed" title="Jour fermé">${icon("ban", 9)} Fermé</div>
+            </div>`;
+          }
           const count = cur.rows.filter(r => (r.daily[dow]?.shifts || []).length > 0).length;
           const dayHrs = cur.dayTotalsHours[dow] || 0;
           const win = serviceHours[dow];
@@ -609,28 +620,31 @@ function renderSimulationEditorHTML(sim) {
       </div>
 
       <!-- Body : une ligne par employé simulé -->
-      ${cur.rows.map((row, rowIdx) => renderSimEmpRow(sim, row, rowIdx, visibleIdx, base.rows, cur.rows.length)).join("")}
+      ${cur.rows.map((row, rowIdx) => renderSimEmpRow(sim, row, rowIdx, allIdx, base.rows, cur.rows.length)).join("")}
     </div>
 
     <!-- ═ Panneau totaux (mêmes colonnes que la grille du haut) ═ -->
-    <div class="schedule-totals-panel sim-totals-panel" style="--n-days:${visibleIdx.length};">
+    <div class="schedule-totals-panel sim-totals-panel" style="--n-days:7;">
       <div class="schedule-totals-grid">
         <div class="schedule-totals-label">Heures / jour</div>
-        ${visibleIdx.map(dow => {
+        ${allIdx.map(dow => {
+          if (!isDayOpen(dow)) return `<div class="schedule-totals-val schedule-totals-val--closed">—</div>`;
           const h = cur.dayTotalsHours[dow] || 0;
           return `<div class="schedule-totals-val">${h ? fmtHours(h) + "h" : "—"}</div>`;
         }).join("")}
         <div class="schedule-totals-val schedule-totals-val--total">${fmtHours(weekTotalHours)}h</div>
 
         <div class="schedule-totals-label">Coût / jour</div>
-        ${visibleIdx.map(dow => {
+        ${allIdx.map(dow => {
+          if (!isDayOpen(dow)) return `<div class="schedule-totals-val schedule-totals-val--closed">—</div>`;
           const c = cur.dayTotalsCost[dow] || 0;
           return `<div class="schedule-totals-val">${c ? fmtMoney(c) : "—"}</div>`;
         }).join("")}
         <div class="schedule-totals-val schedule-totals-val--total">${fmtMoney(weekTotalCost)}</div>
 
         <div class="schedule-totals-label">Ventes prévues</div>
-        ${visibleIdx.map(dow => {
+        ${allIdx.map(dow => {
+          if (!isDayOpen(dow)) return `<div class="schedule-totals-val schedule-totals-val--predicted schedule-totals-val--closed">—</div>`;
           const c = cur.dayTotalsCost[dow] || 0;
           const predicted = salesRatio > 0 ? c / salesRatio : 0;
           return `<div class="schedule-totals-val schedule-totals-val--predicted">${predicted ? fmtMoney(predicted) : "—"}</div>`;
@@ -722,7 +736,7 @@ function renderSimKpi(label, valSim, valBase, gap, positiveIsBad, iconName) {
 }
 
 // Ligne d'employé dans le tableau de la simulation (éditable)
-function renderSimEmpRow(sim, row, rowIdx, visibleIdx, baseRows, totalRows) {
+function renderSimEmpRow(sim, row, rowIdx, dayCols, baseRows, totalRows) {
   const emp = row.emp;
   const isFictional = !!emp.isFictional;
   const sec = (emp.section || "service");
@@ -750,9 +764,18 @@ function renderSimEmpRow(sim, row, rowIdx, visibleIdx, baseRows, totalRows) {
         </select>
       </div>
     </div>
-    <!-- Cellules par jour : 0..N cartes de quart (shift coupé) ou Congé -->
-    ${visibleIdx.map(dow => {
+    <!-- Cellules par jour : 0..N cartes de quart (shift coupé), Libre, ou Fermé (verrouillé) -->
+    ${dayCols.map(dow => {
       const d = row.daily[dow];
+      // v3.45.3 — jour fermé : daily[dow] est null → cellule verrouillée « Congé »,
+      // non cliquable, non cible de glisser-déposer.
+      if (!d) {
+        return `<div class="schedule-empgrid-cell schedule-empgrid-cell--closed" data-dow="${dow}" title="Jour fermé — non modifiable">
+          <div class="shift-card shift-card--closed" aria-disabled="true">
+            <div class="shift-off-label">${icon("ban", 11)} Congé</div>
+          </div>
+        </div>`;
+      }
       const shifts = d ? d.shifts : [];
       if (!shifts.length) {
         return `<div class="schedule-empgrid-cell schedule-empgrid-cell--empty"
@@ -762,8 +785,8 @@ function renderSimEmpRow(sim, row, rowIdx, visibleIdx, baseRows, totalRows) {
             ondrop="simShiftCardDrop(event,'${sim.id}','${emp.id}',${dow})">
           <div class="shift-card shift-card--off"
               onclick="openSimShiftModal('${sim.id}','${emp.id}',${dow})"
-              title="Aucun shift — cliquer pour ajouter">
-            <div class="shift-off-label">Congé</div>
+              title="Aucun quart — cliquer pour ajouter">
+            <div class="shift-off-label">Libre</div>
             <div class="shift-off-add">${icon("plus", 11)} Ajouter</div>
           </div>
         </div>`;
