@@ -609,7 +609,7 @@ function renderSimulationEditorHTML(sim) {
       </div>
 
       <!-- Body : une ligne par employé simulé -->
-      ${cur.rows.map((row, rowIdx) => renderSimEmpRow(sim, row, rowIdx, visibleIdx, base.rows)).join("")}
+      ${cur.rows.map((row, rowIdx) => renderSimEmpRow(sim, row, rowIdx, visibleIdx, base.rows, cur.rows.length)).join("")}
     </div>
 
     <!-- ═ Panneau totaux (mêmes colonnes que la grille du haut) ═ -->
@@ -722,17 +722,22 @@ function renderSimKpi(label, valSim, valBase, gap, positiveIsBad, iconName) {
 }
 
 // Ligne d'employé dans le tableau de la simulation (éditable)
-function renderSimEmpRow(sim, row, rowIdx, visibleIdx, baseRows) {
+function renderSimEmpRow(sim, row, rowIdx, visibleIdx, baseRows, totalRows) {
   const emp = row.emp;
   const isFictional = !!emp.isFictional;
   const sec = (emp.section || "service");
   const secCls = sec === "cuisine" ? "is-kitchen"
               : sec === "service" ? "is-service" : "is-other";
+  const nRows = (typeof totalRows === "number") ? totalRows : (rowIdx + 1);
 
   return `<div class="schedule-empgrid-row sim-empgrid-row${isFictional ? " is-fictional" : ""}" data-emp-id="${emp.id}">
     <!-- Cellule employé éditable (gauche) -->
     <div class="schedule-empgrid-emp sim-empgrid-emp ${secCls}">
       <div class="sim-emp-name-row">
+        <div class="sim-emp-reorder">
+          <button class="sim-emp-move" onclick="moveSimEmployee('${sim.id}','${emp.id}',-1)" ${rowIdx === 0 ? "disabled" : ""} title="Monter" aria-label="Monter ${esc(emp.name || "")}">${icon("chevron-up", 12)}</button>
+          <button class="sim-emp-move" onclick="moveSimEmployee('${sim.id}','${emp.id}',1)" ${rowIdx >= nRows - 1 ? "disabled" : ""} title="Descendre" aria-label="Descendre ${esc(emp.name || "")}">${icon("chevron-down", 12)}</button>
+        </div>
         <input class="sim-input-name" type="text" value="${esc(emp.name || "")}" placeholder="Nom" onchange="updateSimEmployee('${sim.id}','${emp.id}','name',this.value)"/>
         ${isFictional ? `<span class="sim-badge-fictional" title="Employé ajouté dans la simulation">FICTIF</span>` : ""}
       </div>
@@ -1028,6 +1033,19 @@ function initSimCoverageChart() {
 }
 
 // ═ Mutations Firestore ═════════════════════════════════
+
+// v3.45.2 — réordonner un employé simulé (monter -1 / descendre +1)
+async function moveSimEmployee(simId, empId, dir) {
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) return;
+  const emps = [...(sim.simulation?.employees || [])];
+  const i = emps.findIndex(e => e.id === empId);
+  if (i < 0) return;
+  const j = i + dir;
+  if (j < 0 || j >= emps.length) return;
+  [emps[i], emps[j]] = [emps[j], emps[i]];
+  await persistSim(simId, { ...sim.simulation, employees: emps });
+}
 
 async function updateSimEmployee(simId, empId, field, value) {
   const sim = (payrollSimulations || []).find(s => s.id === simId);
