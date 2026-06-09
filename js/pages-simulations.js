@@ -58,15 +58,30 @@ function simDayShifts(entry) {
     .map(s => ({ start: s.start, end: s.end }));
 }
 
+// v3.45.0 — jours ouverts EFFECTIFS d'un scénario : union de `openDays`
+// et de tout jour ayant une fenêtre de service définie. Évite qu'un jour
+// auquel on a donné des heures de service reste invisible dans la grille
+// parce qu'il n'était pas (encore) coché dans « Jours ouverts ».
+function simEffectiveOpenDays(scenario) {
+  const base = (Array.isArray(scenario?.openDays) && scenario.openDays.length)
+    ? scenario.openDays.slice()
+    : [0, 1, 2, 3, 4, 5, 6];
+  const set = new Set(base);
+  const sh = scenario?.serviceHours || {};
+  for (const k of Object.keys(sh)) {
+    const v = sh[k];
+    if (v && (v.start || v.end)) set.add(Number(k));
+  }
+  return [...set].sort((a, b) => a - b);
+}
+
 // Calcule un snapshot complet d'un scénario (baseline ou simulation).
 // Retourne { rows[], totals, pools, totalsHours }
 function computeSimScenario(scenario) {
   if (!scenario || !Array.isArray(scenario.employees)) {
     return { rows: [], totals: { hours: 0, gross: 0, tips: 0, total: 0 }, pools: { cuisine: 0, service: 0 }, totalsHours: { cuisine: 0, service: 0 } };
   }
-  const openDays = Array.isArray(scenario.openDays) && scenario.openDays.length
-    ? scenario.openDays
-    : [0, 1, 2, 3, 4, 5, 6];
+  const openDays = simEffectiveOpenDays(scenario);
   const serviceHours = scenario.serviceHours || {};
   const tipShares = scenario.tipShares || { cuisine: 0.25, service: 0.75 };
   const totalTips = Number(scenario.totalTips) || 0;
@@ -483,9 +498,7 @@ function renderSimulationEditorHTML(sim) {
   const gapGross = simGap(cur.totals.gross, base.totals.gross);
   const gapTips = simGap(cur.totals.tips, base.totals.tips);
 
-  const openDays = Array.isArray(sim.simulation?.openDays) && sim.simulation.openDays.length
-    ? sim.simulation.openDays
-    : [0,1,2,3,4,5,6];
+  const openDays = simEffectiveOpenDays(sim.simulation);
   const visibleIdx = [0,1,2,3,4,5,6].filter(i => openDays.includes(i));
   // v3.45.0 — fenêtre d'ouverture par jour (affichée dans l'en-tête de la grille)
   const serviceHours = sim.simulation?.serviceHours || {};
@@ -892,9 +905,7 @@ function initSimCoverageChart() {
   }
 
   const simEmployees = sim.simulation?.employees || [];
-  const openDays = Array.isArray(sim.simulation?.openDays) && sim.simulation.openDays.length
-    ? sim.simulation.openDays
-    : [0, 1, 2, 3, 4, 5, 6];
+  const openDays = simEffectiveOpenDays(sim.simulation);
   const visibleIdx = [0, 1, 2, 3, 4, 5, 6].filter(i => openDays.includes(i));
   const section = _simCoverageSection;
 
@@ -1288,14 +1299,15 @@ async function updateSimServiceHours(simId, dow, field, value) {
 function openSimOpenDaysModal(simId) {
   const sim = (payrollSimulations || []).find(s => s.id === simId);
   if (!sim) return;
-  const current = Array.isArray(sim.simulation?.openDays) ? sim.simulation.openDays : [0,1,2,3,4,5,6];
+  // État effectif : un jour avec fenêtre de service compte comme ouvert
+  const current = simEffectiveOpenDays(sim.simulation);
   showModal(`<div class="modal" style="max-width:400px">
     <div class="modal-header">
       <h3>${icon("calendar", 18)} Jours d'ouverture (simulation)</h3>
       <button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button>
     </div>
     <p style="color:var(--text3);font-size:13px;margin-bottom:16px;line-height:1.5">
-      Choisis les jours où le resto est ouvert dans ce scénario.
+      Choisis les jours où le resto est ouvert dans ce scénario. Décocher un jour retire aussi sa fenêtre de service.
     </p>
     <div class="open-days-grid">
       ${DAYS_FR.map((d, i) => {
@@ -1316,7 +1328,7 @@ function openSimOpenDaysModal(simId) {
 async function toggleSimOpenDay(simId, dayIdx, checked) {
   const sim = (payrollSimulations || []).find(s => s.id === simId);
   if (!sim) return;
-  const current = Array.isArray(sim.simulation?.openDays) ? [...sim.simulation.openDays] : [0,1,2,3,4,5,6];
+  const current = simEffectiveOpenDays(sim.simulation);
   let next;
   if (checked && !current.includes(dayIdx)) {
     next = [...current, dayIdx].sort((a, b) => a - b);
@@ -1331,7 +1343,14 @@ async function toggleSimOpenDay(simId, dayIdx, checked) {
     if (cb) cb.checked = true;
     return;
   }
-  await persistSim(simId, { ...sim.simulation, openDays: next });
+  const patch = { ...sim.simulation, openDays: next };
+  // Décocher un jour retire aussi sa fenêtre de service, sinon l'union
+  // (simEffectiveOpenDays) le ré-afficherait aussitôt.
+  if (!checked) {
+    const sh = { ...(sim.simulation?.serviceHours || {}) };
+    if (sh[dayIdx]) { delete sh[dayIdx]; patch.serviceHours = sh; }
+  }
+  await persistSim(simId, patch);
 }
 
 // ═══════════════════════════════════════════════════════════════
