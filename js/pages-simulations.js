@@ -1241,7 +1241,7 @@ function openSimServiceHoursModal(simId) {
       <button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button>
     </div>
     <p style="color:var(--text3);font-size:13px;margin-bottom:16px;line-height:1.5">
-      Définis la <strong>fenêtre de service</strong> de chaque jour. Seules les heures travaillées dans cette fenêtre comptent pour le calcul des pourboires.
+      Définis la <strong>fenêtre de service</strong> de chaque jour. Seules les heures travaillées dans cette fenêtre comptent pour le calcul des pourboires. ${icon("info", 11)} Régler une fenêtre pour un jour l'<strong>ouvre automatiquement</strong> (il apparaît dans la grille) ; pour <strong>fermer</strong> un jour, décoche-le dans « Jours ouverts ».
     </p>
     <div class="sim-svc-grid">
       ${DAYS_FR.map((dn, dow) => {
@@ -1271,7 +1271,16 @@ async function updateSimServiceHours(simId, dow, field, value) {
   } else {
     sh[dow] = next;
   }
-  await persistSim(simId, { ...sim.simulation, serviceHours: sh });
+  // v3.45.0 — lier ouverture ↔ heures de service : définir une fenêtre de service
+  // pour un jour l'ouvre automatiquement (il apparaît alors dans la grille).
+  const patch = { ...sim.simulation, serviceHours: sh };
+  if (next.start || next.end) {
+    const openDays = Array.isArray(sim.simulation?.openDays) ? [...sim.simulation.openDays] : [0,1,2,3,4,5,6];
+    if (!openDays.includes(dow)) {
+      patch.openDays = [...openDays, dow].sort((a, b) => a - b);
+    }
+  }
+  await persistSim(simId, patch);
 }
 
 // ═ Jours d'ouverture (par jour de semaine) ═════════════
