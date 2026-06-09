@@ -242,9 +242,15 @@ function getSectionOverride(empId) {
 // ou un cas particulier ponctuel).
 function getEffectiveTipGroup(emp) {
   const override = getSectionOverride(emp.id);
+  // L'override de semaine est explicite → il a priorité (permet même de
+  // réinclure ponctuellement un employé « sans pourboire » en le mettant
+  // sur cuisine/service pour une semaine exceptionnelle).
   if (override === "excluded") return "excluded";
   if (override === "cuisine") return "cuisine";
   if (override === "service") return "service";
+  // v3.44.0 — Réglage permanent « sans pourboire » sur la fiche employé :
+  // exclu du pool par défaut (0 $, ses heures ne diluent pas le partage).
+  if (emp.noTips) return "excluded";
   return tipGroupOf(emp);
 }
 
@@ -1000,6 +1006,7 @@ function renderSalaires() {
                 ${isLocked ? "" : `<span class="payroll-drag-handle" draggable="true" ondragstart="payrollRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 12)}</span>`}
                 <span class="schedule-empgrid-emp-name">${esc(row.emp.name || "")}</span>
                 ${row.isManual ? `<span class="payroll-manual-badge">EXTRA</span>` : ""}
+                ${row.emp.noTips && !row.groupOverride ? `<span class="no-tips-badge" title="Exclu du partage des pourboires (réglage de la fiche employé)">${icon("ban", 9)} Sans pourb.</span>` : ""}
                 ${row.emp.archived ? `<span class="emp-archived-badge" title="Employé archivé — affiché car il a des heures cette semaine">${icon("archive", 10)} Archivé</span>` : ""}
                 ${row.isManual && !isLocked ? `<button class="payroll-manual-del" onclick="removeManualEmployee('${row.emp.id}')" title="Retirer cet extra" aria-label="Retirer cet extra">${icon("trash", 11)}</button>` : ""}
                 ${!row.isManual && !isLocked ? `<button class="emp-week-remove" onclick="hideEmpFromPayrollWeek('${row.emp.id}')" title="Retirer de cette semaine de paie (n'affecte pas les autres semaines)" aria-label="Retirer ${esc(row.emp.name || "")} de cette semaine">${icon("x", 12)}</button>` : ""}
@@ -1010,7 +1017,7 @@ function renderSalaires() {
                   ${isLocked ? "disabled" : ""}
                   title="${isOverridden ? "⚠ Section dérogée pour cette semaine" : "Section pour les pourboires"}"
                   aria-label="Section ${esc(row.emp.name || "")}">
-                  <option value="auto" ${selValue === "auto" ? "selected" : ""}>Auto (${tipGroupOf(row.emp) === "cuisine" ? "Cuisine" : "Service"})</option>
+                  <option value="auto" ${selValue === "auto" ? "selected" : ""}>Auto (${row.emp.noTips ? "Sans pourboire" : tipGroupOf(row.emp) === "cuisine" ? "Cuisine" : "Service"})</option>
                   <option value="cuisine" ${selValue === "cuisine" ? "selected" : ""}>Cuisine ${(tipShares.cuisine*100).toFixed(0)}%</option>
                   <option value="service" ${selValue === "service" ? "selected" : ""}>Service ${(tipShares.service*100).toFixed(0)}%</option>
                   <option value="excluded" ${selValue === "excluded" ? "selected" : ""}>Exclu</option>

@@ -46,6 +46,18 @@ function simTipGroupOf(empSim) {
   return (empSim.section || "service") === "cuisine" ? "cuisine" : "service";
 }
 
+// v3.45.0 — Shifts coupés (plusieurs quarts dans la même journée).
+// Le modèle emp.shifts[dow] accepte désormais SOIT un objet unique {start,end}
+// (ancien format, rétrocompat), SOIT un tableau de {start,end}.
+// Ce helper normalise TOUJOURS vers un tableau de quarts valides {start,end}.
+function simDayShifts(entry) {
+  if (!entry) return [];
+  const arr = Array.isArray(entry) ? entry : [entry];
+  return arr
+    .filter(s => s && s.start && s.end)
+    .map(s => ({ start: s.start, end: s.end }));
+}
+
 // Calcule un snapshot complet d'un scénario (baseline ou simulation).
 // Retourne { rows[], totals, pools, totalsHours }
 function computeSimScenario(scenario) {
@@ -81,16 +93,21 @@ function computeSimScenario(scenario) {
     const daily = [];
     for (let dow = 0; dow < 7; dow++) {
       if (!openDays.includes(dow)) { daily.push(null); continue; }
-      const shift = (emp.shifts || {})[dow];
-      const hours = hoursFromShift(shift);
+      // v3.45.0 — un jour peut contenir PLUSIEURS quarts (shift coupé)
+      const shifts = simDayShifts((emp.shifts || {})[dow]);
       const win = serviceHours[dow];
-      const tipHrs = win ? intersectShiftHours(shift, win) : 0;
+      let hours = 0;
+      let tipHrs = 0;
+      shifts.forEach(s => {
+        hours += hoursFromShift(s);
+        if (win) tipHrs += intersectShiftHours(s, win);
+      });
       const cost = isSal ? dailyFixedCost : hours * rate;
       totalHours += hours;
       tipEligibleHours += tipHrs;
       dayTotalsHours[dow] += hours;
       dayTotalsCost[dow] += cost;
-      daily.push({ shift, hours, tipHrs, cost });
+      daily.push({ shifts, hours, tipHrs, cost });
     }
     if (group === "cuisine") totalHrsCuisine += tipEligibleHours;
     else totalHrsService += tipEligibleHours;
@@ -470,6 +487,8 @@ function renderSimulationEditorHTML(sim) {
     ? sim.simulation.openDays
     : [0,1,2,3,4,5,6];
   const visibleIdx = [0,1,2,3,4,5,6].filter(i => openDays.includes(i));
+  // v3.45.0 — fenêtre d'ouverture par jour (affichée dans l'en-tête de la grille)
+  const serviceHours = sim.simulation?.serviceHours || {};
 
   const tipShares = sim.simulation?.tipShares || { cuisine: 0.25, service: 0.75 };
   const totalTips = Number(sim.simulation?.totalTips) || 0;
@@ -490,6 +509,7 @@ function renderSimulationEditorHTML(sim) {
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-secondary btn-sm" onclick="openSimMetaModal('${sim.id}')" title="Modifier nom et description">${icon("pencil", 14)} Renommer</button>
+        <button class="btn-secondary btn-sm" onclick="copyCurrentWeekIntoSim('${sim.id}')" title="Remplacer les employés et quarts de cette simulation par l'horaire planifié de la semaine en cours">${icon("download", 14)} Copier l'horaire</button>
         <button class="btn-secondary btn-sm" onclick="resetSimToBaseline('${sim.id}')" title="Réinitialiser la simulation aux valeurs du réel">${icon("refresh", 14)} Réinitialiser</button>
         <button class="btn-secondary btn-sm" onclick="duplicateSimulation('${sim.id}')" title="Dupliquer cette simulation">${icon("copy", 14)} Dupliquer</button>
       </div>
@@ -562,10 +582,13 @@ function renderSimulationEditorHTML(sim) {
       <div class="schedule-empgrid-header">
         <div class="schedule-empgrid-emp-head">Employé · Taux · Section</div>
         ${visibleIdx.map(dow => {
-          const count = cur.rows.filter(r => r.daily[dow]?.shift?.start && r.daily[dow]?.shift?.end).length;
+          const count = cur.rows.filter(r => (r.daily[dow]?.shifts || []).length > 0).length;
           const dayHrs = cur.dayTotalsHours[dow] || 0;
+          const win = serviceHours[dow];
+          const winLabel = win && win.start && win.end ? `${win.start}–${win.end}` : "";
           return `<div class="schedule-empgrid-day-head">
             <div class="schedule-empgrid-day-name">${DAYS_FR[dow]}</div>
+            ${winLabel ? `<div class="schedule-empgrid-day-svc" title="Fenêtre d'ouverture / de service">${icon("clock", 9)} ${winLabel}</div>` : ""}
             <div class="schedule-empgrid-day-count">${count} pers · ${dayHrs ? fmtHours(dayHrs) + "h" : "0h"}</div>
           </div>`;
         }).join("")}
@@ -709,12 +732,11 @@ function renderSimEmpRow(sim, row, rowIdx, visibleIdx, baseRows) {
         </select>
       </div>
     </div>
-    <!-- Cellules par jour : shift card ou Congé -->
+    <!-- Cellules par jour : 0..N cartes de quart (shift coupé) ou Congé -->
     ${visibleIdx.map(dow => {
       const d = row.daily[dow];
-      const shift = d ? d.shift : null;
-      const hasShift = shift && shift.start && shift.end;
-      if (!hasShift) {
+      const shifts = d ? d.shifts : [];
+      if (!shifts.length) {
         return `<div class="schedule-empgrid-cell schedule-empgrid-cell--empty"
             data-dow="${dow}"
             ondragover="simShiftCardDragOver(event,${dow})"
@@ -728,25 +750,30 @@ function renderSimEmpRow(sim, row, rowIdx, visibleIdx, baseRows) {
           </div>
         </div>`;
       }
-      return `<div class="schedule-empgrid-cell"
+      return `<div class="schedule-empgrid-cell sim-cell-multi"
           data-dow="${dow}"
           ondragover="simShiftCardDragOver(event,${dow})"
           ondragleave="simShiftCardDragLeave(event)"
           ondrop="simShiftCardDrop(event,'${sim.id}','${emp.id}',${dow})">
-        <div class="shift-card shift-card--compact ${secCls}"
-            draggable="true"
-            data-emp-id="${emp.id}"
-            data-from-dow="${dow}"
-            ondragstart="simShiftCardDragStart(event,'${emp.id}',${dow})"
-            ondragend="simShiftCardDragEnd(event)"
-            onclick="openSimShiftModal('${sim.id}','${emp.id}',${dow})"
-            title="Cliquer pour modifier · Glisser pour déplacer">
-          <div class="shift-card-time">${shift.start} → ${shift.end}</div>
-          <div class="shift-card-meta">
-            <span>${fmtHours(d.hours || 0)}h</span>
-            <span class="shift-card-cost">${fmtMoney(d.cost || 0)}</span>
-          </div>
-        </div>
+        ${shifts.map((s, si) => {
+          const h = hoursFromShift(s);
+          return `<div class="shift-card shift-card--compact ${secCls}"
+              draggable="true"
+              data-emp-id="${emp.id}"
+              data-from-dow="${dow}"
+              data-shift-idx="${si}"
+              ondragstart="simShiftCardDragStart(event,'${emp.id}',${dow},${si})"
+              ondragend="simShiftCardDragEnd(event)"
+              onclick="openSimShiftModal('${sim.id}','${emp.id}',${dow},${si})"
+              title="Cliquer pour modifier · Glisser pour déplacer">
+            <div class="shift-card-time">${s.start} → ${s.end}</div>
+            <div class="shift-card-meta">
+              <span>${fmtHours(h)}h</span>
+              ${row.isSal ? "" : `<span class="shift-card-cost">${fmtMoney(h * row.rate)}</span>`}
+            </div>
+          </div>`;
+        }).join("")}
+        <button class="sim-add-shift-btn" onclick="openSimShiftModal('${sim.id}','${emp.id}',${dow})" title="Ajouter un autre quart ce jour-là">${icon("plus", 11)} Quart</button>
       </div>`;
     }).join("")}
     <!-- Cellule totaux + bouton supprimer (droite) -->
@@ -831,14 +858,18 @@ function countSimCoverageAtHour(simEmployees, dow, H, sectionFilter) {
       const empSection = emp.section || "service";
       if (empSection !== sectionFilter) continue;
     }
-    const s = (emp.shifts || {})[dow];
-    if (!s || !s.start || !s.end) continue;
-    let start = parseTimeToFloat(s.start);
-    let end = parseTimeToFloat(s.end);
-    if (start == null || end == null) continue;
-    if (end <= start) end += 24;       // shift qui passe minuit
-    if (H >= start && H < end) count++;
-    else if (H + 24 >= start && H + 24 < end) count++;
+    // v3.45.0 — plusieurs quarts possibles ; l'employé est compté UNE fois s'il
+    // est présent à l'heure H dans l'un de ses quarts du jour.
+    const shifts = simDayShifts((emp.shifts || {})[dow]);
+    let present = false;
+    for (const s of shifts) {
+      let start = parseTimeToFloat(s.start);
+      let end = parseTimeToFloat(s.end);
+      if (start == null || end == null) continue;
+      if (end <= start) end += 24;       // shift qui passe minuit
+      if ((H >= start && H < end) || (H + 24 >= start && H + 24 < end)) { present = true; break; }
+    }
+    if (present) count++;
   }
   return count;
 }
@@ -876,15 +907,15 @@ function initSimCoverageChart() {
         const empSection = emp.section || "service";
         if (empSection !== section) continue;
       }
-      const s = (emp.shifts || {})[dow];
-      if (!s || !s.start || !s.end) continue;
-      const sh = parseTimeToFloat(s.start);
-      let eh = parseTimeToFloat(s.end);
-      if (sh == null || eh == null) continue;
-      if (eh <= sh) eh += 24;
-      minH = Math.min(minH, Math.floor(sh));
-      maxH = Math.max(maxH, Math.ceil(eh));
-      anyShift = true;
+      for (const s of simDayShifts((emp.shifts || {})[dow])) {
+        const sh = parseTimeToFloat(s.start);
+        let eh = parseTimeToFloat(s.end);
+        if (sh == null || eh == null) continue;
+        if (eh <= sh) eh += 24;
+        minH = Math.min(minH, Math.floor(sh));
+        maxH = Math.max(maxH, Math.ceil(eh));
+        anyShift = true;
+      }
     }
   });
 
@@ -1007,24 +1038,50 @@ async function updateSimEmployee(simId, empId, field, value) {
   await persistSim(simId, { ...sim.simulation, employees: simEmps });
 }
 
-async function updateSimShift(simId, empId, dow, field, value) {
+// v3.45.0 — écrit la map shifts complète d'un employé simulé.
+// Les quarts d'un jour sont TOUJOURS stockés en tableau (shift coupé possible) ;
+// un jour vide est retiré de la map.
+async function _writeSimEmpShifts(simId, empId, shiftsMap) {
   const sim = (payrollSimulations || []).find(s => s.id === simId);
   if (!sim) return;
   const simEmps = [...(sim.simulation?.employees || [])];
   const idx = simEmps.findIndex(e => e.id === empId);
   if (idx < 0) return;
-  const emp = { ...simEmps[idx] };
-  const shifts = { ...(emp.shifts || {}) };
-  const cur = shifts[dow] || {};
-  const next = { ...cur, [field]: value || "" };
-  if (!next.start && !next.end) {
-    delete shifts[dow];
-  } else {
-    shifts[dow] = next;
+  // Nettoie : tableaux vides supprimés
+  const clean = {};
+  for (const k of Object.keys(shiftsMap)) {
+    const arr = simDayShifts(shiftsMap[k]);
+    if (arr.length) clean[k] = arr;
   }
-  emp.shifts = shifts;
-  simEmps[idx] = emp;
+  simEmps[idx] = { ...simEmps[idx], shifts: clean };
   await persistSim(simId, { ...sim.simulation, employees: simEmps });
+}
+
+// Ajoute (idx<0) ou modifie (idx>=0) un quart pour un jour donné.
+async function setSimDayShift(simId, empId, dow, shiftIdx, shift) {
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) return;
+  const emp = (sim.simulation?.employees || []).find(e => e.id === empId);
+  if (!emp) return;
+  const shiftsMap = { ...(emp.shifts || {}) };
+  const arr = simDayShifts(shiftsMap[dow]);
+  if (shiftIdx >= 0 && shiftIdx < arr.length) arr[shiftIdx] = shift;
+  else arr.push(shift);
+  shiftsMap[dow] = arr;
+  await _writeSimEmpShifts(simId, empId, shiftsMap);
+}
+
+// Supprime le quart à l'index donné pour un jour.
+async function deleteSimDayShift(simId, empId, dow, shiftIdx) {
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) return;
+  const emp = (sim.simulation?.employees || []).find(e => e.id === empId);
+  if (!emp) return;
+  const shiftsMap = { ...(emp.shifts || {}) };
+  const arr = simDayShifts(shiftsMap[dow]);
+  if (shiftIdx >= 0 && shiftIdx < arr.length) arr.splice(shiftIdx, 1);
+  shiftsMap[dow] = arr;
+  await _writeSimEmpShifts(simId, empId, shiftsMap);
 }
 
 async function updateSimTotalTips(simId, value) {
@@ -1278,25 +1335,28 @@ async function toggleSimOpenDay(simId, dayIdx, checked) {
 // État local pour le drag&drop sim
 let _simShiftDragEmpId = null;
 let _simShiftDragFromDow = null;
+let _simShiftDragShiftIdx = null;   // v3.45.0 — index du quart déplacé (shift coupé)
 
-// Ouvre une modal pour créer/modifier un shift sim (par dow)
-function openSimShiftModal(simId, empId, dow) {
+// Ouvre une modal pour créer/modifier un quart sim (par dow).
+// shiftIdx absent/<0 → AJOUT d'un nouveau quart ; shiftIdx>=0 → modification.
+function openSimShiftModal(simId, empId, dow, shiftIdx) {
   const sim = (payrollSimulations || []).find(s => s.id === simId);
   if (!sim) return;
   const emp = (sim.simulation?.employees || []).find(e => e.id === empId);
   if (!emp) return;
-  const shift = (emp.shifts || {})[dow];
-  const startVal = shift?.start || "";
-  const endVal = shift?.end || "";
-  const hasShift = !!(startVal && endVal);
+  const dayShifts = simDayShifts((emp.shifts || {})[dow]);
+  const idx = (typeof shiftIdx === "number" && shiftIdx >= 0) ? shiftIdx : -1;
+  const editing = idx >= 0 && !!dayShifts[idx];
+  const startVal = editing ? dayShifts[idx].start : "";
+  const endVal = editing ? dayShifts[idx].end : "";
 
   showModal(`<div class="modal" style="max-width:440px">
     <div class="modal-header">
-      <h3>${icon("clock", 18)} ${hasShift ? "Modifier le shift" : "Ajouter un shift"}</h3>
+      <h3>${icon("clock", 18)} ${editing ? "Modifier le quart" : "Ajouter un quart"}</h3>
       <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
     </div>
     <p style="color:var(--text2);font-size:13px;margin:0 0 var(--sp-3)">
-      ${icon("user", 12)} <strong>${esc(emp.name || "")}</strong> · ${DAYS_FR[dow]}
+      ${icon("user", 12)} <strong>${esc(emp.name || "")}</strong> · ${DAYS_FR[dow]}${dayShifts.length > 1 || (editing && dayShifts.length > 1) ? ` · quart ${editing ? idx + 1 : dayShifts.length + 1}` : ""}
     </p>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);margin-top:var(--sp-2)">
       <label>Entrée
@@ -1306,44 +1366,42 @@ function openSimShiftModal(simId, empId, dow) {
         ${timeInputHTML("sim-shift-end", endVal)}
       </label>
     </div>
-    <p class="time-input-hint">${icon("info", 11)} Tape l'heure exacte (ex. 17:04) ou choisis aux 15 min dans la liste.</p>
+    <p class="time-input-hint">${icon("info", 11)} Tape l'heure exacte (ex. 17:04) ou choisis aux 15 min dans la liste. Tu peux ajouter <strong>plusieurs quarts</strong> dans la même journée (ex. 12:00–14:00 puis 17:00–21:00).</p>
     ${timeDatalistHTML()}
     <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3)">
-      ${hasShift ? `<button class="btn-cancel" style="color:#a23a36" onclick="deleteSimShift('${simId}','${empId}',${dow})">${icon("trash", 14)} Supprimer</button>` : `<div></div>`}
+      ${editing ? `<button class="btn-cancel" style="color:#a23a36" onclick="deleteSimShift('${simId}','${empId}',${dow},${idx})">${icon("trash", 14)} Supprimer</button>` : `<div></div>`}
       <div style="display:flex;gap:var(--sp-2)">
         <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
-        <button class="btn btn-primary" onclick="saveSimShiftFromModal('${simId}','${empId}',${dow})">${icon("check", 14)} ${hasShift ? "Enregistrer" : "Ajouter"}</button>
+        <button class="btn btn-primary" onclick="saveSimShiftFromModal('${simId}','${empId}',${dow},${idx})">${icon("check", 14)} ${editing ? "Enregistrer" : "Ajouter"}</button>
       </div>
     </div>
   </div>`);
 }
 
-async function saveSimShiftFromModal(simId, empId, dow) {
+async function saveSimShiftFromModal(simId, empId, dow, shiftIdx) {
   const start = normalizeTimeInput(document.getElementById("sim-shift-start").value);
   const end = normalizeTimeInput(document.getElementById("sim-shift-end").value);
   if (start === null || end === null) return toast("Heure invalide — utilise le format hh:mm (ex. 17:04).", "warning");
   if (!start || !end) return toast("Saisis l'entrée et la sortie.", "warning");
-  // updateSimShift est asynchrone et accepte un seul champ à la fois — on l'appelle deux fois
-  await updateSimShift(simId, empId, dow, "start", start);
-  await updateSimShift(simId, empId, dow, "end", end);
+  await setSimDayShift(simId, empId, dow, Number(shiftIdx), { start, end });
   closeModal();
-  toast("Shift sim enregistré.", "success", 2000);
+  toast("Quart sim enregistré.", "success", 2000);
 }
 
-async function deleteSimShift(simId, empId, dow) {
-  await updateSimShift(simId, empId, dow, "start", "");
-  await updateSimShift(simId, empId, dow, "end", "");
+async function deleteSimShift(simId, empId, dow, shiftIdx) {
+  await deleteSimDayShift(simId, empId, dow, Number(shiftIdx));
   closeModal();
-  toast("Shift sim supprimé.", "success", 2000);
+  toast("Quart sim supprimé.", "success", 2000);
 }
 
-// ─ Drag & drop sim (par dow) ─────────────────────────────
-function simShiftCardDragStart(e, empId, fromDow) {
+// ─ Drag & drop sim (par dow + index de quart) ────────────
+function simShiftCardDragStart(e, empId, fromDow, shiftIdx) {
   _simShiftDragEmpId = empId;
   _simShiftDragFromDow = fromDow;
+  _simShiftDragShiftIdx = (typeof shiftIdx === "number") ? shiftIdx : 0;
   if (e.dataTransfer) {
     e.dataTransfer.effectAllowed = "move";
-    try { e.dataTransfer.setData("text/plain", `${empId}|${fromDow}`); } catch (_) {}
+    try { e.dataTransfer.setData("text/plain", `${empId}|${fromDow}|${_simShiftDragShiftIdx}`); } catch (_) {}
   }
   const card = e.currentTarget;
   setTimeout(() => card && card.classList.add("is-dragging"), 0);
@@ -1369,33 +1427,74 @@ function simShiftCardDragEnd() {
   document.querySelectorAll(".schedule-empgrid-cell.is-drop-target").forEach(c => c.classList.remove("is-drop-target"));
   _simShiftDragEmpId = null;
   _simShiftDragFromDow = null;
+  _simShiftDragShiftIdx = null;
 }
 
 async function simShiftCardDrop(e, simId, targetEmpId, targetDow) {
   e.preventDefault();
   const empId = _simShiftDragEmpId;
   const fromDow = _simShiftDragFromDow;
+  const srcIdx = _simShiftDragShiftIdx;
   simShiftCardDragEnd();
   if (!empId || fromDow === null || fromDow === targetDow) return;
-  // Le drop doit rester pour le MÊME employé (déplacer son shift vers un autre jour)
+  // Le drop doit rester pour le MÊME employé (déplacer son quart vers un autre jour)
   if (empId !== targetEmpId) {
-    toast("On ne peut déplacer un shift que vers un autre jour du même employé.", "warning", 4000);
+    toast("On ne peut déplacer un quart que vers un autre jour du même employé.", "warning", 4000);
     return;
   }
   const sim = (payrollSimulations || []).find(s => s.id === simId);
   if (!sim) return;
   const emp = (sim.simulation?.employees || []).find(e => e.id === empId);
   if (!emp) return;
-  const src = (emp.shifts || {})[fromDow];
-  if (!src || !src.start || !src.end) return;
-  const tgt = (emp.shifts || {})[targetDow];
-  if (tgt && tgt.start && tgt.end) {
-    if (!confirm(`${emp.name} a déjà un shift ${tgt.start}→${tgt.end} ${DAYS_FR[targetDow]}. Le remplacer par ${src.start}→${src.end} ?`)) return;
+  // v3.45.0 — on déplace UN quart précis (shift coupé) ; il s'ajoute aux quarts
+  // existants du jour cible (au lieu de les écraser).
+  const shiftsMap = { ...(emp.shifts || {}) };
+  const fromArr = simDayShifts(shiftsMap[fromDow]);
+  const moved = fromArr[srcIdx];
+  if (!moved) return;
+  fromArr.splice(srcIdx, 1);
+  const targetArr = simDayShifts(shiftsMap[targetDow]);
+  targetArr.push(moved);
+  shiftsMap[fromDow] = fromArr;
+  shiftsMap[targetDow] = targetArr;
+  await _writeSimEmpShifts(simId, empId, shiftsMap);
+  toast(`Quart sim déplacé ${DAYS_FR[fromDow]} → ${DAYS_FR[targetDow]}`, "success", 2500);
+}
+
+// ═ Copier l'horaire planifié de la semaine en cours dans la sim (point 3) ═
+function copyCurrentWeekIntoSim(simId) {
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) return;
+  const activeEmps = (typeof activeEmployees === "function" ? activeEmployees() : employees);
+  if (!activeEmps || activeEmps.length === 0) {
+    return toast("Aucun employé actif dans Employés & Horaires à copier.", "warning");
   }
-  // Move : copy to target, clear source
-  await updateSimShift(simId, empId, targetDow, "start", src.start);
-  await updateSimShift(simId, empId, targetDow, "end", src.end);
-  await updateSimShift(simId, empId, fromDow, "start", "");
-  await updateSimShift(simId, empId, fromDow, "end", "");
-  toast(`Shift sim déplacé ${DAYS_FR[fromDow]} → ${DAYS_FR[targetDow]}`, "success", 2500);
+  openConfirm(
+    "Copier l'horaire de la semaine en cours ?",
+    "Les employés et les quarts de cette simulation seront <strong>remplacés</strong> par l'horaire planifié de la <strong>semaine en cours</strong> (noms, taux, sections, quarts). Les réglages de pourboires, de ratio salaires/ventes et de jours d'ouverture de la simulation sont <strong>conservés</strong>.",
+    async () => { await doCopyCurrentWeekIntoSim(simId); },
+    false
+  );
+}
+
+async function doCopyCurrentWeekIntoSim(simId) {
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) return;
+  // « Semaine en cours » = semaine calendaire courante (offset 0), peu importe
+  // la semaine éventuellement naviguée dans la page Horaires.
+  const weekStart = getWeekStart(0);
+  const activeEmps = (typeof activeEmployees === "function" ? activeEmployees() : employees);
+  const empSnapshots = activeEmps.map(emp => ({
+    id: emp.id,
+    name: emp.name || "",
+    section: emp.section || "service",
+    hourlyRate: Number(emp.hourlyRate) || 0,
+    isSalaried: !!emp.isSalaried,
+    fixedWeeklyHours: Number(emp.fixedWeeklyHours) || 0,
+    role: emp.role || "",
+    isFictional: false,
+    shifts: shiftsByDateToByDow(emp.shifts || {}, weekStart)
+  }));
+  await persistSim(simId, { ...sim.simulation, employees: empSnapshots });
+  toast("Horaire de la semaine en cours copié dans la simulation.", "success", 2500);
 }

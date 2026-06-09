@@ -4365,6 +4365,31 @@ textarea.md-input{
   color:var(--accent);
 }
 
+/* Badge « Sans pourboire » — employé exclu du partage (réglage de fiche) */
+.no-tips-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  font-family:var(--font-mono);
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.04em;
+  padding:1px 5px;
+  border-radius:var(--radius-sm);
+  background:rgba(217,83,79,.12);
+  color:#b32820;
+  border:1px solid rgba(217,83,79,.35);
+  margin-left:6px;
+  vertical-align:middle;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+[data-theme="dark"] .no-tips-badge{
+  background:rgba(255,122,114,.15);
+  color:#ff7a72;
+  border-color:rgba(255,122,114,.4);
+}
+
 /* Mini-bouton trash pour retirer un extra */
 .payroll-manual-del{
   display:inline-flex;
@@ -9135,6 +9160,20 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   margin-top:2px;
   font-variant-numeric:tabular-nums;
 }
+/* v3.45.0 — fenêtre d'ouverture/service affichée dans l'en-tête de jour (sim) */
+.schedule-empgrid-day-svc{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  margin-top:2px;
+  font-size:9px;
+  font-weight:600;
+  color:var(--accent-warm);
+  text-transform:none;
+  letter-spacing:0;
+  font-variant-numeric:tabular-nums;
+}
+.schedule-empgrid-day-svc svg{ flex:none; }
 
 /* Body — chaque ligne s'insère dans la grille */
 .schedule-empgrid-row{
@@ -9202,6 +9241,41 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   background:rgba(247,179,44,.15);
   outline:2px dashed var(--accent);
   outline-offset:-3px;
+}
+/* v3.45.0 — cellule avec PLUSIEURS quarts (shift coupé) : empilés verticalement */
+.schedule-empgrid-cell.sim-cell-multi{
+  flex-direction:column;
+  align-items:stretch;
+  justify-content:flex-start;
+  gap:3px;
+}
+.schedule-empgrid-cell.sim-cell-multi .shift-card{ width:100%; }
+.sim-add-shift-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+  width:100%;
+  padding:2px 4px;
+  border:0.5px dashed var(--border);
+  border-radius:var(--radius-sm);
+  background:transparent;
+  color:var(--text3);
+  font-family:var(--font-body);
+  font-size:9px;
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  cursor:pointer;
+  opacity:.45;
+  transition:all var(--transition-base);
+}
+.schedule-empgrid-cell.sim-cell-multi:hover .sim-add-shift-btn{ opacity:1; }
+.sim-add-shift-btn:hover{
+  border-style:solid;
+  border-color:var(--accent);
+  color:var(--accent-text);
+  background:var(--accent-soft);
 }
 
 /* Bouton + Add compact (visible au hover seulement, discret) */

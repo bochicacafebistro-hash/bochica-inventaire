@@ -605,7 +605,7 @@ function renderEmployes() {
         ${activeEmployees().slice().sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0)).map(emp => `<div class="card team-card">
           <div class="team-card__head">
             <div class="team-card__info">
-              <div class="team-card__name">${icon("user", 14)} ${esc(emp.name || "")}</div>
+              <div class="team-card__name">${icon("user", 14)} ${esc(emp.name || "")}${emp.noTips ? ` <span class="no-tips-badge" title="Exclu du partage des pourboires">${icon("ban", 10)} Sans pourboire</span>` : ""}</div>
               ${emp.role ? `<div class="team-card__role">${esc(emp.role)}</div>` : ""}
               ${emp.hourlyRate ? `<div class="team-card__rate">${icon("dollar-sign", 12)} ${emp.hourlyRate} $/h${emp.isSalaried ? ` · <span class="team-card__fixed">FIXE ${emp.fixedWeeklyHours}h</span>` : ""}</div>` : ""}
               ${emp.phone ? `<div class="team-card__contact">${icon("phone", 12)} ${esc(emp.phone)}</div>` : ""}
@@ -938,6 +938,11 @@ function openEmployeeModal(id) {
       </select>
       <span class="field-hint">${icon("info", 11)} Utilisée pour le graphique de couverture horaire.</span>
     </label>
+    <label class="emp-salaried-toggle">
+      <input type="checkbox" id="e-no-tips" ${emp?.noTips ? "checked" : ""}/>
+      <span>Sans pourboire — exclu du partage</span>
+    </label>
+    <span class="field-hint" style="display:block;margin:-4px 0 4px">${icon("info", 11)} Si coché, cet employé ne reçoit aucun pourboire et ses heures ne diluent pas le pool de l'équipe (ex. gérant, propriétaire). Tu peux quand même le réinclure ponctuellement via la dérogation de section, dans Salaires & Pourboires.</span>
     <div class="form-row">
       <label>${t("emp_field_phone")}<input id="e-phone" value="${esc(emp?.phone || "")}"/></label>
       <label>${t("emp_field_email")}<input id="e-email" value="${esc(emp?.email || "")}"/></label>
@@ -1051,6 +1056,10 @@ async function saveEmployee(id) {
     phone: document.getElementById("e-phone").value,
     email: document.getElementById("e-email").value,
     pin,
+    // Réglage permanent : exclu du partage des pourboires (non sensible — pas de
+    // montant —, donc reste dans /employees avec section). Branché dans
+    // getEffectiveTipGroup (pages-payroll.js).
+    noTips: !!document.getElementById("e-no-tips")?.checked,
     notes: document.getElementById("e-notes").value
   };
   // Rémunération (confidentielle) → collection séparée /employeesComp (admin only)
