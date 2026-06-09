@@ -528,6 +528,8 @@ function renderSimulationEditorHTML(sim) {
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-secondary btn-sm" onclick="openSimMetaModal('${sim.id}')" title="Modifier nom et description">${icon("pencil", 14)} Renommer</button>
         <button class="btn-secondary btn-sm" onclick="copyCurrentWeekIntoSim('${sim.id}')" title="Remplacer les employés et quarts de cette simulation par l'horaire planifié de la semaine en cours">${icon("download", 14)} Copier l'horaire</button>
+        <button class="btn-secondary btn-sm" onclick="exportSimAsPNG('${sim.id}')" title="Télécharger une image PNG de la simulation pour partager avec l'équipe (sans aucune donnée financière : taux, coûts, pourboires retirés)">${icon("download", 14)} PNG équipe</button>
+        <button class="btn-secondary btn-sm" onclick="exportSimAsPNGAdmin('${sim.id}')" title="Rapport admin complet : taux horaire, coût par quart, pourboires, totaux semaine, écart vs réel. Usage interne — ne pas partager avec l'équipe.">${icon("download", 14)} PNG admin</button>
         <button class="btn-secondary btn-sm" onclick="resetSimToBaseline('${sim.id}')" title="Réinitialiser la simulation aux valeurs du réel">${icon("refresh", 14)} Réinitialiser</button>
         <button class="btn-secondary btn-sm" onclick="duplicateSimulation('${sim.id}')" title="Dupliquer cette simulation">${icon("copy", 14)} Dupliquer</button>
       </div>
@@ -1566,4 +1568,301 @@ async function doCopyCurrentWeekIntoSim(simId) {
   }));
   await persistSim(simId, { ...sim.simulation, employees: empSnapshots });
   toast("Horaire de la semaine en cours copié dans la simulation.", "success", 2500);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// v3.46.0 — Export PNG de la Simulation paie
+// ───────────────────────────────────────────────────────────────
+// Deux versions, calquées sur les exports de la page Employés & Horaires :
+//   • exportSimAsPNG      → version « équipe », AUCUNE donnée financière
+//                           (pas de taux, coût, pourboire ni total $).
+//   • exportSimAsPNGAdmin → version interne complète (taux, coût/quart,
+//                           pourboires, totaux semaine, écart vs réel).
+// La sim est indépendante d'une semaine : les colonnes sont les JOURS
+// OUVERTS (simEffectiveOpenDays), sans date, avec la fenêtre de service.
+// Réutilise _downloadCanvasPNG (toBlob + objectURL) défini dans pages-hr.js.
+// ═══════════════════════════════════════════════════════════════
+
+// Slug de fichier propre à partir du nom de la simulation (accents retirés).
+function _simSlug(name) {
+  return (name || "Simulation")
+    .normalize("NFD").replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_+|_+$/g, "")
+    .slice(0, 40) || "Simulation";
+}
+
+// Fenêtre de service d'un jour → "12:00–21:00" ou "" si non définie.
+function _simSvcWindowLabel(serviceHours, dow) {
+  const w = serviceHours && serviceHours[dow];
+  if (w && (w.start || w.end)) return `${w.start || "?"}–${w.end || "?"}`;
+  return "";
+}
+
+// ─── Version ÉQUIPE (aucune donnée financière) ───────────────────
+async function exportSimAsPNG(simId) {
+  if (typeof window.html2canvas !== "function") {
+    toast("La bibliothèque PNG n'est pas chargée. Recharge la page.", "error");
+    return;
+  }
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) { toast("Simulation introuvable.", "error"); return; }
+  toast("Préparation de l'image…", "info", 2000);
+
+  const cur = computeSimScenario(sim.simulation);
+  const openDays = simEffectiveOpenDays(sim.simulation);
+  const serviceHours = sim.simulation?.serviceHours || {};
+
+  // Employés ayant au moins un quart sur un jour ouvert (on exclut les
+  // « congé toute la semaine » pour ne pas polluer le PNG équipe).
+  const rows = cur.rows.filter(r =>
+    openDays.some(dow => {
+      const d = r.daily[dow];
+      return d && Array.isArray(d.shifts) && d.shifts.length > 0;
+    })
+  );
+
+  if (rows.length === 0) {
+    toast("Aucun employé n'a de quart dans cette simulation — rien à exporter.", "warning", 4500);
+    return;
+  }
+
+  document.getElementById("_sim-png-export")?.remove();
+  const container = document.createElement("div");
+  container.id = "_sim-png-export";
+  container.style.cssText = `
+    position:fixed; left:-99999px; top:0; z-index:-1;
+    background:#fdf6e7; padding:32px;
+    font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    color:#0e0d0c; width:1200px;
+  `;
+  container.innerHTML = `
+    <div style="text-align:center; margin-bottom:24px; padding-bottom:18px; border-bottom:2px solid #0e0d0c">
+      <div style="font-family:'Bebas Neue',Impact,sans-serif; font-size:42px; letter-spacing:.08em; line-height:1">BOCHICA</div>
+      <div style="font-size:13px; color:#6e5f50; margin-top:2px">Restaurant Colombien</div>
+      <div style="margin-top:8px">
+        <div style="display:inline-block; height:3px; width:60px; background:#F7B32C"></div><div style="display:inline-block; height:3px; width:60px; background:#4a90e2"></div><div style="display:inline-block; height:3px; width:60px; background:#e74c3c"></div>
+      </div>
+      <div style="font-size:26px; font-weight:700; margin-top:14px">Horaire proposé</div>
+      <div style="font-size:14px; color:#444; margin-top:2px">${esc(sim.name || "Simulation")}</div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:180px repeat(${openDays.length}, 1fr); gap:1px; background:#c8bca5; border:1px solid #c8bca5; border-radius:8px; overflow:hidden">
+      <div style="background:#ede3d2; padding:12px; font-size:12px; font-weight:600; color:#444; text-transform:uppercase; letter-spacing:.05em">Employé</div>
+      ${openDays.map(dow => {
+        const svc = _simSvcWindowLabel(serviceHours, dow);
+        return `<div style="background:#ede3d2; padding:12px; text-align:center">
+          <div style="font-size:13px; font-weight:700; color:#0e0d0c; text-transform:uppercase; letter-spacing:.05em">${DAYS_FR[dow]}</div>
+          ${svc ? `<div style="font-size:10px; color:#666; margin-top:3px">🕐 ${svc}</div>` : ""}
+        </div>`;
+      }).join("")}
+
+      ${rows.map(row => {
+        const sec = row.emp.section || "service";
+        const isKitchen = sec === "cuisine";
+        const isService = sec === "service";
+        const accentColor = isKitchen ? "#BA7517" : isService ? "#378ADD" : "#888780";
+        const secLabel = isKitchen ? "Cuisine" : isService ? "Service" : "Autre";
+        return `
+          <div style="background:#fff; padding:12px; border-left:4px solid ${accentColor}; display:flex; flex-direction:column; justify-content:center; min-height:70px">
+            <div style="font-size:15px; font-weight:700; line-height:1.2">${esc(row.emp.name || "")}</div>
+            <div style="font-size:11px; font-weight:600; color:#666; text-transform:uppercase; letter-spacing:.05em; margin-top:3px">${secLabel}</div>
+          </div>
+          ${openDays.map(dow => {
+            const d = row.daily[dow];
+            const shifts = d && Array.isArray(d.shifts) ? d.shifts : [];
+            if (shifts.length === 0) {
+              return `<div style="background:#fff; padding:10px; display:flex; align-items:center; justify-content:center; min-height:70px">
+                <div style="font-size:13px; color:#999; font-style:italic">Congé</div>
+              </div>`;
+            }
+            const tintBg = isKitchen ? "rgba(186,117,23,.10)" : isService ? "rgba(55,138,221,.08)" : "#f5f1e8";
+            return `<div style="background:#fff; padding:8px; display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center; min-height:70px">
+              ${shifts.map(s => `<div style="background:${tintBg}; border-left:4px solid ${accentColor}; padding:6px 12px; border-radius:8px; text-align:center; min-width:90px">
+                <div style="font-size:15px; font-weight:700; color:#0e0d0c; letter-spacing:.02em">${s.start} → ${s.end}</div>
+              </div>`).join("")}
+            </div>`;
+          }).join("")}
+        `;
+      }).join("")}
+    </div>
+
+    <div style="margin-top:24px; padding-top:14px; border-top:1px dashed #c8bca5; display:flex; justify-content:space-between; font-size:11px; color:#6e5f50">
+      <div>Bochica Café Bistro</div>
+      <div>Affiché le ${new Date().toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}</div>
+    </div>
+  `;
+  document.body.appendChild(container);
+
+  try {
+    await new Promise(r => setTimeout(r, 100));
+    const canvas = await html2canvas(container, { scale: 2, backgroundColor: "#fdf6e7", logging: false, useCORS: true });
+    await _downloadCanvasPNG(canvas, `Bochica_SimPaie_${_simSlug(sim.name)}_${dayKey(new Date())}.png`);
+    toast("Image PNG téléchargée — prête à partager avec l'équipe.", "success", 4000);
+  } catch (err) {
+    console.error("exportSimAsPNG failed:", err);
+    toast("Erreur génération PNG : " + (err.message || err), "error", 5000);
+  } finally {
+    container.remove();
+  }
+}
+
+// ─── Version ADMIN (interne complète) ────────────────────────────
+async function exportSimAsPNGAdmin(simId) {
+  if (typeof window.html2canvas !== "function") {
+    toast("La bibliothèque PNG n'est pas chargée. Recharge la page.", "error");
+    return;
+  }
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) { toast("Simulation introuvable.", "error"); return; }
+  toast("Préparation du rapport admin…", "info", 2000);
+
+  const cur = computeSimScenario(sim.simulation);
+  const base = computeSimScenario(sim.baseline);
+  const openDays = simEffectiveOpenDays(sim.simulation);
+  const serviceHours = sim.simulation?.serviceHours || {};
+  const salesRatio = Number(sim.simulation?.salesRatio) || 0.32;
+
+  const allRows = cur.rows;
+  const rows = allRows.filter(r =>
+    openDays.some(dow => {
+      const d = r.daily[dow];
+      return d && Array.isArray(d.shifts) && d.shifts.length > 0;
+    })
+  );
+
+  if (rows.length === 0) {
+    toast("Aucun employé n'a de quart dans cette simulation — rien à exporter.", "warning", 4500);
+    return;
+  }
+
+  // Totaux par jour (heures + coût) sur les jours ouverts.
+  const dayHours = openDays.map(dow => cur.dayTotalsHours[dow] || 0);
+  const dayCost = openDays.map(dow => cur.dayTotalsCost[dow] || 0);
+
+  const weekTotalCost = cur.totals.gross;
+  const expectedSales = salesRatio > 0 ? weekTotalCost / salesRatio : 0;
+  const gapTotal = (cur.totals.total || 0) - (base.totals.total || 0);
+  const gapSign = gapTotal > 0 ? "+" : (gapTotal < 0 ? "−" : "");
+  const gapColor = Math.abs(gapTotal) < 0.005 ? "#666" : (gapTotal > 0 ? "#9f1239" : "#1f7a1f");
+
+  document.getElementById("_sim-png-export-admin")?.remove();
+  const container = document.createElement("div");
+  container.id = "_sim-png-export-admin";
+  container.style.cssText = `
+    position:fixed; left:-99999px; top:0; z-index:-1;
+    background:#fdf6e7; padding:32px;
+    font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+    color:#0e0d0c; width:1400px;
+  `;
+  container.innerHTML = `
+    <div style="text-align:center; margin-bottom:20px; padding-bottom:16px; border-bottom:2px solid #0e0d0c">
+      <div style="font-family:'Bebas Neue',Impact,sans-serif; font-size:42px; letter-spacing:.08em; line-height:1">BOCHICA</div>
+      <div style="font-size:13px; color:#6e5f50; margin-top:2px">Restaurant Colombien</div>
+      <div style="margin-top:8px">
+        <div style="display:inline-block; height:3px; width:60px; background:#F7B32C"></div><div style="display:inline-block; height:3px; width:60px; background:#4a90e2"></div><div style="display:inline-block; height:3px; width:60px; background:#e74c3c"></div>
+      </div>
+      <div style="font-size:26px; font-weight:700; margin-top:14px">Simulation paie — ADMIN</div>
+      <div style="font-size:14px; color:#444; margin-top:2px">${esc(sim.name || "Simulation")}</div>
+      <div style="display:inline-block; margin-top:10px; padding:4px 12px; background:#9f1239; color:#fff; font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; border-radius:4px">INTERNE — Ne pas partager</div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:200px repeat(${openDays.length}, 1fr) 150px; gap:1px; background:#c8bca5; border:1px solid #c8bca5; border-radius:8px; overflow:hidden">
+      <!-- Header -->
+      <div style="background:#ede3d2; padding:12px; font-size:12px; font-weight:600; color:#444; text-transform:uppercase; letter-spacing:.05em">Employé · Taux</div>
+      ${openDays.map((dow, k) => {
+        const svc = _simSvcWindowLabel(serviceHours, dow);
+        return `<div style="background:#ede3d2; padding:12px; text-align:center">
+          <div style="font-size:13px; font-weight:700; color:#0e0d0c; text-transform:uppercase; letter-spacing:.05em">${DAYS_FR[dow]}</div>
+          ${svc ? `<div style="font-size:10px; color:#666; margin-top:2px">🕐 ${svc}</div>` : ""}
+          <div style="font-size:10px; color:#666; margin-top:2px">${fmtHours(dayHours[k])}h · ${fmtMoney(dayCost[k])}</div>
+        </div>`;
+      }).join("")}
+      <div style="background:#ede3d2; padding:12px; text-align:center; font-size:12px; font-weight:600; color:#444; text-transform:uppercase; letter-spacing:.05em">Total emp.</div>
+
+      <!-- Lignes employés -->
+      ${rows.map(row => {
+        const sec = row.emp.section || "service";
+        const isKitchen = sec === "cuisine";
+        const isService = sec === "service";
+        const accentColor = isKitchen ? "#BA7517" : isService ? "#378ADD" : "#888780";
+        const secLabel = isKitchen ? "Cuisine" : isService ? "Service" : "Autre";
+        return `
+          <div style="background:#fff; padding:12px; border-left:4px solid ${accentColor}; display:flex; flex-direction:column; justify-content:center; min-height:84px">
+            <div style="font-size:15px; font-weight:700; line-height:1.2">${esc(row.emp.name || "")}</div>
+            <div style="font-size:11px; font-weight:600; color:#666; text-transform:uppercase; letter-spacing:.05em; margin-top:3px">${secLabel}${row.emp.isFictional ? " · FICTIF" : ""}</div>
+            <div style="font-size:12px; color:#0e0d0c; margin-top:3px; font-weight:600">${row.rate.toFixed(2)} $/h${row.isSal ? " · FIXE" : ""}</div>
+          </div>
+          ${openDays.map(dow => {
+            const d = row.daily[dow];
+            const shifts = d && Array.isArray(d.shifts) ? d.shifts : [];
+            if (shifts.length === 0) {
+              return `<div style="background:#fff; padding:10px; display:flex; align-items:center; justify-content:center; min-height:84px">
+                <div style="font-size:13px; color:#999; font-style:italic">Congé</div>
+              </div>`;
+            }
+            const tintBg = isKitchen ? "rgba(186,117,23,.10)" : isService ? "rgba(55,138,221,.08)" : "#f5f1e8";
+            return `<div style="background:#fff; padding:8px; display:flex; flex-direction:column; gap:4px; align-items:center; justify-content:center; min-height:84px">
+              ${shifts.map(s => `<div style="background:${tintBg}; border-left:4px solid ${accentColor}; padding:6px 12px; border-radius:8px; text-align:center; min-width:100px">
+                <div style="font-size:14px; font-weight:700; color:#0e0d0c; letter-spacing:.02em">${s.start} → ${s.end}</div>
+              </div>`).join("")}
+              <div style="font-size:11px; color:#444; margin-top:1px">${fmtHours(d.hours)}h · ${fmtMoney(d.cost)}</div>
+            </div>`;
+          }).join("")}
+          <!-- Cellule totaux par employé -->
+          <div style="background:#fff; padding:10px; display:flex; flex-direction:column; justify-content:center; align-items:center; min-height:84px; border-left:1px solid #e5d9c4">
+            <div style="font-size:13px; font-weight:700; color:#0e0d0c">${fmtHours(row.totalHours)}h</div>
+            <div style="font-size:12px; color:#0e0d0c; margin-top:2px">Sal. ${fmtMoney(row.grossWage)}</div>
+            <div style="font-size:12px; color:#1f7a1f; margin-top:1px">Pourb. ${fmtMoney(row.tipShare)}</div>
+            <div style="font-size:14px; font-weight:800; color:${accentColor}; margin-top:3px">${fmtMoney(row.totalPay)}</div>
+          </div>
+        `;
+      }).join("")}
+    </div>
+
+    <!-- Panneau de totaux semaine -->
+    <div style="margin-top:18px; padding:16px; background:#fff; border:1.5px solid #c8bca5; border-radius:10px">
+      <div style="display:grid; grid-template-columns:repeat(5, 1fr); gap:16px; text-align:center">
+        <div>
+          <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Heures totales</div>
+          <div style="font-size:22px; font-weight:800; color:#0e0d0c; margin-top:4px">${fmtHours(cur.totals.hours)}h</div>
+        </div>
+        <div>
+          <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Masse salariale</div>
+          <div style="font-size:22px; font-weight:800; color:#0e0d0c; margin-top:4px">${fmtMoney(cur.totals.gross)}</div>
+        </div>
+        <div>
+          <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Pourboires distr.</div>
+          <div style="font-size:22px; font-weight:800; color:#1f7a1f; margin-top:4px">${fmtMoney(cur.totals.tips)}</div>
+        </div>
+        <div>
+          <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Total à payer</div>
+          <div style="font-size:22px; font-weight:800; color:#0e0d0c; margin-top:4px">${fmtMoney(cur.totals.total)}</div>
+          <div style="font-size:11px; font-weight:700; color:${gapColor}; margin-top:2px">${Math.abs(gapTotal) < 0.005 ? "= réel" : `${gapSign}${fmtMoney(Math.abs(gapTotal))} vs réel`}</div>
+        </div>
+        <div>
+          <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Ventes prévues</div>
+          <div style="font-size:22px; font-weight:800; color:#0e0d0c; margin-top:4px">${fmtMoney(expectedSales)}</div>
+          <div style="font-size:10px; color:#666; margin-top:2px">à ratio ${(salesRatio * 100).toFixed(1)}%</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:18px; padding-top:14px; border-top:1px dashed #c8bca5; display:flex; justify-content:space-between; font-size:11px; color:#6e5f50">
+      <div>Bochica Café Bistro — Document interne admin (simulation hypothétique)</div>
+      <div>Généré le ${new Date().toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })} à ${new Date().toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" })}</div>
+    </div>
+  `;
+  document.body.appendChild(container);
+
+  try {
+    await new Promise(r => setTimeout(r, 100));
+    const canvas = await html2canvas(container, { scale: 2, backgroundColor: "#fdf6e7", logging: false, useCORS: true });
+    await _downloadCanvasPNG(canvas, `Bochica_SimPaieAdmin_${_simSlug(sim.name)}_${dayKey(new Date())}.png`);
+    toast("Rapport admin PNG téléchargé — pour usage interne seulement.", "success", 4000);
+  } catch (err) {
+    console.error("exportSimAsPNGAdmin failed:", err);
+    toast("Erreur génération PNG : " + (err.message || err), "error", 5000);
+  } finally {
+    container.remove();
+  }
 }
