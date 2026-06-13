@@ -11281,6 +11281,22 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   padding:1px 9px; margin-left:auto;
 }
 .ops-admin-list{ display:flex; flex-direction:column; }
+/* Grille 2 colonnes (Récurrentes / Temps mort) avec glisser-déposer (v3.50.0) */
+.ops-admin-grid{ display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4); align-items:start; }
+.ops-admin-card--recurrent{ border-top:3px solid var(--accent); }
+.ops-admin-card--idle{ border-top:3px solid #7c5cbf; }
+.ops-admin-card.is-drop-target{
+  outline:2px dashed var(--accent); outline-offset:-4px;
+  background:var(--accent-soft);
+}
+.ops-admin-dropzone{ min-height:60px; }
+.ops-admin-drag{
+  flex-shrink:0; display:inline-flex; align-items:center; color:var(--text3);
+  cursor:grab; opacity:.5; transition:opacity var(--transition-fast);
+}
+.ops-admin-item:hover .ops-admin-drag{ opacity:1; }
+.ops-admin-item.is-dragging{ opacity:.5; }
+@media (max-width:760px){ .ops-admin-grid{ grid-template-columns:1fr; } }
 .ops-admin-item{
   display:flex; align-items:center; gap:var(--sp-3);
   padding:10px 4px; border-bottom:1px solid var(--border);

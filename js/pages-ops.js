@@ -261,7 +261,9 @@ function renderDailyTasksAdmin() {
     const timesLabel = times
       ? times.filter(Boolean).map(esc).join(" · ")
       : (task.time || "").trim();
-    return `<div class="ops-admin-item ${allDone ? "is-done-today" : ""}">
+    return `<div class="ops-admin-item ${allDone ? "is-done-today" : ""}" draggable="true"
+        ondragstart="dailyTaskDragStart(event,'${task.id}')" ondragend="dailyTaskDragEnd(event)">
+      <span class="ops-admin-drag" title="${t("ops_drag_hint")}" aria-hidden="true">${icon("grip-vertical", 14)}</span>
       <span class="ops-admin-item__status ${allDone ? "is-done" : ""}" title="${allDone ? t("ops_done_today") : t("ops_not_done")}">
         ${times ? `<span class="ops-admin-item__count">${doneCnt}/${occs.length}</span>` : (allDone ? icon("check", 13) : "")}
       </span>
@@ -281,6 +283,17 @@ function renderDailyTasksAdmin() {
     </div>`;
   };
 
+  // Une colonne = un bucket, zone de dépôt (drag & drop d'une carte vers l'autre).
+  const column = (bucket, ic, title, tasks, emptyMsg) => `<div class="card ops-admin-card ops-admin-card--${bucket}"
+      ondragover="dailyBucketDragOver(event)" ondragleave="dailyBucketDragLeave(event)" ondrop="dailyBucketDrop(event,'${bucket}')">
+      <h3 class="ops-admin-section-title">${icon(ic, 15)} ${title} <span class="ops-admin-count">${tasks.length}</span></h3>
+      <div class="ops-admin-list ops-admin-dropzone">
+        ${tasks.length === 0
+          ? `<div class="dash-today-empty">${emptyMsg}</div>`
+          : tasks.map(itemRow).join("")}
+      </div>
+    </div>`;
+
   return `<div class="page">
     <div class="toolbar">
       <h2 class="page-title">${icon("clipboard", 20)} ${t("ops_admin_title")}</h2>
@@ -290,25 +303,61 @@ function renderDailyTasksAdmin() {
     </div>
 
     <p class="ops-admin-intro">${icon("info", 13)} ${t("ops_admin_intro")}</p>
+    <p class="ops-admin-intro">${icon("grip-vertical", 13)} ${t("ops_drag_hint")}</p>
 
-    <div class="card ops-admin-card">
-      <h3 class="ops-admin-section-title">${icon("refresh", 15)} ${t("ops_sec_recurrent")} <span class="ops-admin-count">${recurrentTasks.length}</span></h3>
-      <div class="ops-admin-list">
-        ${recurrentTasks.length === 0
-          ? `<div class="dash-today-empty">${t("ops_no_recurring")}</div>`
-          : recurrentTasks.map(itemRow).join("")}
-      </div>
-    </div>
-
-    <div class="card ops-admin-card">
-      <h3 class="ops-admin-section-title">${icon("clock", 15)} ${t("ops_sec_idle")} <span class="ops-admin-count">${idleTasks.length}</span></h3>
-      <div class="ops-admin-list">
-        ${idleTasks.length === 0
-          ? `<div class="dash-today-empty">${t("ops_no_idle")}</div>`
-          : idleTasks.map(itemRow).join("")}
-      </div>
+    <div class="ops-admin-grid">
+      ${column("recurrent", "refresh", t("ops_sec_recurrent"), recurrentTasks, t("ops_no_recurring"))}
+      ${column("idle", "clock", t("ops_sec_idle"), idleTasks, t("ops_no_idle"))}
     </div>
   </div>`;
+}
+
+// ── Drag & drop : changer une tâche de catégorie (recurrent ↔ temps mort) ──
+var _dailyDragId = null;
+function dailyTaskDragStart(e, id) {
+  _dailyDragId = id;
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = "move";
+    try { e.dataTransfer.setData("text/plain", id); } catch (_) {}
+  }
+  const row = e.currentTarget; if (row && row.classList) row.classList.add("is-dragging");
+}
+function dailyTaskDragEnd(e) {
+  _dailyDragId = null;
+  const row = e.currentTarget; if (row && row.classList) row.classList.remove("is-dragging");
+  document.querySelectorAll(".ops-admin-card.is-drop-target").forEach(el => el.classList.remove("is-drop-target"));
+}
+function dailyBucketDragOver(e) {
+  e.preventDefault();
+  if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+  const card = e.currentTarget; if (card && card.classList) card.classList.add("is-drop-target");
+}
+function dailyBucketDragLeave(e) {
+  const card = e.currentTarget;
+  // Ne retire la surbrillance que si on quitte vraiment la carte (pas un enfant).
+  if (card && !card.contains(e.relatedTarget)) card.classList.remove("is-drop-target");
+}
+function dailyBucketDrop(e, bucket) {
+  e.preventDefault();
+  const card = e.currentTarget; if (card && card.classList) card.classList.remove("is-drop-target");
+  let id = _dailyDragId;
+  if (!id && e.dataTransfer) { try { id = e.dataTransfer.getData("text/plain"); } catch (_) {} }
+  _dailyDragId = null;
+  if (id) setDailyTaskBucket(id, bucket);
+}
+
+// Change la catégorie d'une tâche (no-op si déjà dans cette colonne).
+async function setDailyTaskBucket(id, bucket) {
+  const target = bucket === "idle" ? "idle" : "recurrent";
+  const task = (typeof dailyTasks !== "undefined" ? dailyTasks : []).find(t => t.id === id);
+  if (!task || taskBucket(task) === target) return;
+  try {
+    await db.collection("dailyTasks").doc(id).update({ bucket: target, updatedAt: Date.now() });
+    toast(target === "idle" ? t("ops_moved_idle") : t("ops_moved_recurrent"), "success");
+  } catch (err) {
+    console.error("setDailyTaskBucket:", err);
+    toast(t("err_prefix") + " : " + (err.message || err.code || err), "error", 5000);
+  }
 }
 
 // ── Modal création / édition d'une tâche du jour ───────────────
