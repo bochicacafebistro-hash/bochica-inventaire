@@ -11,6 +11,8 @@ function getNavStructure() {
     // Placées en haut : elles forment l'accueil de l'équipe.
     { type: "link", icon: "bar-chart", label: "Accueil", page: "accueil" },
     { type: "link", icon: "clock", label: "Mon horaire", page: "mon-horaire" },
+    // Tâches (page dédiée employé) : récurrentes + temps mort. v3.49.0
+    { type: "link", icon: "clipboard", label: "Tâches", page: "mes-taches" },
     // Demande de congé : visible employés (kiosque PIN). v3.42.0
     { type: "link", icon: "sun", label: "Demande de congé", page: "demande-conge" },
     // Ouverture / Fermeture : visible employés + admin (v3.36.0).
@@ -231,6 +233,7 @@ function renderPage() {
     "demande-conge": { label: "Demande de congé",  icon: "sun" },
     "demandes-conge": { label: "Demandes de congé", icon: "sun" },
     "taches-jour": { label: "Tâches du jour",   icon: "clipboard" },
+    "mes-taches": { label: "Tâches",            icon: "clipboard" },
     dashboard:   { label: t("nav_dashboard"),   icon: "bar-chart" },
     inventaire:  { label: t("nav_inventaire"),  icon: "package" },
     taches:      { label: t("nav_tasks"),       icon: "clipboard" },
@@ -308,6 +311,9 @@ function renderPage() {
   }
   else if (activePage === "taches-jour") {
     pc.innerHTML = renderDailyTasksAdmin();
+  }
+  else if (activePage === "mes-taches") {
+    pc.innerHTML = renderEmployeeTasks();
   }
   else if (activePage === "dashboard") {
     pc.innerHTML = renderDashboard();

@@ -11306,6 +11306,29 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   display:flex; gap:6px; align-items:flex-start;
   font-size:var(--fs-xs); color:var(--text2); line-height:1.5; margin:6px 0 2px;
 }
+/* Case « ponctuelle » du modal */
+.ops-once-check{
+  display:flex; align-items:center; gap:8px; cursor:pointer;
+  font-size:var(--fs-sm); color:var(--text2); margin:4px 0 2px;
+}
+.ops-once-check input{ width:auto; margin:0; flex-shrink:0; }
+
+/* ── Page dédiée employé « Tâches » (Récurrentes / Temps mort, v3.49.0) ── */
+.emp-tasks-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);
+}
+.emp-tasks-card{ border-top:3px solid var(--border); }
+.emp-tasks-card--recurrent{ border-top-color:var(--accent); }
+.emp-tasks-card--idle{ border-top-color:#7c5cbf; }
+.emp-tasks-title{
+  display:flex; align-items:center; gap:8px;
+  font-size:var(--fs-md); margin:0 0 var(--sp-3);
+  padding-bottom:var(--sp-2); border-bottom:1px solid var(--border);
+}
+.emp-tasks-title .openclose-progress{ margin-left:auto; }
+@media (max-width:760px){
+  .emp-tasks-grid{ grid-template-columns:1fr; }
+}
 
 /* ── Page « Ouverture / Fermeture » (référence) ── */
 .openclose-grid{

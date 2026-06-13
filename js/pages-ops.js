@@ -123,17 +123,47 @@ async function toggleDailyOcc(id, idx) {
 // Rendu d'un bloc compatible avec la grille .dash-today-widget__grid.
 // Les items sont cochables (clic → toggleDailyTask).
 // ═══════════════════════════════════════════════════════════════
-function renderDailyTasksBlock() {
-  const todayStr = dayKey(new Date());
-  // Aplatir chaque tâche affichée en autant d'unités que d'occurrences (heures),
-  // puis trier toutes les unités dans l'ordre chronologique de la journée.
+// Catégorie d'affichage (v3.49.0) : "recurrent" (récurrentes / régulières) ou
+// "idle" (temps mort — à faire quand c'est tranquille). Défaut : recurrent.
+function taskBucket(task) {
+  return (task && task.bucket === "idle") ? "idle" : "recurrent";
+}
+
+// Aplatit une liste de tâches en unités d'occurrence {task, occ} visibles
+// aujourd'hui, triées dans l'ordre chronologique de la journée.
+function buildTaskUnits(tasks, todayStr) {
   const units = [];
-  (typeof dailyTasks !== "undefined" ? dailyTasks : [])
+  (tasks || [])
     .filter(task => shouldShowDailyTaskToday(task, todayStr))
     .forEach(task => {
       dailyTaskOccurrences(task, todayStr).forEach(occ => units.push({ task, occ }));
     });
   units.sort(compareOccUnits);
+  return units;
+}
+
+// Carte cochable d'une unité d'occurrence (partagée accueil + page dédiée).
+function renderTaskUnitCard({ task, occ }) {
+  const done = occ.done;
+  const isOnce = task.type === "once";
+  const note = (task.note || "").trim();
+  const onclick = occ.multi ? `toggleDailyOcc('${task.id}',${occ.idx})` : `toggleDailyTask('${task.id}')`;
+  return `<button class="daily-task-card ${done ? "is-done" : ""}" onclick="${onclick}" aria-pressed="${done}" title="${done ? t("ops_uncheck") : t("ops_mark_done")}">
+    <div class="daily-task-card__main">
+      <span class="daily-task-check">${done ? icon("check", 13) : ""}</span>
+      <span class="daily-task-label">${esc(task.title || "—")}</span>
+      ${occ.time ? `<span class="daily-task-time">${icon("clock", 11)} ${esc(occ.time)}</span>` : ""}
+      ${occ.count > 1 ? `<span class="daily-task-tag daily-task-tag--occ">${occ.idx + 1}/${occ.count}</span>` : ""}
+      ${isOnce ? `<span class="daily-task-tag daily-task-tag--once">1×</span>` : ""}
+    </div>
+    ${note ? `<div class="daily-task-note">${esc(note)}</div>` : ""}
+  </button>`;
+}
+
+function renderDailyTasksBlock() {
+  const todayStr = dayKey(new Date());
+  // Aperçu accueil : toutes les tâches du jour (les 2 catégories), chronologique.
+  const units = buildTaskUnits((typeof dailyTasks !== "undefined" ? dailyTasks : []), todayStr);
   const doneCount = units.filter(u => u.occ.done).length;
 
   return `<div class="dash-today-block">
@@ -141,24 +171,44 @@ function renderDailyTasksBlock() {
     <div class="dash-today-block__list">
       ${units.length === 0
         ? `<div class="dash-today-empty">${t("ops_no_tasks_today")}</div>`
-        : units.map(({ task, occ }) => {
-            const done = occ.done;
-            const isOnce = task.type === "once";
-            const note = (task.note || "").trim();
-            const onclick = occ.multi ? `toggleDailyOcc('${task.id}',${occ.idx})` : `toggleDailyTask('${task.id}')`;
-            return `<button class="daily-task-card ${done ? "is-done" : ""}" onclick="${onclick}" aria-pressed="${done}" title="${done ? t("ops_uncheck") : t("ops_mark_done")}">
-              <div class="daily-task-card__main">
-                <span class="daily-task-check">${done ? icon("check", 13) : ""}</span>
-                <span class="daily-task-label">${esc(task.title || "—")}</span>
-                ${occ.time ? `<span class="daily-task-time">${icon("clock", 11)} ${esc(occ.time)}</span>` : ""}
-                ${occ.count > 1 ? `<span class="daily-task-tag daily-task-tag--occ">${occ.idx + 1}/${occ.count}</span>` : ""}
-                ${isOnce ? `<span class="daily-task-tag daily-task-tag--once">1×</span>` : ""}
-              </div>
-              ${note ? `<div class="daily-task-note">${esc(note)}</div>` : ""}
-            </button>`;
-          }).join("")
+        : units.map(renderTaskUnitCard).join("")
       }
     </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PAGE DÉDIÉE EMPLOYÉ — « Tâches » (Récurrentes / Temps mort)
+// ───────────────────────────────────────────────────────────────
+// Deux sections distinctes, chacune triée chronologiquement. Visible
+// employés + admin (aperçu). Mêmes cartes cochables que l'accueil.
+// ═══════════════════════════════════════════════════════════════
+function renderEmployeeTasks() {
+  const todayStr = dayKey(new Date());
+  const all = (typeof dailyTasks !== "undefined" ? dailyTasks : []);
+  const section = (bucket, ic, title, emptyMsg) => {
+    const units = buildTaskUnits(all.filter(tk => taskBucket(tk) === bucket), todayStr);
+    const done = units.filter(u => u.occ.done).length;
+    return `<div class="card emp-tasks-card emp-tasks-card--${bucket}">
+      <h3 class="emp-tasks-title">${icon(ic, 16)} ${title}
+        ${units.length ? `<span class="openclose-progress">${done}/${units.length}</span>` : ""}
+      </h3>
+      <div class="dash-today-block__list">
+        ${units.length === 0
+          ? `<div class="dash-today-empty">${emptyMsg}</div>`
+          : units.map(renderTaskUnitCard).join("")}
+      </div>
+    </div>`;
+  };
+  return `<div class="page">
+    <div class="toolbar">
+      <h2 class="page-title">${icon("clipboard", 20)} ${t("ops_daily_title")}</h2>
+    </div>
+    <div class="emp-tasks-grid">
+      ${section("recurrent", "refresh", t("ops_sec_recurrent"), t("ops_no_recurrent_today"))}
+      ${section("idle", "clock", t("ops_sec_idle"), t("ops_no_idle_today"))}
+    </div>
+    <p class="emp-schedule-note">${icon("info", 13)} ${t("ops_emp_tasks_note")}</p>
   </div>`;
 }
 
@@ -196,8 +246,9 @@ async function toggleDailyTask(id) {
 // ═══════════════════════════════════════════════════════════════
 function renderDailyTasksAdmin() {
   const todayStr = dayKey(new Date());
-  const recurring = sortedDailyTasks().filter(t => t.type !== "once");
-  const once = sortedDailyTasks().filter(t => t.type === "once");
+  // Groupé par CATÉGORIE d'affichage (recurrent / temps mort), comme la page employé.
+  const recurrentTasks = sortedDailyTasks().filter(t => taskBucket(t) === "recurrent");
+  const idleTasks = sortedDailyTasks().filter(t => taskBucket(t) === "idle");
 
   const itemRow = (task) => {
     const note = (task.note || "").trim();
@@ -241,20 +292,20 @@ function renderDailyTasksAdmin() {
     <p class="ops-admin-intro">${icon("info", 13)} ${t("ops_admin_intro")}</p>
 
     <div class="card ops-admin-card">
-      <h3 class="ops-admin-section-title">${icon("refresh", 15)} ${t("ops_recurring_title")} <span class="ops-admin-count">${recurring.length}</span></h3>
+      <h3 class="ops-admin-section-title">${icon("refresh", 15)} ${t("ops_sec_recurrent")} <span class="ops-admin-count">${recurrentTasks.length}</span></h3>
       <div class="ops-admin-list">
-        ${recurring.length === 0
+        ${recurrentTasks.length === 0
           ? `<div class="dash-today-empty">${t("ops_no_recurring")}</div>`
-          : recurring.map(itemRow).join("")}
+          : recurrentTasks.map(itemRow).join("")}
       </div>
     </div>
 
     <div class="card ops-admin-card">
-      <h3 class="ops-admin-section-title">${icon("check", 15)} ${t("ops_once_title")} <span class="ops-admin-count">${once.length}</span></h3>
+      <h3 class="ops-admin-section-title">${icon("clock", 15)} ${t("ops_sec_idle")} <span class="ops-admin-count">${idleTasks.length}</span></h3>
       <div class="ops-admin-list">
-        ${once.length === 0
-          ? `<div class="dash-today-empty">${t("ops_no_once")}</div>`
-          : once.map(itemRow).join("")}
+        ${idleTasks.length === 0
+          ? `<div class="dash-today-empty">${t("ops_no_idle")}</div>`
+          : idleTasks.map(itemRow).join("")}
       </div>
     </div>
   </div>`;
@@ -263,7 +314,8 @@ function renderDailyTasksAdmin() {
 // ── Modal création / édition d'une tâche du jour ───────────────
 function openDailyTaskModal(id) {
   const task = id ? (dailyTasks || []).find(t => t.id === id) : null;
-  const type = task?.type || "recurring";
+  const bucket = taskBucket(task || {});
+  const isOnce = task?.type === "once";
   // Pré-remplissage du champ heures : times[] si présent, sinon l'heure unique.
   const times = dailyTaskTimes(task || {});
   const timesVal = times ? times.filter(Boolean).join(", ") : (task?.time || "").trim();
@@ -276,10 +328,10 @@ function openDailyTaskModal(id) {
       <input id="dt-title" value="${esc(task?.title || "")}" placeholder="${t("ops_task_placeholder")}" autofocus/>
     </label>
     <div class="form-row">
-      <label>${t("ops_type")}
-        <select id="dt-type">
-          <option value="recurring" ${type === "recurring" ? "selected" : ""}>${t("ops_type_recurring")}</option>
-          <option value="once" ${type === "once" ? "selected" : ""}>${t("ops_type_once")}</option>
+      <label>${t("ops_bucket")}
+        <select id="dt-bucket">
+          <option value="recurrent" ${bucket === "recurrent" ? "selected" : ""}>${t("ops_bucket_recurrent")}</option>
+          <option value="idle" ${bucket === "idle" ? "selected" : ""}>${t("ops_bucket_idle")}</option>
         </select>
       </label>
       <label>${t("ops_task_times")}
@@ -287,6 +339,10 @@ function openDailyTaskModal(id) {
       </label>
     </div>
     <p class="ops-task-times-hint">${icon("info", 12)} ${t("ops_task_times_hint")}</p>
+    <label class="ops-once-check">
+      <input type="checkbox" id="dt-once" ${isOnce ? "checked" : ""}/>
+      <span>${t("ops_once_checkbox")}</span>
+    </label>
     <label>${t("ops_task_note")}
       <textarea id="dt-note" style="height:70px" placeholder="${t("ops_task_note_ph")}">${task?.note || ""}</textarea>
     </label>
@@ -308,18 +364,20 @@ function parseDailyTimes(raw) {
 async function saveDailyTask(id) {
   const title = (document.getElementById("dt-title").value || "").trim();
   if (!title) return toast(t("ops_enter_title"), "error");
-  const type = document.getElementById("dt-type").value === "once" ? "once" : "recurring";
+  const bucket = document.getElementById("dt-bucket").value === "idle" ? "idle" : "recurrent";
+  const type = document.getElementById("dt-once").checked ? "once" : "recurring";
   const parsedTimes = parseDailyTimes(document.getElementById("dt-times").value);
   const note = (document.getElementById("dt-note").value || "").trim();
   // Modèle :
   //  • ponctuelle → toujours mono (1ʳᵉ heure éventuelle dans `time`, pas de times[]).
   //  • récurrente → times[] = toutes les heures (≥1 ⇒ multi-occurrences) ;
   //    `time` garde la 1ʳᵉ heure pour les lecteurs legacy.
+  //  • bucket = catégorie d'affichage (recurrent / idle temps mort).
   const time = parsedTimes[0] || "";
   const fieldTimes = (type === "once") ? [] : parsedTimes;
   try {
     if (id) {
-      const patch = { title, type, time, note, updatedAt: Date.now() };
+      const patch = { title, type, bucket, time, note, updatedAt: Date.now() };
       patch.times = (type === "once")
         ? firebase.firestore.FieldValue.delete()
         : fieldTimes;
@@ -328,7 +386,7 @@ async function saveDailyTask(id) {
       const nid = genId();
       const maxOrder = (dailyTasks || []).reduce((m, t) => Math.max(m, t.sortOrder ?? 0), -1);
       const doc = {
-        id: nid, title, type, time, note,
+        id: nid, title, type, bucket, time, note,
         sortOrder: maxOrder + 1,
         done: false,
         lastCompletedDate: null,
@@ -372,6 +430,7 @@ async function duplicateDailyTask(id) {
       id: nid,
       title: (task.title || "") + " (Copie)",
       type: task.type === "once" ? "once" : "recurring",
+      bucket: taskBucket(task),
       time: (task.time || "").trim(),
       note: task.note || "",
       sortOrder: maxOrder + 1,

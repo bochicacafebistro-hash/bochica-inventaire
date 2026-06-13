@@ -48,8 +48,8 @@ const ROLE_PERMISSIONS = {
     // accueil = tableau de bord employé (avec tâches du jour cochables) ·
     // mon-horaire = horaire hebdo lecture seule · ouverture-fermeture = listes
     // de référence (v3.36.0). Vues allégées sans données financières.
-    canAccess: ["accueil", "mon-horaire", "ouverture-fermeture", "demande-conge", "inventaire", "pointage"],
-    canWrite:  ["inventaire", "pointage", "accueil", "demande-conge"], // accueil : cocher les tâches du jour ; demande-conge : créer une demande
+    canAccess: ["accueil", "mon-horaire", "mes-taches", "ouverture-fermeture", "demande-conge", "inventaire", "pointage"],
+    canWrite:  ["inventaire", "pointage", "accueil", "mes-taches", "demande-conge"], // accueil + mes-taches : cocher les tâches du jour ; demande-conge : créer une demande
     homePage: "pointage" // v3.17.2 : la tablette permanente s'ouvre directement sur le pointage
   }
 };

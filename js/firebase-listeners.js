@@ -90,7 +90,7 @@ db.collection("leaveRequests").onSnapshot(snap => {
 db.collection("dailyTasks").onSnapshot(snap => {
   dailyTasks = snap.docs.map(d => ({ id: d.id, ...d.data() }))
     .sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
-  if (shouldRender("dailyTasks", "accueil", "taches-jour")) renderPage();
+  if (shouldRender("dailyTasks", "accueil", "taches-jour", "mes-taches")) renderPage();
 });
 
 // Listes ouverture/fermeture (v3.36.0) — doc settings/openClose.
