@@ -11315,35 +11315,50 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);
 }
 
-/* ── Grille 2×2 Cuisine/Service × Ouverture/Fermeture (v3.47.0) ── */
-.openclose-grid4{
-  display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);
-}
+/* ── Éditeur : 4 zones de texte (Cuisine/Service × Ouverture/Fermeture) ── */
 .openclose-edit-grid4{
   display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);
 }
-/* Accent de gauche selon la section (cuisine ambré / service bleu) */
-.openclose-cell{ border-left:4px solid var(--border); }
-.openclose-cell--cuisine{ border-left-color:var(--accent); }
-.openclose-cell--service{ border-left-color:#4a90e2; }
-.openclose-cell__title{
-  display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px;
-  font-size:var(--fs-md); margin:0 0 var(--sp-3);
-  padding-bottom:var(--sp-2); border-bottom:1px solid var(--border);
+
+/* ── Bascule « Cuisine / Service » : deux gros boutons (v3.47.1) ── */
+.oc-section-switch{
+  display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-3);
+  margin-bottom:var(--sp-4);
 }
-.openclose-cell__sec{ display:inline-flex; align-items:center; gap:6px; }
-.openclose-cell--cuisine .openclose-cell__sec{ color:var(--accent-warm); }
-.openclose-cell--service .openclose-cell__sec{ color:var(--blue-text, #2f6db5); }
-.openclose-cell__moment{
-  display:inline-flex; align-items:center; gap:4px;
-  font-family:var(--font-mono); font-size:11px; font-weight:600;
-  text-transform:uppercase; letter-spacing:.04em; color:var(--text2);
+.oc-section-btn{
+  display:flex; align-items:center; justify-content:center; gap:10px;
+  padding:18px 16px; border-radius:var(--radius-lg);
+  border:2px solid var(--border); background:var(--surface);
+  cursor:pointer; font:inherit; color:var(--text2);
+  font-size:var(--fs-lg); font-weight:700;
+  transition:background var(--transition-fast), border-color var(--transition-fast), color var(--transition-fast);
 }
-.openclose-cell__title .openclose-progress{ margin-left:auto; }
+.oc-section-btn:hover{ background:var(--surface2); }
+.oc-section-btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+.oc-section-btn__ic{ display:inline-flex; opacity:.85; }
+.oc-section-btn__count{
+  font-family:var(--font-mono); font-size:12px; font-weight:700;
+  background:var(--surface2); color:var(--text2);
+  border-radius:var(--radius-pill); padding:2px 9px;
+}
+/* Actif : cuisine ambré, service bleu */
+.oc-section-btn--cuisine.is-active{
+  background:var(--accent); border-color:var(--accent); color:var(--accent-text);
+}
+.oc-section-btn--service.is-active{
+  background:#4a90e2; border-color:#4a90e2; color:#fff;
+}
+.oc-section-btn.is-active .oc-section-btn__ic{ opacity:1; }
+.oc-section-btn.is-active .oc-section-btn__count{
+  background:rgba(0,0,0,.18); color:inherit;
+}
 
 @media (max-width:760px){
   .openclose-grid, .openclose-edit-grid,
-  .openclose-grid4, .openclose-edit-grid4{ grid-template-columns:1fr; }
+  .openclose-edit-grid4{ grid-template-columns:1fr; }
+}
+@media (max-width:480px){
+  .oc-section-btn{ flex-direction:column; gap:6px; padding:14px 10px; font-size:var(--fs-md); }
 }
 
 /* ── Accueil employé : groupes par section + couleur événements (v3.36.1) ── */

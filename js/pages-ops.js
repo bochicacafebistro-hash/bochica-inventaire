@@ -253,13 +253,14 @@ function deleteDailyTask(id) {
 // ═══════════════════════════════════════════════════════════════
 // PAGE — « Ouverture / Fermeture » (cases à cocher, reset quotidien)
 // ───────────────────────────────────────────────────────────────
-// Visible employés + admin. Grille 2×2 : colonnes Cuisine / Service,
-// rangées Ouverture / Fermeture — pour savoir qui fait quoi. Chaque
-// item porte une `section` (cuisine | service) ; les items legacy sans
-// section sont rattachés à « cuisine » par défaut. Les items sont
-// COCHABLES par tous — l'état est stocké par jour
-// (/dailyChecklistState/{YYYY-MM-DD}) donc il se réinitialise
-// automatiquement chaque jour (nouveau doc = aucune case cochée).
+// Visible employés + admin. Deux gros boutons « Cuisine » / « Service »
+// (bascule `_ocActiveSection`) en haut ; en dessous, les deux colonnes
+// classiques Ouverture (ambré) / Fermeture (bleu) filtrées sur la section
+// choisie — pour savoir qui fait quoi. Chaque item porte une `section`
+// (cuisine | service) ; les items legacy sans section sont rattachés à
+// « cuisine » par défaut. Les items sont COCHABLES par tous — l'état est
+// stocké par jour (/dailyChecklistState/{YYYY-MM-DD}) donc il se
+// réinitialise automatiquement chaque jour (nouveau doc = aucune case).
 // L'admin définit les items via « Modifier les listes » (4 zones).
 // ═══════════════════════════════════════════════════════════════
 
@@ -304,15 +305,25 @@ function isChecklistItemDone(list, id) {
   return !!(m && m[id]);
 }
 
+// Section active de la page (cuisine | service). Persistée en mémoire entre
+// les rendus ; remise à « cuisine » au chargement du script.
+var _ocActiveSection = (typeof _ocActiveSection !== "undefined" && _ocActiveSection) ? _ocActiveSection : "cuisine";
+
+function setOcSection(section) {
+  _ocActiveSection = (section === "service") ? "service" : "cuisine";
+  if (typeof activePage !== "undefined" && activePage === "ouverture-fermeture") renderPage();
+}
+
 function renderOpenClose() {
   subscribeChecklistToday();
   const { opening, closing } = getOpenCloseLists();
+  const active = (_ocActiveSection === "service") ? "service" : "cuisine";
 
   const bySection = (items, section) => items.filter(it => it.section === section);
   const doneCount = (items, list) => items.filter(it => isChecklistItemDone(list, it.id)).length;
 
-  const checkList = (items, list) => {
-    if (items.length === 0) return `<div class="dash-today-empty">${t("ops_oc_cell_empty")}</div>`;
+  const checkList = (items, list, emptyMsg) => {
+    if (items.length === 0) return `<div class="dash-today-empty">${emptyMsg}</div>`;
     return `<div class="openclose-list">${items.map(it => {
       const done = isChecklistItemDone(list, it.id);
       return `<button class="openclose-check ${done ? "is-done" : ""}" onclick="toggleChecklistItem('${list}','${it.id}')" aria-pressed="${done}" title="${done ? t("ops_uncheck") : t("ops_mark_done")}">
@@ -322,21 +333,23 @@ function renderOpenClose() {
     }).join("")}</div>`;
   };
 
-  // Une case = section (cuisine/service) × moment (ouverture/fermeture).
-  const cell = (section, list, momentIcon, momentLabel) => {
-    const sec = section === "service"
-      ? { cls: "openclose-cell--service", ic: "users", label: t("ops_service") }
-      : { cls: "openclose-cell--cuisine", ic: "utensils", label: t("ops_cuisine") };
-    const items = bySection(list === "opening" ? opening : closing, section);
-    return `<div class="card openclose-cell ${sec.cls}">
-      <h3 class="openclose-cell__title">
-        <span class="openclose-cell__sec">${icon(sec.ic, 15)} ${sec.label}</span>
-        <span class="openclose-cell__moment">${icon(momentIcon, 13)} ${momentLabel}</span>
-        ${items.length ? `<span class="openclose-progress">${doneCount(items, list)}/${items.length}</span>` : ""}
-      </h3>
-      ${checkList(items, list)}
-    </div>`;
+  // Compteur combiné (ouverture + fermeture) par section, pour les gros boutons.
+  const secProgress = (section) => {
+    const o = bySection(opening, section), c = bySection(closing, section);
+    return { done: doneCount(o, "opening") + doneCount(c, "closing"), total: o.length + c.length };
   };
+  const switchBtn = (section, ic, label) => {
+    const p = secProgress(section);
+    const isActive = active === section;
+    return `<button class="oc-section-btn oc-section-btn--${section} ${isActive ? "is-active" : ""}" onclick="setOcSection('${section}')" aria-pressed="${isActive}" role="tab" aria-selected="${isActive}">
+      <span class="oc-section-btn__ic">${icon(ic, 22)}</span>
+      <span class="oc-section-btn__label">${label}</span>
+      ${p.total ? `<span class="oc-section-btn__count">${p.done}/${p.total}</span>` : ""}
+    </button>`;
+  };
+
+  const op = bySection(opening, active);
+  const cl = bySection(closing, active);
 
   return `<div class="page">
     <div class="toolbar">
@@ -346,11 +359,20 @@ function renderOpenClose() {
       </div>` : ""}
     </div>
 
-    <div class="openclose-grid4">
-      ${cell("cuisine", "opening", "sun", t("ops_opening"))}
-      ${cell("service", "opening", "sun", t("ops_opening"))}
-      ${cell("cuisine", "closing", "moon", t("ops_closing"))}
-      ${cell("service", "closing", "moon", t("ops_closing"))}
+    <div class="oc-section-switch" role="tablist" aria-label="${t("ops_section_switch")}">
+      ${switchBtn("cuisine", "utensils", t("ops_cuisine"))}
+      ${switchBtn("service", "users", t("ops_service"))}
+    </div>
+
+    <div class="openclose-grid">
+      <div class="card openclose-col openclose-col--open">
+        <h3 class="openclose-col__title">${icon("sun", 16)} ${t("ops_opening")} ${op.length ? `<span class="openclose-progress">${doneCount(op, "opening")}/${op.length}</span>` : ""}</h3>
+        ${checkList(op, "opening", t("ops_opening_empty"))}
+      </div>
+      <div class="card openclose-col openclose-col--close">
+        <h3 class="openclose-col__title">${icon("moon", 16)} ${t("ops_closing")} ${cl.length ? `<span class="openclose-progress">${doneCount(cl, "closing")}/${cl.length}</span>` : ""}</h3>
+        ${checkList(cl, "closing", t("ops_closing_empty"))}
+      </div>
     </div>
 
     <p class="emp-schedule-note">${icon("info", 13)} ${t("ops_openclose_note")}</p>

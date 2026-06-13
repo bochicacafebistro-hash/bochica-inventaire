@@ -311,6 +311,7 @@ const TRANSLATIONS = {
   ops_lists_saved:       { fr: "Listes enregistrées.",  es: "Listas guardadas." },
   ops_cuisine:           { fr: "Cuisine", es: "Cocina" },
   ops_service:           { fr: "Service", es: "Servicio" },
+  ops_section_switch:    { fr: "Choisir la section", es: "Elegir la sección" },
   ops_oc_cell_empty:     { fr: "Aucun élément.", es: "Ningún elemento." },
   ops_opening_cuisine_ph:{ fr: "Allumer la friteuse\nMonter la plancha en température\nSortir les bacs de prep", es: "Encender la freidora\nCalentar la plancha\nSacar los recipientes de prep" },
   ops_opening_service_ph:{ fr: "Vérifier la caisse\nDescendre les chaises\nMettre les tables", es: "Verificar la caja\nBajar las sillas\nPoner las mesas" },
