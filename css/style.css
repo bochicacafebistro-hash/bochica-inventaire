@@ -11250,6 +11250,11 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   background:var(--surface3); color:var(--text2);
 }
 .daily-task-tag--once{ background:var(--accent-soft); color:var(--accent-warm); }
+/* Badge d'occurrence « 2/3 » (tâche à faire plusieurs fois par jour) */
+.daily-task-tag--occ{
+  font-family:var(--font-mono); background:rgba(74,144,226,.16); color:#2f6db5;
+}
+.dark .daily-task-tag--occ{ background:rgba(74,144,226,.25); color:#9ec5f0; }
 .daily-task-item.is-done .daily-task-check{
   background:var(--status-green, #7dbf66);
   border-color:var(--status-green, #7dbf66);
@@ -11289,10 +11294,18 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 .ops-admin-item__status.is-done{
   background:var(--status-green, #7dbf66); border-color:var(--status-green, #7dbf66);
 }
-.ops-admin-item__title{ flex:1; font-size:var(--fs-base); }
+.ops-admin-item__title{ flex:1; font-size:var(--fs-base); display:flex; align-items:center; flex-wrap:wrap; gap:6px 8px; }
 .ops-admin-item.is-done-today .ops-admin-item__title{ color:var(--text3); }
 .ops-admin-item__actions{ display:flex; gap:4px; flex-shrink:0; }
 .dark .ops-admin-item__status{ border-color:rgba(245,241,232,.25); }
+/* Compteur « 2/3 » dans la pastille de statut (tâches multi-passages) */
+.ops-admin-item__count{ font-family:var(--font-mono); font-size:10px; font-weight:700; color:var(--text2); line-height:1; }
+.ops-admin-item__status.is-done .ops-admin-item__count{ color:#fff; }
+/* Astuce sous le champ heures du modal */
+.ops-task-times-hint{
+  display:flex; gap:6px; align-items:flex-start;
+  font-size:var(--fs-xs); color:var(--text2); line-height:1.5; margin:6px 0 2px;
+}
 
 /* ── Page « Ouverture / Fermeture » (référence) ── */
 .openclose-grid{

@@ -100,7 +100,7 @@ service cloud.firestore {
     }
     function _dailyTaskToggleOnly() {
       return request.resource.data.diff(resource.data).affectedKeys()
-        .hasOnly(['done', 'doneAt', 'doneDate', 'doneBy', 'lastCompletedDate', 'lastCompletedBy', 'updatedAt']);
+        .hasOnly(['done', 'doneAt', 'doneDate', 'doneBy', 'lastCompletedDate', 'lastCompletedBy', 'dayState', 'updatedAt']);
     }
 
     // ── /dailyChecklistState : complétion ouverture/fermeture par jour (v3.36.2) ──

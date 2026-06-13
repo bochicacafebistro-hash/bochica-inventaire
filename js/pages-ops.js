@@ -50,6 +50,73 @@ function sortedDailyTasks() {
   });
 }
 
+// ── Occurrences (« plusieurs fois par jour », v3.48.0) ─────────
+// Une tâche récurrente peut avoir PLUSIEURS heures (`times[]`), donc
+// plusieurs passages cochables indépendamment dans la même journée
+// (ex. nettoyer les salles de bain à 12:00, 17:00, 21:00).
+//   • `times[]` présent (≥1) → système MULTI : complétion par index dans
+//     `dayState = { date:"YYYY-MM-DD", done:{ "0":qui, "1":qui } }`, remis à
+//     zéro chaque jour (on ignore dayState si la date n'est pas aujourd'hui).
+//   • `times[]` absent/vide → système MONO legacy (champ `time` unique +
+//     done/doneDate pour ponctuelle, lastCompletedDate pour récurrente).
+
+// Liste des heures multi d'une tâche, ou null si mono-occurrence legacy.
+function dailyTaskTimes(task) {
+  const arr = Array.isArray(task && task.times) ? task.times.map(s => (s || "").trim()) : null;
+  return (arr && arr.length) ? arr : null;
+}
+
+// Un passage MULTI (index idx) est-il fait aujourd'hui ?
+function isOccDoneToday(task, idx, todayStr) {
+  const ds = task && task.dayState;
+  return !!(ds && ds.date === todayStr && ds.done && ds.done[idx]);
+}
+
+// Occurrences d'une tâche avec leur état du jour :
+//   [{ idx, time, done, multi, count }]
+function dailyTaskOccurrences(task, todayStr) {
+  const times = dailyTaskTimes(task);
+  if (times) {
+    return times.map((tm, i) => ({
+      idx: i, time: tm, done: isOccDoneToday(task, i, todayStr), multi: true, count: times.length
+    }));
+  }
+  return [{ idx: 0, time: (task.time || "").trim(), done: isDailyTaskDoneToday(task, todayStr), multi: false, count: 1 }];
+}
+
+// Comparateur chronologique de deux « unités d'occurrence » {task, occ} :
+// celles avec heure d'abord (heure croissante), puis sans heure ; départage
+// récurrentes avant ponctuelles, puis sortOrder.
+function compareOccUnits(a, b) {
+  const ta = a.occ.time, tb = b.occ.time;
+  if (ta && tb) { if (ta !== tb) return ta < tb ? -1 : 1; }
+  else if (ta && !tb) return -1;
+  else if (!ta && tb) return 1;
+  const oa = a.task.type === "once" ? 1 : 0, ob = b.task.type === "once" ? 1 : 0;
+  if (oa !== ob) return oa - ob;
+  return (a.task.sortOrder ?? 999) - (b.task.sortOrder ?? 999);
+}
+
+// ── Toggle d'un passage MULTI (employé ou admin) ───────────────
+async function toggleDailyOcc(id, idx) {
+  const task = (typeof dailyTasks !== "undefined" ? dailyTasks : []).find(t => t.id === id);
+  if (!task) return;
+  const todayStr = dayKey(new Date());
+  const who = (typeof loggedInUser !== "undefined" && loggedInUser?.name) ? loggedInUser.name : "";
+  const ds = (task.dayState && task.dayState.date === todayStr) ? task.dayState : { date: todayStr, done: {} };
+  const done = { ...(ds.done || {}) };
+  if (done[idx]) delete done[idx];
+  else done[idx] = who || true;
+  try {
+    await db.collection("dailyTasks").doc(id).update({
+      dayState: { date: todayStr, done }, updatedAt: Date.now()
+    });
+  } catch (err) {
+    console.error("toggleDailyOcc:", err);
+    toast(t("err_prefix") + " : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
 // ═══════════════════════════════════════════════════════════════
 // BLOC « Tâches de la journée » — injecté dans l'accueil employé
 // ───────────────────────────────────────────────────────────────
@@ -58,24 +125,33 @@ function sortedDailyTasks() {
 // ═══════════════════════════════════════════════════════════════
 function renderDailyTasksBlock() {
   const todayStr = dayKey(new Date());
-  const list = sortedDailyTasks().filter(t => shouldShowDailyTaskToday(t, todayStr));
-  const doneCount = list.filter(t => isDailyTaskDoneToday(t, todayStr)).length;
+  // Aplatir chaque tâche affichée en autant d'unités que d'occurrences (heures),
+  // puis trier toutes les unités dans l'ordre chronologique de la journée.
+  const units = [];
+  (typeof dailyTasks !== "undefined" ? dailyTasks : [])
+    .filter(task => shouldShowDailyTaskToday(task, todayStr))
+    .forEach(task => {
+      dailyTaskOccurrences(task, todayStr).forEach(occ => units.push({ task, occ }));
+    });
+  units.sort(compareOccUnits);
+  const doneCount = units.filter(u => u.occ.done).length;
 
   return `<div class="dash-today-block">
-    <div class="dash-today-block__title">${icon("clipboard", 12)} ${t("ops_daily_title")} (${doneCount}/${list.length})</div>
+    <div class="dash-today-block__title">${icon("clipboard", 12)} ${t("ops_daily_title")} (${doneCount}/${units.length})</div>
     <div class="dash-today-block__list">
-      ${list.length === 0
+      ${units.length === 0
         ? `<div class="dash-today-empty">${t("ops_no_tasks_today")}</div>`
-        : list.map(task => {
-            const done = isDailyTaskDoneToday(task, todayStr);
+        : units.map(({ task, occ }) => {
+            const done = occ.done;
             const isOnce = task.type === "once";
-            const time = (task.time || "").trim();
             const note = (task.note || "").trim();
-            return `<button class="daily-task-card ${done ? "is-done" : ""}" onclick="toggleDailyTask('${task.id}')" aria-pressed="${done}" title="${done ? t("ops_uncheck") : t("ops_mark_done")}">
+            const onclick = occ.multi ? `toggleDailyOcc('${task.id}',${occ.idx})` : `toggleDailyTask('${task.id}')`;
+            return `<button class="daily-task-card ${done ? "is-done" : ""}" onclick="${onclick}" aria-pressed="${done}" title="${done ? t("ops_uncheck") : t("ops_mark_done")}">
               <div class="daily-task-card__main">
                 <span class="daily-task-check">${done ? icon("check", 13) : ""}</span>
                 <span class="daily-task-label">${esc(task.title || "—")}</span>
-                ${time ? `<span class="daily-task-time">${icon("clock", 11)} ${esc(time)}</span>` : ""}
+                ${occ.time ? `<span class="daily-task-time">${icon("clock", 11)} ${esc(occ.time)}</span>` : ""}
+                ${occ.count > 1 ? `<span class="daily-task-tag daily-task-tag--occ">${occ.idx + 1}/${occ.count}</span>` : ""}
                 ${isOnce ? `<span class="daily-task-tag daily-task-tag--once">1×</span>` : ""}
               </div>
               ${note ? `<div class="daily-task-note">${esc(note)}</div>` : ""}
@@ -124,22 +200,31 @@ function renderDailyTasksAdmin() {
   const once = sortedDailyTasks().filter(t => t.type === "once");
 
   const itemRow = (task) => {
-    const done = isDailyTaskDoneToday(task, todayStr);
-    const time = (task.time || "").trim();
     const note = (task.note || "").trim();
-    return `<div class="ops-admin-item ${done ? "is-done-today" : ""}">
-      <span class="ops-admin-item__status ${done ? "is-done" : ""}" title="${done ? t("ops_done_today") : t("ops_not_done")}">
-        ${done ? icon("check", 13) : ""}
+    const times = dailyTaskTimes(task);
+    const occs = dailyTaskOccurrences(task, todayStr);
+    const doneCnt = occs.filter(o => o.done).length;
+    const allDone = doneCnt === occs.length;
+    // Affichage des heures : multi = liste « 12:00 · 17:00 · 21:00 » + badge N×,
+    // sinon l'heure unique éventuelle.
+    const timesLabel = times
+      ? times.filter(Boolean).map(esc).join(" · ")
+      : (task.time || "").trim();
+    return `<div class="ops-admin-item ${allDone ? "is-done-today" : ""}">
+      <span class="ops-admin-item__status ${allDone ? "is-done" : ""}" title="${allDone ? t("ops_done_today") : t("ops_not_done")}">
+        ${times ? `<span class="ops-admin-item__count">${doneCnt}/${occs.length}</span>` : (allDone ? icon("check", 13) : "")}
       </span>
       <div class="ops-admin-item__body">
         <div class="ops-admin-item__title">
           ${esc(task.title || "—")}
-          ${time ? `<span class="daily-task-time">${icon("clock", 11)} ${esc(time)}</span>` : ""}
+          ${timesLabel ? `<span class="daily-task-time">${icon("clock", 11)} ${timesLabel}</span>` : ""}
+          ${times && times.length > 1 ? `<span class="daily-task-tag daily-task-tag--occ">${times.length}×</span>` : ""}
         </div>
         ${note ? `<div class="ops-admin-item__note">${esc(note)}</div>` : ""}
       </div>
       <div class="ops-admin-item__actions">
         <button class="btn-icon-only" onclick="openDailyTaskModal('${task.id}')" title="${t("edit")}" aria-label="${t("edit")}">${icon("pencil", 15)}</button>
+        <button class="btn-icon-only" onclick="duplicateDailyTask('${task.id}')" title="${t("duplicate")}" aria-label="${t("duplicate")}">${icon("copy", 15)}</button>
         <button class="btn-icon-only" onclick="deleteDailyTask('${task.id}')" title="${t("delete")}" aria-label="${t("delete")}">${icon("trash", 15)}</button>
       </div>
     </div>`;
@@ -179,6 +264,9 @@ function renderDailyTasksAdmin() {
 function openDailyTaskModal(id) {
   const task = id ? (dailyTasks || []).find(t => t.id === id) : null;
   const type = task?.type || "recurring";
+  // Pré-remplissage du champ heures : times[] si présent, sinon l'heure unique.
+  const times = dailyTaskTimes(task || {});
+  const timesVal = times ? times.filter(Boolean).join(", ") : (task?.time || "").trim();
   showModal(`<div class="modal">
     <div class="modal-header">
       <h3>${task ? t("ops_edit_task") : t("ops_new_task_modal")}</h3>
@@ -194,10 +282,11 @@ function openDailyTaskModal(id) {
           <option value="once" ${type === "once" ? "selected" : ""}>${t("ops_type_once")}</option>
         </select>
       </label>
-      <label>${t("ops_task_time")}
-        <input id="dt-time" type="time" value="${esc(task?.time || "")}"/>
+      <label>${t("ops_task_times")}
+        <input id="dt-times" value="${esc(timesVal)}" placeholder="${esc(t("ops_task_times_ph"))}"/>
       </label>
     </div>
+    <p class="ops-task-times-hint">${icon("info", 12)} ${t("ops_task_times_hint")}</p>
     <label>${t("ops_task_note")}
       <textarea id="dt-note" style="height:70px" placeholder="${t("ops_task_note_ph")}">${task?.note || ""}</textarea>
     </label>
@@ -208,25 +297,45 @@ function openDailyTaskModal(id) {
   </div>`);
 }
 
+// Parse le champ heures (séparé par virgules/espaces) → ["12:00","17:00", …].
+// Normalise chaque jeton (accepte 1704, 17h04, 17 …) et ignore les invalides.
+function parseDailyTimes(raw) {
+  return (raw || "").split(/[,;\n]+/).map(s => s.trim()).filter(Boolean)
+    .map(s => (typeof normalizeTimeInput === "function" ? normalizeTimeInput(s) : s))
+    .filter(s => s && s !== null);
+}
+
 async function saveDailyTask(id) {
   const title = (document.getElementById("dt-title").value || "").trim();
   if (!title) return toast(t("ops_enter_title"), "error");
   const type = document.getElementById("dt-type").value === "once" ? "once" : "recurring";
-  const time = (document.getElementById("dt-time").value || "").trim();
+  const parsedTimes = parseDailyTimes(document.getElementById("dt-times").value);
   const note = (document.getElementById("dt-note").value || "").trim();
+  // Modèle :
+  //  • ponctuelle → toujours mono (1ʳᵉ heure éventuelle dans `time`, pas de times[]).
+  //  • récurrente → times[] = toutes les heures (≥1 ⇒ multi-occurrences) ;
+  //    `time` garde la 1ʳᵉ heure pour les lecteurs legacy.
+  const time = parsedTimes[0] || "";
+  const fieldTimes = (type === "once") ? [] : parsedTimes;
   try {
     if (id) {
-      await db.collection("dailyTasks").doc(id).update({ title, type, time, note, updatedAt: Date.now() });
+      const patch = { title, type, time, note, updatedAt: Date.now() };
+      patch.times = (type === "once")
+        ? firebase.firestore.FieldValue.delete()
+        : fieldTimes;
+      await db.collection("dailyTasks").doc(id).update(patch);
     } else {
       const nid = genId();
       const maxOrder = (dailyTasks || []).reduce((m, t) => Math.max(m, t.sortOrder ?? 0), -1);
-      await db.collection("dailyTasks").doc(nid).set({
+      const doc = {
         id: nid, title, type, time, note,
         sortOrder: maxOrder + 1,
         done: false,
         lastCompletedDate: null,
         createdAt: Date.now(), updatedAt: Date.now()
-      });
+      };
+      if (type !== "once") doc.times = fieldTimes;
+      await db.collection("dailyTasks").doc(nid).set(doc);
     }
     closeModal();
     toast(t("ops_task_saved"), "success");
@@ -248,6 +357,40 @@ function deleteDailyTask(id) {
       toast(t("err_prefix") + " : " + (err.message || err.code || err), "error", 5000);
     }
   }, true);
+}
+
+// ── Dupliquer une tâche du jour (admin) ────────────────────────
+// Copie titre (+ « (Copie) »), type, heure(s) et note ; place la copie en fin
+// de liste ; réinitialise tout l'état de complétion (done / dayState / …).
+async function duplicateDailyTask(id) {
+  const task = (dailyTasks || []).find(t => t.id === id);
+  if (!task) return;
+  try {
+    const nid = genId();
+    const maxOrder = (dailyTasks || []).reduce((m, x) => Math.max(m, x.sortOrder ?? 0), -1);
+    const copy = {
+      id: nid,
+      title: (task.title || "") + " (Copie)",
+      type: task.type === "once" ? "once" : "recurring",
+      time: (task.time || "").trim(),
+      note: task.note || "",
+      sortOrder: maxOrder + 1,
+      done: false,
+      doneDate: null,
+      doneBy: null,
+      lastCompletedDate: null,
+      lastCompletedBy: null,
+      dayState: null,
+      createdAt: Date.now(), updatedAt: Date.now()
+    };
+    const times = dailyTaskTimes(task);
+    if (times) copy.times = times.slice();
+    await db.collection("dailyTasks").doc(nid).set(copy);
+    toast(t("ops_task_duplicated"), "success");
+  } catch (err) {
+    console.error("duplicateDailyTask:", err);
+    toast(t("err_prefix") + " : " + (err.message || err.code || err), "error", 5000);
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
