@@ -253,11 +253,14 @@ function deleteDailyTask(id) {
 // ═══════════════════════════════════════════════════════════════
 // PAGE — « Ouverture / Fermeture » (cases à cocher, reset quotidien)
 // ───────────────────────────────────────────────────────────────
-// Visible employés + admin. Deux colonnes : à l'ouverture / à la
-// fermeture. Les items sont COCHABLES par tous — l'état est stocké
-// par jour (/dailyChecklistState/{YYYY-MM-DD}) donc il se réinitialise
+// Visible employés + admin. Grille 2×2 : colonnes Cuisine / Service,
+// rangées Ouverture / Fermeture — pour savoir qui fait quoi. Chaque
+// item porte une `section` (cuisine | service) ; les items legacy sans
+// section sont rattachés à « cuisine » par défaut. Les items sont
+// COCHABLES par tous — l'état est stocké par jour
+// (/dailyChecklistState/{YYYY-MM-DD}) donc il se réinitialise
 // automatiquement chaque jour (nouveau doc = aucune case cochée).
-// L'admin définit les items via « Modifier les listes ».
+// L'admin définit les items via « Modifier les listes » (4 zones).
 // ═══════════════════════════════════════════════════════════════
 
 // ID stable dérivé d'un texte (pour les items legacy + clé de complétion).
@@ -286,10 +289,14 @@ function subscribeChecklistToday() {
 
 function getOpenCloseLists() {
   const o = (typeof openCloseLists !== "undefined" && openCloseLists) ? openCloseLists : {};
-  return {
-    opening: Array.isArray(o.opening) ? o.opening : [],
-    closing: Array.isArray(o.closing) ? o.closing : []
-  };
+  // Chaque item porte une `section` (cuisine | service). Les items legacy
+  // sans section sont rattachés à « cuisine » par défaut (modifiable ensuite).
+  const norm = (arr) => (Array.isArray(arr) ? arr : []).map(it => ({
+    id: it.id,
+    text: it.text,
+    section: it.section === "service" ? "service" : "cuisine"
+  }));
+  return { opening: norm(o.opening), closing: norm(o.closing) };
 }
 
 function isChecklistItemDone(list, id) {
@@ -301,8 +308,11 @@ function renderOpenClose() {
   subscribeChecklistToday();
   const { opening, closing } = getOpenCloseLists();
 
-  const checkList = (items, list, emptyMsg) => {
-    if (items.length === 0) return `<div class="dash-today-empty">${emptyMsg}</div>`;
+  const bySection = (items, section) => items.filter(it => it.section === section);
+  const doneCount = (items, list) => items.filter(it => isChecklistItemDone(list, it.id)).length;
+
+  const checkList = (items, list) => {
+    if (items.length === 0) return `<div class="dash-today-empty">${t("ops_oc_cell_empty")}</div>`;
     return `<div class="openclose-list">${items.map(it => {
       const done = isChecklistItemDone(list, it.id);
       return `<button class="openclose-check ${done ? "is-done" : ""}" onclick="toggleChecklistItem('${list}','${it.id}')" aria-pressed="${done}" title="${done ? t("ops_uncheck") : t("ops_mark_done")}">
@@ -311,7 +321,22 @@ function renderOpenClose() {
       </button>`;
     }).join("")}</div>`;
   };
-  const doneCount = (items, list) => items.filter(it => isChecklistItemDone(list, it.id)).length;
+
+  // Une case = section (cuisine/service) × moment (ouverture/fermeture).
+  const cell = (section, list, momentIcon, momentLabel) => {
+    const sec = section === "service"
+      ? { cls: "openclose-cell--service", ic: "users", label: t("ops_service") }
+      : { cls: "openclose-cell--cuisine", ic: "utensils", label: t("ops_cuisine") };
+    const items = bySection(list === "opening" ? opening : closing, section);
+    return `<div class="card openclose-cell ${sec.cls}">
+      <h3 class="openclose-cell__title">
+        <span class="openclose-cell__sec">${icon(sec.ic, 15)} ${sec.label}</span>
+        <span class="openclose-cell__moment">${icon(momentIcon, 13)} ${momentLabel}</span>
+        ${items.length ? `<span class="openclose-progress">${doneCount(items, list)}/${items.length}</span>` : ""}
+      </h3>
+      ${checkList(items, list)}
+    </div>`;
+  };
 
   return `<div class="page">
     <div class="toolbar">
@@ -321,15 +346,11 @@ function renderOpenClose() {
       </div>` : ""}
     </div>
 
-    <div class="openclose-grid">
-      <div class="card openclose-col openclose-col--open">
-        <h3 class="openclose-col__title">${icon("sun", 16)} ${t("ops_opening")} ${opening.length ? `<span class="openclose-progress">${doneCount(opening, "opening")}/${opening.length}</span>` : ""}</h3>
-        ${checkList(opening, "opening", t("ops_opening_empty"))}
-      </div>
-      <div class="card openclose-col openclose-col--close">
-        <h3 class="openclose-col__title">${icon("moon", 16)} ${t("ops_closing")} ${closing.length ? `<span class="openclose-progress">${doneCount(closing, "closing")}/${closing.length}</span>` : ""}</h3>
-        ${checkList(closing, "closing", t("ops_closing_empty"))}
-      </div>
+    <div class="openclose-grid4">
+      ${cell("cuisine", "opening", "sun", t("ops_opening"))}
+      ${cell("service", "opening", "sun", t("ops_opening"))}
+      ${cell("cuisine", "closing", "moon", t("ops_closing"))}
+      ${cell("service", "closing", "moon", t("ops_closing"))}
     </div>
 
     <p class="emp-schedule-note">${icon("info", 13)} ${t("ops_openclose_note")}</p>
@@ -357,19 +378,25 @@ async function toggleChecklistItem(list, id) {
 // ── Éditeur admin des deux listes (une ligne = un item) ────────
 function openOpenCloseEditor() {
   const { opening, closing } = getOpenCloseLists();
-  const toText = (items) => items.map(it => it.text).join("\n");
+  const toText = (items, section) => items.filter(it => it.section === section).map(it => it.text).join("\n");
   showModal(`<div class="modal modal--wide">
     <div class="modal-header">
       <h3>${t("ops_edit_lists_title")}</h3>
       <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
     </div>
     <p style="color:var(--text2);font-size:13px;margin:0 0 12px;line-height:1.5">${t("ops_edit_lists_hint")}</p>
-    <div class="openclose-edit-grid">
-      <label>${icon("sun", 14)} ${t("ops_opening")}
-        <textarea id="oc-opening" style="height:220px;line-height:1.6" placeholder="${esc(t("ops_opening_ph"))}">${toText(opening)}</textarea>
+    <div class="openclose-edit-grid4">
+      <label>${icon("sun", 14)} ${t("ops_opening")} · ${icon("utensils", 13)} ${t("ops_cuisine")}
+        <textarea id="oc-opening-cuisine" style="height:170px;line-height:1.6" placeholder="${esc(t("ops_opening_cuisine_ph"))}">${toText(opening, "cuisine")}</textarea>
       </label>
-      <label>${icon("moon", 14)} ${t("ops_closing")}
-        <textarea id="oc-closing" style="height:220px;line-height:1.6" placeholder="${esc(t("ops_closing_ph"))}">${toText(closing)}</textarea>
+      <label>${icon("sun", 14)} ${t("ops_opening")} · ${icon("users", 13)} ${t("ops_service")}
+        <textarea id="oc-opening-service" style="height:170px;line-height:1.6" placeholder="${esc(t("ops_opening_service_ph"))}">${toText(opening, "service")}</textarea>
+      </label>
+      <label>${icon("moon", 14)} ${t("ops_closing")} · ${icon("utensils", 13)} ${t("ops_cuisine")}
+        <textarea id="oc-closing-cuisine" style="height:170px;line-height:1.6" placeholder="${esc(t("ops_closing_cuisine_ph"))}">${toText(closing, "cuisine")}</textarea>
+      </label>
+      <label>${icon("moon", 14)} ${t("ops_closing")} · ${icon("users", 13)} ${t("ops_service")}
+        <textarea id="oc-closing-service" style="height:170px;line-height:1.6" placeholder="${esc(t("ops_closing_service_ph"))}">${toText(closing, "service")}</textarea>
       </label>
     </div>
     <div class="modal-actions">
@@ -380,19 +407,30 @@ function openOpenCloseEditor() {
 }
 
 async function saveOpenClose() {
-  // Construit les items {id, text} en préservant l'id existant si le texte est
-  // inchangé (pour ne pas perdre les cases déjà cochées aujourd'hui).
-  const buildItems = (raw, existing) => {
-    const byText = {};
-    (existing || []).forEach(it => { byText[it.text] = it.id; });
-    return (raw || "").split("\n").map(s => s.trim()).filter(Boolean).map(text => ({
-      id: byText[text] || genId(),
-      text
-    }));
-  };
+  // Construit les items {id, text, section} en préservant l'id existant si le
+  // texte est inchangé (pour ne pas perdre les cases déjà cochées aujourd'hui).
+  // On préfère réutiliser un id de la même section, sinon n'importe lequel
+  // (cas migration legacy), sans jamais réutiliser deux fois le même id.
+  const val = (id) => (document.getElementById(id)?.value || "");
+  const buildSection = (raw, section, existing, usedIds) =>
+    raw.split("\n").map(s => s.trim()).filter(Boolean).map(text => {
+      let m = (existing || []).find(it => it.section === section && it.text === text && !usedIds.has(it.id));
+      if (!m) m = (existing || []).find(it => it.text === text && !usedIds.has(it.id));
+      const id = m ? m.id : genId();
+      if (m) usedIds.add(m.id);
+      return { id, text, section };
+    });
   const cur = getOpenCloseLists();
-  const opening = buildItems(document.getElementById("oc-opening").value, cur.opening);
-  const closing = buildItems(document.getElementById("oc-closing").value, cur.closing);
+  const usedO = new Set();
+  const opening = [
+    ...buildSection(val("oc-opening-cuisine"), "cuisine", cur.opening, usedO),
+    ...buildSection(val("oc-opening-service"), "service", cur.opening, usedO)
+  ];
+  const usedC = new Set();
+  const closing = [
+    ...buildSection(val("oc-closing-cuisine"), "cuisine", cur.closing, usedC),
+    ...buildSection(val("oc-closing-service"), "service", cur.closing, usedC)
+  ];
   try {
     await db.collection("settings").doc("openClose").set({
       opening, closing, updatedAt: Date.now()

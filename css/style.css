@@ -11314,8 +11314,36 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 .openclose-edit-grid{
   display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);
 }
+
+/* ── Grille 2×2 Cuisine/Service × Ouverture/Fermeture (v3.47.0) ── */
+.openclose-grid4{
+  display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);
+}
+.openclose-edit-grid4{
+  display:grid; grid-template-columns:1fr 1fr; gap:var(--sp-4);
+}
+/* Accent de gauche selon la section (cuisine ambré / service bleu) */
+.openclose-cell{ border-left:4px solid var(--border); }
+.openclose-cell--cuisine{ border-left-color:var(--accent); }
+.openclose-cell--service{ border-left-color:#4a90e2; }
+.openclose-cell__title{
+  display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px;
+  font-size:var(--fs-md); margin:0 0 var(--sp-3);
+  padding-bottom:var(--sp-2); border-bottom:1px solid var(--border);
+}
+.openclose-cell__sec{ display:inline-flex; align-items:center; gap:6px; }
+.openclose-cell--cuisine .openclose-cell__sec{ color:var(--accent-warm); }
+.openclose-cell--service .openclose-cell__sec{ color:var(--blue-text, #2f6db5); }
+.openclose-cell__moment{
+  display:inline-flex; align-items:center; gap:4px;
+  font-family:var(--font-mono); font-size:11px; font-weight:600;
+  text-transform:uppercase; letter-spacing:.04em; color:var(--text2);
+}
+.openclose-cell__title .openclose-progress{ margin-left:auto; }
+
 @media (max-width:760px){
-  .openclose-grid, .openclose-edit-grid{ grid-template-columns:1fr; }
+  .openclose-grid, .openclose-edit-grid,
+  .openclose-grid4, .openclose-edit-grid4{ grid-template-columns:1fr; }
 }
 
 /* ── Accueil employé : groupes par section + couleur événements (v3.36.1) ── */

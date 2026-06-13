@@ -309,6 +309,13 @@ const TRANSLATIONS = {
   ops_opening_ph:        { fr: "Allumer la friteuse\nVérifier la caisse\nSortir les chaises de terrasse", es: "Encender la freidora\nVerificar la caja\nSacar las sillas de la terraza" },
   ops_closing_ph:        { fr: "Fermer la caisse\nNettoyer la plancha\nSortir les poubelles", es: "Cerrar la caja\nLimpiar la plancha\nSacar la basura" },
   ops_lists_saved:       { fr: "Listes enregistrées.",  es: "Listas guardadas." },
+  ops_cuisine:           { fr: "Cuisine", es: "Cocina" },
+  ops_service:           { fr: "Service", es: "Servicio" },
+  ops_oc_cell_empty:     { fr: "Aucun élément.", es: "Ningún elemento." },
+  ops_opening_cuisine_ph:{ fr: "Allumer la friteuse\nMonter la plancha en température\nSortir les bacs de prep", es: "Encender la freidora\nCalentar la plancha\nSacar los recipientes de prep" },
+  ops_opening_service_ph:{ fr: "Vérifier la caisse\nDescendre les chaises\nMettre les tables", es: "Verificar la caja\nBajar las sillas\nPoner las mesas" },
+  ops_closing_cuisine_ph:{ fr: "Nettoyer la plancha\nÉteindre les équipements\nRanger les bacs au frigo", es: "Limpiar la plancha\nApagar los equipos\nGuardar los recipientes en el refrigerador" },
+  ops_closing_service_ph:{ fr: "Fermer la caisse\nSortir les poubelles\nLaver les tables", es: "Cerrar la caja\nSacar la basura\nLimpiar las mesas" },
 
   // ── Accueil & horaire employé ─────────────────────
   emp_welcome:           { fr: "Bienvenue chez Bochica", es: "Bienvenido a Bochica" },
