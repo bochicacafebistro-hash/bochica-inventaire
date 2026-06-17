@@ -62,6 +62,50 @@ function dayKey(date) {
   return `${y}-${m}-${d}`;
 }
 
+// Clé "YYYY-MM-DD" d'aujourd'hui (date locale).
+function todayKey() { return dayKey(new Date()); }
+
+// ─── Taux horaire effectif à une date donnée (v3.52.0) ───────────────
+// Un employé peut avoir un HISTORIQUE de taux daté : emp.rateHistory =
+// [{ rate, from:"YYYY-MM-DD" }, ...]. Le taux applicable à une date est
+// celui de l'entrée la plus récente dont `from` <= dateKey. Avant la 1re
+// entrée → on prend la plus ancienne connue. Sans historique → emp.hourlyRate.
+//
+// Comparaison de chaînes "YYYY-MM-DD" = comparaison chronologique (sûre).
+// `dateKey` doit être une clé jour locale (dayKey()/todayKey()).
+function effectiveHourlyRate(emp, dateKey) {
+  const hist = Array.isArray(emp?.rateHistory) ? emp.rateHistory.filter(h => h && h.from) : [];
+  if (hist.length === 0) return Number(emp?.hourlyRate) || 0;
+  const dk = dateKey || todayKey();
+  let best = null;
+  let earliest = null;
+  for (const h of hist) {
+    if (!earliest || h.from < earliest.from) earliest = h;
+    if (h.from <= dk && (!best || h.from > best.from)) best = h;
+  }
+  const chosen = best || earliest;
+  return Number(chosen?.rate) || 0;
+}
+
+// Normalise/trie un historique de taux : enlève les entrées vides, trie par
+// date croissante, fusionne les doublons exacts de date (le dernier gagne) et
+// supprime les paliers redondants (même taux que le précédent).
+function normalizeRateHistory(hist) {
+  const byDate = {};
+  (Array.isArray(hist) ? hist : []).forEach(h => {
+    if (!h || !h.from) return;
+    const r = Math.max(0, Number(h.rate) || 0);
+    byDate[h.from] = { rate: r, from: h.from }; // même date → dernière valeur conservée
+  });
+  const sorted = Object.values(byDate).sort((a, b) => a.from.localeCompare(b.from));
+  const out = [];
+  for (const h of sorted) {
+    if (out.length && out[out.length - 1].rate === h.rate) continue; // palier redondant
+    out.push(h);
+  }
+  return out;
+}
+
 // Options du dropdown heures : 00:00 → 23:30 par tranches de 30 min (48 options)
 const SCHEDULE_TIME_OPTIONS = (() => {
   const arr = [];
@@ -320,9 +364,14 @@ function renderEmployes() {
   const weekKey = scheduleWeekKey();
   const weekEmps = visibleScheduleEmployees(weekDays, weekKey);
   const weekHiddenIds = getScheduleWeekHidden(weekKey);
+  // Taux daté (v3.52.0) : le taux affiché et le coût d'un salarié utilisent le
+  // taux effectif au DÉBUT de la semaine affichée ; le coût horaire est calculé
+  // jour par jour avec le taux effectif de chaque jour (gère une hausse en cours
+  // de semaine).
+  const weekStartKey = dayKey(weekDays[0] || new Date());
   const empRows = weekEmps.map(emp => {
     const shifts = emp.shifts || {};
-    const rate = Number(emp.hourlyRate) || 0;
+    const rate = effectiveHourlyRate(emp, weekStartKey);
     const isSal = !!emp.isSalaried;
     const fixedHours = Number(emp.fixedWeeklyHours) || 0;
     const weeklyFixedPay = isSal ? fixedHours * rate : null;
@@ -331,13 +380,13 @@ function renderEmployes() {
     const daily = weekDays.map((d, col) => {
       const s = shifts[dayKey(d)];
       const hours = hoursFromShift(s);
-      const cost = isSal ? dailyFixedCost : hours * rate;
+      const cost = isSal ? dailyFixedCost : hours * effectiveHourlyRate(emp, dayKey(d));
       dayTotalsHours[col] += hours;
       dayTotalsCost[col] += cost;
       return { shift: s, hours, cost };
     });
     const totalHours = daily.reduce((sum, d) => sum + d.hours, 0);
-    const totalPay = isSal ? weeklyFixedPay : totalHours * rate;
+    const totalPay = isSal ? weeklyFixedPay : daily.reduce((sum, d) => sum + d.cost, 0);
     return { emp, rate, isSal, fixedHours, daily, totalHours, totalPay };
   });
 
@@ -916,6 +965,58 @@ async function empRowDrop(e, targetId) {
   }
 }
 
+// Affiche l'historique des taux datés d'un employé (lecture seule + retrait).
+// Chaque palier : « 18,00 $/h à partir du 23 juin 2026 ». Bouton ✕ pour
+// supprimer un palier (corrige une erreur de saisie) — écrit directement dans
+// /employeesComp puis ré-ouvre le modal.
+function renderRateHistory(emp) {
+  const hist = normalizeRateHistory(emp?.rateHistory);
+  if (hist.length <= 1) return ""; // 0 ou 1 palier → rien à montrer (cas courant)
+  const today = todayKey();
+  const rows = [...hist].reverse().map(h => {
+    const future = h.from > today;
+    return `<li class="rate-hist__row ${future ? "rate-hist__row--future" : ""}">
+      <span class="rate-hist__rate">${fmtMoney(h.rate)}/h</span>
+      <span class="rate-hist__from">à partir du ${esc(fmtDateLong(h.from))}${future ? " · à venir" : ""}</span>
+      ${emp?.id ? `<button type="button" class="btn-icon-only rate-hist__del" onclick="removeRateHistoryEntry('${esc(emp.id)}','${esc(h.from)}')" aria-label="Retirer ce palier" title="Retirer ce palier">${icon("trash", 12)}</button>` : ""}
+    </li>`;
+  }).join("");
+  return `<div class="rate-hist">
+    <div class="rate-hist__title">${icon("clock", 12)} Historique des taux</div>
+    <ul class="rate-hist__list">${rows}</ul>
+  </div>`;
+}
+
+// Date longue FR-CA tolérante : "2026-06-23" → "23 juin 2026".
+function fmtDateLong(iso) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso + "T12:00:00");
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+  } catch (_) { return iso; }
+}
+
+// Retire un palier de taux (par sa date `from`) puis ré-ouvre la fiche.
+async function removeRateHistoryEntry(empId, fromKey) {
+  if (!isAdmin) return;
+  const emp = employees.find(e => e.id === empId);
+  const hist = normalizeRateHistory(emp?.rateHistory).filter(h => h.from !== fromKey);
+  try {
+    await db.collection("employeesComp").doc(empId).set({
+      rateHistory: hist,
+      hourlyRate: effectiveHourlyRate({ rateHistory: hist, hourlyRate: emp?.hourlyRate }, todayKey()),
+      updatedAt: Date.now()
+    }, { merge: true });
+    toast("Palier de taux retiré.", "success");
+    closeModal();
+    setTimeout(() => openEmployeeModal(empId), 60);
+  } catch (err) {
+    console.error("removeRateHistoryEntry:", err);
+    toast("Erreur : " + (err.message || err), "error");
+  }
+}
+
 function openEmployeeModal(id) {
   const emp = id ? employees.find(x => x.id === id) : null;
   showModal(`<div class="modal">
@@ -947,10 +1048,16 @@ function openEmployeeModal(id) {
       <label>${t("emp_field_phone")}<input id="e-phone" value="${esc(emp?.phone || "")}"/></label>
       <label>${t("emp_field_email")}<input id="e-email" value="${esc(emp?.email || "")}"/></label>
     </div>
-    <label>Taux horaire ($/h)
-      <input id="e-hourly-rate" type="number" min="0" step="0.25" value="${emp?.hourlyRate || ""}" placeholder="ex: 17.50"/>
-      <span class="field-hint">${icon("info", 11)} Utilisé pour calculer les coûts dans l'horaire de la semaine.</span>
-    </label>
+    <div class="form-row">
+      <label>Taux horaire ($/h)
+        <input id="e-hourly-rate" type="number" min="0" step="0.25" value="${emp?.hourlyRate || ""}" placeholder="ex: 17.50"/>
+      </label>
+      <label>En vigueur à partir du
+        <input id="e-rate-effective" type="date" value="${todayKey()}"/>
+      </label>
+    </div>
+    <span class="field-hint" style="display:block;margin:-4px 0 4px">${icon("info", 11)} Le nouveau taux s'applique aux semaines (paie et coûts d'horaire) <strong>à partir de la date choisie</strong>. Les semaines antérieures gardent l'ancien taux. Laisse la date d'aujourd'hui pour un changement immédiat, ou choisis une date future (ex. le lundi de la semaine prochaine).</span>
+    ${renderRateHistory(emp)}
     <label class="emp-salaried-toggle">
       <input type="checkbox" id="e-is-salaried" ${emp?.isSalaried ? "checked" : ""} onchange="document.getElementById('e-salaried-fields').style.display = this.checked ? 'block' : 'none'"/>
       <span>Employé salarié (montant fixe hebdomadaire)</span>
@@ -987,9 +1094,16 @@ function _applyEmployeeComp() {
   for (const e of (typeof employees !== "undefined" ? employees : [])) {
     const c = comp[e.id];
     if (c) {
-      e.hourlyRate = Number(c.hourlyRate) || 0;
       e.isSalaried = !!c.isSalaried;
       e.fixedWeeklyHours = Number(c.fixedWeeklyHours) || 0;
+      // Historique de taux daté (v3.52.0) : propagé tel quel sur l'objet emp.
+      e.rateHistory = normalizeRateHistory(c.rateHistory);
+      // `hourlyRate` = taux EN VIGUEUR AUJOURD'HUI (dérivé de l'historique s'il
+      // existe). Garde toutes les lectures "courantes" (team cards, simulation,
+      // dashboard) justes même après le passage d'une date d'effet future.
+      e.hourlyRate = e.rateHistory.length
+        ? effectiveHourlyRate(e, todayKey())
+        : (Number(c.hourlyRate) || 0);
     }
   }
 }
@@ -1062,13 +1176,6 @@ async function saveEmployee(id) {
     noTips: !!document.getElementById("e-no-tips")?.checked,
     notes: document.getElementById("e-notes").value
   };
-  // Rémunération (confidentielle) → collection séparée /employeesComp (admin only)
-  const comp = {
-    hourlyRate: Number(document.getElementById("e-hourly-rate").value) || 0,
-    isSalaried: document.getElementById("e-is-salaried").checked,
-    fixedWeeklyHours: Number(document.getElementById("e-fixed-hours").value) || 0,
-    updatedAt: Date.now()
-  };
   let empId = id;
   if (id) {
     await db.collection("employees").doc(id).update(data);
@@ -1080,6 +1187,32 @@ async function saveEmployee(id) {
       ...data, id: empId, shifts: {}, sortOrder: maxSort + 1
     });
   }
+
+  // ─── Historique de taux daté (v3.52.0) ───────────────────────────────
+  // On enregistre le taux saisi AVEC sa date d'effet dans rateHistory[].
+  // Règle : on « upsert » le taux saisi à la date choisie, puis on normalise
+  // (tri + fusion des paliers redondants). Si la fiche avait un ancien taux
+  // sans historique, on le « scelle » dans le passé (2000-01-01) pour que les
+  // semaines antérieures conservent l'ancien taux.
+  const existingComp = (typeof employeesComp !== "undefined" && employeesComp[empId]) || {};
+  const newRate = Math.max(0, Number(document.getElementById("e-hourly-rate").value) || 0);
+  const effDate = document.getElementById("e-rate-effective")?.value || todayKey();
+  let hist = normalizeRateHistory(existingComp.rateHistory);
+  if (hist.length === 0) {
+    const priorRate = Math.max(0, Number(existingComp.hourlyRate) || 0);
+    if (id && priorRate > 0) hist.push({ rate: priorRate, from: "2000-01-01" });
+  }
+  hist = normalizeRateHistory([...hist.filter(h => h.from !== effDate), { rate: newRate, from: effDate }]);
+  const currentRate = hist.length ? effectiveHourlyRate({ rateHistory: hist }, todayKey()) : newRate;
+
+  // Rémunération (confidentielle) → collection séparée /employeesComp (admin only)
+  const comp = {
+    hourlyRate: currentRate,            // taux en vigueur AUJOURD'HUI (dérivé de l'historique)
+    rateHistory: hist,                  // paliers datés
+    isSalaried: document.getElementById("e-is-salaried").checked,
+    fixedWeeklyHours: Number(document.getElementById("e-fixed-hours").value) || 0,
+    updatedAt: Date.now()
+  };
   // Écrit la rémunération à part (jamais dans /employees → invisible aux employés)
   await db.collection("employeesComp").doc(empId).set(comp, { merge: true });
   closeModal();
@@ -2020,9 +2153,10 @@ async function exportScheduleAsPNGAdmin() {
   // Réplique la logique de renderHoraires (empRows) pour la PNG.
   const dayTotalsHours = new Array(weekDays.length).fill(0);
   const dayTotalsCost = new Array(weekDays.length).fill(0);
+  const pngWeekStartKey = dayKey(weekDays[0] || new Date());
   const rows = empsWithShifts.map(emp => {
     const shifts = emp.shifts || {};
-    const rate = Number(emp.hourlyRate) || 0;
+    const rate = effectiveHourlyRate(emp, pngWeekStartKey); // taux daté (v3.52.0)
     const isSal = !!emp.isSalaried;
     const fixedHours = Number(emp.fixedWeeklyHours) || 0;
     const weeklyFixedPay = isSal ? fixedHours * rate : null;
@@ -2031,13 +2165,13 @@ async function exportScheduleAsPNGAdmin() {
     const daily = weekDays.map((d, col) => {
       const s = shifts[dayKey(d)];
       const hours = hoursFromShift(s);
-      const cost = isSal ? dailyFixedCost : hours * rate;
+      const cost = isSal ? dailyFixedCost : hours * effectiveHourlyRate(emp, dayKey(d));
       dayTotalsHours[col] += hours;
       dayTotalsCost[col] += cost;
       return { shift: s, hours, cost };
     });
     const totalHours = daily.reduce((sum, d) => sum + d.hours, 0);
-    const totalPay = isSal ? weeklyFixedPay : totalHours * rate;
+    const totalPay = isSal ? weeklyFixedPay : daily.reduce((sum, d) => sum + d.cost, 0);
     return { emp, rate, isSal, fixedHours, section: sec, daily, totalHours, totalPay };
   });
 

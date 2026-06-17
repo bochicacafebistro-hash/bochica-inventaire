@@ -647,8 +647,12 @@ function renderSalaires() {
   });
 
   // ─ Calculs par employé ────────────────────────────
+  // Taux daté (v3.52.0) : taux d'en-tête / salarié = taux effectif au début de
+  // la semaine de paie ; le salaire horaire est sommé jour par jour avec le
+  // taux effectif de chaque jour (gère une hausse en cours de semaine).
+  const payWeekStartKey = dayKey(weekStart);
   const empRows = allEmps.map(emp => {
-    const rate = Number(emp.hourlyRate) || 0;
+    const rate = effectiveHourlyRate(emp, payWeekStartKey);
     const isSal = !!emp.isSalaried;
     const fixedHours = Number(emp.fixedWeeklyHours) || 0;
     const group = getEffectiveTipGroup(emp); // override de semaine pris en compte
@@ -659,6 +663,7 @@ function renderSalaires() {
     let plannedHours = 0;
     let tipEligibleHours = 0;
     let tipShare = 0;
+    let hourlyGross = 0; // salaire horaire cumulé (taux daté par jour)
     const daily = weekDays.map((d, k) => {
       const dk = dayKey(d);
       const dowIdx = visibleIdx[k];
@@ -684,10 +689,11 @@ function renderSalaires() {
       plannedHours += pHours;
       tipEligibleHours += tipHours;
       tipShare += dayTip;
+      hourlyGross += hours * effectiveHourlyRate(emp, dk);
       return { dk, dowIdx, actualShift, plannedShift, hours, pHours, tipHours, dayTip, isOverride, isDifferent };
     });
 
-    const grossWage = isSal ? (fixedHours * rate) : (totalHours * rate);
+    const grossWage = isSal ? (fixedHours * rate) : hourlyGross;
     const gap = totalHours - plannedHours;
     const totalPay = grossWage + tipShare;
     return { emp, rate, isSal, fixedHours, group, groupOverride, isManual, daily, totalHours, plannedHours, gap, tipEligibleHours, tipShare, grossWage, totalPay };
@@ -1732,18 +1738,18 @@ function _computeWeekGrossWage() {
   let sumGross = 0;
   // Inclut employés réels ET extras de la semaine (v3.15.0)
   const allForGross = [...employees, ...getManualEmployees()];
+  const weekStartKey = dayKey(weekStart); // taux daté (v3.52.0)
   for (const emp of allForGross) {
-    const rate = Number(emp.hourlyRate) || 0;
     const isSal = !!emp.isSalaried;
     const fixedHours = Number(emp.fixedWeeklyHours) || 0;
     if (isSal) {
-      sumGross += fixedHours * rate;
+      sumGross += fixedHours * effectiveHourlyRate(emp, weekStartKey);
     } else {
-      let totalHours = 0;
+      // Salaire horaire sommé jour par jour au taux effectif de chaque jour.
       for (const d of weekDays) {
-        totalHours += hoursFromShift(getActualShift(emp.id, dayKey(d)));
+        const dk = dayKey(d);
+        sumGross += hoursFromShift(getActualShift(emp.id, dk)) * effectiveHourlyRate(emp, dk);
       }
-      sumGross += totalHours * rate;
     }
   }
   return { sumGross, weekStart, weekEnd: weekDays[weekDays.length - 1] || weekStart };
@@ -2158,12 +2164,13 @@ function generatePayrollPDF() {
     };
   });
 
+  const pdfWeekStartKey = dayKey(weekStart); // taux daté (v3.52.0)
   const empRows = allEmps.map(emp => {
-    const rate = Number(emp.hourlyRate) || 0;
+    const rate = effectiveHourlyRate(emp, pdfWeekStartKey);
     const isSal = !!emp.isSalaried;
     const fixedHours = Number(emp.fixedWeeklyHours) || 0;
     const group = tipGroupOf(emp);
-    let totalHours = 0, plannedHours = 0, tipEligibleHours = 0, tipShare = 0;
+    let totalHours = 0, plannedHours = 0, tipEligibleHours = 0, tipShare = 0, hourlyGross = 0;
     const daily = weekDays.map((d, k) => {
       const dk = dayKey(d);
       const actualShift = getActualShift(emp.id, dk);
@@ -2179,9 +2186,10 @@ function generatePayrollPDF() {
       plannedHours += pHours;
       tipEligibleHours += tipHours;
       tipShare += dayTip;
+      hourlyGross += hours * effectiveHourlyRate(emp, dk);
       return { dk, actualShift, hours, tipHours, dayTip };
     });
-    const grossWage = isSal ? (fixedHours * rate) : (totalHours * rate);
+    const grossWage = isSal ? (fixedHours * rate) : hourlyGross;
     return {
       emp, rate, isSal, fixedHours, group, daily,
       totalHours, plannedHours, tipEligibleHours, tipShare, grossWage,
@@ -2710,12 +2718,13 @@ async function _computePayrollWeekData(offset) {
   });
 
   // Calculs par employé
+  const wkStartKey = dayKey(weekStart); // taux daté (v3.52.0)
   const empRows = allEmps.map(emp => {
-    const rate = Number(emp.hourlyRate) || 0;
+    const rate = effectiveHourlyRate(emp, wkStartKey);
     const isSal = !!emp.isSalaried;
     const fixedHours = Number(emp.fixedWeeklyHours) || 0;
     const group = effGroup(emp);
-    let totalHours = 0, plannedHours = 0, tipEligibleHours = 0, tipShare = 0;
+    let totalHours = 0, plannedHours = 0, tipEligibleHours = 0, tipShare = 0, hourlyGross = 0;
     const daily = weekDays.map((d, k) => {
       const dk = dayKey(d);
       const actualShift = (weekData?.actualShifts || {})[emp.id]?.[dk] || null;
@@ -2732,9 +2741,10 @@ async function _computePayrollWeekData(offset) {
       }
       totalHours += hours; plannedHours += pHours;
       tipEligibleHours += tipHours; tipShare += dayTip;
+      hourlyGross += hours * effectiveHourlyRate(emp, dk);
       return { dk, actualShift, hours, tipHours, dayTip };
     });
-    const grossWage = isSal ? (fixedHours * rate) : (totalHours * rate);
+    const grossWage = isSal ? (fixedHours * rate) : hourlyGross;
     return {
       emp, rate, isSal, fixedHours, group, daily,
       totalHours, plannedHours, tipEligibleHours, tipShare, grossWage,

@@ -1595,6 +1595,33 @@ tr:last-child td{border-bottom:none}
   font-weight:600;
 }
 
+/* Historique des taux datés dans la fiche employé (v3.52.0) */
+.rate-hist{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:10px 12px;
+  margin:4px 0 8px;
+}
+.rate-hist__title{
+  display:flex;align-items:center;gap:6px;
+  font-family:var(--font-body);
+  font-size:var(--fs-sm);
+  font-weight:700;
+  color:var(--text2);
+  margin-bottom:6px;
+}
+.rate-hist__list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.rate-hist__row{
+  display:flex;align-items:center;gap:8px;
+  font-size:var(--fs-sm);
+}
+.rate-hist__rate{font-weight:700;color:var(--text);min-width:74px}
+.rate-hist__from{color:var(--text3);flex:1}
+.rate-hist__row--future .rate-hist__rate{color:#4a90e2}
+.rate-hist__row--future .rate-hist__from{color:#4a90e2;font-style:italic}
+.rate-hist__del{flex-shrink:0}
+
 /* ═══════════════════════════════════════════════════════════════
    CARTES ÉQUIPE (section Équipe sous l'horaire)
    ═══════════════════════════════════════════════════════════════ */
