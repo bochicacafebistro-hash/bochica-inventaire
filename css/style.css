@@ -6579,6 +6579,48 @@ textarea.md-input{
   border-radius:var(--radius-pill);
   border:1px solid rgba(var(--accent-rgb), .4);
 }
+
+/* Bloc d'édition d'une option de location de salle (accent bleu Colombie) */
+.quote-room-block{
+  position:relative;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-left:4px solid #4a90e2;
+  border-radius:var(--radius-md);
+  padding:14px 16px;
+  margin-bottom:14px;
+}
+.quote-room-block:hover{box-shadow:var(--shadow-sm)}
+.quote-room-block__head{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  margin-bottom:10px;
+  padding-bottom:8px;
+  border-bottom:1px dashed var(--border);
+}
+.quote-room-block__badge{
+  font-family:var(--font-heading);
+  font-size:18px;
+  letter-spacing:.04em;
+  color:var(--text);
+  background:rgba(74,144,226, .15);
+  padding:3px 12px;
+  border-radius:var(--radius-pill);
+  border:1px solid rgba(74,144,226, .4);
+}
+.quote-room-block__total{
+  margin-left:auto;
+  font-family:var(--font-heading);
+  font-size:18px;
+  color:#4a90e2;
+}
+.quote-room-block__total-hint{
+  font-family:var(--font-body);
+  font-size:10px;
+  color:var(--text3);
+  letter-spacing:.02em;
+}
 .quote-option-subsection{
   margin-top:10px;
   padding-top:8px;

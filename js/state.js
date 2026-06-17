@@ -57,6 +57,10 @@ let quotesSearchQuery = "";              // recherche (numéro, nom client, cont
 // État du formulaire d'édition des options de forfait (in-memory, perdu à la fermeture du modal)
 // Permet d'ajouter/retirer des options dynamiquement sans perdre la saisie en cours.
 let _editingQuoteOptions = [];
+// État du formulaire d'édition des options de LOCATION DE SALLE (in-memory)
+// Chaque option : { id, date, startTime, endTime, description, price }
+// Le client choisit une option de salle dans le PDF (comme les forfaits).
+let _editingRoomRentals = [];
 
 // Templates de forfaits (offres tarifaires) — sert de base pour les soumissions
 // Chaque template : { id, name ("L'Essentiel"), label ("Forfait Un"), pricePerPerson, accentColor ("yellow"/"red"/"blue"/"green"),

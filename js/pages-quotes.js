@@ -214,6 +214,64 @@ function computeQuoteRange(quote) {
   };
 }
 
+// ═══════════════════════════════════════════════════════════════
+// LOCATION DE SALLE — options de salle (date + heures + prix)
+// ───────────────────────────────────────────────────────────────
+// Une soumission peut proposer plusieurs options de location de salle
+// (ex. lundi 200 $, mercredi 100 $, dimanche 1000 $). Le client en choisit
+// une dans le PDF. Indépendant des forfaits (les deux sont combinables).
+// Stocké dans quote.roomRentals[] = { id, date, startTime, endTime, description, price }.
+// ═══════════════════════════════════════════════════════════════
+
+// Lit les options de salle d'une soumission (toujours un array, jamais null).
+function getQuoteRooms(quote) {
+  if (!Array.isArray(quote?.roomRentals)) return [];
+  return quote.roomRentals.map((r, i) => ({
+    id: r.id || `room-${i}`,
+    date: r.date || "",
+    startTime: r.startTime || "",
+    endTime: r.endTime || "",
+    description: r.description || "",
+    price: Math.max(0, Number(r.price || 0))
+  }));
+}
+
+// Totaux d'une option de salle : le prix saisi est AVANT taxes (comme le forfait).
+// Retourne { preTaxTotal, tps, tvq, total }.
+function computeRoomTotal(room) {
+  const preTaxTotal = Math.max(0, Number(room?.price || 0));
+  const tps = preTaxTotal * TPS_RATE;
+  const tvq = preTaxTotal * TVQ_RATE;
+  return { preTaxTotal, tps, tvq, total: preTaxTotal + tps + tvq };
+}
+
+// Fourchette de totaux des options de salle (pour la liste : « 230 $ – 1150 $ »).
+function computeRoomRange(quote) {
+  const rooms = getQuoteRooms(quote);
+  if (rooms.length === 0) return { min: 0, max: 0, count: 0 };
+  const totals = rooms.map(r => computeRoomTotal(r).total);
+  return { min: Math.min(...totals), max: Math.max(...totals), count: rooms.length };
+}
+
+// Libellé court d'une option de salle pour l'UI/PDF : « 23 juin · 18:00–23:00 ».
+function roomSummaryLabel(room) {
+  const parts = [];
+  if (room.date) parts.push(fmtDateShort(room.date));
+  const hrs = [room.startTime, room.endTime].filter(Boolean).join("–");
+  if (hrs) parts.push(hrs);
+  return parts.join(" · ");
+}
+
+// Date courte localisée tolérante (YYYY-MM-DD → « 23 juin 2026 »). Fallback : brut.
+function fmtDateShort(iso) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso + "T12:00:00");
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" });
+  } catch (_) { return iso; }
+}
+
 // ─── Setters de filtre ────────────────────────────────
 function setQuotesFilter(s) {
   quotesFilterStatus = s;
@@ -318,6 +376,7 @@ function renderQuoteCards(items, writable) {
   items.forEach(qt => {
     const options = getQuoteOptions(qt);
     const range = computeQuoteRange(qt);
+    const roomRange = computeRoomRange(qt);
     const status = qt.status || "brouillon";
 
     // Affichage du(des) forfait(s) : pill simple si 1, plusieurs pills si N
@@ -333,12 +392,22 @@ function renderQuoteCards(items, writable) {
       pkgMeta = `<span class="quote-card__meta-item quote-card__meta-item--multi">${icon("utensils", 12)} ${options.length} options de forfait</span>`;
     }
 
-    // Total affiché : valeur si 1 option, fourchette si plusieurs (sauf si tous égaux)
+    // Pill location de salle (si présent)
+    let roomMeta = "";
+    if (roomRange.count === 1) {
+      roomMeta = `<span class="quote-card__meta-item">${icon("map-pin", 12)} Location de salle</span>`;
+    } else if (roomRange.count > 1) {
+      roomMeta = `<span class="quote-card__meta-item quote-card__meta-item--multi">${icon("map-pin", 12)} ${roomRange.count} options de salle</span>`;
+    }
+
+    // Total affiché en titre : la fourchette des forfaits s'il y en a, sinon
+    // celle des salles (soumission « location de salle seulement »).
+    const headRange = options.length > 0 ? range : roomRange;
     let totalHtml;
-    if (range.count <= 1 || range.min === range.max) {
-      totalHtml = fmtMoney(range.max);
+    if (headRange.count <= 1 || headRange.min === headRange.max) {
+      totalHtml = fmtMoney(headRange.max);
     } else {
-      totalHtml = `<span class="quote-card__total-range">${fmtMoney(range.min)} – ${fmtMoney(range.max)}</span>`;
+      totalHtml = `<span class="quote-card__total-range">${fmtMoney(headRange.min)} – ${fmtMoney(headRange.max)}</span>`;
     }
 
     h += `<article class="quote-card quote-card--${status}">
@@ -358,6 +427,7 @@ function renderQuoteCards(items, writable) {
           ${qt.eventDate ? `<span class="quote-card__meta-item">${icon("calendar", 12)} ${esc(qt.eventDate)}${qt.eventTime ? " · " + esc(qt.eventTime) : ""}</span>` : ""}
           ${qt.guestCount ? `<span class="quote-card__meta-item">${icon("users", 12)} ${esc(String(qt.guestCount))} pers.</span>` : ""}
           ${pkgMeta}
+          ${roomMeta}
           ${qt.eventVenue ? `<span class="quote-card__meta-item">${icon("map-pin", 12)} ${esc(tQuoteVenue(qt.eventVenue))}</span>` : ""}
         </div>
         ${qt.validUntil ? `<div class="quote-card__validity">Valide jusqu'au ${esc(qt.validUntil)}</div>` : ""}
@@ -445,6 +515,9 @@ function openQuoteModal(id) {
     }
   });
 
+  // Options de location de salle (vide pour une nouvelle soumission)
+  _editingRoomRentals = qt ? getQuoteRooms(qt).map(r => ({ ...r })) : [];
+
   showModal(`<div class="modal modal-quote">
     <div class="modal-header">
       <h3>${qt ? `Modifier la soumission ${esc(qt.quoteNumber || "")}` : "Nouvelle soumission"}</h3>
@@ -485,6 +558,17 @@ function openQuoteModal(id) {
     </div>
     <button type="button" class="btn-cancel quote-add-option-btn" onclick="addQuoteOption()">
       ${icon("plus", 14)} Ajouter une option de forfait
+    </button>
+
+    <!-- Bloc LOCATION DE SALLE -->
+    <h4 class="quote-modal-section">${icon("map-pin", 14)} Location de salle
+      <span class="quote-modal-section__hint">— optionnel · le client pourra choisir la date qui lui convient</span>
+    </h4>
+    <div id="q-rooms-container">
+      ${renderRoomRentalsForm()}
+    </div>
+    <button type="button" class="btn-cancel quote-add-option-btn" onclick="addRoomRental()">
+      ${icon("plus", 14)} Ajouter une option de salle
     </button>
 
     <!-- Bloc VALIDITÉ + NOTES -->
@@ -676,12 +760,103 @@ function addQuoteOption() {
 
 function removeQuoteOption(optId) {
   syncEditingOptionsFromDOM();
-  if (_editingQuoteOptions.length <= 1) {
-    toast("Au moins une option de forfait est requise.", "warning");
+  syncEditingRoomsFromDOM();
+  // On peut retirer le dernier forfait UNIQUEMENT s'il reste au moins une
+  // option de salle (soumission « location de salle seulement »).
+  if (_editingQuoteOptions.length <= 1 && _editingRoomRentals.length === 0) {
+    toast("Gardez au moins un forfait, ou ajoutez une option de salle.", "warning");
     return;
   }
   _editingQuoteOptions = _editingQuoteOptions.filter(o => o.id !== optId);
   rerenderOptionsForm();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GESTION DES OPTIONS DE LOCATION DE SALLE (multi-options, dynamique)
+// ═══════════════════════════════════════════════════════════════
+
+// Rend tout le bloc des options de salle. Re-rendu intégralement à chaque
+// ajout/retrait — on relit la saisie DOM d'abord via syncEditingRoomsFromDOM().
+function renderRoomRentalsForm() {
+  if (!Array.isArray(_editingRoomRentals) || _editingRoomRentals.length === 0) {
+    return `<div class="quote-custom-empty text-muted" style="font-size:13px;padding:14px">Aucune location de salle. Cliquez sur « Ajouter une option de salle » si l'événement inclut la location d'une salle.</div>`;
+  }
+  return _editingRoomRentals.map((room, idx) => renderRoomRentalRow(room, idx)).join("");
+}
+
+function renderRoomRentalRow(room, idx) {
+  const roomId = room.id;
+  const totals = computeRoomTotal(room);
+  return `<div class="quote-room-block" data-room-id="${attrEsc(roomId)}">
+    <div class="quote-room-block__head">
+      <span class="quote-room-block__badge">Salle — option ${idx + 1}</span>
+      <span class="quote-room-block__total">${fmtMoney(totals.total)} <span class="quote-room-block__total-hint">taxes incl.</span></span>
+      <button type="button" class="btn-icon-only text-danger" onclick="removeRoomRental('${esc(roomId)}')" aria-label="Retirer cette option de salle" title="Retirer">${icon("trash", 14)}</button>
+    </div>
+    <div class="form-row">
+      <label>Date <input type="date" class="q-room-date" value="${attrEsc(room.date)}"/></label>
+      <label>Prix avant taxes ($) <input type="number" class="q-room-price" min="0" step="0.01" value="${attrEsc(room.price ? String(room.price) : "")}" placeholder="ex: 200.00" oninput="refreshRoomRowTotal('${esc(roomId)}')"/></label>
+    </div>
+    <div class="form-row">
+      <label>Heure de début <input type="time" class="q-room-start" value="${attrEsc(room.startTime)}"/></label>
+      <label>Heure de fin <input type="time" class="q-room-end" value="${attrEsc(room.endTime)}"/></label>
+    </div>
+    <label>Description (optionnel) <input type="text" class="q-room-desc" value="${attrEsc(pdfStr(room.description))}" placeholder="ex: Salle privée à l'étage, capacité 40 personnes"/></label>
+  </div>`;
+}
+
+// Recalcule le total affiché d'une ligne de salle sans tout re-render (fluide à la saisie).
+function refreshRoomRowTotal(roomId) {
+  const block = document.querySelector(`[data-room-id="${roomId}"]`);
+  if (!block) return;
+  const price = Math.max(0, Number(block.querySelector(".q-room-price")?.value) || 0);
+  const totals = computeRoomTotal({ price });
+  const el = block.querySelector(".quote-room-block__total");
+  if (el) el.innerHTML = `${fmtMoney(totals.total)} <span class="quote-room-block__total-hint">taxes incl.</span>`;
+}
+
+// Lit les options de salle depuis le DOM vers _editingRoomRentals (préserve la saisie).
+function syncEditingRoomsFromDOM() {
+  const container = document.getElementById("q-rooms-container");
+  if (!container) return;
+  const rows = container.querySelectorAll(".quote-room-block");
+  const newRooms = [];
+  rows.forEach(block => {
+    const roomId = block.getAttribute("data-room-id");
+    newRooms.push({
+      id: roomId,
+      date: block.querySelector(".q-room-date")?.value || "",
+      startTime: block.querySelector(".q-room-start")?.value || "",
+      endTime: block.querySelector(".q-room-end")?.value || "",
+      description: block.querySelector(".q-room-desc")?.value.trim() || "",
+      price: Math.max(0, Number(block.querySelector(".q-room-price")?.value) || 0)
+    });
+  });
+  _editingRoomRentals = newRooms;
+}
+
+function rerenderRoomsForm() {
+  const container = document.getElementById("q-rooms-container");
+  if (container) container.innerHTML = renderRoomRentalsForm();
+}
+
+function addRoomRental() {
+  syncEditingRoomsFromDOM();
+  _editingRoomRentals.push({
+    id: "room-" + genId(),
+    date: "",
+    startTime: "",
+    endTime: "",
+    description: "",
+    price: 0
+  });
+  rerenderRoomsForm();
+}
+
+function removeRoomRental(roomId) {
+  syncEditingRoomsFromDOM();
+  _editingRoomRentals = _editingRoomRentals.filter(r => r.id !== roomId);
+  rerenderRoomsForm();
 }
 
 // ─── Lignes personnalisées (par option) ──────────────
@@ -724,9 +899,12 @@ async function saveQuote(id) {
 
   // Synchroniser le state avec la dernière saisie DOM avant de construire le payload
   syncEditingOptionsFromDOM();
+  syncEditingRoomsFromDOM();
 
-  if (!Array.isArray(_editingQuoteOptions) || _editingQuoteOptions.length === 0) {
-    return toast("Veuillez ajouter au moins une option de forfait.", "error");
+  const hasForfaits = Array.isArray(_editingQuoteOptions) && _editingQuoteOptions.length > 0;
+  const hasRooms = Array.isArray(_editingRoomRentals) && _editingRoomRentals.length > 0;
+  if (!hasForfaits && !hasRooms) {
+    return toast("Ajoutez au moins une option de forfait ou de location de salle.", "error");
   }
 
   // Construire les snapshots de chaque option (copie figée des forfaits + saisies)
@@ -766,6 +944,23 @@ async function saveQuote(id) {
     });
   }
 
+  // Options de location de salle (nettoyées). Une option sans prix ni date ni
+  // description est ignorée (ligne ajoutée puis laissée vide).
+  const roomRentals = _editingRoomRentals
+    .map(r => ({
+      id: r.id || ("room-" + genId()),
+      date: r.date || "",
+      startTime: r.startTime || "",
+      endTime: r.endTime || "",
+      description: pdfStr(r.description || ""),
+      price: Math.max(0, Number(r.price) || 0)
+    }))
+    .filter(r => r.price > 0 || r.date || r.description);
+
+  // Champs legacy (rétrocompat) : reflètent la 1re option de forfait si elle
+  // existe, sinon valeurs neutres (cas « location de salle seulement »).
+  const first = packageOptions[0] || null;
+
   const data = {
     clientName: name,
     clientCompany: pdfStr(document.getElementById("q-client-company").value.trim()),
@@ -777,24 +972,27 @@ async function saveQuote(id) {
     eventAddress: pdfStr(document.getElementById("q-event-address").value.trim()),
     guestCount,
     packageOptions,
+    roomRentals,
     // Champs legacy : on les écrit aussi avec la première option, pour que les
     // anciennes vues qui lisent encore qt.packageId / packageSnapshot / etc.
     // affichent quelque chose de cohérent. Le nouveau code préfère
     // `packageOptions[]` via `getQuoteOptions()`.
-    packageId: packageOptions[0].packageId,
-    packageSnapshot: packageOptions[0].packageSnapshot,
-    beerAddon: packageOptions[0].beerAddon,
-    customLines: packageOptions[0].customLines,
-    depositAmount: packageOptions[0].depositAmount,
-    depositPaid: packageOptions[0].depositPaid,
+    packageId: first ? first.packageId : null,
+    packageSnapshot: first ? first.packageSnapshot : null,
+    beerAddon: first ? first.beerAddon : false,
+    customLines: first ? first.customLines : [],
+    depositAmount: first ? first.depositAmount : 0,
+    depositPaid: first ? first.depositPaid : false,
     validUntil: document.getElementById("q-valid-until").value || "",
     notes:      pdfStr(document.getElementById("q-notes").value.trim()),
     status:     document.getElementById("q-status").value,
     updatedAt:  firebase.firestore.FieldValue.serverTimestamp()
   };
 
-  // Libellé descriptif pour les logs : « Essentiel + Gourmand » ou juste « Essentiel »
-  const optsLabel = packageOptions.map(o => o.packageSnapshot.name).join(" + ");
+  // Libellé descriptif pour les logs : « Essentiel + Gourmand », « Location de salle », etc.
+  const labelParts = packageOptions.map(o => o.packageSnapshot.name);
+  if (roomRentals.length > 0) labelParts.push(`Location de salle (${roomRentals.length})`);
+  const optsLabel = labelParts.join(" + ") || "—";
 
   try {
     if (id) {
@@ -816,6 +1014,7 @@ async function saveQuote(id) {
       toast(`Soumission ${quoteNumber} créée${packageOptions.length > 1 ? ` (${packageOptions.length} options)` : ""}.`, "success");
     }
     _editingQuoteOptions = [];
+    _editingRoomRentals = [];
     closeModal();
   } catch (err) {
     console.error("saveQuote:", err);
@@ -1164,10 +1363,13 @@ function generateQuotePDF(quoteId) {
     const cardFill = cardFillByColor[tpl.accentColor || "yellow"];
     const totals = computeQuoteOptionTotal(opt, qt.guestCount);
 
-    // Estimer la hauteur totale pour décider si on passe à une nouvelle page
-    // Carte forfait : 60mm + intro option : 8mm + bière : 18mm si activée
-    // + custom lines : 5mm/ligne + 6mm header + totaux : ~40mm + checkbox : 12mm
-    let estHeight = 60 + 8 + 4 + 40 + 12;
+    // Estimer la hauteur totale pour décider si on passe à une nouvelle page.
+    // Base = carte forfait (60mm) + marge (6mm) + section totaux (~46mm).
+    // Le badge « OPTION » (8mm) et la case à cocher (12mm) ne sont dessinés
+    // QUE en multi-options → ne les réserver que dans ce cas (sinon une
+    // soumission à une seule option déborde inutilement sur une 2e page).
+    let estHeight = 60 + 6 + 46;
+    if (multi) estHeight += 8 + 12;
     if (opt.beerAddon) estHeight += 18;
     if (Array.isArray(opt.customLines) && opt.customLines.length > 0) {
       estHeight += 6 + opt.customLines.length * 5 + 4;
@@ -1346,6 +1548,145 @@ function generateQuotePDF(quoteId) {
 
   // Boucler sur chaque option
   options.forEach((opt, idx) => renderOption(opt, idx));
+
+  // ═══════════════════════════════════════════
+  // LOCATION DE SALLE (options choisissables, indépendantes des forfaits)
+  // ═══════════════════════════════════════════
+  const rooms = getQuoteRooms(qt);
+  if (rooms.length > 0) {
+    const roomsMulti = rooms.length > 1;
+
+    // En-tête de section (bandeau bleu)
+    const headH = roomsMulti ? 16 : 11;
+    ensureSpace(headH + 30);
+    doc.setFillColor(...COLOR_BLUE);
+    doc.roundedRect(M, y, contentW, headH, 2, 2, "F");
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.setTextColor(255, 255, 255);
+    doc.text("LOCATION DE SALLE", W / 2, y + 7, { align: "center" });
+    if (roomsMulti) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.text("Choisissez la date qui vous convient — cochez l'option retenue.", W / 2, y + 12, { align: "center" });
+    }
+    y += headH + 6;
+
+    rooms.forEach((room, idx) => {
+      const rt = computeRoomTotal(room);
+      const hrs = [room.startTime, room.endTime].filter(Boolean).join(" – ");
+      const dateLabel = room.date ? fmtDateShort(room.date) : "Date à confirmer";
+
+      // Découpe de la description (max 2 lignes)
+      let descLines = [];
+      if (room.description) {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(9);
+        descLines = doc.splitTextToSize(pdfStr(room.description), contentW - 18).slice(0, 2);
+      }
+      const cardH = Math.max(20, (hrs ? 22 : 16) + (descLines.length ? descLines.length * 4 + 4 : 2));
+
+      // Hauteur totale estimée (carte + taxes + total + checkbox)
+      let estH = cardH + 6 + 3 * 5 + 8 + 6;
+      if (roomsMulti) estH += 5 + 12;
+      ensureSpace(estH);
+
+      // Badge « OPTION N » au-dessus de la carte (si multi)
+      if (roomsMulti) {
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(11);
+        doc.setTextColor(...COLOR_BLUE);
+        doc.text(`OPTION ${idx + 1}`, M, y);
+        doc.setDrawColor(...COLOR_BLUE);
+        doc.setLineWidth(1.2);
+        const bw = doc.getTextWidth(`OPTION ${idx + 1}`);
+        doc.line(M + bw + 4, y - 1, W - M, y - 1);
+        y += 5;
+      }
+
+      // Carte salle (fond bleu pâle + barre latérale bleue)
+      const cardY = y;
+      doc.setFillColor(...cardFillByColor.blue);
+      doc.roundedRect(M, cardY, contentW, cardH, 3, 3, "F");
+      doc.setFillColor(...COLOR_BLUE);
+      doc.roundedRect(M, cardY, 3, cardH, 1.5, 1.5, "F");
+      doc.rect(M, cardY, 3, cardH, "F");
+
+      // Libellé + date + heures (à gauche)
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(...COLOR_TEXT_LIGHT);
+      doc.text("DATE DE LOCATION", M + 9, cardY + 6);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(15);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(dateLabel, M + 9, cardY + 14);
+      if (hrs) {
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.setTextColor(...COLOR_TEXT_LIGHT);
+        doc.text(hrs, M + 9, cardY + 20);
+      }
+
+      // Prix (à droite)
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(19);
+      doc.setTextColor(...COLOR_RED);
+      doc.text(`${fmtMoney(rt.total).replace(" $", "")} $`, M + contentW - 6, cardY + 13, { align: "right" });
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(7);
+      doc.setTextColor(...COLOR_TEXT_LIGHT);
+      doc.text("TAXES INCLUSES", M + contentW - 6, cardY + 18, { align: "right" });
+
+      // Description (à gauche, sous les heures)
+      if (descLines.length) {
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(9);
+        doc.setTextColor(...COLOR_TEXT);
+        let dY = cardY + (hrs ? 26 : 20);
+        descLines.forEach(line => { doc.text(line, M + 9, dY); dY += 4; });
+      }
+      y = cardY + cardH + 6;
+
+      // Détail des taxes (aligné à droite, comme les forfaits)
+      doc.setDrawColor(...COLOR_TEXT_LIGHT);
+      doc.setLineWidth(0.3);
+      doc.line(M, y, M + contentW, y);
+      y += 5;
+      function roomTotalLine(label, value, bold) {
+        doc.setFont("helvetica", bold ? "bold" : "normal");
+        doc.setFontSize(bold ? 12 : 10);
+        doc.setTextColor(...(bold ? COLOR_TEXT : COLOR_TEXT_LIGHT));
+        doc.text(label, M + contentW * 0.55, y, { align: "right" });
+        doc.setTextColor(...COLOR_TEXT);
+        doc.text(value, M + contentW, y, { align: "right" });
+        y += bold ? 7 : 5;
+      }
+      roomTotalLine("Sous-total (location)", fmtMoney(rt.preTaxTotal));
+      roomTotalLine(`TPS (${(TPS_RATE * 100).toFixed(0)} %)`, fmtMoney(rt.tps));
+      roomTotalLine(`TVQ (${(TVQ_RATE * 100).toFixed(3)} %)`, fmtMoney(rt.tvq));
+      y += 1;
+      roomTotalLine(roomsMulti ? `TOTAL — OPTION ${idx + 1}` : "TOTAL LOCATION", fmtMoney(rt.total), true);
+      y += 4;
+
+      // Case à cocher (si plusieurs options de salle)
+      if (roomsMulti) {
+        const cbY = y;
+        const cbSize = 6;
+        doc.setDrawColor(...COLOR_BLUE);
+        doc.setLineWidth(0.8);
+        doc.setFillColor(255, 255, 255);
+        doc.rect(M, cbY, cbSize, cbSize, "FD");
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(...COLOR_TEXT);
+        doc.text(`Je choisis la salle du ${dateLabel}`, M + cbSize + 4, cbY + 4.5);
+        y += cbSize + 8;
+      } else {
+        y += 4;
+      }
+    });
+  }
 
   // ═══════════════════════════════════════════
   // NOTES (après toutes les options)
