@@ -378,9 +378,15 @@ function renderEmployes() {
     const dailyFixedCost = isSal ? weeklyFixedPay / nbOpenDays : null;
 
     const daily = weekDays.map((d, col) => {
-      const s = shifts[dayKey(d)];
+      const dk = dayKey(d);
+      // v3.52.1 — Un jour de congé est verrouillé : aucune heure ni aucun coût
+      // ne doit être compté, même si un quart « fantôme » subsiste dans
+      // emp.shifts. La cellule affiche déjà « Congé » (getTimeOff prioritaire) ;
+      // les totaux doivent rester cohérents avec cet affichage.
+      const onLeave = (typeof isTimeOff === "function") && isTimeOff(emp.id, dk);
+      const s = onLeave ? null : shifts[dk];
       const hours = hoursFromShift(s);
-      const cost = isSal ? dailyFixedCost : hours * effectiveHourlyRate(emp, dayKey(d));
+      const cost = isSal ? dailyFixedCost : hours * effectiveHourlyRate(emp, dk);
       dayTotalsHours[col] += hours;
       dayTotalsCost[col] += cost;
       return { shift: s, hours, cost };
@@ -849,6 +855,14 @@ async function duplicateScheduleToNextWeek() {
       curDates.forEach((curDk, i) => {
         const src = shifts[curDk];
         const tgtDk = nextDates[i];
+        // v3.52.1 — Un jour de congé sur la semaine CIBLE est verrouillé :
+        // on n'y copie jamais de quart (sinon un quart « fantôme » reste dans
+        // emp.shifts sous un « Congé », fausse les totaux et réapparaît dans
+        // l'export PNG). On efface aussi toute donnée résiduelle sur ce jour.
+        if (typeof isTimeOff === "function" && isTimeOff(emp.id, tgtDk)) {
+          if (shifts[tgtDk]) { delete shifts[tgtDk]; changed = true; }
+          return;
+        }
         if (src && src.start && src.end) {
           shifts[tgtDk] = { start: src.start, end: src.end };
           changed = true;
@@ -1992,14 +2006,20 @@ async function exportScheduleAsPNG() {
   // archivés seulement s'ils ont travaillé) puis on exclut ceux sans aucun
   // shift sur les jours visibles (vacances/congé toute la semaine) — pour ne
   // pas polluer le PNG équipe avec une ligne « Congé Congé Congé… ».
+  // v3.52.1 — Un jour de congé est verrouillé : il ne compte jamais comme un
+  // quart, même si un quart « fantôme » subsiste dans emp.shifts. Sans ça, un
+  // employé en congé toute la semaine pouvait réapparaître dans le PNG avec les
+  // heures de la semaine copiée. shiftOnDay() renvoie null sur un jour de congé.
+  const shiftOnDay = (emp, d) => {
+    const dk = dayKey(d);
+    if (typeof isTimeOff === "function" && isTimeOff(emp.id, dk)) return null;
+    const s = (emp.shifts || {})[dk];
+    return (s && s.start && s.end) ? s : null;
+  };
   const weekKey = dayKey(weekStart);
-  const empsWithShifts = visibleScheduleEmployees(weekDays, weekKey).filter(emp => {
-    const shifts = emp.shifts || {};
-    return weekDays.some(d => {
-      const s = shifts[dayKey(d)];
-      return !!(s && s.start && s.end);
-    });
-  });
+  const empsWithShifts = visibleScheduleEmployees(weekDays, weekKey).filter(emp =>
+    weekDays.some(d => !!shiftOnDay(emp, d))
+  );
 
   if (empsWithShifts.length === 0) {
     toast("Aucun employé n'a de shift cette semaine — rien à exporter.", "warning", 4500);
@@ -2008,12 +2028,10 @@ async function exportScheduleAsPNG() {
 
   // Récupère les shifts par employé (sans aucune donnée financière)
   const rows = empsWithShifts.map(emp => {
-    const shifts = emp.shifts || {};
     const sec = (emp.section || "service");
     const daily = weekDays.map(d => {
-      const s = shifts[dayKey(d)];
-      if (s && s.start && s.end) return { start: s.start, end: s.end };
-      return null;
+      const s = shiftOnDay(emp, d);
+      return s ? { start: s.start, end: s.end } : null;
     });
     return { emp, section: sec, daily };
   });
@@ -2134,15 +2152,20 @@ async function exportScheduleAsPNGAdmin() {
   // v3.43.1 — Même ordre que l'affichage (visibleScheduleEmployees : ordre par
   // semaine, masqués retirés, archivés gérés) puis exclusion des employés sans
   // aucun shift sur la semaine (vacances/congé) — cohérent avec le PNG équipe.
+  // v3.52.1 — Cohérent avec le PNG équipe et la grille : un jour de congé est
+  // verrouillé et ne compte jamais comme un quart (ignore les quarts fantômes
+  // laissés sous un congé). shiftOnDay() renvoie null sur un jour de congé.
+  const shiftOnDay = (emp, d) => {
+    const dk = dayKey(d);
+    if (typeof isTimeOff === "function" && isTimeOff(emp.id, dk)) return null;
+    const s = (emp.shifts || {})[dk];
+    return (s && s.start && s.end) ? s : null;
+  };
   const weekKey = dayKey(weekStart);
   const weekVisibleEmps = visibleScheduleEmployees(weekDays, weekKey);
-  const empsWithShifts = weekVisibleEmps.filter(emp => {
-    const shifts = emp.shifts || {};
-    return weekDays.some(d => {
-      const s = shifts[dayKey(d)];
-      return !!(s && s.start && s.end);
-    });
-  });
+  const empsWithShifts = weekVisibleEmps.filter(emp =>
+    weekDays.some(d => !!shiftOnDay(emp, d))
+  );
 
   if (empsWithShifts.length === 0) {
     toast("Aucun employé n'a de shift cette semaine — rien à exporter.", "warning", 4500);
@@ -2155,7 +2178,6 @@ async function exportScheduleAsPNGAdmin() {
   const dayTotalsCost = new Array(weekDays.length).fill(0);
   const pngWeekStartKey = dayKey(weekDays[0] || new Date());
   const rows = empsWithShifts.map(emp => {
-    const shifts = emp.shifts || {};
     const rate = effectiveHourlyRate(emp, pngWeekStartKey); // taux daté (v3.52.0)
     const isSal = !!emp.isSalaried;
     const fixedHours = Number(emp.fixedWeeklyHours) || 0;
@@ -2163,9 +2185,10 @@ async function exportScheduleAsPNGAdmin() {
     const dailyFixedCost = isSal ? weeklyFixedPay / nbOpenDays : null;
     const sec = (emp.section || "service");
     const daily = weekDays.map((d, col) => {
-      const s = shifts[dayKey(d)];
+      const dk = dayKey(d);
+      const s = shiftOnDay(emp, d);
       const hours = hoursFromShift(s);
-      const cost = isSal ? dailyFixedCost : hours * effectiveHourlyRate(emp, dayKey(d));
+      const cost = isSal ? dailyFixedCost : hours * effectiveHourlyRate(emp, dk);
       dayTotalsHours[col] += hours;
       dayTotalsCost[col] += cost;
       return { shift: s, hours, cost };
