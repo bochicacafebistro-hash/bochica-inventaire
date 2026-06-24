@@ -2981,15 +2981,15 @@ async function generateBiWeeklyPDF() {
   });
   y += ficheH + 6;
 
-  // ─ Tableau récap par employé : Nom | Section | Hrs S1 | Hrs S2 | Hrs Tot | Sal S1 | Sal S2 | Pourb S1 | Pourb S2 | Total à payer
+  // ─ Tableau récap par employé : Nom | Section | Hrs S1 | Hrs S2 | Hrs Tot | Sal S1 | Sal S2 | Pourb S1 | Pourb S2 | Pourb Tot | Total à payer
   ensureSpace(11);
-  const COL_NAME = 44;
-  const COL_SECTION = 24;
+  const COL_NAME = 42;
+  const COL_SECTION = 22;
   const COL_HRS = 14;       // ×3 (S1, S2, Tot)
-  const COL_SAL = 20;       // ×2 (S1, S2)
-  const COL_TIP = 20;       // ×2 (S1, S2)
+  const COL_SAL = 19;       // ×2 (S1, S2)
+  const COL_TIP = 19;       // ×3 (S1, S2, Tot)
   const COL_TOTAL = 31;
-  // Total : 44 + 24 + 14*3 + 20*2 + 20*2 + 31 = 221 mm (tient dans 255)
+  // Total : 42 + 22 + 14*3 + 19*2 + 19*3 + 31 = 232 mm (tient dans 255,4)
 
   function drawTableHeader() {
     let cx = M;
@@ -3011,12 +3011,13 @@ async function generateBiWeeklyPDF() {
     doc.setFontSize(7);
     doc.text(`S${w1.weekNum}`, cx + COL_SAL / 2, y + 8, { align: "center" }); cx += COL_SAL;
     doc.text(`S${w2.weekNum}`, cx + COL_SAL / 2, y + 8, { align: "center" }); cx += COL_SAL;
-    // Bloc Pourboire (2 colonnes)
+    // Bloc Pourboire (3 colonnes : S1, S2, Total)
     doc.line(cx, y, cx, y + 11);
-    doc.setFontSize(6); doc.text("POURBOIRE", cx + (COL_TIP * 2) / 2, y + 3.5, { align: "center" });
+    doc.setFontSize(6); doc.text("POURBOIRE", cx + (COL_TIP * 3) / 2, y + 3.5, { align: "center" });
     doc.setFontSize(7);
     doc.text(`S${w1.weekNum}`, cx + COL_TIP / 2, y + 8, { align: "center" }); cx += COL_TIP;
     doc.text(`S${w2.weekNum}`, cx + COL_TIP / 2, y + 8, { align: "center" }); cx += COL_TIP;
+    doc.text("Total", cx + COL_TIP / 2, y + 8, { align: "center" }); cx += COL_TIP;
     // Total
     doc.line(cx, y, cx, y + 11);
     doc.setFontSize(8); doc.text("TOTAL", cx + COL_TOTAL / 2, y + 7, { align: "center" });
@@ -3061,10 +3062,14 @@ async function generateBiWeeklyPDF() {
     doc.setFont("helvetica", "normal");
     doc.text(r.sal1 ? fmtMoney(r.sal1) : "—", cx + COL_SAL / 2, y + 4.5, { align: "center" }); cx += COL_SAL;
     doc.text(r.sal2 ? fmtMoney(r.sal2) : "—", cx + COL_SAL / 2, y + 4.5, { align: "center" }); cx += COL_SAL;
-    // Pourboire S1 / S2 (en vert)
+    // Pourboire S1 / S2 / Total (en vert ; total en gras)
     doc.setTextColor(...COLOR_GREEN);
+    doc.setFont("helvetica", "normal");
     doc.text(r.tips1 > 0 ? fmtMoney(r.tips1) : "—", cx + COL_TIP / 2, y + 4.5, { align: "center" }); cx += COL_TIP;
     doc.text(r.tips2 > 0 ? fmtMoney(r.tips2) : "—", cx + COL_TIP / 2, y + 4.5, { align: "center" }); cx += COL_TIP;
+    doc.setFont("helvetica", "bold");
+    const totTips = (r.tips1 || 0) + (r.tips2 || 0);
+    doc.text(totTips > 0 ? fmtMoney(totTips) : "—", cx + COL_TIP / 2, y + 4.5, { align: "center" }); cx += COL_TIP;
     // Total à payer (gras, fond accent léger)
     doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...COLOR_TEXT);
     const totalPay = r.total1 + r.total2;
@@ -3090,10 +3095,12 @@ async function generateBiWeeklyPDF() {
   // 2 colonnes salaire
   doc.text(fmtMoney(w1.sums.gross), cxT + COL_SAL / 2, y + 5, { align: "center" }); cxT += COL_SAL;
   doc.text(fmtMoney(w2.sums.gross), cxT + COL_SAL / 2, y + 5, { align: "center" }); cxT += COL_SAL;
-  // 2 colonnes pourboire
+  // 3 colonnes pourboire (S1, S2, Total combiné)
   doc.setTextColor(...COLOR_GREEN);
+  doc.setFont("helvetica", "bold"); doc.setFontSize(8);
   doc.text(fmtMoney(w1.sums.tips), cxT + COL_TIP / 2, y + 5, { align: "center" }); cxT += COL_TIP;
   doc.text(fmtMoney(w2.sums.tips), cxT + COL_TIP / 2, y + 5, { align: "center" }); cxT += COL_TIP;
+  doc.text(fmtMoney(sumsCombined.tips), cxT + COL_TIP / 2, y + 5, { align: "center" }); cxT += COL_TIP;
   // Total combiné
   doc.setTextColor(...COLOR_TEXT); doc.setFontSize(10);
   doc.text(fmtMoney(sumsCombined.total), cxT + COL_TOTAL / 2, y + 5, { align: "center" });
