@@ -11204,6 +11204,17 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   font-size:13px;
   color:var(--text);
 }
+.payroll-totals-final-row--tips .payroll-totals-final-lbl{
+  color:#2e7d4f;
+}
+.payroll-totals-final-row--tips .payroll-totals-final-amt{
+  color:#2e7d4f;
+  font-size:12px;
+}
+[data-theme="dark"] .payroll-totals-final-row--tips .payroll-totals-final-lbl,
+[data-theme="dark"] .payroll-totals-final-row--tips .payroll-totals-final-amt{
+  color:#5cc98a;
+}
 .payroll-totals-final-row--big{
   padding-top:3px;
   border-top:1px solid var(--border);

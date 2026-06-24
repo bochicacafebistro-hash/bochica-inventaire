@@ -1223,6 +1223,10 @@ function renderSalaires() {
               <span class="payroll-totals-final-lbl">Sans pourb.</span>
               <span class="payroll-totals-final-amt">${fmtMoney(sumGross)}</span>
             </div>
+            <div class="payroll-totals-final-row payroll-totals-final-row--tips" title="Pourboires distribués à l'équipe cette semaine (= Avec pourb. − Sans pourb.)">
+              <span class="payroll-totals-final-lbl">Pourboires</span>
+              <span class="payroll-totals-final-amt">+ ${fmtMoney(sumTips)}</span>
+            </div>
             <div class="payroll-totals-final-row payroll-totals-final-row--big" title="Salaires + pourboires distribués — total reçu par l'équipe">
               <span class="payroll-totals-final-lbl">Avec pourb.</span>
               <span class="payroll-totals-final-amt">${fmtMoney(sumTotal)}</span>
@@ -2939,13 +2943,13 @@ async function generateBiWeeklyPDF() {
   });
   y += cardH + 6;
 
-  // ─ Fiche par semaine : 2 totaux (avant/après pourboire) + % pourboires/ventes ─
-  ensureSpace(30);
+  // ─ Fiche par semaine : avant pourb. / pourboires / après pourb. + % pourboires/ventes ─
+  ensureSpace(36);
   doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...COLOR_TEXT);
   doc.text("Détail par semaine", M, y);
   y += 4;
   const halfW = (contentW - 6) / 2;
-  const ficheH = 23;
+  const ficheH = 28;
   [w1, w2].forEach((w, i) => {
     const cx = M + i * (halfW + 6);
     doc.setFillColor(...COLOR_HEADER_FILL);
@@ -2957,19 +2961,22 @@ async function generateBiWeeklyPDF() {
     doc.text(`Semaine ${w.weekNum}`, cx + 4, y + 5.5);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...COLOR_TEXT_LIGHT);
     doc.text(w.weekLabel, cx + halfW - 4, y + 5.5, { align: "right" });
-    // Les 2 totaux : avant pourboire (salaires bruts) / après pourboire (total versé)
+    // Les 3 totaux : avant pourboire (salaires bruts) / pourboires distribués / après pourboire (total versé)
     doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...COLOR_TEXT);
-    doc.text("Avant pourb.", cx + 4, y + 11.5);
-    doc.text(fmtMoney(w.sums.gross), cx + 38, y + 11.5);
+    doc.text("Avant pourb.", cx + 4, y + 10.5);
+    doc.text(fmtMoney(w.sums.gross), cx + 38, y + 10.5);
+    doc.setTextColor(...COLOR_GREEN);
+    doc.text("Pourboires", cx + 4, y + 15);
+    doc.text("+ " + fmtMoney(w.sums.tips), cx + 38, y + 15);
     doc.setFont("helvetica", "bold"); doc.setTextColor(...COLOR_TEXT);
-    doc.text("Après pourb.", cx + 4, y + 16.5);
-    doc.text(fmtMoney(w.sums.total), cx + 38, y + 16.5);
-    // Ligne contextuelle : heures · ventes · pourboires · % des ventes
+    doc.text("Après pourb.", cx + 4, y + 19.5);
+    doc.text(fmtMoney(w.sums.total), cx + 38, y + 19.5);
+    // Ligne contextuelle : heures · ventes · % des ventes en pourboires
     doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...COLOR_TEXT_LIGHT);
     const pctTxt = w.weekSales > 0 ? `${(w.tipPctSales * 100).toFixed(1)} % des ventes en pourb.` : "ventes non saisies";
     doc.text(
-      `${fmtHours(w.sums.hours)}h · Ventes ${w.weekSales > 0 ? fmtMoney(w.weekSales) : "—"} · Pourb ${fmtMoney(w.sums.tips)} · ${pctTxt}`,
-      cx + 4, y + 21
+      `${fmtHours(w.sums.hours)}h · Ventes ${w.weekSales > 0 ? fmtMoney(w.weekSales) : "—"} · ${pctTxt}`,
+      cx + 4, y + 25
     );
   });
   y += ficheH + 6;
