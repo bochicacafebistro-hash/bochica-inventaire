@@ -3182,7 +3182,7 @@ function openPayrollShiftModal(empId, dk) {
         ${isAbsent
           ? `<button class="btn-cancel payroll-modal-unabsent" onclick="unmarkEmployeeAbsent('${empId}','${dk}');closeModal()" title="Retirer le statut absent — la cellule redevient vide">${icon("undo", 14)} Retirer absent</button>`
           : `<button class="btn-cancel payroll-modal-mark-absent" onclick="markEmployeeAbsent('${empId}','${dk}');closeModal()" title="L'employé n'est pas venu — aucune heure comptée">${icon("user-x", 14)} Marquer absent</button>`}
-        ${hasShift && !isAbsent ? `<button class="btn-cancel" style="color:#a23a36" onclick="deletePayrollShift('${empId}','${dk}')" title="Effacer les heures saisies (l'auto-fill pourra re-remplir si conditions)">${icon("trash", 14)} Effacer</button>` : ""}
+        ${hasActualOverride(empId, dk) && !isAbsent ? `<button class="btn-cancel" style="color:#a23a36" onclick="resetPayrollDay('${empId}','${dk}')" title="Réinitialiser cette journée : efface l'entrée ET la sortie pour que l'employé puisse re-pointer correctement (ex. une sortie de nuit tombée le mauvais jour).">${icon("refresh", 14)} Réinitialiser la journée</button>` : ""}
       </div>
       <div class="payroll-modal-actions-right">
         <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
@@ -3208,6 +3208,22 @@ async function deletePayrollShift(empId, dk) {
   await clearActualShift(empId, dk);
   closeModal();
   toast("Shift supprimé.", "success", 2000);
+}
+
+// Réinitialise complètement une journée pour un employé : efface l'entrée ET
+// la sortie (toute la cellule actualShifts[emp][dk]) pour que l'employé puisse
+// re-pointer proprement. Utile quand une saisie est erronée — ex. une sortie de
+// quart de nuit tombée sur le mauvais jour, ou un mauvais punch.
+async function resetPayrollDay(empId, dk) {
+  const emp = getAllPayrollEmployees().find(e => e.id === empId);
+  const cur = getActualShift(empId, dk) || {};
+  const detail = [cur.start ? `entrée ${cur.start}` : "", cur.end ? `sortie ${cur.end}` : ""].filter(Boolean).join(" · ") || "cette saisie";
+  const [yy, mm, ddNum] = dk.split("-").map(Number);
+  const dayLabel = new Date(yy, mm - 1, ddNum).toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
+  if (!confirm(`Réinitialiser la journée de ${emp?.name || "cet employé"} (${dayLabel}) ?\n\nCela efface ${detail}. L'employé pourra ensuite re-pointer son entrée et sa sortie.`)) return;
+  await clearActualShift(empId, dk);
+  closeModal();
+  toast("Journée réinitialisée — l'employé peut re-pointer.", "success", 2600);
 }
 
 // ─ Drag & drop des cartes shift entre jours ─────────────

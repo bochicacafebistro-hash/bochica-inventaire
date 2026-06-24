@@ -135,9 +135,17 @@ function renderPunchEmployeeHTML() {
     ? `<span class="punch-emp-section punch-emp-section--cuisine">${icon("utensils", 12)} ${t("section_kitchen")}</span>`
     : `<span class="punch-emp-section punch-emp-section--service">${icon("users", 12)} ${t("section_service")}</span>`;
 
+  // Quart de nuit ouvert depuis hier (entrée sans sortie, tôt le matin) :
+  // on prévient l'employé qu'un appui sur SORTIE va fermer ce quart-là.
+  const overnightPrev = !hasStart ? _punchYesterdayOpenShiftSync(emp.id) : null;
+
   // Bloc info état : ce qui a déjà été pointé aujourd'hui
   let stateInfo;
-  if (!hasStart && !hasEnd) {
+  if (overnightPrev) {
+    stateInfo = `<div class="punch-state-info punch-state-info--overnight">
+      ${icon("log-in", 14)} ${t("punch_overnight_hint", { t: overnightPrev.start })}
+    </div>`;
+  } else if (!hasStart && !hasEnd) {
     stateInfo = `<div class="punch-state-info punch-state-info--empty">
       ${icon("info", 14)} ${t("punch_no_today")}
     </div>`;
@@ -217,6 +225,101 @@ function renderPunchErrorHTML() {
 function _punchGetTodayShift(empId, dk) {
   const actual = payrollWeekData?.actualShifts?.[empId];
   return (actual && actual[dk]) ? actual[dk] : null;
+}
+
+// ─ Quart de nuit (passage de minuit) ──────────────────────
+// Problème réglé : un employé entre le soir (ex. 22:00) et sort le lendemain
+// matin (ex. 00:56). Comme le punch « sortie » du matin tombe sur un NOUVEAU
+// jour (lendemain) où il n'a pas d'entrée, l'ancien code l'écrivait dans
+// actualShifts[lendemain].end → un jour avec une sortie sans entrée, et la
+// veille restait avec une entrée sans sortie. Les heures étaient éparpillées
+// sur 2 jours et le calcul était faux.
+//
+// Fix : si un employé pointe SORTIE le matin SANS entrée aujourd'hui ET qu'un
+// quart est resté OUVERT la veille (entrée présente, pas de sortie), on ferme
+// CE quart-là (on écrit la sortie sur la VEILLE). hoursFromShift() gère déjà le
+// passage de minuit (22:00 → 00:56 = ~2h56 sur le même enregistrement).
+//
+// Garde-fous pour éviter de fermer par erreur un quart de jour oublié la veille :
+//   • on n'agit que tôt le matin (avant PUNCH_OVERNIGHT_CUTOFF_HOUR)
+//   • la durée résultante doit rester plausible (≤ PUNCH_OVERNIGHT_MAX_HOURS)
+const PUNCH_OVERNIGHT_CUTOFF_HOUR = 10;   // ne ferme la veille que si on est avant 10:00
+const PUNCH_OVERNIGHT_MAX_HOURS = 12;     // durée max d'un quart de nuit considéré « plausible »
+
+// Lundi (00:00 local) de la semaine contenant `dateObj`. Indépendant de la
+// semaine actuellement affichée — sert à viser le bon doc payroll/{weekId}
+// même quand la veille est dans une semaine ISO précédente (nuit dim→lun).
+function _punchMondayOf(dateObj) {
+  const d = new Date(dateObj);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // lundi
+  d.setDate(diff); d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+// Lit le shift réel d'un employé pour une date donnée, DIRECTEMENT depuis
+// Firestore (autoritatif) — peut viser une autre semaine que celle affichée.
+// Retourne { shift, wid, weekStart, dk } ou null en cas d'erreur.
+async function _punchFetchShiftForDate(empId, dateObj) {
+  try {
+    const ws = _punchMondayOf(dateObj);
+    const wid = payrollWeekId(ws);
+    const dk = dayKey(dateObj);
+    const snap = await db.collection("payroll").doc(wid).get();
+    const data = snap.exists ? snap.data() : null;
+    const shift = data?.actualShifts?.[empId]?.[dk] || null;
+    return { shift, wid, weekStart: ws, dk };
+  } catch (err) {
+    console.error("_punchFetchShiftForDate failed:", err);
+    return null;
+  }
+}
+
+// Tente de fermer un quart de nuit ouvert la veille (entrée sans sortie) en y
+// écrivant la sortie `nowHHMM`. Retourne true si un quart a bien été fermé.
+async function _punchCloseOvernightShift(emp, yDate, nowHHMM) {
+  const info = await _punchFetchShiftForDate(emp.id, yDate);
+  if (!info || !info.shift) return false;
+  const ys = info.shift;
+  // Doit être un quart OUVERT : entrée présente, pas de sortie, pas « absent ».
+  if (!ys.start || ys.end || ys.markedAbsent) return false;
+  // Durée plausible pour un quart de nuit (hoursFromShift gère le passage minuit).
+  const dur = hoursFromShift({ start: ys.start, end: nowHHMM });
+  if (!(dur > 0) || dur > PUNCH_OVERNIGHT_MAX_HOURS) return false;
+
+  // Écrit la sortie sur la veille en PRÉSERVANT l'entrée (et en nettoyant les
+  // flags auto-fill / absent comme le fait updateActualShift).
+  const newShift = {
+    start: ys.start,
+    end: nowHHMM,
+    autoFilled: firebase.firestore.FieldValue.delete(),
+    autoFilledAt: firebase.firestore.FieldValue.delete(),
+    autoFilledNoStart: firebase.firestore.FieldValue.delete(),
+    markedAbsent: firebase.firestore.FieldValue.delete(),
+    markedAbsentAt: firebase.firestore.FieldValue.delete()
+  };
+  await db.collection("payroll").doc(info.wid).set({
+    weekId: info.wid,
+    weekStart: dayKey(info.weekStart),
+    updatedAt: Date.now(),
+    actualShifts: { [emp.id]: { [info.dk]: newShift } }
+  }, { merge: true });
+  return true;
+}
+
+// Pour l'AFFICHAGE seulement (synchrone) : un quart de nuit ouvert hier est-il
+// visible dans la semaine courante chargée ? Sert à afficher un indice à
+// l'employé. (La fermeture réelle passe par _punchCloseOvernightShift, qui lit
+// Firestore et gère aussi le cas dim→lun en semaine précédente.)
+function _punchYesterdayOpenShiftSync(empId) {
+  const now = new Date();
+  if (now.getHours() >= PUNCH_OVERNIGHT_CUTOFF_HOUR) return null;
+  const y = new Date(now); y.setDate(y.getDate() - 1);
+  const ydk = dayKey(y);
+  const actual = payrollWeekData?.actualShifts?.[empId];
+  const ys = actual && actual[ydk] ? actual[ydk] : null;
+  if (ys && ys.start && !ys.end && !ys.markedAbsent) return ys;
+  return null;
 }
 
 // ─ Actions clavier numérique ──────────────────────────────
@@ -305,6 +408,33 @@ async function punchDoAction(action) {
 
   const nowHHMM = _punchNowHHMM();
   _punchActionTime = nowHHMM;
+
+  // ─ Quart de nuit (fix passage de minuit) ────────────────
+  // Si l'employé pointe SORTIE le matin SANS entrée aujourd'hui, et qu'un quart
+  // est resté OUVERT la veille (entrée sans sortie), on ferme ce quart-là sur
+  // la VEILLE au lieu de créer une sortie orpheline aujourd'hui. _punchClose-
+  // OvernightShift vérifie l'heure (avant 10:00), la durée plausible (≤ 12h) et
+  // gère le doc payroll de la semaine précédente (nuit dim→lun).
+  if (action === "sortie") {
+    const todayShift = _punchGetTodayShift(emp.id, dk);
+    const hasStartToday = !!(todayShift && todayShift.start);
+    if (!hasStartToday && now.getHours() < PUNCH_OVERNIGHT_CUTOFF_HOUR) {
+      try {
+        const yDate = new Date(now); yDate.setDate(yDate.getDate() - 1);
+        const closed = await _punchCloseOvernightShift(emp, yDate, nowHHMM);
+        if (closed) {
+          _punchAction = "sortie";
+          _punchState = "confirmed";
+          renderPage();
+          _punchAutoResetTimer = setTimeout(punchReset, 1800);
+          return;
+        }
+      } catch (err) {
+        console.error("Overnight close failed:", err);
+        // On retombe sur le comportement normal (sortie sur aujourd'hui).
+      }
+    }
+  }
 
   // Map action → champ Firestore (v3.20.0 : on n'a plus que entree/sortie,
   // l'ancienne action "override-sortie" est retirée — les 2 boutons sont

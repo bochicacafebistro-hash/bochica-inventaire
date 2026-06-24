@@ -364,6 +364,7 @@ const TRANSLATIONS = {
   punch_aria_validate:   { fr: "Valider",              es: "Validar" },
   punch_hint:            { fr: "L'admin configure ton PIN dans <strong>Employés &amp; Horaires</strong> → ta fiche.", es: "El admin configura tu PIN en <strong>Empleados y Horarios</strong> → tu ficha." },
   punch_no_today:        { fr: "Aucun pointage aujourd'hui", es: "Sin fichaje hoy" },
+  punch_overnight_hint:  { fr: "Quart de nuit ouvert depuis hier — entrée à {t}. Appuie sur SORTIE pour le fermer.", es: "Turno nocturno abierto desde ayer — entrada a las {t}. Pulsa SALIDA para cerrarlo." },
   punch_entry:           { fr: "Entrée",               es: "Entrada" },
   punch_exit:            { fr: "Sortie",               es: "Salida" },
   punch_not_me:          { fr: "Pas moi",              es: "No soy yo" },

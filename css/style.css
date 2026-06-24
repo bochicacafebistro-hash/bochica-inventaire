@@ -8199,6 +8199,14 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   font-size:13px;
   font-style:italic;
 }
+.punch-state-info--overnight{
+  background:rgba(74,144,226,.12);
+  border:1px solid rgba(74,144,226,.35);
+  color:#2c6cb0;
+  font-size:13px;
+  font-weight:600;
+  line-height:1.4;
+}
 .punch-state-item{
   display:inline-flex;
   align-items:center;
