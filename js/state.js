@@ -47,7 +47,7 @@ let eventsSearchQuery = "";             // recherche texte (nom, contact, notes)
 //                       eventDate, eventTime, eventVenue ("bochica"/"client"/"autre"), eventAddress, guestCount,
 //                       packageOptions[] (NOUVEAU v3.14.0 — liste d'options de forfait que le client peut choisir),
 //                         chaque option : { id (local), packageId, packageSnapshot (copie figée),
-//                                           beerAddon (bool), customLines[], depositAmount, depositPaid }
+//                                           beerAddon (bool), dessertAddon (bool — café/thé + dessert, v3.55.0), customLines[], depositAmount, depositPaid }
 //                       validUntil (YYYY-MM-DD), notes,
 //                       status ("brouillon"/"envoyee"/"acceptee"/"refusee"/"expiree"), createdAt, updatedAt
 //                       // RÉTROCOMPAT : si packageOptions absent, lit packageId/packageSnapshot/beerAddon/customLines/depositAmount/depositPaid à plat }

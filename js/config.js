@@ -89,6 +89,7 @@ const DEFAULT_QUOTE_TEMPLATES = [
     plat:    "Arepa classique ou végé",
     boisson: "Une boisson gazeuse colombienne ou autre",
     beerPrice: 7,
+    dessertPrice: 6,
     sortOrder: 0
   },
   {
@@ -101,6 +102,7 @@ const DEFAULT_QUOTE_TEMPLATES = [
     plat:    "Bol Bogota, Bol Medellin, Bol végé, Salchipapas ou Bochica Burger",
     boisson: "Une boisson gazeuse colombienne ou autre",
     beerPrice: 7,
+    dessertPrice: 6,
     sortOrder: 1
   }
 ];

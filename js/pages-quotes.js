@@ -148,6 +148,7 @@ function getQuoteOptions(quote) {
       packageId: opt.packageId,
       packageSnapshot: opt.packageSnapshot || null,
       beerAddon: !!opt.beerAddon,
+      dessertAddon: !!opt.dessertAddon,
       customLines: Array.isArray(opt.customLines) ? opt.customLines : [],
       depositAmount: Math.max(0, Number(opt.depositAmount || 0)),
       depositPaid: !!opt.depositPaid
@@ -160,6 +161,7 @@ function getQuoteOptions(quote) {
       packageId: quote.packageId,
       packageSnapshot: quote.packageSnapshot || null,
       beerAddon: !!quote.beerAddon,
+      dessertAddon: !!quote.dessertAddon,
       customLines: Array.isArray(quote.customLines) ? quote.customLines : [],
       depositAmount: Math.max(0, Number(quote.depositAmount || 0)),
       depositPaid: !!quote.depositPaid
@@ -179,16 +181,18 @@ function computeQuoteOptionTotal(opt, guestCount) {
   const subtotal = guests * pricePer;
   const beerPrice = Number(tpl.beerPrice || 0);
   const beerSubtotal = opt.beerAddon ? guests * beerPrice : 0;
+  const dessertPrice = Number(tpl.dessertPrice || 0);
+  const dessertSubtotal = opt.dessertAddon ? guests * dessertPrice : 0;
   const customSubtotal = Array.isArray(opt.customLines)
     ? opt.customLines.reduce((s, l) => s + Number(l.amount || 0), 0)
     : 0;
-  const preTaxTotal = subtotal + beerSubtotal + customSubtotal;
+  const preTaxTotal = subtotal + beerSubtotal + dessertSubtotal + customSubtotal;
   const tps = preTaxTotal * TPS_RATE;
   const tvq = preTaxTotal * TVQ_RATE;
   const total = preTaxTotal + tps + tvq;
   const deposit = Math.max(0, Number(opt.depositAmount || 0));
   const balance = Math.max(0, total - (opt.depositPaid ? deposit : 0));
-  return { subtotal, beerSubtotal, customSubtotal, preTaxTotal, tps, tvq, total, deposit, balance };
+  return { subtotal, beerSubtotal, dessertSubtotal, customSubtotal, preTaxTotal, tps, tvq, total, deposit, balance };
 }
 
 // Rétrocompat : ancien helper. Retourne les totaux de la PREMIÈRE option
@@ -196,7 +200,7 @@ function computeQuoteOptionTotal(opt, guestCount) {
 function computeQuoteTotal(quote) {
   const opts = getQuoteOptions(quote);
   if (opts.length === 0) {
-    return { subtotal: 0, beerSubtotal: 0, customSubtotal: 0, preTaxTotal: 0, tps: 0, tvq: 0, total: 0, deposit: 0, balance: 0 };
+    return { subtotal: 0, beerSubtotal: 0, dessertSubtotal: 0, customSubtotal: 0, preTaxTotal: 0, tps: 0, tvq: 0, total: 0, deposit: 0, balance: 0 };
   }
   return computeQuoteOptionTotal(opts[0], quote.guestCount);
 }
@@ -500,18 +504,24 @@ function openQuoteModal(id) {
       packageId: firstTpl?.id || "",
       packageSnapshot: null, // construit à la sauvegarde
       beerAddon: false,
+      dessertAddon: false,
       customLines: [],
       depositAmount: 0,
       depositPaid: false,
-      beerPriceOverride: firstTpl?.beerPrice ?? 7
+      beerPriceOverride: firstTpl?.beerPrice ?? 7,
+      dessertPriceOverride: firstTpl?.dessertPrice ?? 6
     }];
   }
-  // Pour les options chargées d'une soumission existante, on hydrate `beerPriceOverride`
+  // Pour les options chargées d'une soumission existante, on hydrate les prix override
   // depuis le snapshot (qui contient le prix saisi à la création)
   _editingQuoteOptions.forEach(o => {
     if (o.beerPriceOverride == null) {
       const tpl = o.packageSnapshot || quoteTemplates.find(t => t.id === o.packageId);
       o.beerPriceOverride = o.packageSnapshot?.beerPrice ?? tpl?.beerPrice ?? 7;
+    }
+    if (o.dessertPriceOverride == null) {
+      const tpl = o.packageSnapshot || quoteTemplates.find(t => t.id === o.packageId);
+      o.dessertPriceOverride = o.packageSnapshot?.dessertPrice ?? tpl?.dessertPrice ?? 6;
     }
   });
 
@@ -628,7 +638,7 @@ function renderQuoteOptionBlock(opt, idx) {
 
     <div class="quote-package-choices">
       ${quoteTemplates.map(tpl => `<label class="quote-package-card quote-package-card--${tpl.accentColor || "yellow"}">
-        <input type="radio" name="q-package-${attrEsc(optId)}" value="${attrEsc(tpl.id)}" data-beer-price="${attrEsc(String(tpl.beerPrice || 0))}" onchange="onOptionPackageChange(this, '${esc(optId)}')" ${tpl.id === opt.packageId ? "checked" : ""}/>
+        <input type="radio" name="q-package-${attrEsc(optId)}" value="${attrEsc(tpl.id)}" data-beer-price="${attrEsc(String(tpl.beerPrice || 0))}" data-dessert-price="${attrEsc(String(tpl.dessertPrice || 0))}" onchange="onOptionPackageChange(this, '${esc(optId)}')" ${tpl.id === opt.packageId ? "checked" : ""}/>
         <div class="quote-package-card__body">
           <div class="quote-package-card__label">${attrEsc(pdfStr(tpl.label))}</div>
           <div class="quote-package-card__name">${attrEsc(pdfStr(tpl.name))}</div>
@@ -651,6 +661,18 @@ function renderQuoteOptionBlock(opt, idx) {
         <span class="quote-beer-price__label">Prix de la bière par personne ($)</span>
         <input class="q-beer-price" type="number" min="0" step="0.01" value="${attrEsc(String(opt.beerPriceOverride ?? 7))}" data-touched="${opt._beerTouched ? "true" : "false"}" oninput="this.dataset.touched='true'"/>
         <span class="quote-beer-price__hint">Modifiable pour offrir un rabais (ex. 5,00 $ au lieu de 7,00 $)</span>
+      </label>
+    </div>
+
+    <div class="quote-beer-block">
+      <label class="quote-beer-toggle">
+        <input type="checkbox" class="q-dessert-addon" ${opt.dessertAddon ? "checked" : ""}/>
+        <span>☕🍰 Ajouter café ou thé + dessert (en supplément, par personne)</span>
+      </label>
+      <label class="quote-beer-price">
+        <span class="quote-beer-price__label">Prix café/thé + dessert par personne ($)</span>
+        <input class="q-dessert-price" type="number" min="0" step="0.01" value="${attrEsc(String(opt.dessertPriceOverride ?? 6))}" data-touched="${opt._dessertTouched ? "true" : "false"}" oninput="this.dataset.touched='true'"/>
+        <span class="quote-beer-price__hint">Modifiable par soumission (ex. 5,00 $ au lieu de 6,00 $)</span>
       </label>
     </div>
 
@@ -685,10 +707,15 @@ function onOptionPackageChange(radioEl, optId) {
   const block = document.querySelector(`[data-opt-id="${optId}"]`);
   if (!block) return;
   const beerInput = block.querySelector(".q-beer-price");
-  if (!beerInput) return;
-  if (beerInput.dataset.touched === "true") return;
-  const newPrice = radioEl.getAttribute("data-beer-price");
-  if (newPrice != null) beerInput.value = newPrice;
+  if (beerInput && beerInput.dataset.touched !== "true") {
+    const newPrice = radioEl.getAttribute("data-beer-price");
+    if (newPrice != null) beerInput.value = newPrice;
+  }
+  const dessertInput = block.querySelector(".q-dessert-price");
+  if (dessertInput && dessertInput.dataset.touched !== "true") {
+    const newDessert = radioEl.getAttribute("data-dessert-price");
+    if (newDessert != null) dessertInput.value = newDessert;
+  }
 }
 
 // Lit toutes les options depuis le DOM et met à jour `_editingQuoteOptions`.
@@ -709,6 +736,10 @@ function syncEditingOptionsFromDOM() {
     const beerPriceInput = block.querySelector(".q-beer-price");
     const beerPriceOverride = Math.max(0, Number(beerPriceInput?.value) || 0);
     const beerTouched = beerPriceInput?.dataset.touched === "true";
+    const dessertAddon = block.querySelector(".q-dessert-addon")?.checked || false;
+    const dessertPriceInput = block.querySelector(".q-dessert-price");
+    const dessertPriceOverride = Math.max(0, Number(dessertPriceInput?.value) || 0);
+    const dessertTouched = dessertPriceInput?.dataset.touched === "true";
     const depositAmount = Math.max(0, Number(block.querySelector(".q-deposit")?.value) || 0);
     const depositPaid = block.querySelector(".q-deposit-paid")?.checked || false;
     // Lignes custom
@@ -725,6 +756,9 @@ function syncEditingOptionsFromDOM() {
       beerAddon,
       beerPriceOverride,
       _beerTouched: beerTouched,
+      dessertAddon,
+      dessertPriceOverride,
+      _dessertTouched: dessertTouched,
       customLines,
       depositAmount,
       depositPaid
@@ -751,6 +785,8 @@ function addQuoteOption() {
     packageSnapshot: null,
     beerAddon: false,
     beerPriceOverride: firstTpl.beerPrice ?? 7,
+    dessertAddon: false,
+    dessertPriceOverride: firstTpl.dessertPrice ?? 6,
     customLines: [],
     depositAmount: 0,
     depositPaid: false
@@ -918,6 +954,7 @@ async function saveQuote(id) {
       return toast(`Forfait introuvable pour une option (${opt.packageId}).`, "error");
     }
     const beerPrice = Math.max(0, Number(opt.beerPriceOverride) || 0);
+    const dessertPrice = Math.max(0, Number(opt.dessertPriceOverride) || 0);
     const packageSnapshot = {
       id: tpl.id,
       name: pdfStr(tpl.name),
@@ -927,7 +964,8 @@ async function saveQuote(id) {
       entree: pdfStr(tpl.entree || ""),
       plat:   pdfStr(tpl.plat || ""),
       boisson:pdfStr(tpl.boisson || ""),
-      beerPrice
+      beerPrice,
+      dessertPrice
     };
     const customLines = (opt.customLines || []).map(l => ({
       description: pdfStr(l.description || ""),
@@ -938,6 +976,7 @@ async function saveQuote(id) {
       packageId: opt.packageId,
       packageSnapshot,
       beerAddon: !!opt.beerAddon,
+      dessertAddon: !!opt.dessertAddon,
       customLines,
       depositAmount: Math.max(0, Number(opt.depositAmount) || 0),
       depositPaid: !!opt.depositPaid
@@ -980,6 +1019,7 @@ async function saveQuote(id) {
     packageId: first ? first.packageId : null,
     packageSnapshot: first ? first.packageSnapshot : null,
     beerAddon: first ? first.beerAddon : false,
+    dessertAddon: first ? first.dessertAddon : false,
     customLines: first ? first.customLines : [],
     depositAmount: first ? first.depositAmount : 0,
     depositPaid: first ? first.depositPaid : false,
@@ -1075,6 +1115,8 @@ function renderTemplateEditor(tpl) {
     <label>Boisson <input data-field="boisson" value="${attrEsc(pdfStr(tpl.boisson))}" placeholder="ex: Une boisson gazeuse colombienne ou autre"/></label>
     <label>Prix par défaut bière de substitution ($) <input type="number" min="0" step="0.01" data-field="beerPrice" value="${attrEsc(String(tpl.beerPrice || 0))}"/></label>
     <p class="text-muted" style="font-size:11px;margin:4px 0 0">Prix appliqué quand la boisson est remplacée par une bière. Modifiable par soumission pour offrir un rabais.</p>
+    <label>Prix par défaut café/thé + dessert ($) <input type="number" min="0" step="0.01" data-field="dessertPrice" value="${attrEsc(String(tpl.dessertPrice || 0))}"/></label>
+    <p class="text-muted" style="font-size:11px;margin:4px 0 0">Supplément par personne pour ajouter un café ou thé et un dessert. Modifiable par soumission.</p>
     <div style="display:flex;justify-content:flex-end;margin-top:8px">
       <button class="btn btn-primary btn-sm" onclick="saveTemplate('${esc(tpl.id)}')">${icon("save", 12)} Enregistrer ce forfait</button>
     </div>
@@ -1093,6 +1135,7 @@ function addNewTemplate() {
     plat: "",
     boisson: "",
     beerPrice: 7,
+    dessertPrice: 6,
     sortOrder: quoteTemplates.length
   };
   // Ajout direct en BD pour simplicité (le listener re-render via openQuoteTemplatesModal)
@@ -1115,7 +1158,7 @@ async function saveTemplate(id) {
   card.querySelectorAll("[data-field]").forEach(el => {
     const field = el.getAttribute("data-field");
     let v = el.value;
-    if (["pricePerPerson", "beerPrice"].includes(field)) {
+    if (["pricePerPerson", "beerPrice", "dessertPrice"].includes(field)) {
       v = Math.max(0, Number(v) || 0);
     } else {
       // Nettoyer les apostrophes échappées \' héritées de esc()
@@ -1371,6 +1414,7 @@ function generateQuotePDF(quoteId) {
     let estHeight = 60 + 6 + 46;
     if (multi) estHeight += 8 + 12;
     if (opt.beerAddon) estHeight += 18;
+    if (opt.dessertAddon) estHeight += 18;
     if (Array.isArray(opt.customLines) && opt.customLines.length > 0) {
       estHeight += 6 + opt.customLines.length * 5 + 4;
     }
@@ -1474,6 +1518,28 @@ function generateQuotePDF(quoteId) {
       y += beerH + 4;
     }
 
+    // Ajout café/thé + dessert (si activé pour cette option)
+    if (opt.dessertAddon) {
+      const dessertH = 14;
+      doc.setFillColor(...COLOR_ACCENT);
+      doc.roundedRect(M, y, contentW, dessertH, 2, 2, "F");
+      doc.setFillColor(...COLOR_TEXT);
+      doc.circle(M + 6, y + 7, 1.8, "F");
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(`Café ou thé + dessert`, M + 11, y + 6);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(`(supplément par personne)`, M + 11, y + 10.5);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(...COLOR_RED);
+      doc.setFontSize(12);
+      doc.text(`+ ${fmtMoney(tpl.dessertPrice || 0).replace(" $", "")} $ / pers.`, M + contentW - 4, y + 8.5, { align: "right" });
+      y += dessertH + 4;
+    }
+
     // Lignes personnalisées pour cette option
     if (Array.isArray(opt.customLines) && opt.customLines.length > 0) {
       doc.setFont("helvetica", "bold");
@@ -1513,6 +1579,9 @@ function generateQuotePDF(quoteId) {
     totalLine(`Forfait (${qt.guestCount || 0} × ${fmtMoney(tpl.pricePerPerson || 0)})`, fmtMoney(totals.subtotal));
     if (totals.beerSubtotal > 0) {
       totalLine(`Bière en remplacement (${qt.guestCount || 0} × ${fmtMoney(tpl.beerPrice || 0)})`, fmtMoney(totals.beerSubtotal));
+    }
+    if (totals.dessertSubtotal > 0) {
+      totalLine(`Café/thé + dessert (${qt.guestCount || 0} × ${fmtMoney(tpl.dessertPrice || 0)})`, fmtMoney(totals.dessertSubtotal));
     }
     if (totals.customSubtotal !== 0) {
       totalLine("Suppléments", fmtMoney(totals.customSubtotal));
