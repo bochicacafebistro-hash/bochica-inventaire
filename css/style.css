@@ -5431,15 +5431,6 @@ textarea.md-input{
   background:rgba(var(--accent-rgb),.1);
   border-color:var(--accent);
 }
-/* v3.57.0 — la ligne passe de 4 colonnes (jour/select/→/select) à 2 :
-   jour + conteneur de plages (qui gère lui-même ses sélecteurs). */
-.sim-svc-row{
-  grid-template-columns:60px 1fr;
-  align-items:flex-start;
-}
-.sim-svc-row .sim-svc-day{
-  padding-top:8px;
-}
 
 /* Dark mode adaptations */
 .dark .payroll-tips-pool--kitchen{
@@ -7353,25 +7344,34 @@ body.dark .sim-section-select{
 .sim-gap.is-zero{color:var(--text3)}
 .sim-gap small{opacity:.85;font-size:10px}
 
-/* Heures de service modale */
+/* Heures de service modale — v3.57.0 : 2 colonnes (jour | plages) avec
+   séparateur horizontal entre chaque jour pour bien voir à qui appartiennent
+   les heures. */
 .sim-svc-grid{
   display:flex;
   flex-direction:column;
-  gap:8px;
+  gap:0;
   margin-bottom:var(--sp-4);
+  max-height:60vh;
+  overflow-y:auto;
 }
 .sim-svc-row{
   display:grid;
-  grid-template-columns:60px 1fr 16px 1fr;
-  align-items:center;
-  gap:8px;
+  grid-template-columns:56px 1fr;
+  align-items:flex-start;
+  gap:12px;
+  padding:12px 2px;
+  border-bottom:1px solid var(--border);
 }
+.sim-svc-row:last-child{border-bottom:none}
 .sim-svc-row .sim-svc-day{
   font-family:var(--font-mono);
-  font-size:11px;
+  font-size:12px;
   text-transform:uppercase;
-  color:var(--text2);
-  font-weight:600;
+  color:var(--accent);
+  font-weight:700;
+  letter-spacing:.04em;
+  padding-top:8px;
 }
 .sim-svc-row select{
   padding:6px 8px;
