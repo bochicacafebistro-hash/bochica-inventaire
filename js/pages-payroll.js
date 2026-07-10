@@ -216,6 +216,14 @@ function getServiceWindow(dowIdx) {
   return null;
 }
 
+// v3.57.0 — Fenêtres de service coupées : un jour peut avoir plusieurs plages
+// (ex. midi + soir). Retourne TOUJOURS un tableau normalisé de {start,end}
+// (vide si aucune). `getServiceWindow` (singulier) reste pour la rétrocompat
+// (renvoie la 1re plage), mais les calculs de pourboires utilisent celui-ci.
+function getServiceWindows(dowIdx) {
+  return normalizeServiceWindows((payrollSettings?.defaultServiceHours || {})[dowIdx]);
+}
+
 // Section "tipGroup" d'un employé : "cuisine" ou "service".
 // "service" et "other" partagent le même pool 75%.
 function tipGroupOf(emp) {
@@ -632,18 +640,18 @@ function renderSalaires() {
     const dayTotal = Number(tipsByDay[dk]) || 0;
     const poolKitchenDay = dayTotal * (Number(tipShares.cuisine) || 0);
     const poolServiceDay = dayTotal * (Number(tipShares.service) || 0);
-    const serviceWin = getServiceWindow(dowIdx);
+    const serviceWins = getServiceWindows(dowIdx); // v3.57.0 — plages multiples
     let totalKitchenHrsDay = 0;
     let totalServiceHrsDay = 0;
     for (const emp of allEmps) {
       const group = getEffectiveTipGroup(emp);
       if (group === "excluded") continue; // pas dans le pool cette semaine
       const shift = getActualShift(emp.id, dk);
-      const tipHrs = serviceWin ? intersectShiftHours(shift, serviceWin) : 0;
+      const tipHrs = intersectShiftWindows(shift, serviceWins);
       if (group === "cuisine") totalKitchenHrsDay += tipHrs;
       else totalServiceHrsDay += tipHrs;
     }
-    return { dk, dowIdx, serviceWin, dayTotal, poolKitchenDay, poolServiceDay, totalKitchenHrsDay, totalServiceHrsDay };
+    return { dk, dowIdx, serviceWins, dayTotal, poolKitchenDay, poolServiceDay, totalKitchenHrsDay, totalServiceHrsDay };
   });
 
   // ─ Calculs par employé ────────────────────────────
@@ -669,10 +677,10 @@ function renderSalaires() {
       const dowIdx = visibleIdx[k];
       const actualShift = getActualShift(emp.id, dk);
       const plannedShift = getPlannedShift(emp.id, dk);
-      const serviceWin = dailyCalc[k].serviceWin;
+      const serviceWins = dailyCalc[k].serviceWins;
       const hours = hoursFromShift(actualShift);
       const pHours = hoursFromShift(plannedShift);
-      const tipHours = serviceWin ? intersectShiftHours(actualShift, serviceWin) : 0;
+      const tipHours = intersectShiftWindows(actualShift, serviceWins);
       const isOverride = hasActualOverride(emp.id, dk);
       const isDifferent = isOverride && !sameShift(actualShift, plannedShift);
 
@@ -981,8 +989,7 @@ function renderSalaires() {
           <div class="schedule-empgrid-emp-head">Employé · Section</div>
           ${weekDays.map((d, k) => {
             const dowIdx = visibleIdx[k];
-            const sw = getServiceWindow(dowIdx);
-            const swLabel = sw ? `${sw.start}–${sw.end}` : "—";
+            const swLabel = serviceWindowsLabel((payrollSettings?.defaultServiceHours || {})[dowIdx]);
             const count = empRows.filter(r => r.daily[k]?.actualShift?.start && r.daily[k]?.actualShift?.end).length;
             return `<div class="schedule-empgrid-day-head">
               <div class="schedule-empgrid-day-name">${DAYS_FR[dowIdx]}</div>
@@ -1561,69 +1568,120 @@ async function updateSectionOverride(empId, value) {
 // Les jours marqués fermés via Horaires (scheduleSettings.openDays) sont indiqués
 // pour cohérence visuelle, mais on permet quand même de configurer (l'utilisateur
 // peut vouloir préparer la config pour quand il rouvrira).
+// v3.57.0 — Brouillon en mémoire des plages de service par jour, le temps de
+// la modale : { [dow]: [{start,end}, ...] }. Permet d'ajouter/retirer des
+// plages (services coupés) avec un re-rendu de la modale sans toucher la base
+// tant que l'utilisateur n'a pas cliqué « Enregistrer ».
+let _svcHoursDraft = null;
+
 function openServiceHoursModal() {
   const cur = payrollSettings?.defaultServiceHours || {};
+  // Initialise le brouillon depuis la config courante (normalisée en tableaux)
+  _svcHoursDraft = {};
+  for (let i = 0; i < 7; i++) _svcHoursDraft[i] = normalizeServiceWindows(cur[i]);
+  _renderServiceHoursModal();
+}
+
+function _renderServiceHoursModal() {
   const dayNamesLong = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
   const openDays = Array.isArray(scheduleSettings.openDays) ? scheduleSettings.openDays : [0,1,2,3,4,5,6];
+  const d = _svcHoursDraft || {};
 
-  showModal(`<div class="modal" style="max-width:560px">
+  showModal(`<div class="modal" style="max-width:600px">
     <div class="modal-header">
       <h3>${icon("clock", 18)} Heures de service</h3>
-      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
+      <button class="close-btn" onclick="closeServiceHoursModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
     </div>
     <p style="color:var(--text3);font-size:13px;margin-bottom:16px;line-height:1.5">
-      Fenêtre où le restaurant <strong>sert les clients</strong> — c'est là que les pourboires sont gagnés.
-      Coche un jour pour l'activer et choisis ses heures.
+      Fenêtre(s) où le restaurant <strong>sert les clients</strong> — c'est là que les pourboires sont gagnés.
+      Coche un jour pour l'activer. Tu peux ajouter <strong>plusieurs plages</strong> le même jour (service coupé,
+      ex. midi <strong>12:00–14:00</strong> puis soir <strong>17:00–21:00</strong>).
     </p>
     <div class="payroll-svc-modal-grid">
       ${[0,1,2,3,4,5,6].map(i => {
-        const win = cur[i] || {};
-        const startVal = win.start || "";
-        const endVal = win.end || "";
-        const isOpen = !!(startVal && endVal);
+        const plages = Array.isArray(d[i]) ? d[i] : [];
+        const isOpen = plages.length > 0;
         const isOpenInSchedule = openDays.includes(i);
         const closedHint = !isOpenInSchedule ? `<span class="payroll-svc-modal-hint">(fermé dans Horaires)</span>` : "";
         return `<div class="payroll-svc-modal-row ${isOpen ? "is-open" : ""}" data-day="${i}">
           <label class="payroll-svc-modal-toggle">
-            <input type="checkbox" id="svc-${i}-toggle" ${isOpen ? "checked" : ""} onchange="toggleServiceDay(${i}, this.checked)"/>
+            <input type="checkbox" ${isOpen ? "checked" : ""} onchange="toggleServiceDay(${i}, this.checked)"/>
             <span class="payroll-svc-modal-day">${dayNamesLong[i]}</span>
             ${closedHint}
           </label>
-          <div class="payroll-svc-modal-inputs" id="svc-${i}-inputs" style="display:${isOpen ? "flex" : "none"}">
-            <input id="svc-${i}-start" type="time" value="${startVal || "13:00"}" aria-label="${dayNamesLong[i]} début"/>
-            <span>→</span>
-            <input id="svc-${i}-end" type="time" value="${endVal || "22:00"}" aria-label="${dayNamesLong[i]} fin"/>
-          </div>
+          ${isOpen ? `<div class="payroll-svc-modal-plages">
+            ${plages.map((p, pi) => `
+              <div class="payroll-svc-modal-inputs">
+                <input type="time" value="${p.start || "13:00"}" aria-label="${dayNamesLong[i]} plage ${pi + 1} début"
+                  onchange="svcSetPlageTime(${i}, ${pi}, 'start', this.value)"/>
+                <span>→</span>
+                <input type="time" value="${p.end || "22:00"}" aria-label="${dayNamesLong[i]} plage ${pi + 1} fin"
+                  onchange="svcSetPlageTime(${i}, ${pi}, 'end', this.value)"/>
+                ${plages.length > 1 ? `<button type="button" class="payroll-svc-plage-del" title="Retirer cette plage" aria-label="Retirer la plage ${pi + 1}" onclick="svcRemovePlage(${i}, ${pi})">${icon("trash", 13)}</button>` : `<span class="payroll-svc-plage-del-spacer"></span>`}
+              </div>`).join("")}
+            <button type="button" class="payroll-svc-plage-add" onclick="svcAddPlage(${i})">${icon("plus", 12)} Ajouter une plage</button>
+          </div>` : ""}
         </div>`;
       }).join("")}
     </div>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
+      <button class="btn-cancel" onclick="closeServiceHoursModal()">${t("cancel")}</button>
       <button class="btn btn-primary" onclick="saveServiceHours()">${t("save")}</button>
     </div>
   </div>`);
 }
 
-// Active/désactive un jour : montre/cache les inputs et bascule l'état "is-open"
+function closeServiceHoursModal() {
+  _svcHoursDraft = null;
+  closeModal();
+}
+
+// Active/désactive un jour dans le brouillon puis re-rend la modale.
 function toggleServiceDay(i, checked) {
-  const inputs = document.getElementById(`svc-${i}-inputs`);
-  const row = document.querySelector(`.payroll-svc-modal-row[data-day="${i}"]`);
-  if (inputs) inputs.style.display = checked ? "flex" : "none";
-  if (row) row.classList.toggle("is-open", checked);
+  if (!_svcHoursDraft) _svcHoursDraft = {};
+  if (checked) {
+    // Ouvre avec une plage par défaut si aucune n'existe encore
+    if (!Array.isArray(_svcHoursDraft[i]) || _svcHoursDraft[i].length === 0) {
+      _svcHoursDraft[i] = [{ start: "13:00", end: "22:00" }];
+    }
+  } else {
+    _svcHoursDraft[i] = [];
+  }
+  _renderServiceHoursModal();
+}
+
+// Ajoute une 2e (ou nième) plage au jour i — service coupé.
+function svcAddPlage(i) {
+  if (!_svcHoursDraft) _svcHoursDraft = {};
+  if (!Array.isArray(_svcHoursDraft[i])) _svcHoursDraft[i] = [];
+  // Défaut soir si la 1re plage était en journée, sinon plage générique.
+  _svcHoursDraft[i].push({ start: "17:00", end: "21:00" });
+  _renderServiceHoursModal();
+}
+
+// Retire la plage pi du jour i. Si plus aucune plage → le jour redevient fermé.
+function svcRemovePlage(i, pi) {
+  if (!_svcHoursDraft || !Array.isArray(_svcHoursDraft[i])) return;
+  _svcHoursDraft[i].splice(pi, 1);
+  _renderServiceHoursModal();
+}
+
+// Met à jour une heure de plage dans le brouillon (sans re-rendu → garde le focus).
+function svcSetPlageTime(i, pi, field, value) {
+  if (!_svcHoursDraft || !Array.isArray(_svcHoursDraft[i]) || !_svcHoursDraft[i][pi]) return;
+  _svcHoursDraft[i][pi][field] = value || "";
 }
 
 async function saveServiceHours() {
   try {
+    const d = _svcHoursDraft || {};
     const next = {};
     for (let i = 0; i < 7; i++) {
-      const toggleEl = document.getElementById(`svc-${i}-toggle`);
-      const isChecked = !!(toggleEl && toggleEl.checked);
-      if (!isChecked) continue;
-      const start = document.getElementById(`svc-${i}-start`)?.value || "";
-      const end = document.getElementById(`svc-${i}-end`)?.value || "";
-      if (start && end) {
-        next[i] = { start, end };
-      }
+      const plages = normalizeServiceWindows(d[i]); // filtre les plages incomplètes + trie
+      if (plages.length === 0) continue;
+      // Rétrocompat : 1 seule plage → objet {start,end} (forme historique) ;
+      // ≥ 2 plages → tableau (service coupé).
+      next[i] = plages.length === 1 ? plages[0] : plages;
     }
     // ⚠ Set sans merge sur defaultServiceHours pour REMPLACER complètement
     // (sinon les jours retirés resteraient car deep merge préserve les sous-clés).
@@ -1634,6 +1692,7 @@ async function saveServiceHours() {
       defaultServiceHours: next,
       updatedAt: Date.now()
     });
+    _svcHoursDraft = null;
     closeModal();
     toast("Heures de service enregistrées.", "success");
   } catch (err) {
@@ -2214,17 +2273,17 @@ function generatePayrollPDF() {
     const dk = dayKey(d);
     const dowIdx = visibleIdx[k];
     const dayTotal = Number(tipsByDay[dk]) || 0;
-    const serviceWin = getServiceWindow(dowIdx);
+    const serviceWins = getServiceWindows(dowIdx); // v3.57.0 — plages multiples
     let totalKitchenHrsDay = 0;
     let totalServiceHrsDay = 0;
     for (const emp of allEmps) {
       const shift = getActualShift(emp.id, dk);
-      const tipHrs = serviceWin ? intersectShiftHours(shift, serviceWin) : 0;
+      const tipHrs = intersectShiftWindows(shift, serviceWins);
       if (tipGroupOf(emp) === "cuisine") totalKitchenHrsDay += tipHrs;
       else totalServiceHrsDay += tipHrs;
     }
     return {
-      dk, dowIdx, serviceWin,
+      dk, dowIdx, serviceWins,
       dayTotal,
       poolKitchenDay: dayTotal * (Number(tipShares.cuisine) || 0),
       poolServiceDay: dayTotal * (Number(tipShares.service) || 0),
@@ -2243,10 +2302,10 @@ function generatePayrollPDF() {
       const dk = dayKey(d);
       const actualShift = getActualShift(emp.id, dk);
       const plannedShift = getPlannedShift(emp.id, dk);
-      const serviceWin = dailyCalc[k].serviceWin;
+      const serviceWins = dailyCalc[k].serviceWins;
       const hours = hoursFromShift(actualShift);
       const pHours = hoursFromShift(plannedShift);
-      const tipHours = serviceWin ? intersectShiftHours(actualShift, serviceWin) : 0;
+      const tipHours = intersectShiftWindows(actualShift, serviceWins);
       const groupPool = group === "cuisine" ? dailyCalc[k].poolKitchenDay : dailyCalc[k].poolServiceDay;
       const groupTotalHrs = group === "cuisine" ? dailyCalc[k].totalKitchenHrsDay : dailyCalc[k].totalServiceHrsDay;
       const dayTip = (groupTotalHrs > 0 && tipHours > 0) ? (tipHours / groupTotalHrs) * groupPool : 0;
@@ -2807,17 +2866,17 @@ async function _computePayrollWeekData(offset) {
     const dk = dayKey(d);
     const dowIdx = visibleIdx[k];
     const dayTotal = Number(tipsByDay[dk]) || 0;
-    const serviceWin = getServiceWindow(dowIdx);
+    const serviceWins = getServiceWindows(dowIdx); // v3.57.0 — plages multiples
     let kHrs = 0, sHrs = 0;
     for (const emp of allEmps) {
       const g = effGroup(emp);
       if (g === "excluded") continue;
       const shift = (weekData?.actualShifts || {})[emp.id]?.[dk] || null;
-      const tipHrs = serviceWin ? intersectShiftHours(shift, serviceWin) : 0;
+      const tipHrs = intersectShiftWindows(shift, serviceWins);
       if (g === "cuisine") kHrs += tipHrs; else sHrs += tipHrs;
     }
     return {
-      dk, dowIdx, serviceWin,
+      dk, dowIdx, serviceWins,
       dayTotal,
       poolK: dayTotal * (Number(tipShares.cuisine) || 0),
       poolS: dayTotal * (Number(tipShares.service) || 0),
@@ -2837,10 +2896,10 @@ async function _computePayrollWeekData(offset) {
       const dk = dayKey(d);
       const actualShift = (weekData?.actualShifts || {})[emp.id]?.[dk] || null;
       const plannedShift = (emp.shifts || {})[dk] || null;
-      const sw = dailyCalc[k].serviceWin;
+      const serviceWins = dailyCalc[k].serviceWins;
       const hours = hoursFromShift(actualShift);
       const pHours = hoursFromShift(plannedShift);
-      const tipHours = sw ? intersectShiftHours(actualShift, sw) : 0;
+      const tipHours = intersectShiftWindows(actualShift, serviceWins);
       let dayTip = 0;
       if (group !== "excluded") {
         const pool = group === "cuisine" ? dailyCalc[k].poolK : dailyCalc[k].poolS;

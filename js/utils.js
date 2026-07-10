@@ -1,6 +1,40 @@
 // ── Utilitaires ───────────────────────────────────────
 function genId() { return Math.random().toString(36).slice(2, 10); }
 
+// ── Fenêtres de service coupées (v3.57.0) ─────────────────────────
+// Un jour peut avoir PLUSIEURS plages de service (ex. midi 12:00-14:00 +
+// soir 17:00-21:00). Le stockage accepte SOIT un objet unique {start,end}
+// (ancien format, rétrocompat), SOIT un tableau de {start,end}. Ce helper
+// normalise TOUJOURS vers un tableau de plages valides {start,end}, triées
+// par heure de début. Utilisé par la paie réelle ET la simulation.
+function normalizeServiceWindows(entry) {
+  if (!entry) return [];
+  const arr = Array.isArray(entry) ? entry : [entry];
+  return arr
+    .filter(w => w && w.start && w.end)
+    .map(w => ({ start: w.start, end: w.end }))
+    .sort((a, b) => String(a.start).localeCompare(String(b.start)));
+}
+
+// Somme des heures d'un shift {start,end} qui tombent dans une ou plusieurs
+// fenêtres de service. `windows` = tableau normalisé (voir ci-dessus).
+// Réutilise intersectShiftHours (définie dans pages-payroll.js, disponible au
+// moment de l'appel car tous les scripts sont chargés avant tout rendu).
+function intersectShiftWindows(shift, windows) {
+  if (!Array.isArray(windows) || windows.length === 0) return 0;
+  let total = 0;
+  for (const w of windows) total += intersectShiftHours(shift, w);
+  return total;
+}
+
+// Libellé court d'une ou plusieurs plages de service pour l'affichage.
+// Ex. "12:00–14:00 · 17:00–21:00", ou "—" si aucune.
+function serviceWindowsLabel(entry) {
+  const wins = normalizeServiceWindows(entry);
+  if (wins.length === 0) return "—";
+  return wins.map(w => `${w.start}–${w.end}`).join(" · ");
+}
+
 // ── Saisie d'heure : clavier précis + suggestions 15 min ──────────
 // (v3.40.0) Champ partagé par les modals Salaires, Horaire et Simulation.
 // On utilise un <input type="text"> couplé à un <datalist> plutôt qu'un

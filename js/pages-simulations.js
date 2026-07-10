@@ -69,8 +69,8 @@ function simEffectiveOpenDays(scenario) {
   const set = new Set(base);
   const sh = scenario?.serviceHours || {};
   for (const k of Object.keys(sh)) {
-    const v = sh[k];
-    if (v && (v.start || v.end)) set.add(Number(k));
+    // v3.57.0 — accepte objet unique OU tableau de plages
+    if (normalizeServiceWindows(sh[k]).length > 0) set.add(Number(k));
   }
   return [...set].sort((a, b) => a - b);
 }
@@ -110,12 +110,13 @@ function computeSimScenario(scenario) {
       if (!openDays.includes(dow)) { daily.push(null); continue; }
       // v3.45.0 — un jour peut contenir PLUSIEURS quarts (shift coupé)
       const shifts = simDayShifts((emp.shifts || {})[dow]);
-      const win = serviceHours[dow];
+      // v3.57.0 — un jour peut aussi avoir PLUSIEURS plages de service coupées
+      const wins = normalizeServiceWindows(serviceHours[dow]);
       let hours = 0;
       let tipHrs = 0;
       shifts.forEach(s => {
         hours += hoursFromShift(s);
-        if (win) tipHrs += intersectShiftHours(s, win);
+        tipHrs += intersectShiftWindows(s, wins);
       });
       const cost = isSal ? dailyFixedCost : hours * rate;
       totalHours += hours;
@@ -336,12 +337,14 @@ async function confirmCreateSimFromPlanned() {
     shifts: shiftsByDateToByDow(emp.shifts || {}, weekStart)
   }));
 
-  // Heures de service par jour (snapshot)
+  // Heures de service par jour (snapshot). v3.57.0 — supporte les plages
+  // coupées : on copie sous forme d'objet unique si 1 plage, de tableau si ≥2.
   const serviceHours = {};
   const defSH = payrollSettings?.defaultServiceHours || {};
   for (const k of Object.keys(defSH)) {
-    const v = defSH[k];
-    if (v && v.start && v.end) serviceHours[Number(k)] = { start: v.start, end: v.end };
+    const wins = normalizeServiceWindows(defSH[k]);
+    if (wins.length === 1) serviceHours[Number(k)] = { start: wins[0].start, end: wins[0].end };
+    else if (wins.length >= 2) serviceHours[Number(k)] = wins;
   }
   const tipShares = {
     cuisine: Number(payrollSettings?.tipShares?.cuisine ?? 0.25),
@@ -610,8 +613,7 @@ function renderSimulationEditorHTML(sim) {
           }
           const count = cur.rows.filter(r => (r.daily[dow]?.shifts || []).length > 0).length;
           const dayHrs = cur.dayTotalsHours[dow] || 0;
-          const win = serviceHours[dow];
-          const winLabel = win && win.start && win.end ? `${win.start}–${win.end}` : "";
+          const winLabel = _simSvcWindowLabel(serviceHours, dow); // v3.57.0 — plages multiples
           return `<div class="schedule-empgrid-day-head">
             <div class="schedule-empgrid-day-name">${DAYS_FR[dow]}</div>
             ${winLabel ? `<div class="schedule-empgrid-day-svc" title="Fenêtre d'ouverture / de service">${icon("clock", 9)} ${winLabel}</div>` : ""}
@@ -1289,22 +1291,31 @@ function openSimServiceHoursModal(simId) {
   const sim = (payrollSimulations || []).find(s => s.id === simId);
   if (!sim) return;
   const sh = sim.simulation?.serviceHours || {};
-  showModal(`<div class="modal" style="max-width:520px">
+  showModal(`<div class="modal" style="max-width:560px">
     <div class="modal-header">
       <h3>${icon("clock", 18)} Heures de service (simulation)</h3>
       <button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button>
     </div>
     <p style="color:var(--text3);font-size:13px;margin-bottom:16px;line-height:1.5">
-      Définis la <strong>fenêtre de service</strong> de chaque jour. Seules les heures travaillées dans cette fenêtre comptent pour le calcul des pourboires. ${icon("info", 11)} Régler une fenêtre pour un jour l'<strong>ouvre automatiquement</strong> (il apparaît dans la grille) ; pour <strong>fermer</strong> un jour, décoche-le dans « Jours ouverts ».
+      Définis la ou les <strong>fenêtres de service</strong> de chaque jour. Seules les heures travaillées dans ces fenêtres comptent pour les pourboires. Tu peux ajouter <strong>plusieurs plages</strong> (service coupé, ex. <strong>12:00–14:00</strong> puis <strong>17:00–21:00</strong>). ${icon("info", 11)} Régler une plage <strong>ouvre</strong> le jour ; pour le <strong>fermer</strong>, retire toutes ses plages ou décoche-le dans « Jours ouverts ».
     </p>
     <div class="sim-svc-grid">
       ${DAYS_FR.map((dn, dow) => {
-        const v = sh[dow] || {};
+        const plages = normalizeServiceWindows(sh[dow]);
         return `<div class="sim-svc-row">
           <div class="sim-svc-day">${dn}</div>
-          <select onchange="updateSimServiceHours('${simId}',${dow},'start',this.value)" aria-label="Début service ${dn}">${buildTimeOptions(v.start || "")}</select>
-          <span>→</span>
-          <select onchange="updateSimServiceHours('${simId}',${dow},'end',this.value)" aria-label="Fin service ${dn}">${buildTimeOptions(v.end || "")}</select>
+          <div class="sim-svc-plages">
+            ${plages.length === 0
+              ? `<div class="sim-svc-empty">Fermé</div>`
+              : plages.map((p, pi) => `
+                <div class="sim-svc-plage">
+                  <select onchange="updateSimServiceHours('${simId}',${dow},${pi},'start',this.value)" aria-label="Début plage ${pi + 1} ${dn}">${buildTimeOptions(p.start || "")}</select>
+                  <span>→</span>
+                  <select onchange="updateSimServiceHours('${simId}',${dow},${pi},'end',this.value)" aria-label="Fin plage ${pi + 1} ${dn}">${buildTimeOptions(p.end || "")}</select>
+                  <button type="button" class="sim-svc-plage-del" title="Retirer cette plage" aria-label="Retirer la plage ${pi + 1}" onclick="removeSimServicePlage('${simId}',${dow},${pi})">${icon("trash", 12)}</button>
+                </div>`).join("")}
+            <button type="button" class="sim-svc-plage-add" onclick="addSimServicePlage('${simId}',${dow})">${icon("plus", 11)} Ajouter une plage</button>
+          </div>
         </div>`;
       }).join("")}
     </div>
@@ -1314,27 +1325,52 @@ function openSimServiceHoursModal(simId) {
   </div>`);
 }
 
-async function updateSimServiceHours(simId, dow, field, value) {
+// Écrit les plages normalisées du jour dans le scénario + rouvre la modale.
+// `plages` = tableau (peut être vide → jour fermé). Stocke objet unique si 1,
+// tableau si ≥2, supprime la clé si 0.
+async function _persistSimServicePlages(simId, dow, plages) {
   const sim = (payrollSimulations || []).find(s => s.id === simId);
   if (!sim) return;
+  const clean = normalizeServiceWindows(plages);
   const sh = { ...(sim.simulation?.serviceHours || {}) };
-  const cur = sh[dow] || {};
-  const next = { ...cur, [field]: value || "" };
-  if (!next.start && !next.end) {
-    delete sh[dow];
-  } else {
-    sh[dow] = next;
-  }
-  // v3.45.0 — lier ouverture ↔ heures de service : définir une fenêtre de service
-  // pour un jour l'ouvre automatiquement (il apparaît alors dans la grille).
+  if (clean.length === 0) delete sh[dow];
+  else if (clean.length === 1) sh[dow] = { start: clean[0].start, end: clean[0].end };
+  else sh[dow] = clean;
+
   const patch = { ...sim.simulation, serviceHours: sh };
-  if (next.start || next.end) {
+  // v3.45.0 — lier ouverture ↔ heures de service : un jour avec au moins une
+  // plage s'ouvre automatiquement (il apparaît dans la grille).
+  if (clean.length > 0) {
     const openDays = Array.isArray(sim.simulation?.openDays) ? [...sim.simulation.openDays] : [0,1,2,3,4,5,6];
-    if (!openDays.includes(dow)) {
-      patch.openDays = [...openDays, dow].sort((a, b) => a - b);
-    }
+    if (!openDays.includes(dow)) patch.openDays = [...openDays, dow].sort((a, b) => a - b);
   }
   await persistSim(simId, patch);
+  openSimServiceHoursModal(simId); // re-rend la modale avec l'état à jour
+}
+
+async function updateSimServiceHours(simId, dow, plageIdx, field, value) {
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) return;
+  const plages = normalizeServiceWindows(sim.simulation?.serviceHours?.[dow]);
+  if (!plages[plageIdx]) plages[plageIdx] = { start: "", end: "" };
+  plages[plageIdx] = { ...plages[plageIdx], [field]: value || "" };
+  await _persistSimServicePlages(simId, dow, plages);
+}
+
+async function addSimServicePlage(simId, dow) {
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) return;
+  const plages = normalizeServiceWindows(sim.simulation?.serviceHours?.[dow]);
+  plages.push({ start: "17:00", end: "21:00" });
+  await _persistSimServicePlages(simId, dow, plages);
+}
+
+async function removeSimServicePlage(simId, dow, plageIdx) {
+  const sim = (payrollSimulations || []).find(s => s.id === simId);
+  if (!sim) return;
+  const plages = normalizeServiceWindows(sim.simulation?.serviceHours?.[dow]);
+  plages.splice(plageIdx, 1);
+  await _persistSimServicePlages(simId, dow, plages);
 }
 
 // ═ Jours d'ouverture (par jour de semaine) ═════════════
@@ -1591,11 +1627,12 @@ function _simSlug(name) {
     .slice(0, 40) || "Simulation";
 }
 
-// Fenêtre de service d'un jour → "12:00–21:00" ou "" si non définie.
+// Fenêtre(s) de service d'un jour → "12:00–14:00 · 17:00–21:00" ou "" si non
+// définie. v3.57.0 — supporte les plages coupées (objet unique OU tableau).
 function _simSvcWindowLabel(serviceHours, dow) {
-  const w = serviceHours && serviceHours[dow];
-  if (w && (w.start || w.end)) return `${w.start || "?"}–${w.end || "?"}`;
-  return "";
+  const wins = normalizeServiceWindows(serviceHours && serviceHours[dow]);
+  if (wins.length === 0) return "";
+  return wins.map(w => `${w.start}–${w.end}`).join(" · ");
 }
 
 // ─── Version ÉQUIPE (aucune donnée financière) ───────────────────
