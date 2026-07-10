@@ -695,8 +695,9 @@ function renderSalaires() {
 
     const grossWage = isSal ? (fixedHours * rate) : hourlyGross;
     const gap = totalHours - plannedHours;
-    const totalPay = grossWage + tipShare;
-    return { emp, rate, isSal, fixedHours, group, groupOverride, isManual, daily, totalHours, plannedHours, gap, tipEligibleHours, tipShare, grossWage, totalPay };
+    const bonus = getWeekBonus(emp.id); // prime hebdo (0 par défaut)
+    const totalPay = grossWage + tipShare + bonus;
+    return { emp, rate, isSal, fixedHours, group, groupOverride, isManual, daily, totalHours, plannedHours, gap, tipEligibleHours, tipShare, grossWage, bonus, totalPay };
   });
 
   // Totaux par groupe pour les hints des pools (somme des heures de la semaine)
@@ -705,6 +706,7 @@ function renderSalaires() {
 
   const sumGross = empRows.reduce((s, r) => s + r.grossWage, 0);
   const sumTips = empRows.reduce((s, r) => s + r.tipShare, 0);
+  const sumBonus = empRows.reduce((s, r) => s + r.bonus, 0);
   const sumTotal = empRows.reduce((s, r) => s + r.totalPay, 0);
   const sumActualHours = empRows.reduce((s, r) => s + r.totalHours, 0);
   const sumPlannedHours = empRows.reduce((s, r) => s + r.plannedHours, 0);
@@ -1194,6 +1196,17 @@ function renderSalaires() {
                 <span class="payroll-empgrid-total-lbl">Pourb</span>
                 <span class="payroll-empgrid-total-val payroll-empgrid-total-val--tip">${row.tipShare > 0 ? fmtMoney(row.tipShare) : "—"}</span>
               </div>
+              <div class="payroll-empgrid-total-row payroll-empgrid-total-row--bonus">
+                <span class="payroll-empgrid-total-lbl">Bonus</span>
+                ${isLocked
+                  ? `<span class="payroll-empgrid-total-val payroll-empgrid-total-val--bonus">${row.bonus > 0 ? fmtMoney(row.bonus) : "—"}</span>`
+                  : `<input type="number" min="0" step="0.01" inputmode="decimal" class="payroll-bonus-input ${row.bonus > 0 ? "has-bonus" : ""}"
+                      value="${row.bonus > 0 ? row.bonus : ""}" placeholder="0"
+                      onchange="updateEmployeeBonus('${row.emp.id}', this.value)"
+                      onclick="event.stopPropagation()"
+                      title="Bonus hebdomadaire pour ${esc(row.emp.name || "")} — ajouté au total à payer"
+                      aria-label="Bonus ${esc(row.emp.name || "")}" />`}
+              </div>
               <div class="payroll-empgrid-total-row payroll-empgrid-total-row--final">
                 <span class="payroll-empgrid-total-lbl">Total</span>
                 <span class="payroll-empgrid-total-val payroll-empgrid-total-val--final">${row.totalPay ? fmtMoney(row.totalPay) : "—"}</span>
@@ -1216,6 +1229,7 @@ function renderSalaires() {
             ${fmtHours(sumActualHours)}h pointées / ${fmtHours(sumPlannedHours)}h planifiées
             · Écart ${(sumActualHours - sumPlannedHours) > 0 ? "+" : ""}${fmtHours(sumActualHours - sumPlannedHours)}h
             · Pourboires distribués ${fmtMoney(sumTips)}
+            ${sumBonus > 0 ? `· Bonus ${fmtMoney(sumBonus)}` : ""}
             ${weekSales > 0 ? `· <strong style="color:var(--accent);font-style:normal" title="Pourboires entrés ÷ ventes de la semaine">${(tipPctSales * 100).toFixed(1)} % des ventes en pourboires</strong>` : ""}
           </div>
           <div class="schedule-totals-val schedule-totals-val--total payroll-totals-final">
@@ -1223,7 +1237,11 @@ function renderSalaires() {
               <span class="payroll-totals-final-lbl">Sans pourb.</span>
               <span class="payroll-totals-final-amt">${fmtMoney(sumGross)}</span>
             </div>
-            <div class="payroll-totals-final-row payroll-totals-final-row--tips" title="Pourboires distribués à l'équipe cette semaine (= Avec pourb. − Sans pourb.)">
+            ${sumBonus > 0 ? `<div class="payroll-totals-final-row payroll-totals-final-row--bonus" title="Bonus hebdomadaires ajoutés au total à payer">
+              <span class="payroll-totals-final-lbl">Bonus</span>
+              <span class="payroll-totals-final-amt">+ ${fmtMoney(sumBonus)}</span>
+            </div>` : ""}
+            <div class="payroll-totals-final-row payroll-totals-final-row--tips" title="Pourboires distribués à l'équipe cette semaine">
               <span class="payroll-totals-final-lbl">Pourboires</span>
               <span class="payroll-totals-final-amt">+ ${fmtMoney(sumTips)}</span>
             </div>
@@ -1464,6 +1482,48 @@ async function updateTipForDay(dk, value) {
   } catch (err) {
     console.error("updateTipForDay failed:", err);
     toast("Erreur sauvegarde pourboire : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
+// ═ Bonus hebdomadaire par employé ═══════════════════════
+// Montant fixe ajouté au total à payer d'un employé pour la semaine
+// courante (0 $ par défaut). Stocké dans payroll/{weekId}.bonusByEmp{empId}.
+// Totalement indépendant du salaire horaire et des pourboires : c'est une
+// prime discrétionnaire (ex. performance, remplacement, etc.).
+
+// Lecture du bonus de la semaine courante pour un employé (0 si absent).
+function getWeekBonus(empId) {
+  const v = Number(payrollWeekData?.bonusByEmp?.[empId]);
+  return isNaN(v) || v <= 0 ? 0 : v;
+}
+
+// Écriture du bonus d'un employé pour la semaine courante.
+// Valeur <= 0 / vide / NaN → on supprime la clé (retour au défaut 0 $).
+async function updateEmployeeBonus(empId, value) {
+  if (payrollWeekData?.locked) {
+    toast("Semaine verrouillée — déverrouille avant de modifier un bonus.", "warning");
+    renderPage(); // ré-affiche pour remettre la valeur d'origine dans l'input
+    return;
+  }
+  try {
+    const v = Number(value);
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    const ref = db.collection("payroll").doc(wid);
+    const bonusValue = (!value || isNaN(v) || v <= 0)
+      ? firebase.firestore.FieldValue.delete()
+      : v;
+    await ref.set({
+      weekId: wid,
+      weekStart: dayKey(ws),
+      updatedAt: Date.now(),
+      bonusByEmp: {
+        [empId]: bonusValue
+      }
+    }, { merge: true });
+  } catch (err) {
+    console.error("updateEmployeeBonus failed:", err);
+    toast("Erreur sauvegarde bonus : " + (err.message || err.code || err), "error", 5000);
   }
 }
 
@@ -1755,6 +1815,10 @@ function _computeWeekGrossWage() {
         sumGross += hoursFromShift(getActualShift(emp.id, dk)) * effectiveHourlyRate(emp, dk);
       }
     }
+    // v3.56.0 — Le bonus hebdomadaire est un coût employeur : on l'ajoute à la
+    // dépense Salaires verrouillée (contrairement aux pourboires, qui viennent
+    // des clients). 0 $ par défaut → sans effet si aucun bonus saisi.
+    sumGross += getWeekBonus(emp.id);
   }
   return { sumGross, weekStart, weekEnd: weekDays[weekDays.length - 1] || weekStart };
 }
@@ -2194,16 +2258,18 @@ function generatePayrollPDF() {
       return { dk, actualShift, hours, tipHours, dayTip };
     });
     const grossWage = isSal ? (fixedHours * rate) : hourlyGross;
+    const bonus = getWeekBonus(emp.id);
     return {
       emp, rate, isSal, fixedHours, group, daily,
-      totalHours, plannedHours, tipEligibleHours, tipShare, grossWage,
-      totalPay: grossWage + tipShare,
+      totalHours, plannedHours, tipEligibleHours, tipShare, grossWage, bonus,
+      totalPay: grossWage + tipShare + bonus,
       isManual: isManualEmployee(emp)
     };
   });
 
   const sumGross = empRows.reduce((s, r) => s + r.grossWage, 0);
   const sumTips = empRows.reduce((s, r) => s + r.tipShare, 0);
+  const sumBonus = empRows.reduce((s, r) => s + r.bonus, 0);
   const sumTotal = empRows.reduce((s, r) => s + r.totalPay, 0);
   const sumActualHours = empRows.reduce((s, r) => s + r.totalHours, 0);
   // Ventes réelles de la semaine + % de pourboires sur ventes
@@ -2521,6 +2587,44 @@ function generatePayrollPDF() {
   doc.line(M, y + 7, M + contentW, y + 7);
   y += 7 + 6;
 
+  // ─ Bonus de la semaine (seulement les employés avec un bonus > 0) ─
+  const bonusRows = empRows.filter(r => r.bonus > 0);
+  if (bonusRows.length > 0) {
+    ensureSpace(20);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text("Bonus de la semaine", M, y);
+    y += 5;
+    const BON_COLS = 4;
+    const bonW = (contentW - (BON_COLS - 1) * 3) / BON_COLS;
+    const bonH = 15;
+    bonusRows.forEach((r, i) => {
+      const col = i % BON_COLS;
+      const rowI = Math.floor(i / BON_COLS);
+      if (col === 0 && rowI > 0) y += bonH + 3;
+      ensureSpace(bonH);
+      const cx = M + col * (bonW + 3);
+      doc.setFillColor(254, 245, 220);
+      doc.setDrawColor(...COLOR_ACCENT);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(cx, y, bonW, bonH, 1.5, 1.5, "FD");
+      doc.setFillColor(...COLOR_ACCENT);
+      doc.rect(cx, y, 1.2, bonH, "F");
+      // Nom
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(_truncatePdf(doc, r.emp.name || "", bonW - 6), cx + 4, y + 6);
+      // Montant du bonus
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(fmtMoney(r.bonus), cx + 4, y + 12);
+    });
+    y += bonH + 6;
+  }
+
   // ─ Récap par employé (pourboires + bonus $/h) ────────
   const recapRows = empRows.filter(r => r.tipShare > 0 || r.tipEligibleHours > 0);
   if (recapRows.length > 0) {
@@ -2749,10 +2853,12 @@ async function _computePayrollWeekData(offset) {
       return { dk, actualShift, hours, tipHours, dayTip };
     });
     const grossWage = isSal ? (fixedHours * rate) : hourlyGross;
+    const bonusRaw = Number(weekData?.bonusByEmp?.[emp.id]);
+    const bonus = (isNaN(bonusRaw) || bonusRaw <= 0) ? 0 : bonusRaw;
     return {
       emp, rate, isSal, fixedHours, group, daily,
-      totalHours, plannedHours, tipEligibleHours, tipShare, grossWage,
-      totalPay: grossWage + tipShare,
+      totalHours, plannedHours, tipEligibleHours, tipShare, grossWage, bonus,
+      totalPay: grossWage + tipShare + bonus,
       isManual: manualEmps.some(m => m.id === emp.id)
     };
   });
@@ -2760,6 +2866,7 @@ async function _computePayrollWeekData(offset) {
   const sums = {
     gross: empRows.reduce((s, r) => s + r.grossWage, 0),
     tips: empRows.reduce((s, r) => s + r.tipShare, 0),
+    bonus: empRows.reduce((s, r) => s + r.bonus, 0),
     total: empRows.reduce((s, r) => s + r.totalPay, 0),
     hours: empRows.reduce((s, r) => s + r.totalHours, 0)
   };
@@ -2811,6 +2918,7 @@ async function generateBiWeeklyPDF() {
       hrs1: 0, hrs2: r.totalHours,
       tips1: 0, tips2: r.tipShare,
       sal1: 0, sal2: r.grossWage,
+      bonus1: 0, bonus2: r.bonus,
       total1: 0, total2: r.totalPay,
       eligible1: 0, eligible2: r.tipEligibleHours
     });
@@ -2821,6 +2929,7 @@ async function generateBiWeeklyPDF() {
       e.hrs1 = r.totalHours;
       e.tips1 = r.tipShare;
       e.sal1 = r.grossWage;
+      e.bonus1 = r.bonus;
       e.total1 = r.totalPay;
       e.eligible1 = r.tipEligibleHours;
     } else {
@@ -2833,6 +2942,7 @@ async function generateBiWeeklyPDF() {
         hrs1: r.totalHours, hrs2: 0,
         tips1: r.tipShare, tips2: 0,
         sal1: r.grossWage, sal2: 0,
+        bonus1: r.bonus, bonus2: 0,
         total1: r.totalPay, total2: 0,
         eligible1: r.tipEligibleHours, eligible2: 0
       });
@@ -2847,6 +2957,7 @@ async function generateBiWeeklyPDF() {
   const sumsCombined = {
     gross: w1.sums.gross + w2.sums.gross,
     tips: w1.sums.tips + w2.sums.tips,
+    bonus: (w1.sums.bonus || 0) + (w2.sums.bonus || 0),
     total: w1.sums.total + w2.sums.total,
     hours: w1.sums.hours + w2.sums.hours
   };
@@ -2944,12 +3055,16 @@ async function generateBiWeeklyPDF() {
   y += cardH + 6;
 
   // ─ Fiche par semaine : avant pourb. / pourboires / après pourb. + % pourboires/ventes ─
-  ensureSpace(36);
+  ensureSpace(44);
   doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(...COLOR_TEXT);
   doc.text("Détail par semaine", M, y);
   y += 4;
   const halfW = (contentW - 6) / 2;
-  const ficheH = 28;
+  // Si l'une des 2 semaines a des bonus, on ajoute une ligne « Bonus » dans
+  // chaque fiche → fiche plus haute pour garder l'arithmétique lisible
+  // (Avant pourb. + Pourboires + Bonus = Après pourb.).
+  const anyWeekBonus = (w1.sums.bonus || 0) > 0 || (w2.sums.bonus || 0) > 0;
+  const ficheH = anyWeekBonus ? 33 : 28;
   [w1, w2].forEach((w, i) => {
     const cx = M + i * (halfW + 6);
     doc.setFillColor(...COLOR_HEADER_FILL);
@@ -2961,22 +3076,32 @@ async function generateBiWeeklyPDF() {
     doc.text(`Semaine ${w.weekNum}`, cx + 4, y + 5.5);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...COLOR_TEXT_LIGHT);
     doc.text(w.weekLabel, cx + halfW - 4, y + 5.5, { align: "right" });
-    // Les 3 totaux : avant pourboire (salaires bruts) / pourboires distribués / après pourboire (total versé)
+    // Totaux empilés : avant pourboire / pourboires / (bonus) / après pourboire
+    let ly = y + 10.5;
     doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...COLOR_TEXT);
-    doc.text("Avant pourb.", cx + 4, y + 10.5);
-    doc.text(fmtMoney(w.sums.gross), cx + 38, y + 10.5);
+    doc.text("Avant pourb.", cx + 4, ly);
+    doc.text(fmtMoney(w.sums.gross), cx + 38, ly);
+    ly += 4.5;
     doc.setTextColor(...COLOR_GREEN);
-    doc.text("Pourboires", cx + 4, y + 15);
-    doc.text("+ " + fmtMoney(w.sums.tips), cx + 38, y + 15);
+    doc.text("Pourboires", cx + 4, ly);
+    doc.text("+ " + fmtMoney(w.sums.tips), cx + 38, ly);
+    ly += 4.5;
+    if (anyWeekBonus) {
+      doc.setTextColor(138, 90, 0); // ambre foncé (bonus)
+      doc.text("Bonus", cx + 4, ly);
+      doc.text("+ " + fmtMoney(w.sums.bonus || 0), cx + 38, ly);
+      ly += 4.5;
+    }
     doc.setFont("helvetica", "bold"); doc.setTextColor(...COLOR_TEXT);
-    doc.text("Après pourb.", cx + 4, y + 19.5);
-    doc.text(fmtMoney(w.sums.total), cx + 38, y + 19.5);
+    doc.text("Après pourb.", cx + 4, ly);
+    doc.text(fmtMoney(w.sums.total), cx + 38, ly);
+    ly += 5.5;
     // Ligne contextuelle : heures · ventes · % des ventes en pourboires
     doc.setFont("helvetica", "normal"); doc.setFontSize(7.5); doc.setTextColor(...COLOR_TEXT_LIGHT);
     const pctTxt = w.weekSales > 0 ? `${(w.tipPctSales * 100).toFixed(1)} % des ventes en pourb.` : "ventes non saisies";
     doc.text(
       `${fmtHours(w.sums.hours)}h · Ventes ${w.weekSales > 0 ? fmtMoney(w.weekSales) : "—"} · ${pctTxt}`,
-      cx + 4, y + 25
+      cx + 4, ly
     );
   });
   y += ficheH + 6;
@@ -3108,6 +3233,54 @@ async function generateBiWeeklyPDF() {
   doc.line(M, y, M + contentW, y);
   doc.line(M, y + 8, M + contentW, y + 8);
   y += 8 + 6;
+
+  // ─ Bonus des 2 semaines (seulement les employés avec un bonus > 0) ─
+  const bonusRows = aggregatedRows
+    .map(r => ({ ...r, bonusTot: (r.bonus1 || 0) + (r.bonus2 || 0) }))
+    .filter(r => r.bonusTot > 0);
+  if (bonusRows.length > 0) {
+    ensureSpace(22);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.setTextColor(...COLOR_TEXT);
+    doc.text("Bonus des 2 semaines", M, y);
+    y += 5;
+    const BON_COLS = 4;
+    const bonW = (contentW - (BON_COLS - 1) * 3) / BON_COLS;
+    const bonH = 18;
+    bonusRows.forEach((r, i) => {
+      const col = i % BON_COLS;
+      const rowI = Math.floor(i / BON_COLS);
+      if (col === 0 && rowI > 0) y += bonH + 3;
+      ensureSpace(bonH);
+      const cx = M + col * (bonW + 3);
+      doc.setFillColor(254, 245, 220);
+      doc.setDrawColor(...COLOR_ACCENT);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(cx, y, bonW, bonH, 1.5, 1.5, "FD");
+      doc.setFillColor(...COLOR_ACCENT);
+      doc.rect(cx, y, 1.2, bonH, "F");
+      // Nom
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(_truncatePdf(doc, r.emp.name || "", bonW - 6), cx + 4, y + 6);
+      // Montant total
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(13);
+      doc.setTextColor(...COLOR_TEXT);
+      doc.text(fmtMoney(r.bonusTot), cx + 4, y + 12);
+      // Détail S1 / S2 (si un seul, on affiche quand même la semaine concernée)
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(...COLOR_TEXT_LIGHT);
+      const parts = [];
+      if (r.bonus1 > 0) parts.push(`S${w1.weekNum} ${fmtMoney(r.bonus1)}`);
+      if (r.bonus2 > 0) parts.push(`S${w2.weekNum} ${fmtMoney(r.bonus2)}`);
+      doc.text(parts.join(" · "), cx + 4, y + 16);
+    });
+    y += bonH + 6;
+  }
 
   // ─ Footer toutes les pages ──────────────────────────
   const totalPages = doc.internal.getNumberOfPages();

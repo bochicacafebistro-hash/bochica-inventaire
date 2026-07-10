@@ -10289,6 +10289,39 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 [data-theme="dark"] .payroll-empgrid-total-val.is-positive{color:#7fd86b}
 [data-theme="dark"] .payroll-empgrid-total-val.is-negative{color:#ff7a72}
 
+/* Bonus hebdo par employé */
+.payroll-empgrid-total-row--bonus{
+  align-items:center;
+}
+.payroll-empgrid-total-val--bonus{color:#8a5a00;font-weight:700}
+.payroll-bonus-input{
+  width:56px;
+  max-width:56px;
+  font-family:var(--font-body);
+  font-size:11px;
+  font-variant-numeric:tabular-nums;
+  text-align:right;
+  padding:1px 5px;
+  border:1px solid var(--border);
+  border-radius:5px;
+  background:var(--surface);
+  color:var(--text);
+  -moz-appearance:textfield;
+}
+.payroll-bonus-input::-webkit-outer-spin-button,
+.payroll-bonus-input::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.payroll-bonus-input::placeholder{color:var(--text3);opacity:.6}
+.payroll-bonus-input:focus{outline:none;border-color:var(--accent)}
+.payroll-bonus-input.has-bonus{
+  color:#8a5a00;
+  font-weight:700;
+  border-color:#d9a441;
+  background:rgba(247,179,44,.08);
+}
+[data-theme="dark"] .payroll-empgrid-total-val--bonus,
+[data-theme="dark"] .payroll-bonus-input.has-bonus{color:#e6b45a}
+[data-theme="dark"] .payroll-bonus-input.has-bonus{border-color:rgba(247,179,44,.45)}
+
 /* Ligne EXTRA : fond ambré léger sur l'employé */
 .schedule-empgrid-row.payroll-empgrid-row.is-manual-emp .payroll-empgrid-emp{
   background:linear-gradient(90deg, rgba(247,179,44,.08), transparent 60%) !important;
@@ -11214,6 +11247,17 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 [data-theme="dark"] .payroll-totals-final-row--tips .payroll-totals-final-lbl,
 [data-theme="dark"] .payroll-totals-final-row--tips .payroll-totals-final-amt{
   color:#5cc98a;
+}
+.payroll-totals-final-row--bonus .payroll-totals-final-lbl,
+.payroll-totals-final-row--bonus .payroll-totals-final-amt{
+  color:#8a5a00;
+}
+.payroll-totals-final-row--bonus .payroll-totals-final-amt{
+  font-size:12px;
+}
+[data-theme="dark"] .payroll-totals-final-row--bonus .payroll-totals-final-lbl,
+[data-theme="dark"] .payroll-totals-final-row--bonus .payroll-totals-final-amt{
+  color:#e6b45a;
 }
 .payroll-totals-final-row--big{
   padding-top:3px;
