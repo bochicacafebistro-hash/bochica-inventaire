@@ -9355,12 +9355,15 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 /* v3.45.0 — fenêtre d'ouverture/service affichée dans l'en-tête de jour (sim) */
 .schedule-empgrid-day-svc{
-  display:inline-flex;
+  display:flex;
   align-items:center;
-  gap:3px;
+  justify-content:center;
+  flex-wrap:wrap;         /* v3.57.2 — 2 plages (service coupé) passent à la ligne */
+  gap:2px 3px;
   margin-top:2px;
   font-size:9px;
   font-weight:600;
+  line-height:1.25;
   color:var(--accent-warm);
   text-transform:none;
   letter-spacing:0;

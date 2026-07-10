@@ -1287,21 +1287,39 @@ async function confirmUpdateSimMeta(simId) {
 
 // ═ Heures de service (par jour de semaine) ═════════════
 
+// v3.57.2 — Brouillon en mémoire des plages de service de la simulation, le
+// temps de la modale : { [dow]: [{start,end}, ...] }. On édite le brouillon et
+// on re-rend la modale À PARTIR DU BROUILLON (jamais depuis `payrollSimulations`
+// global, qui n'est mis à jour par le listener Firestore qu'ASYNCHRONEMENT après
+// persistSim → sinon une plage ajoutée ne réapparaît pas / se fait écraser).
+let _simSvcDraft = null;
+let _simSvcDraftId = null;
+
 function openSimServiceHoursModal(simId) {
   const sim = (payrollSimulations || []).find(s => s.id === simId);
   if (!sim) return;
+  // Initialise le brouillon depuis le scénario (normalisé en tableaux de plages)
   const sh = sim.simulation?.serviceHours || {};
+  _simSvcDraft = {};
+  for (let dow = 0; dow < 7; dow++) _simSvcDraft[dow] = normalizeServiceWindows(sh[dow]);
+  _simSvcDraftId = simId;
+  _renderSimServiceHoursModal();
+}
+
+function _renderSimServiceHoursModal() {
+  const simId = _simSvcDraftId;
+  const d = _simSvcDraft || {};
   showModal(`<div class="modal" style="max-width:560px">
     <div class="modal-header">
       <h3>${icon("clock", 18)} Heures de service (simulation)</h3>
-      <button class="close-btn" onclick="closeModal()" aria-label="Fermer">${icon("x", 18)}</button>
+      <button class="close-btn" onclick="closeSimServiceHoursModal()" aria-label="Fermer">${icon("x", 18)}</button>
     </div>
     <p style="color:var(--text3);font-size:13px;margin-bottom:16px;line-height:1.5">
       Définis la ou les <strong>fenêtres de service</strong> de chaque jour. Seules les heures travaillées dans ces fenêtres comptent pour les pourboires. Tu peux ajouter <strong>plusieurs plages</strong> (service coupé, ex. <strong>12:00–14:00</strong> puis <strong>17:00–21:00</strong>). ${icon("info", 11)} Régler une plage <strong>ouvre</strong> le jour ; pour le <strong>fermer</strong>, retire toutes ses plages ou décoche-le dans « Jours ouverts ».
     </p>
     <div class="sim-svc-grid">
       ${DAYS_FR.map((dn, dow) => {
-        const plages = normalizeServiceWindows(sh[dow]);
+        const plages = Array.isArray(d[dow]) ? d[dow] : [];
         return `<div class="sim-svc-row">
           <div class="sim-svc-day">${dn}</div>
           <div class="sim-svc-plages">
@@ -1309,68 +1327,70 @@ function openSimServiceHoursModal(simId) {
               ? `<div class="sim-svc-empty">Fermé</div>`
               : plages.map((p, pi) => `
                 <div class="sim-svc-plage">
-                  <select onchange="updateSimServiceHours('${simId}',${dow},${pi},'start',this.value)" aria-label="Début plage ${pi + 1} ${dn}">${buildTimeOptions(p.start || "")}</select>
+                  <select onchange="updateSimServiceHours(${dow},${pi},'start',this.value)" aria-label="Début plage ${pi + 1} ${dn}">${buildTimeOptions(p.start || "")}</select>
                   <span>→</span>
-                  <select onchange="updateSimServiceHours('${simId}',${dow},${pi},'end',this.value)" aria-label="Fin plage ${pi + 1} ${dn}">${buildTimeOptions(p.end || "")}</select>
-                  <button type="button" class="sim-svc-plage-del" title="Retirer cette plage" aria-label="Retirer la plage ${pi + 1}" onclick="removeSimServicePlage('${simId}',${dow},${pi})">${icon("trash", 12)}</button>
+                  <select onchange="updateSimServiceHours(${dow},${pi},'end',this.value)" aria-label="Fin plage ${pi + 1} ${dn}">${buildTimeOptions(p.end || "")}</select>
+                  <button type="button" class="sim-svc-plage-del" title="Retirer cette plage" aria-label="Retirer la plage ${pi + 1}" onclick="removeSimServicePlage(${dow},${pi})">${icon("trash", 12)}</button>
                 </div>`).join("")}
-            <button type="button" class="sim-svc-plage-add" onclick="addSimServicePlage('${simId}',${dow})">${icon("plus", 11)} Ajouter une plage</button>
+            <button type="button" class="sim-svc-plage-add" onclick="addSimServicePlage(${dow})">${icon("plus", 11)} Ajouter une plage</button>
           </div>
         </div>`;
       }).join("")}
     </div>
     <div class="modal-actions">
-      <button class="btn btn-primary" onclick="closeModal()">${t("close")}</button>
+      <button class="btn btn-primary" onclick="closeSimServiceHoursModal()">${t("close")}</button>
     </div>
   </div>`);
 }
 
-// Écrit les plages normalisées du jour dans le scénario + rouvre la modale.
-// `plages` = tableau (peut être vide → jour fermé). Stocke objet unique si 1,
-// tableau si ≥2, supprime la clé si 0.
-async function _persistSimServicePlages(simId, dow, plages) {
+function closeSimServiceHoursModal() {
+  _simSvcDraft = null;
+  _simSvcDraftId = null;
+  closeModal();
+}
+
+// Persiste le brouillon courant dans Firestore (fire-and-forget côté rendu :
+// on ne relit JAMAIS le global pour l'affichage, on garde le brouillon).
+async function _persistSimSvcDraft() {
+  const simId = _simSvcDraftId;
   const sim = (payrollSimulations || []).find(s => s.id === simId);
   if (!sim) return;
-  const clean = normalizeServiceWindows(plages);
-  const sh = { ...(sim.simulation?.serviceHours || {}) };
-  if (clean.length === 0) delete sh[dow];
-  else if (clean.length === 1) sh[dow] = { start: clean[0].start, end: clean[0].end };
-  else sh[dow] = clean;
-
-  const patch = { ...sim.simulation, serviceHours: sh };
-  // v3.45.0 — lier ouverture ↔ heures de service : un jour avec au moins une
-  // plage s'ouvre automatiquement (il apparaît dans la grille).
-  if (clean.length > 0) {
-    const openDays = Array.isArray(sim.simulation?.openDays) ? [...sim.simulation.openDays] : [0,1,2,3,4,5,6];
-    if (!openDays.includes(dow)) patch.openDays = [...openDays, dow].sort((a, b) => a - b);
+  const sh = {};
+  const openSet = new Set(Array.isArray(sim.simulation?.openDays) ? sim.simulation.openDays : [0,1,2,3,4,5,6]);
+  for (let dow = 0; dow < 7; dow++) {
+    const clean = normalizeServiceWindows(_simSvcDraft?.[dow]);
+    if (clean.length === 0) continue;
+    // 1 plage → objet {start,end} (rétrocompat) ; ≥2 → tableau (service coupé)
+    sh[dow] = clean.length === 1 ? { start: clean[0].start, end: clean[0].end } : clean;
+    openSet.add(dow); // un jour avec au moins une plage est ouvert
   }
+  const patch = { ...sim.simulation, serviceHours: sh, openDays: [...openSet].sort((a, b) => a - b) };
   await persistSim(simId, patch);
-  openSimServiceHoursModal(simId); // re-rend la modale avec l'état à jour
 }
 
-async function updateSimServiceHours(simId, dow, plageIdx, field, value) {
-  const sim = (payrollSimulations || []).find(s => s.id === simId);
-  if (!sim) return;
-  const plages = normalizeServiceWindows(sim.simulation?.serviceHours?.[dow]);
-  if (!plages[plageIdx]) plages[plageIdx] = { start: "", end: "" };
-  plages[plageIdx] = { ...plages[plageIdx], [field]: value || "" };
-  await _persistSimServicePlages(simId, dow, plages);
+// Change une heure d'une plage : met à jour le brouillon (pas de re-rendu, on
+// garde le focus/scroll) puis persiste.
+function updateSimServiceHours(dow, plageIdx, field, value) {
+  if (!_simSvcDraft) return;
+  if (!Array.isArray(_simSvcDraft[dow])) _simSvcDraft[dow] = [];
+  if (!_simSvcDraft[dow][plageIdx]) _simSvcDraft[dow][plageIdx] = { start: "", end: "" };
+  _simSvcDraft[dow][plageIdx] = { ..._simSvcDraft[dow][plageIdx], [field]: value || "" };
+  _persistSimSvcDraft();
 }
 
-async function addSimServicePlage(simId, dow) {
-  const sim = (payrollSimulations || []).find(s => s.id === simId);
-  if (!sim) return;
-  const plages = normalizeServiceWindows(sim.simulation?.serviceHours?.[dow]);
-  plages.push({ start: "17:00", end: "21:00" });
-  await _persistSimServicePlages(simId, dow, plages);
+function addSimServicePlage(dow) {
+  if (!_simSvcDraft) return;
+  if (!Array.isArray(_simSvcDraft[dow])) _simSvcDraft[dow] = [];
+  _simSvcDraft[dow].push({ start: "17:00", end: "21:00" });
+  _renderSimServiceHoursModal(); // re-rendu depuis le brouillon (fiable)
+  _persistSimSvcDraft();
 }
 
-async function removeSimServicePlage(simId, dow, plageIdx) {
-  const sim = (payrollSimulations || []).find(s => s.id === simId);
-  if (!sim) return;
-  const plages = normalizeServiceWindows(sim.simulation?.serviceHours?.[dow]);
-  plages.splice(plageIdx, 1);
-  await _persistSimServicePlages(simId, dow, plages);
+function removeSimServicePlage(dow, plageIdx) {
+  if (!_simSvcDraft || !Array.isArray(_simSvcDraft[dow])) return;
+  _simSvcDraft[dow].splice(plageIdx, 1);
+  _renderSimServiceHoursModal();
+  _persistSimSvcDraft();
 }
 
 // ═ Jours d'ouverture (par jour de semaine) ═════════════
