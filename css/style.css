@@ -9719,7 +9719,7 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 .shift-leave-req{opacity:.6;display:inline-flex;vertical-align:middle}
 
-/* v3.53.0 — Badge « Congé » sur une carte shift normale : signale que
+/* v3.58.0 — Badge « Congé » sur une carte shift normale : signale que
    l'employé a quand même travaillé quelques heures un jour marqué congé. */
 .shift-leave-tag{
   margin-top:4px;
