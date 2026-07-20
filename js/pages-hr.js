@@ -514,11 +514,16 @@ function renderEmployes() {
                 const lm = leaveTypeMeta(leave.type);
                 const noteTxt = leave.note ? ` — ${esc(leave.note)}` : "";
                 const fromReq = !!leave._fromRequest;
+                // v3.58.1 — Un congé approuvé via une demande ouvrait directement
+                // « Demandes de congé » (aucun moyen d'ajouter des heures quand
+                // même). On ouvre désormais un petit modal qui propose « Ajouter
+                // des heures quand même » en plus du lien vers la gestion de la
+                // demande (le type/la note du congé restent gérés là-bas).
                 const clickAttr = fromReq
-                  ? `onclick="navTo('demandes-conge')"`
+                  ? `onclick="openApprovedLeaveCellModal('${row.emp.id}','${dk}')"`
                   : `onclick="openTimeOffCellModal('${row.emp.id}','${dk}')"`;
                 const titleTxt = fromReq
-                  ? `Congé approuvé via une demande (${esc(leaveTypeLabel(leave.type))})${noteTxt} — gérer dans « Demandes de congé ».`
+                  ? `Congé approuvé via une demande (${esc(leaveTypeLabel(leave.type))})${noteTxt} — cliquer pour ajouter des heures quand même ou gérer la demande.`
                   : `En congé (${esc(leaveTypeLabel(leave.type))})${noteTxt} — cliquer pour modifier, retirer, ou ajouter des heures quand même.`;
                 return `<div class="schedule-empgrid-cell schedule-empgrid-cell--leave"
                     data-day-key="${dk}"
@@ -1881,6 +1886,40 @@ async function saveTimeOffFromModal() {
     console.error("saveTimeOffFromModal failed:", err);
     toast("Erreur sauvegarde congé : " + (err.message || err.code || err), "error", 5000);
   }
+}
+
+// Modal d'une cellule en congé APPROUVÉ VIA UNE DEMANDE (v3.58.1) : le type/la
+// note du congé se gèrent uniquement dans « Demandes de congé », mais on
+// permet quand même d'ajouter des heures exceptionnelles ce jour-là.
+function openApprovedLeaveCellModal(empId, dk) {
+  const emp = employees.find(e => e.id === empId);
+  const leave = getTimeOff(empId, dk);
+  if (!emp || !leave) return;
+  const [yy, mm, ddNum] = dk.split("-").map(Number);
+  const dayLabel = new Date(yy, mm - 1, ddNum).toLocaleDateString("fr-CA", { weekday: "long", day: "numeric", month: "long" });
+  const noteTxt = leave.note ? ` — ${esc(leave.note)}` : "";
+
+  showModal(`<div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <h3>${icon("sun", 18)} Congé approuvé — ${esc(emp.name || "")}</h3>
+      <button class="close-btn" onclick="closeModal()" aria-label="${t("close")}">${icon("x", 18)}</button>
+    </div>
+    <p style="color:var(--text2);font-size:13px;margin:0 0 var(--sp-3);text-transform:capitalize">
+      ${icon("calendar", 12)} ${dayLabel}
+    </p>
+    <p style="color:var(--text2);font-size:13px;margin:0 0 var(--sp-3)">
+      ${icon("user", 12)} Congé approuvé via une demande (${esc(leaveTypeLabel(leave.type))})${noteTxt} — le type, la note ou l'annulation de cette demande se gèrent dans « Demandes de congé ».
+    </p>
+    <button class="btn-secondary btn-sm" style="width:100%;justify-content:center"
+        onclick="closeModal();openShiftModal('${empId}','${dk}')"
+        title="Saisir des heures ce jour-là même s'il est marqué congé (ex. quelques heures travaillées pendant les vacances) — le congé n'est pas retiré">
+      ${icon("clock", 14)} Ajouter des heures quand même
+    </button>
+    <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3)">
+      <button class="btn-cancel" onclick="closeModal();navTo('demandes-conge')">${icon("user", 14)} Gérer la demande</button>
+      <button class="btn-cancel" onclick="closeModal()">${t("close")}</button>
+    </div>
+  </div>`);
 }
 
 // Modal d'une cellule en congé : modifier le type / la note ou retirer.
