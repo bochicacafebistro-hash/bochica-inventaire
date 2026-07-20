@@ -9719,6 +9719,23 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 .shift-leave-req{opacity:.6;display:inline-flex;vertical-align:middle}
 
+/* v3.53.0 — Badge « Congé » sur une carte shift normale : signale que
+   l'employé a quand même travaillé quelques heures un jour marqué congé. */
+.shift-leave-tag{
+  margin-top:4px;
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  padding:1px 6px;
+  font-size:10px;
+  font-weight:700;
+  color:var(--leave-color,#b45309);
+  background:color-mix(in srgb, var(--leave-color,#b45309) 12%, transparent);
+  border:1px solid color-mix(in srgb, var(--leave-color,#b45309) 35%, transparent);
+  border-radius:999px;
+  white-space:nowrap;
+}
+
 /* ── Page employé : en-tête + carte ── */
 .leave-form-head{
   display:flex;justify-content:space-between;align-items:flex-start;

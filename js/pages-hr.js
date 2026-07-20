@@ -379,12 +379,11 @@ function renderEmployes() {
 
     const daily = weekDays.map((d, col) => {
       const dk = dayKey(d);
-      // v3.52.1 — Un jour de congé est verrouillé : aucune heure ni aucun coût
-      // ne doit être compté, même si un quart « fantôme » subsiste dans
-      // emp.shifts. La cellule affiche déjà « Congé » (getTimeOff prioritaire) ;
-      // les totaux doivent rester cohérents avec cet affichage.
-      const onLeave = (typeof isTimeOff === "function") && isTimeOff(emp.id, dk);
-      const s = onLeave ? null : shifts[dk];
+      // v3.53.0 — Un jour de congé n'empêche plus de compter un quart
+      // exceptionnel : si l'employé a quand même travaillé quelques heures
+      // ce jour-là (shifts[dk] existe), elles comptent dans les totaux.
+      // La cellule affiche alors la carte shift normale + un badge « Congé ».
+      const s = shifts[dk];
       const hours = hoursFromShift(s);
       const cost = isSal ? dailyFixedCost : hours * effectiveHourlyRate(emp, dk);
       dayTotalsHours[col] += hours;
@@ -506,9 +505,12 @@ function renderEmployes() {
               const dk = dayKey(weekDays[k]);
               const s = d.shift;
               const hasShift = s && s.start && s.end;
-              // ─ Congé approuvé : carte verrouillée, pas de quart possible ─
               const leave = getTimeOff(row.emp.id, dk);
-              if (leave) {
+              // ─ Congé sans heures exceptionnelles : carte verrouillée ─
+              // v3.53.0 — si des heures ont quand même été ajoutées ce
+              // jour-là (hasShift), on affiche la carte shift normale plus
+              // bas avec un badge « Congé » au lieu de bloquer l'affichage.
+              if (leave && !hasShift) {
                 const lm = leaveTypeMeta(leave.type);
                 const noteTxt = leave.note ? ` — ${esc(leave.note)}` : "";
                 const fromReq = !!leave._fromRequest;
@@ -517,7 +519,7 @@ function renderEmployes() {
                   : `onclick="openTimeOffCellModal('${row.emp.id}','${dk}')"`;
                 const titleTxt = fromReq
                   ? `Congé approuvé via une demande (${esc(leaveTypeLabel(leave.type))})${noteTxt} — gérer dans « Demandes de congé ».`
-                  : `En congé (${esc(leaveTypeLabel(leave.type))})${noteTxt} — aucun quart possible ce jour-là. Cliquer pour modifier ou retirer.`;
+                  : `En congé (${esc(leaveTypeLabel(leave.type))})${noteTxt} — cliquer pour modifier, retirer, ou ajouter des heures quand même.`;
                 return `<div class="schedule-empgrid-cell schedule-empgrid-cell--leave"
                     data-day-key="${dk}"
                     title="${titleTxt}">
@@ -530,6 +532,9 @@ function renderEmployes() {
                 </div>`;
               }
               const partialBadge = (typeof partialLeaveBadgeHTML === "function") ? partialLeaveBadgeHTML(row.emp.id, dk) : "";
+              const leaveTagHTML = leave
+                ? `<div class="shift-leave-tag" style="--leave-color:${leaveTypeMeta(leave.type).color}" title="Marqué congé (${esc(leaveTypeLabel(leave.type))}) — heures ajoutées quand même">${icon("sun", 9)} Congé</div>`
+                : "";
               if (!hasShift) {
                 return `<div class="schedule-empgrid-cell schedule-empgrid-cell--empty"
                     data-day-key="${dk}"
@@ -564,6 +569,7 @@ function renderEmployes() {
                     <span class="shift-card-cost">${fmtMoney(d.cost)}</span>
                   </div>
                   ${partialBadge}
+                  ${leaveTagHTML}
                 </div>
               </div>`;
             }).join("")}
@@ -1573,6 +1579,10 @@ function openShiftModal(empId, dk) {
   const isEdit = !!emp;
   const startVal = existingShift?.start || "";
   const endVal = existingShift?.end || "";
+  // v3.53.0 — Si le jour est déjà marqué congé, on n'affiche pas le bouton
+  // « Marquer en congé » (redondant) : on autorise plutôt à saisir des
+  // heures exceptionnelles qui coexistent avec le congé.
+  const onLeave = isEdit && typeof isTimeOff === "function" && isTimeOff(empId, dk);
 
   // Employés sans shift CE jour-là (pour l'option création) — exclut ceux qui
   // ont déjà un shift le même jour (un seul shift par employé par jour) et
@@ -1590,6 +1600,7 @@ function openShiftModal(empId, dk) {
     <p style="color:var(--text2);font-size:13px;margin:0 0 var(--sp-3);text-transform:capitalize">
       ${icon("calendar", 12)} ${dayLabel}
     </p>
+    ${onLeave ? `<p style="color:#7a5a00;background:rgba(234,179,8,.12);border:1px solid rgba(234,179,8,.35);border-radius:8px;padding:6px 10px;font-size:12.5px;margin:0 0 var(--sp-3)">${icon("sun", 12)} Journée marquée congé — ces heures s'ajoutent quand même, le congé reste actif.</p>` : ""}
     <label>Employé
       ${isEdit
         ? `<input type="text" value="${esc(emp.name || "")}" disabled style="background:var(--surface2);color:var(--text2);cursor:not-allowed"/>
@@ -1613,7 +1624,7 @@ function openShiftModal(empId, dk) {
     <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3)">
       <div style="display:flex;gap:var(--sp-2)">
         ${(isEdit && startVal && endVal) ? `<button class="btn-cancel" style="color:#a23a36" onclick="deleteShift('${empId}','${dk}')">${icon("trash", 14)} Supprimer</button>` : ""}
-        ${isEdit ? `<button class="btn-cancel" onclick="closeModal();openTimeOffModal('${empId}','${dk}')" title="Marquer cette journée en congé (retire le quart s'il y en a un)">${icon("sun", 14)} Marquer en congé</button>` : ""}
+        ${(isEdit && !onLeave) ? `<button class="btn-cancel" onclick="closeModal();openTimeOffModal('${empId}','${dk}')" title="Marquer cette journée en congé (retire le quart s'il y en a un)">${icon("sun", 14)} Marquer en congé</button>` : ""}
       </div>
       <div style="display:flex;gap:var(--sp-2)">
         <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
@@ -1628,10 +1639,10 @@ async function saveShiftFromModal(dk) {
   const empIdEl = document.getElementById("shift-emp-id");
   const empId = empIdEl ? empIdEl.value : "";
   if (!empId) return toast("Choisis un employé.", "warning");
-  if (isTimeOff(empId, dk)) {
-    const emp = employees.find(e => e.id === empId);
-    return toast(`${emp ? emp.name : "Cet employé"} est en congé ce jour-là — retire le congé d'abord pour assigner un quart.`, "warning", 4500);
-  }
+  // v3.53.0 — On n'empêche plus d'ajouter des heures un jour de congé : un
+  // employé peut exceptionnellement travailler une ou deux heures pendant
+  // ses vacances. Le congé n'est pas retiré, il coexiste avec le shift.
+  const wasOnLeave = isTimeOff(empId, dk);
   const start = normalizeTimeInput(document.getElementById("shift-start").value);
   const end = normalizeTimeInput(document.getElementById("shift-end").value);
   if (start === null || end === null) return toast("Heure invalide — utilise le format hh:mm (ex. 17:04).", "warning");
@@ -1645,7 +1656,7 @@ async function saveShiftFromModal(dk) {
     }, { merge: true });
     pushScheduleUndo(prevShift ? "Modification d'un quart" : "Ajout d'un quart", _restoreShiftFn(empId, dk, prevShift));
     closeModal();
-    toast("Shift enregistré.", "success", 2500);
+    toast(wasOnLeave ? "Heures ajoutées — le jour reste marqué congé." : "Shift enregistré.", "success", wasOnLeave ? 3500 : 2500);
   } catch (err) {
     console.error("saveShiftFromModal failed:", err);
     toast("Erreur sauvegarde : " + (err.message || err.code || err), "error", 5000);
@@ -1894,6 +1905,11 @@ function openTimeOffCellModal(empId, dk) {
     <label style="margin-top:var(--sp-2);display:block">Note (optionnel)
       <input type="text" id="toc-note" value="${esc(leave.note || "")}" maxlength="120"/>
     </label>
+    <button class="btn-secondary btn-sm" style="margin-top:var(--sp-3);width:100%;justify-content:center"
+        onclick="closeModal();openShiftModal('${empId}','${dk}')"
+        title="Saisir des heures ce jour-là même s'il est marqué congé (ex. quelques heures travaillées pendant les vacances) — le congé n'est pas retiré">
+      ${icon("clock", 14)} Ajouter des heures quand même
+    </button>
     <div class="modal-actions" style="display:flex;justify-content:space-between;align-items:center;gap:var(--sp-2);margin-top:var(--sp-3)">
       <button class="btn-cancel" style="color:#a23a36" onclick="removeTimeOff('${empId}','${dk}')">${icon("trash", 14)} Retirer le congé</button>
       <div style="display:flex;gap:var(--sp-2)">
@@ -2006,13 +2022,11 @@ async function exportScheduleAsPNG() {
   // archivés seulement s'ils ont travaillé) puis on exclut ceux sans aucun
   // shift sur les jours visibles (vacances/congé toute la semaine) — pour ne
   // pas polluer le PNG équipe avec une ligne « Congé Congé Congé… ».
-  // v3.52.1 — Un jour de congé est verrouillé : il ne compte jamais comme un
-  // quart, même si un quart « fantôme » subsiste dans emp.shifts. Sans ça, un
-  // employé en congé toute la semaine pouvait réapparaître dans le PNG avec les
-  // heures de la semaine copiée. shiftOnDay() renvoie null sur un jour de congé.
+  // v3.53.0 — Un jour de congé n'empêche plus de compter un quart
+  // exceptionnel : shiftOnDay() ne renvoie null que s'il n'y a vraiment
+  // aucun shift ce jour-là (congé simple = pas de shift = null, comme avant).
   const shiftOnDay = (emp, d) => {
     const dk = dayKey(d);
-    if (typeof isTimeOff === "function" && isTimeOff(emp.id, dk)) return null;
     const s = (emp.shifts || {})[dk];
     return (s && s.start && s.end) ? s : null;
   };
@@ -2152,12 +2166,11 @@ async function exportScheduleAsPNGAdmin() {
   // v3.43.1 — Même ordre que l'affichage (visibleScheduleEmployees : ordre par
   // semaine, masqués retirés, archivés gérés) puis exclusion des employés sans
   // aucun shift sur la semaine (vacances/congé) — cohérent avec le PNG équipe.
-  // v3.52.1 — Cohérent avec le PNG équipe et la grille : un jour de congé est
-  // verrouillé et ne compte jamais comme un quart (ignore les quarts fantômes
-  // laissés sous un congé). shiftOnDay() renvoie null sur un jour de congé.
+  // v3.53.0 — Cohérent avec le PNG équipe et la grille : un quart exceptionnel
+  // un jour de congé compte désormais (shiftOnDay() renvoie null seulement
+  // s'il n'y a vraiment aucun shift ce jour-là).
   const shiftOnDay = (emp, d) => {
     const dk = dayKey(d);
-    if (typeof isTimeOff === "function" && isTimeOff(emp.id, dk)) return null;
     const s = (emp.shifts || {})[dk];
     return (s && s.start && s.end) ? s : null;
   };
