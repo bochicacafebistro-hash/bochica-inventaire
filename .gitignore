@@ -43,3 +43,7 @@ Desktop.ini
 # Node (si jamais on ajoute des outils)
 node_modules/
 npm-debug.log*
+
+# Fichier de test créé par erreur pendant une session de debug (non supprimable
+# depuis cet environnement — ignoré pour ne jamais être commité par accident)
+_delete_test.txt
