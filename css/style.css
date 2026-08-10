@@ -4182,6 +4182,123 @@ textarea.md-input{
   font-style:italic;
 }
 
+/* Total ventes nettes (v3.59.0) — même carte que le total pourboires,
+   accent bleu pour la distinguer d'un coup d'œil. */
+.payroll-tips-total--net{
+  border-color:#4a90e2;
+  box-shadow:0 2px 8px rgba(74,144,226,.15);
+}
+.payroll-tips-total--net .payroll-tips-total__amount{ color:#3b7cc6; }
+
+/* Second input (ventes nettes) sous le pourboire dans chaque case jour */
+.payroll-tips-day__input--net{
+  border-style:dashed;
+}
+.payroll-tips-day__input--net input{
+  font-size:15px;
+}
+.payroll-tips-day__input--net span{ color:#3b7cc6; }
+.payroll-tips-day__input--net:focus-within{
+  border-color:#4a90e2;
+  box-shadow:0 0 0 3px rgba(74,144,226,.18);
+}
+
+/* ── Carte salaire estimé vs payé (v3.59.0) ── */
+.payroll-estimate-card{
+  margin-top:var(--sp-4);
+  padding:var(--sp-4) var(--sp-5);
+  border-left:4px solid var(--border);
+}
+.payroll-estimate-card--is-good{ border-left-color:var(--status-green, #7dbf66); background:rgba(125,191,102,.05); }
+.payroll-estimate-card--is-warn{ border-left-color:#b45309; background:rgba(180,83,9,.05); }
+.payroll-estimate-card--is-bad{ border-left-color:var(--status-red, #d9534f); background:rgba(217,83,79,.05); }
+.payroll-estimate-head{ margin-bottom:var(--sp-3); }
+.payroll-estimate-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
+  gap:var(--sp-3);
+}
+.payroll-estimate-item{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:var(--sp-3) var(--sp-4);
+}
+.payroll-estimate-item__label{
+  font-family:var(--font-body);
+  font-size:var(--fs-xs);
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.06em;
+  color:var(--text3);
+  margin-bottom:2px;
+}
+.payroll-estimate-item__amount{
+  font-family:var(--font-heading);
+  font-size:26px;
+  color:var(--text);
+  letter-spacing:.02em;
+}
+.payroll-estimate-item--delta .payroll-estimate-item__amount{ color:inherit; }
+.payroll-estimate-card--is-good .payroll-estimate-item--delta .payroll-estimate-item__amount{ color:var(--status-green, #7dbf66); }
+.payroll-estimate-card--is-warn .payroll-estimate-item--delta .payroll-estimate-item__amount{ color:#b45309; }
+.payroll-estimate-card--is-bad .payroll-estimate-item--delta .payroll-estimate-item__amount{ color:var(--status-red, #d9534f); }
+
+/* ── Carte rentabilité de la semaine (v3.59.0) — réutilise la structure
+   payroll-ratio-head/value/pct de la carte Ratio salaires/ventes ── */
+.payroll-profit-card{
+  margin-top:var(--sp-4);
+  padding:var(--sp-4) var(--sp-5);
+  border-left:4px solid var(--border);
+}
+.payroll-profit-card--is-good{ border-left-color:var(--status-green, #7dbf66); background:rgba(125,191,102,.05); }
+.payroll-profit-card--is-bad{ border-left-color:var(--status-red, #d9534f); background:rgba(217,83,79,.05); }
+.payroll-profit-card--is-empty{ border-left-color:var(--border); }
+.payroll-profit-card--is-good .payroll-ratio-pct,
+.payroll-profit-card--is-good .payroll-ratio-target{ color:var(--status-green, #7dbf66); }
+.payroll-profit-card--is-bad .payroll-ratio-pct,
+.payroll-profit-card--is-bad .payroll-ratio-target{ color:var(--status-red, #d9534f); }
+
+/* Bandeau de chips rentabilité par jour */
+.payroll-profit-days{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(90px, 1fr));
+  gap:var(--sp-2);
+  margin-top:var(--sp-4);
+}
+.payroll-profit-day{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:var(--radius-md);
+  padding:8px 10px;
+  text-align:center;
+}
+.payroll-profit-day--is-good{ background:rgba(125,191,102,.10); border-color:rgba(125,191,102,.35); }
+.payroll-profit-day--is-bad{ background:rgba(217,83,79,.10); border-color:rgba(217,83,79,.35); }
+.payroll-profit-day--is-empty{ opacity:.55; }
+.payroll-profit-day__name{
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:600;
+  color:var(--text2);
+  margin-bottom:4px;
+}
+.payroll-profit-day__name span{ color:var(--text3); font-weight:500; }
+.payroll-profit-day__pct{
+  font-family:var(--font-heading);
+  font-size:18px;
+  color:var(--text);
+  line-height:1.1;
+}
+.payroll-profit-day--is-good .payroll-profit-day__pct{ color:var(--status-green, #7dbf66); }
+.payroll-profit-day--is-bad .payroll-profit-day__pct{ color:var(--status-red, #d9534f); }
+.payroll-profit-day__amt{
+  font-family:var(--font-body);
+  font-size:11px;
+  color:var(--text3);
+  margin-top:2px;
+}
+
 /* ── Tableau paie (réutilise schedule-table) ── */
 .payroll-table-wrap{
   margin-top:var(--sp-4);

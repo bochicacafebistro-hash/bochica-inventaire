@@ -619,6 +619,14 @@ function renderSalaires() {
   const poolCuisine = totalTips * (Number(tipShares.cuisine) || 0);
   const poolService = totalTips * (Number(tipShares.service) || 0);
 
+  // ─ Ventes nettes de taxes par jour (v3.59.0) ──────────
+  // Saisie manuelle directement sur cette page (distinct des « ventes
+  // réelles » de Employés & Horaires, qui alimentent le ratio salaires/
+  // ventes et peuvent inclure les taxes). Sert de base pour la rentabilité
+  // du jour/semaine ci-dessous.
+  const netByDay = payrollWeekData?.netByDay || {};
+  const totalNet = weekDays.reduce((s, d) => s + (Number(netByDay[dayKey(d)]) || 0), 0);
+
   // ─ Liste fusionnée employés réels + extras de la semaine ─────
   // Les extras (manualEmployees) sont stockés dans payroll/{weekId}, jamais
   // dans la collection employees principale. Ils sont totalement transparents
@@ -719,6 +727,56 @@ function renderSalaires() {
   const sumActualHours = empRows.reduce((s, r) => s + r.totalHours, 0);
   const sumPlannedHours = empRows.reduce((s, r) => s + r.plannedHours, 0);
 
+  // ─ Salaire ESTIMÉ (horaire planifié) vs PAYÉ (heures réelles) (v3.59.0) ─
+  // Payé = sumGross (déjà calculé au taux daté sur les heures réellement
+  // pointées). Estimé = ce que l'horaire planifié dans « Employés &
+  // Horaires » devrait coûter, calculé avec les mêmes taux datés — permet
+  // de voir si la semaine dépasse le budget prévu par le planning.
+  // On calcule en même temps le coût salarial RÉEL par jour (dayLaborByDk),
+  // réutilisé plus bas pour la rentabilité jour/semaine.
+  const dayLaborByDk = {};
+  weekDays.forEach(d => { dayLaborByDk[dayKey(d)] = 0; });
+  let estimatedWage = 0;
+  for (const row of empRows) {
+    if (row.isSal) {
+      // Salarié : coût fixe hebdo, étalé également sur les jours ouverts de
+      // la semaine pour donner un "coût du jour" indicatif (un salarié n'a
+      // pas de coût quotidien naturel). Estimé = payé (pas d'écart possible
+      // pour un salaire fixe).
+      const perDay = weekDays.length > 0 ? (row.fixedHours * row.rate) / weekDays.length : 0;
+      weekDays.forEach(d => { dayLaborByDk[dayKey(d)] += perDay; });
+      estimatedWage += row.fixedHours * row.rate;
+    } else {
+      for (const dd of row.daily) {
+        dayLaborByDk[dd.dk] += dd.hours * effectiveHourlyRate(row.emp, dd.dk);
+        estimatedWage += dd.pHours * effectiveHourlyRate(row.emp, dd.dk);
+      }
+    }
+  }
+  const payedWage = sumGross;
+  const wageDelta = payedWage - estimatedWage; // + = dépassement du planifié, − = économie
+  const wageDeltaCls = (estimatedWage === 0 && payedWage === 0) ? "is-empty"
+    : wageDelta <= 0 ? "is-good"
+    : (estimatedWage > 0 && (wageDelta / estimatedWage) > 0.05) ? "is-bad"
+    : "is-warn";
+
+  // ─ Rentabilité par jour + par semaine (v3.59.0) ─────────
+  // Rentabilité = ventes nettes du jour − coût salarial réel du jour.
+  // Les pourboires ne sont PAS déduits : ils viennent des clients, pas une
+  // dépense du restaurant (même logique que la dépense Salaires au verrouillage).
+  const dayProfitList = weekDays.map((d, k) => {
+    const dk = dayKey(d);
+    const net = Number(netByDay[dk]) || 0;
+    const hasNet = netByDay[dk] !== undefined && netByDay[dk] !== null && netByDay[dk] !== "";
+    const labor = dayLaborByDk[dk] || 0;
+    const profit = net - labor;
+    const pct = net > 0 ? (profit / net) : null;
+    return { dk, dowIdx: visibleIdx[k], date: d, net, labor, hasNet, profit, pct };
+  });
+  const weekProfit = totalNet - payedWage;
+  const weekProfitPct = totalNet > 0 ? (weekProfit / totalNet) : null;
+  const weekProfitCls = totalNet === 0 ? "is-empty" : weekProfit >= 0 ? "is-good" : "is-bad";
+
   // ─ Ratio salaires/ventes (utilise actualSales saisis dans Horaires) ─
   const actualSales = scheduleSettings.actualSales || {};
   const weekSales = weekDays.reduce((sum, d) => sum + (Number(actualSales[dayKey(d)]) || 0), 0);
@@ -800,8 +858,9 @@ function renderSalaires() {
             : `${(() => {
                  const shiftOverrides = Object.keys(payrollWeekData?.actualShifts || {}).reduce((sum, empId) => sum + Object.keys(payrollWeekData.actualShifts[empId] || {}).length, 0);
                  const tipDaysCount = Object.keys(payrollWeekData?.tipsByDay || {}).length;
-                 const totalCount = shiftOverrides + tipDaysCount;
-                 return `<button class="btn-secondary btn-sm" onclick="resetActualFromPlanned()" title="Effacer toutes tes saisies de la semaine (heures + pourboires). Le planning planifié n'est pas touché." ${totalCount === 0 ? "disabled" : ""}>${icon("refresh", 14)} Annuler mes saisies${totalCount > 0 ? ` <span class="payroll-modif-count">${totalCount}</span>` : ""}</button>`;
+                 const netDaysCount = Object.keys(payrollWeekData?.netByDay || {}).length;
+                 const totalCount = shiftOverrides + tipDaysCount + netDaysCount;
+                 return `<button class="btn-secondary btn-sm" onclick="resetActualFromPlanned()" title="Effacer toutes tes saisies de la semaine (heures + pourboires + ventes nettes). Le planning planifié n'est pas touché." ${totalCount === 0 ? "disabled" : ""}>${icon("refresh", 14)} Annuler mes saisies${totalCount > 0 ? ` <span class="payroll-modif-count">${totalCount}</span>` : ""}</button>`;
                })()}
                <button class="btn btn-primary btn-sm" onclick="lockPayrollWeek()" title="Verrouiller cette semaine et créer la dépense Salaires">${icon("shield-check", 14)} Verrouiller & payer</button>`}
         </div>
@@ -825,6 +884,58 @@ function renderSalaires() {
               : `<div class="payroll-ratio-pct payroll-ratio-pct--empty">—</div>`}
           </div>
         </div>
+      </div>
+
+      <!-- ══ Carte salaire estimé (horaire planifié) vs payé (heures réelles) (v3.59.0) ══ -->
+      <div class="card payroll-estimate-card payroll-estimate-card--${wageDeltaCls}">
+        <div class="payroll-estimate-head">
+          <h3 class="payroll-service-title">${icon("wallet", 16)} Salaires — estimé vs payé</h3>
+          <div class="payroll-service-sub">Estimé = horaire planifié (Employés & Horaires) au taux courant · Payé = heures réellement pointées cette semaine</div>
+        </div>
+        <div class="payroll-estimate-grid">
+          <div class="payroll-estimate-item">
+            <div class="payroll-estimate-item__label">Estimé (planifié)</div>
+            <div class="payroll-estimate-item__amount">${fmtMoney(estimatedWage)}</div>
+          </div>
+          <div class="payroll-estimate-item">
+            <div class="payroll-estimate-item__label">Payé (réel)</div>
+            <div class="payroll-estimate-item__amount">${fmtMoney(payedWage)}</div>
+          </div>
+          <div class="payroll-estimate-item payroll-estimate-item--delta">
+            <div class="payroll-estimate-item__label">Écart</div>
+            <div class="payroll-estimate-item__amount">${wageDelta > 0 ? "+" : ""}${fmtMoney(wageDelta)}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ Carte rentabilité de la semaine (ventes nettes − salaires) (v3.59.0) ══ -->
+      <div class="card payroll-profit-card payroll-profit-card--${weekProfitCls}">
+        <div class="payroll-ratio-head">
+          <div>
+            <h3 class="payroll-service-title">${icon("percent", 16)} Rentabilité de la semaine</h3>
+            <div class="payroll-service-sub">
+              ${totalNet > 0
+                ? `Ventes nettes <strong>${fmtMoney(totalNet)}</strong> − Salaires bruts <strong>${fmtMoney(payedWage)}</strong>`
+                : `Saisis les <strong>ventes nettes</strong> par jour ci-dessous (carte Pourboires) pour voir la rentabilité`}
+            </div>
+          </div>
+          <div class="payroll-ratio-value">
+            ${totalNet > 0
+              ? `<div class="payroll-ratio-pct">${weekProfit > 0 ? "+" : ""}${(weekProfitPct * 100).toFixed(1)}<small>%</small></div>
+                 <div class="payroll-ratio-target">${weekProfit > 0 ? "+" : ""}${fmtMoney(weekProfit)}</div>`
+              : `<div class="payroll-ratio-pct payroll-ratio-pct--empty">—</div>`}
+          </div>
+        </div>
+        ${totalNet > 0 ? `<div class="payroll-profit-days">
+          ${dayProfitList.map(dp => {
+            const dCls = !dp.hasNet ? "is-empty" : dp.profit >= 0 ? "is-good" : "is-bad";
+            return `<div class="payroll-profit-day payroll-profit-day--${dCls}" title="${dp.hasNet ? `Net ${fmtMoney(dp.net)} − Salaires ${fmtMoney(dp.labor)}` : "Aucune vente nette saisie ce jour"}">
+              <div class="payroll-profit-day__name">${DAYS_FR[dp.dowIdx]} <span>${dp.date.getDate()}/${dp.date.getMonth() + 1}</span></div>
+              <div class="payroll-profit-day__pct">${dp.hasNet ? `${dp.profit > 0 ? "+" : ""}${(dp.pct * 100).toFixed(0)}%` : "—"}</div>
+              <div class="payroll-profit-day__amt">${dp.hasNet ? `${dp.profit > 0 ? "+" : ""}${fmtMoney(dp.profit)}` : ""}</div>
+            </div>`;
+          }).join("")}
+        </div>` : ""}
       </div>
 
       ${alerts.length > 0 ? `
@@ -929,16 +1040,22 @@ function renderSalaires() {
       </div>
       ` : ""}
 
-      <!-- ══ Pourboires par jour + total auto + pools ══ -->
+      <!-- ══ Pourboires + ventes nettes par jour + total auto + pools (v3.59.0) ══ -->
       <div class="card payroll-tips-card">
         <div class="payroll-tips-head">
           <div>
-            <h3 class="payroll-service-title">${icon("dollar-sign", 16)} Pourboires de la semaine</h3>
-            <div class="payroll-service-sub">Saisis le montant reçu chaque jour — le total est calculé automatiquement</div>
+            <h3 class="payroll-service-title">${icon("dollar-sign", 16)} Pourboires & ventes nettes</h3>
+            <div class="payroll-service-sub">Saisis le pourboire reçu et les ventes nettes de taxes de chaque jour — les totaux et la rentabilité se calculent automatiquement</div>
           </div>
-          <div class="payroll-tips-total">
-            <div class="payroll-tips-total__label">Total semaine</div>
-            <div class="payroll-tips-total__amount">${fmtMoney(totalTips)}</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <div class="payroll-tips-total">
+              <div class="payroll-tips-total__label">Pourboires</div>
+              <div class="payroll-tips-total__amount">${fmtMoney(totalTips)}</div>
+            </div>
+            <div class="payroll-tips-total payroll-tips-total--net">
+              <div class="payroll-tips-total__label">Ventes nettes</div>
+              <div class="payroll-tips-total__amount">${fmtMoney(totalNet)}</div>
+            </div>
           </div>
         </div>
         <div class="payroll-tips-grid">
@@ -946,10 +1063,15 @@ function renderSalaires() {
             const dk = dayKey(d);
             const dowIdx = visibleIdx[k];
             const val = Number(tipsByDay[dk] || 0);
+            const netVal = Number(netByDay[dk] || 0);
             return `<div class="payroll-tips-day">
               <div class="payroll-tips-day__name">${DAYS_FR[dowIdx]} <span class="payroll-tips-day__date">${d.getDate()}/${d.getMonth() + 1}</span></div>
-              <div class="payroll-tips-day__input">
+              <div class="payroll-tips-day__input" title="Pourboire reçu">
                 <input type="number" min="0" step="0.01" placeholder="0.00" value="${val || ""}" onchange="updateTipForDay('${dk}',this.value)" aria-label="Pourboires ${DAYS_FR[dowIdx]} ${d.getDate()}/${d.getMonth() + 1}"/>
+                <span>$</span>
+              </div>
+              <div class="payroll-tips-day__input payroll-tips-day__input--net" title="Ventes nettes de taxes">
+                <input type="number" min="0" step="0.01" placeholder="Net 0.00" value="${netVal || ""}" onchange="updateNetForDay('${dk}',this.value)" aria-label="Ventes nettes ${DAYS_FR[dowIdx]} ${d.getDate()}/${d.getMonth() + 1}"/>
                 <span>$</span>
               </div>
             </div>`;
@@ -1492,6 +1614,33 @@ async function updateTipForDay(dk, value) {
   }
 }
 
+// Ventes nettes de taxes saisies pour un jour donné (v3.59.0).
+// Stocké dans payroll/{weekId}.netByDay{dk}. Sert de base au calcul de
+// rentabilité (net − coût salarial du jour) affiché dans la carte
+// « Rentabilité de la semaine ». Même mécanique que updateTipForDay.
+async function updateNetForDay(dk, value) {
+  try {
+    const v = Number(value);
+    const ws = getWeekStart(payrollWeekOffset);
+    const wid = payrollWeekId(ws);
+    const ref = db.collection("payroll").doc(wid);
+    const netValue = (!value || isNaN(v) || v <= 0)
+      ? firebase.firestore.FieldValue.delete()
+      : v;
+    await ref.set({
+      weekId: wid,
+      weekStart: dayKey(ws),
+      updatedAt: Date.now(),
+      netByDay: {
+        [dk]: netValue
+      }
+    }, { merge: true });
+  } catch (err) {
+    console.error("updateNetForDay failed:", err);
+    toast("Erreur sauvegarde vente nette : " + (err.message || err.code || err), "error", 5000);
+  }
+}
+
 // ═ Bonus hebdomadaire par employé ═══════════════════════
 // Montant fixe ajouté au total à payer d'un employé pour la semaine
 // courante (0 $ par défaut). Stocké dans payroll/{weekId}.bonusByEmp{empId}.
@@ -1761,7 +1910,8 @@ function resetActualFromPlanned() {
     (sum, empId) => sum + Object.keys(payrollWeekData.actualShifts[empId] || {}).length, 0
   );
   const tipDaysCount = Object.keys(payrollWeekData?.tipsByDay || {}).length;
-  const totalCount = shiftOverrides + tipDaysCount;
+  const netDaysCount = Object.keys(payrollWeekData?.netByDay || {}).length;
+  const totalCount = shiftOverrides + tipDaysCount + netDaysCount;
 
   if (totalCount === 0) {
     toast(
@@ -1776,6 +1926,7 @@ function resetActualFromPlanned() {
   const parts = [];
   if (shiftOverrides > 0) parts.push(`<strong>${shiftOverrides}</strong> cellule${shiftOverrides > 1 ? "s" : ""} d'heures pointées/saisies`);
   if (tipDaysCount > 0) parts.push(`<strong>${tipDaysCount}</strong> jour${tipDaysCount > 1 ? "s" : ""} de pourboires`);
+  if (netDaysCount > 0) parts.push(`<strong>${netDaysCount}</strong> jour${netDaysCount > 1 ? "s" : ""} de ventes nettes`);
   const detailLine = parts.join(" + ");
 
   // v3.22.0 : modale custom avec champ de confirmation à taper pour éviter
@@ -1836,6 +1987,7 @@ async function doResetActualFromPlanned() {
       weekStart: dayKey(ws),
       actualShifts: firebase.firestore.FieldValue.delete(),
       tipsByDay: firebase.firestore.FieldValue.delete(),
+      netByDay: firebase.firestore.FieldValue.delete(), // v3.59.0 — ventes nettes/jour
       // Nettoyer aussi l'éventuel ancien champ totalTips (rétrocompat)
       totalTips: firebase.firestore.FieldValue.delete(),
       updatedAt: Date.now()
