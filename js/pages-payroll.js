@@ -760,22 +760,28 @@ function renderSalaires() {
     : (estimatedWage > 0 && (wageDelta / estimatedWage) > 0.05) ? "is-bad"
     : "is-warn";
 
-  // ─ Rentabilité par jour + par semaine (v3.59.0) ─────────
-  // Rentabilité = ventes nettes du jour − coût salarial réel du jour.
-  // Les pourboires ne sont PAS déduits : ils viennent des clients, pas une
-  // dépense du restaurant (même logique que la dépense Salaires au verrouillage).
+  // ─ Rentabilité par jour + par semaine, basée sur le RATIO CIBLE (v3.59.0) ─
+  // Une journée/semaine est "rentable" quand son ratio réel salaires/ventes
+  // (coût salarial réel ÷ ventes nettes) reste SOUS le ratio cible configuré
+  // dans Employés & Horaires (`scheduleSettings.salesRatio`, ex. 32 %) — le
+  // même réglage qui sert de cible au planning des horaires. Un simple
+  // "net − salaires > 0" n'est pas fiable (ignore food cost, loyer, etc.) ;
+  // comparer au ratio cible est la mesure que le resto utilise déjà.
+  // "Écart vs cible" = ce que le ratio cible aurait autorisé comme salaires
+  // (net × cible) moins le salaire réel — positif = sous le budget cible.
+  const targetRatio = Number(scheduleSettings.salesRatio) || 0.32;
   const dayProfitList = weekDays.map((d, k) => {
     const dk = dayKey(d);
     const net = Number(netByDay[dk]) || 0;
     const hasNet = netByDay[dk] !== undefined && netByDay[dk] !== null && netByDay[dk] !== "";
     const labor = dayLaborByDk[dk] || 0;
-    const profit = net - labor;
-    const pct = net > 0 ? (profit / net) : null;
-    return { dk, dowIdx: visibleIdx[k], date: d, net, labor, hasNet, profit, pct };
+    const ratio = net > 0 ? (labor / net) : null;
+    const gap = net > 0 ? (net * targetRatio - labor) : 0; // + = sous la cible, − = dépassement
+    return { dk, dowIdx: visibleIdx[k], date: d, net, labor, hasNet, ratio, gap };
   });
-  const weekProfit = totalNet - payedWage;
-  const weekProfitPct = totalNet > 0 ? (weekProfit / totalNet) : null;
-  const weekProfitCls = totalNet === 0 ? "is-empty" : weekProfit >= 0 ? "is-good" : "is-bad";
+  const weekRatio = totalNet > 0 ? (payedWage / totalNet) : null;
+  const weekProfit = totalNet > 0 ? (totalNet * targetRatio - payedWage) : 0; // écart vs cible
+  const weekProfitCls = totalNet === 0 ? "is-empty" : weekRatio <= targetRatio ? "is-good" : "is-bad";
 
   // ─ Ratio salaires/ventes (utilise actualSales saisis dans Horaires) ─
   const actualSales = scheduleSettings.actualSales || {};
@@ -908,31 +914,31 @@ function renderSalaires() {
         </div>
       </div>
 
-      <!-- ══ Carte rentabilité de la semaine (ventes nettes − salaires) (v3.59.0) ══ -->
+      <!-- ══ Carte rentabilité de la semaine (vs ratio cible salaires/ventes) (v3.59.0) ══ -->
       <div class="card payroll-profit-card payroll-profit-card--${weekProfitCls}">
         <div class="payroll-ratio-head">
           <div>
             <h3 class="payroll-service-title">${icon("percent", 16)} Rentabilité de la semaine</h3>
             <div class="payroll-service-sub">
               ${totalNet > 0
-                ? `Ventes nettes <strong>${fmtMoney(totalNet)}</strong> − Salaires bruts <strong>${fmtMoney(payedWage)}</strong>`
+                ? `Salaires <strong>${fmtMoney(payedWage)}</strong> ÷ Ventes nettes <strong>${fmtMoney(totalNet)}</strong> · Cible <strong>${(targetRatio * 100).toFixed(0)}%</strong> (réglage Employés & Horaires)`
                 : `Saisis les <strong>ventes nettes</strong> par jour ci-dessous (carte Pourboires) pour voir la rentabilité`}
             </div>
           </div>
           <div class="payroll-ratio-value">
             ${totalNet > 0
-              ? `<div class="payroll-ratio-pct">${weekProfit > 0 ? "+" : ""}${(weekProfitPct * 100).toFixed(1)}<small>%</small></div>
-                 <div class="payroll-ratio-target">${weekProfit > 0 ? "+" : ""}${fmtMoney(weekProfit)}</div>`
+              ? `<div class="payroll-ratio-pct">${(weekRatio * 100).toFixed(1)}<small>%</small></div>
+                 <div class="payroll-ratio-target">${weekRatio <= targetRatio ? "✓" : "⚠"} ${weekProfit > 0 ? "+" : ""}${fmtMoney(weekProfit)} vs cible</div>`
               : `<div class="payroll-ratio-pct payroll-ratio-pct--empty">—</div>`}
           </div>
         </div>
         ${totalNet > 0 ? `<div class="payroll-profit-days">
           ${dayProfitList.map(dp => {
-            const dCls = !dp.hasNet ? "is-empty" : dp.profit >= 0 ? "is-good" : "is-bad";
-            return `<div class="payroll-profit-day payroll-profit-day--${dCls}" title="${dp.hasNet ? `Net ${fmtMoney(dp.net)} − Salaires ${fmtMoney(dp.labor)}` : "Aucune vente nette saisie ce jour"}">
+            const dCls = !dp.hasNet ? "is-empty" : dp.ratio <= targetRatio ? "is-good" : "is-bad";
+            return `<div class="payroll-profit-day payroll-profit-day--${dCls}" title="${dp.hasNet ? `Salaires ${fmtMoney(dp.labor)} ÷ Net ${fmtMoney(dp.net)} — cible ${(targetRatio * 100).toFixed(0)}%` : "Aucune vente nette saisie ce jour"}">
               <div class="payroll-profit-day__name">${DAYS_FR[dp.dowIdx]} <span>${dp.date.getDate()}/${dp.date.getMonth() + 1}</span></div>
-              <div class="payroll-profit-day__pct">${dp.hasNet ? `${dp.profit > 0 ? "+" : ""}${(dp.pct * 100).toFixed(0)}%` : "—"}</div>
-              <div class="payroll-profit-day__amt">${dp.hasNet ? `${dp.profit > 0 ? "+" : ""}${fmtMoney(dp.profit)}` : ""}</div>
+              <div class="payroll-profit-day__pct">${dp.hasNet ? `${(dp.ratio * 100).toFixed(0)}%` : "—"}</div>
+              <div class="payroll-profit-day__amt">${dp.hasNet ? `${dp.gap > 0 ? "+" : ""}${fmtMoney(dp.gap)}` : ""}</div>
             </div>`;
           }).join("")}
         </div>` : ""}
