@@ -806,10 +806,15 @@ function renderSalaires() {
   const salesRatio = weekSales > 0 ? (sumGross / weekSales) : 0;
   // % de pourboires sur les ventes de la semaine (pourboires entrés ÷ ventes)
   const tipPctSales = weekSales > 0 ? (totalTips / weekSales) : 0;
-  // Couleur du ratio : vert < 32%, jaune 32-40%, rouge > 40% (cibles typiques restaurant)
+  // Couleur du ratio (v3.61.0 — alignée sur la VRAIE cible configurable
+  // `targetRatio`, plus jamais 32/40 % codés en dur) : vert sous la cible,
+  // jaune jusqu'à cible + 8 pts, rouge au-delà. Même logique de zone
+  // d'alerte que l'ancien 32→40 %, mais qui suit la cible réglée dans
+  // Employés & Horaires au lieu d'un seuil générique figé.
+  const ratioWarnCeiling = targetRatio + 0.08;
   const ratioCls = salesRatio === 0 ? "is-empty"
-    : salesRatio < 0.32 ? "is-good"
-    : salesRatio < 0.40 ? "is-warn"
+    : salesRatio <= targetRatio ? "is-good"
+    : salesRatio <= ratioWarnCeiling ? "is-warn"
     : "is-bad";
 
   // État verrouillage de la semaine
@@ -889,21 +894,27 @@ function renderSalaires() {
         </div>
       </div>
 
-      <!-- ══ Carte ratio salaires/ventes (utilise les ventes réelles d'Horaires) ══ -->
+      <!-- ══ Carte ratio salaires/ventes RÉELLES (Horaires) — v3.61.0 : cible
+           alignée sur scheduleSettings.salesRatio (comme la carte Rentabilité
+           juste en dessous, qui utilise les ventes NETTES) et affichée en
+           clair au lieu d'un tooltip caché — les 2 cartes utilisaient avant
+           des seuils différents (32/40 % codés en dur ici vs cible réglable
+           en dessous), ce qui pouvait afficher 2 verdicts contradictoires
+           pour la même semaine sans qu'on comprenne pourquoi. ══ -->
       <div class="card payroll-ratio-card payroll-ratio-card--${ratioCls}">
         <div class="payroll-ratio-head">
           <div>
-            <h3 class="payroll-service-title">${icon("trending-up", 16)} Ratio salaires / ventes</h3>
+            <h3 class="payroll-service-title">${icon("trending-up", 16)} Ratio salaires / ventes réelles</h3>
             <div class="payroll-service-sub">
               ${weekSales > 0
-                ? `Salaires bruts <strong>${fmtMoney(sumGross)}</strong> ÷ Ventes <strong>${fmtMoney(weekSales)}</strong>`
+                ? `Salaires bruts <strong>${fmtMoney(sumGross)}</strong> ÷ Ventes réelles <strong>${fmtMoney(weekSales)}</strong> (saisies dans Employés & Horaires) · Cible <strong>${(targetRatio * 100).toFixed(0)}%</strong>`
                 : `Saisis les ventes réelles de la semaine dans <strong>Employés & Horaires</strong> pour voir le ratio`}
             </div>
           </div>
           <div class="payroll-ratio-value">
             ${weekSales > 0
               ? `<div class="payroll-ratio-pct">${(salesRatio * 100).toFixed(1)}<small>%</small></div>
-                 <div class="payroll-ratio-target" title="Cible typique resto : < 32%">${salesRatio < 0.32 ? "✓ Sous la cible" : salesRatio < 0.40 ? "⚠ Au-dessus" : "⚠ Critique"}</div>`
+                 <div class="payroll-ratio-target">${salesRatio <= targetRatio ? "✓ Sous la cible" : salesRatio <= ratioWarnCeiling ? "⚠ Au-dessus" : "⚠ Critique"} (cible ${(targetRatio * 100).toFixed(0)}%)</div>`
               : `<div class="payroll-ratio-pct payroll-ratio-pct--empty">—</div>`}
           </div>
         </div>
@@ -1186,7 +1197,7 @@ function renderSalaires() {
                   <option value="auto" ${selValue === "auto" ? "selected" : ""}>Auto (${row.emp.noTips ? "Sans pourboire" : tipGroupOf(row.emp) === "cuisine" ? "Cuisine" : "Service"})</option>
                   <option value="cuisine" ${selValue === "cuisine" ? "selected" : ""}>Cuisine ${(tipShares.cuisine*100).toFixed(0)}%</option>
                   <option value="service" ${selValue === "service" ? "selected" : ""}>Service ${(tipShares.service*100).toFixed(0)}%</option>
-                  <option value="excluded" ${selValue === "excluded" ? "selected" : ""}>Exclu</option>
+                  <option value="excluded" ${selValue === "excluded" ? "selected" : ""}>Exclu (sans pourboire)</option>
                 </select>
                 ${row.rate ? `<span class="payroll-empgrid-rate">${row.rate.toFixed(2)} $/h${row.isSal ? " · FIXE" : ""}</span>` : ""}
               </div>

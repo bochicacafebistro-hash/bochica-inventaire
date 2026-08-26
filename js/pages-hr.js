@@ -2343,12 +2343,12 @@ async function exportScheduleAsPNGAdmin() {
         <div>
           <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Ventes prévues</div>
           <div style="font-size:22px; font-weight:800; color:#0e0d0c; margin-top:4px">${fmtMoney(expectedSales)}</div>
-          <div style="font-size:10px; color:#666; margin-top:2px">à ratio ${(ratio * 100).toFixed(1)}%</div>
+          <div style="font-size:10px; color:#666; margin-top:2px">cible ${(ratio * 100).toFixed(1)}%</div>
         </div>
         <div>
           <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Ventes réelles</div>
           <div style="font-size:22px; font-weight:800; color:${weekActualSales > 0 ? "#0e0d0c" : "#999"}; margin-top:4px">${weekActualSales > 0 ? fmtMoney(weekActualSales) : "—"}</div>
-          ${weekActualSales > 0 ? `<div style="font-size:10px; color:#666; margin-top:2px">ratio réel ${(weekTotalCost / weekActualSales * 100).toFixed(1)}%</div>` : ""}
+          ${weekActualSales > 0 ? `<div style="font-size:10px; color:${weekTotalCost / weekActualSales <= ratio ? "#3f9142" : "#c0392b"}; margin-top:2px; font-weight:700">${weekTotalCost / weekActualSales <= ratio ? "✓" : "⚠"} ratio réel ${(weekTotalCost / weekActualSales * 100).toFixed(1)}% (cible ${(ratio * 100).toFixed(0)}%)</div>` : ""}
         </div>
       </div>
       ${empsWithShifts.length < weekVisibleEmps.length

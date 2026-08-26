@@ -691,7 +691,7 @@ function updateReportPreview() {
   if (incExp) parts.push(`${filteredExp.length} dépense${filteredExp.length > 1 ? "s" : ""} (${fmtMoney(totalExp)})`);
   html += parts.join(" · ");
   if (incRev && incExp) {
-    html += `<br/><strong>${profit >= 0 ? "Profit" : "Déficit"} : <span style="color:${profit >= 0 ? "var(--status-green)" : "var(--status-red)"}">${fmtMoney(Math.abs(profit))}</span></strong>`;
+    html += `<br/><strong>${profit >= 0 ? "Profit" : "Déficit"} (avant taxes) : <span style="color:${profit >= 0 ? "var(--status-green)" : "var(--status-red)"}">${fmtMoney(Math.abs(profit))}</span></strong>`;
   }
   preview.innerHTML = html;
 }
@@ -858,7 +858,7 @@ function exportReportPDF(filteredRev, filteredExp, filename, start, end, incRev,
   if (incExp) summaryRows.push(["Total dépenses", `${totalExp.toFixed(2)} $`, `${filteredExp.length} entrée(s)`]);
   if (incRev && incExp) {
     const profit = totalRev - totalExp;
-    summaryRows.push([profit >= 0 ? "Profit" : "Déficit", `${Math.abs(profit).toFixed(2)} $`, profit >= 0 ? "positif" : "négatif"]);
+    summaryRows.push([profit >= 0 ? "Profit (avant taxes)" : "Déficit (avant taxes)", `${Math.abs(profit).toFixed(2)} $`, profit >= 0 ? "positif" : "négatif"]);
   }
   doc.autoTable({
     startY: y,

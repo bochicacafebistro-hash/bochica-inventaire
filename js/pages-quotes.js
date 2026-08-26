@@ -414,11 +414,17 @@ function renderQuoteCards(items, writable) {
       totalHtml = `<span class="quote-card__total-range">${fmtMoney(headRange.min)} – ${fmtMoney(headRange.max)}</span>`;
     }
 
-    h += `<article class="quote-card quote-card--${status}">
+    // Statut "Expirée" déduit automatiquement (date dépassée + pas encore
+    // traitée) — n'écrit RIEN dans qt.status, purement visuel, comme le
+    // badge "En retard" des factures (pages-invoices.js).
+    const isPastDue = !!qt.validUntil && qt.validUntil < todayISO() && !["acceptee", "refusee", "expiree"].includes(status);
+
+    h += `<article class="quote-card quote-card--${status} ${isPastDue ? "is-past-due" : ""}">
       <div class="quote-card__head">
         <div class="quote-card__num-block">
           <span class="quote-card__num">${esc(qt.quoteNumber || "—")}</span>
           <span class="quote-status-pill quote-status-pill--${status}">${tQuoteStatus(status)}</span>
+          ${isPastDue ? `<span class="quote-expired-tag" title="Date de validité dépassée">${icon("alert", 10)} Expirée</span>` : ""}
         </div>
         <div class="quote-card__total">${totalHtml}</div>
       </div>
@@ -434,7 +440,7 @@ function renderQuoteCards(items, writable) {
           ${roomMeta}
           ${qt.eventVenue ? `<span class="quote-card__meta-item">${icon("map-pin", 12)} ${esc(tQuoteVenue(qt.eventVenue))}</span>` : ""}
         </div>
-        ${qt.validUntil ? `<div class="quote-card__validity">Valide jusqu'au ${esc(qt.validUntil)}</div>` : ""}
+        ${qt.validUntil ? `<div class="quote-card__validity ${isPastDue ? "quote-card__validity--expired" : ""}">${isPastDue ? "Expirée depuis le" : "Valide jusqu'au"} ${esc(qt.validUntil)}</div>` : ""}
       </div>
       <div class="quote-card__actions">
         <button class="btn-icon-only" onclick="generateQuotePDF('${qt.id}')" aria-label="Générer le PDF" title="Générer le PDF">${icon("download", 14)}</button>

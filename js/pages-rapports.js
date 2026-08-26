@@ -179,6 +179,7 @@ function renderRapports() {
         <span>${icon("trending-up", 14)} Vs année précédente</span>
         ${reportsCompareYoY && !yoyAvailable ? `<span class="reports-yoy-warn" title="Aucun rapport de l'année précédente trouvé pour les mois sélectionnés">${icon("alert", 12)}</span>` : ""}
       </label>
+      ${reportsCompareYoY && !yoyAvailable ? `<span class="reports-yoy-warn-text">${icon("alert", 11)} Aucun rapport de l'année précédente trouvé pour cette période — comparatif A-1 indisponible</span>` : ""}
     </div>
 
     ${totalReports === 0 ? renderEmptyState({

@@ -1899,7 +1899,7 @@ async function exportSimAsPNGAdmin(simId) {
         <div>
           <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Ventes prévues</div>
           <div style="font-size:22px; font-weight:800; color:#0e0d0c; margin-top:4px">${fmtMoney(expectedSales)}</div>
-          <div style="font-size:10px; color:#666; margin-top:2px">à ratio ${(salesRatio * 100).toFixed(1)}%</div>
+          <div style="font-size:10px; color:#666; margin-top:2px">cible ${(salesRatio * 100).toFixed(1)}%</div>
         </div>
       </div>
     </div>

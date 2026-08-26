@@ -8108,6 +8108,17 @@ body.dark .card:hover{
   color:var(--status-red, #d9534f);
   margin-left:4px;
 }
+/* Texte visible de l'avertissement YoY (v3.61.0) — le tooltip seul sur
+   l'icône n'est pas lisible au toucher sur iPad/tablette. */
+.reports-yoy-warn-text{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  margin-left:10px;
+  font-size:var(--fs-xs);
+  font-weight:600;
+  color:var(--status-red, #d9534f);
+}
 
 /* KPI YoY : delta % + comparatif chiffré */
 .reports-kpi-card{
@@ -11284,6 +11295,28 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   text-transform:uppercase;
   letter-spacing:.04em;
   border-radius:var(--radius-sm);
+}
+/* Badge "Expirée" auto sur les soumissions (v3.61.0) — même style que
+   .invoice-overdue-tag, pour un langage visuel cohérent entre Soumissions
+   et Factures. Purement visuel, ne modifie jamais qt.status. */
+.quote-expired-tag{
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  padding:1px 8px;
+  margin-left:6px;
+  background:#e74c3c;
+  color:#fff;
+  font-family:var(--font-body);
+  font-size:10px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+  border-radius:var(--radius-sm);
+}
+.quote-card__validity--expired{
+  color:var(--status-red, #d9534f);
+  font-weight:700;
 }
 
 .invoice-card-meta{
