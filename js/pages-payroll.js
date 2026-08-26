@@ -770,17 +770,34 @@ function renderSalaires() {
   // "Écart vs cible" = ce que le ratio cible aurait autorisé comme salaires
   // (net × cible) moins le salaire réel — positif = sous le budget cible.
   const targetRatio = Number(scheduleSettings.salesRatio) || 0.32;
+  // "% atteint" (v3.60.0) : plutôt que d'afficher le ratio coût/ventes brut
+  // (peu lisible — "33.9%" ne dit pas si c'est bon ou mauvais au premier
+  // coup d'œil), on affiche la part des VENTES NÉCESSAIRES déjà atteinte.
+  // salesNeeded = coût salarial RÉEL du jour/semaine ÷ cible — c'est le
+  // montant de ventes qu'il aurait fallu faire pour que ce coût représente
+  // exactement la cible. 100% = cible tout juste atteinte, <100% = ventes
+  // encore manquantes, >100% = cible dépassée (marge). Toujours basé sur le
+  // coût RÉEL (dayLaborByDk / payedWage, jamais le planifié).
+  const salesNeededFor = (labor) => targetRatio > 0 ? (labor / targetRatio) : 0;
+  const pctReachedFor = (net, labor) => {
+    const needed = salesNeededFor(labor);
+    return needed > 0 ? (net / needed) * 100 : 100; // pas de coût réel → cible triviale atteinte
+  };
   const dayProfitList = weekDays.map((d, k) => {
     const dk = dayKey(d);
     const net = Number(netByDay[dk]) || 0;
     const hasNet = netByDay[dk] !== undefined && netByDay[dk] !== null && netByDay[dk] !== "";
     const labor = dayLaborByDk[dk] || 0;
     const ratio = net > 0 ? (labor / net) : null;
-    const gap = net > 0 ? (net * targetRatio - labor) : 0; // + = sous la cible, − = dépassement
-    return { dk, dowIdx: visibleIdx[k], date: d, net, labor, hasNet, ratio, gap };
+    const salesNeeded = salesNeededFor(labor);
+    const pctReached = pctReachedFor(net, labor);
+    const surplus = net - salesNeeded; // + = ventes au-dessus de la cible, − = ventes manquantes
+    return { dk, dowIdx: visibleIdx[k], date: d, net, labor, hasNet, ratio, salesNeeded, pctReached, surplus };
   });
   const weekRatio = totalNet > 0 ? (payedWage / totalNet) : null;
-  const weekProfit = totalNet > 0 ? (totalNet * targetRatio - payedWage) : 0; // écart vs cible
+  const weekSalesNeeded = salesNeededFor(payedWage);
+  const weekPctReached = pctReachedFor(totalNet, payedWage);
+  const weekSurplus = totalNet - weekSalesNeeded; // + = ventes au-dessus de la cible, − = ventes manquantes
   const weekProfitCls = totalNet === 0 ? "is-empty" : weekRatio <= targetRatio ? "is-good" : "is-bad";
 
   // ─ Ratio salaires/ventes (utilise actualSales saisis dans Horaires) ─
@@ -927,18 +944,18 @@ function renderSalaires() {
           </div>
           <div class="payroll-ratio-value">
             ${totalNet > 0
-              ? `<div class="payroll-ratio-pct">${(weekRatio * 100).toFixed(1)}<small>%</small></div>
-                 <div class="payroll-ratio-target">${weekRatio <= targetRatio ? "✓" : "⚠"} ${weekProfit > 0 ? "+" : ""}${fmtMoney(weekProfit)} vs cible</div>`
+              ? `<div class="payroll-ratio-pct">${weekPctReached.toFixed(1)}<small>% atteint</small></div>
+                 <div class="payroll-ratio-target">${weekSurplus >= 0 ? "✓" : "⚠"} ${weekSurplus >= 0 ? `+${fmtMoney(weekSurplus)} au-dessus de la cible` : `${fmtMoney(Math.abs(weekSurplus))} manquant vs cible`}</div>`
               : `<div class="payroll-ratio-pct payroll-ratio-pct--empty">—</div>`}
           </div>
         </div>
         ${totalNet > 0 ? `<div class="payroll-profit-days">
           ${dayProfitList.map(dp => {
-            const dCls = !dp.hasNet ? "is-empty" : dp.ratio <= targetRatio ? "is-good" : "is-bad";
-            return `<div class="payroll-profit-day payroll-profit-day--${dCls}" title="${dp.hasNet ? `Salaires ${fmtMoney(dp.labor)} ÷ Net ${fmtMoney(dp.net)} — cible ${(targetRatio * 100).toFixed(0)}%` : "Aucune vente nette saisie ce jour"}">
+            const dCls = !dp.hasNet ? "is-empty" : dp.pctReached >= 100 ? "is-good" : "is-bad";
+            return `<div class="payroll-profit-day payroll-profit-day--${dCls}" title="${dp.hasNet ? `Salaires réels ${fmtMoney(dp.labor)} ÷ Net ${fmtMoney(dp.net)} — cible ${(targetRatio * 100).toFixed(0)}% (ventes nécessaires ${fmtMoney(dp.salesNeeded)} pour ce coût réel)` : "Aucune vente nette saisie ce jour"}">
               <div class="payroll-profit-day__name">${DAYS_FR[dp.dowIdx]} <span>${dp.date.getDate()}/${dp.date.getMonth() + 1}</span></div>
-              <div class="payroll-profit-day__pct">${dp.hasNet ? `${(dp.ratio * 100).toFixed(0)}%` : "—"}</div>
-              <div class="payroll-profit-day__amt">${dp.hasNet ? `${dp.gap > 0 ? "+" : ""}${fmtMoney(dp.gap)}` : ""}</div>
+              <div class="payroll-profit-day__pct">${dp.hasNet ? `${dp.pctReached.toFixed(0)}%<span class="payroll-profit-day__pct-label">atteint</span>` : "—"}</div>
+              <div class="payroll-profit-day__amt">${dp.hasNet ? (dp.surplus >= 0 ? `+${fmtMoney(dp.surplus)}` : `${fmtMoney(Math.abs(dp.surplus))} manquant`) : ""}</div>
             </div>`;
           }).join("")}
         </div>` : ""}
@@ -1062,6 +1079,10 @@ function renderSalaires() {
               <div class="payroll-tips-total__label">Ventes nettes</div>
               <div class="payroll-tips-total__amount">${fmtMoney(totalNet)}</div>
             </div>
+            <div class="payroll-tips-total payroll-tips-total--pct" title="Pourboires ÷ ventes nettes de la semaine">
+              <div class="payroll-tips-total__label">% Pourboire</div>
+              <div class="payroll-tips-total__amount">${totalNet > 0 ? `${(totalTips / totalNet * 100).toFixed(1)}%` : "—"}</div>
+            </div>
           </div>
         </div>
         <div class="payroll-tips-grid">
@@ -1070,6 +1091,7 @@ function renderSalaires() {
             const dowIdx = visibleIdx[k];
             const val = Number(tipsByDay[dk] || 0);
             const netVal = Number(netByDay[dk] || 0);
+            const dayTipPct = netVal > 0 ? (val / netVal * 100) : null;
             return `<div class="payroll-tips-day">
               <div class="payroll-tips-day__name">${DAYS_FR[dowIdx]} <span class="payroll-tips-day__date">${d.getDate()}/${d.getMonth() + 1}</span></div>
               <div class="payroll-tips-day__input" title="Pourboire reçu">
@@ -1080,6 +1102,7 @@ function renderSalaires() {
                 <input type="number" min="0" step="0.01" placeholder="Net 0.00" value="${netVal || ""}" onchange="updateNetForDay('${dk}',this.value)" aria-label="Ventes nettes ${DAYS_FR[dowIdx]} ${d.getDate()}/${d.getMonth() + 1}"/>
                 <span>$</span>
               </div>
+              <div class="payroll-tips-day__pct" title="Pourboire ÷ ventes nettes de la journée">${dayTipPct !== null ? `${dayTipPct.toFixed(1)}% pourboire` : "—"}</div>
             </div>`;
           }).join("")}
         </div>

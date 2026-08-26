@@ -4190,6 +4190,22 @@ textarea.md-input{
 }
 .payroll-tips-total--net .payroll-tips-total__amount{ color:#3b7cc6; }
 
+/* % Pourboire (v3.60.0) — pourboires ÷ ventes nettes de la semaine */
+.payroll-tips-total--pct{
+  border-color:var(--status-green, #7dbf66);
+  box-shadow:0 2px 8px rgba(125,191,102,.15);
+}
+.payroll-tips-total--pct .payroll-tips-total__amount{ color:var(--status-green, #7dbf66); }
+
+/* % Pourboire par jour (v3.60.0), sous les deux inputs de chaque case */
+.payroll-tips-day__pct{
+  font-family:var(--font-body);
+  font-size:11px;
+  font-weight:600;
+  color:var(--text3);
+  text-align:center;
+}
+
 /* Second input (ventes nettes) sous le pourboire dans chaque case jour */
 .payroll-tips-day__input--net{
   border-style:dashed;
@@ -4292,6 +4308,17 @@ textarea.md-input{
 }
 .payroll-profit-day--is-good .payroll-profit-day__pct{ color:var(--status-green, #7dbf66); }
 .payroll-profit-day--is-bad .payroll-profit-day__pct{ color:var(--status-red, #d9534f); }
+.payroll-profit-day__pct-label{
+  font-family:var(--font-body);
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  color:var(--text3);
+  margin-left:3px;
+}
+.payroll-profit-day--is-good .payroll-profit-day__pct-label{ color:var(--status-green, #7dbf66); }
+.payroll-profit-day--is-bad .payroll-profit-day__pct-label{ color:var(--status-red, #d9534f); }
 .payroll-profit-day__amt{
   font-family:var(--font-body);
   font-size:11px;
