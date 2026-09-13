@@ -190,6 +190,14 @@ function buildLeaveTypeOptions(selected) {
 function activeEmployees() {
   return (typeof employees !== "undefined" ? employees : []).filter(e => !e.archived);
 }
+// Priorité de tri par défaut par section (v3.62.0) : Cuisine → Service → Autre
+// (les employés "Autre" regroupent notamment les postes admin/gestion).
+// Utilisée comme tri de repli quand aucun ordre explicite (weekOrder / drag & drop)
+// n'a été défini, pour que les nouvelles semaines démarrent déjà bien groupées.
+function employeeSectionPriority(emp) {
+  const sec = (emp && emp.section) || "service";
+  return sec === "cuisine" ? 0 : sec === "service" ? 1 : 2;
+}
 // Un employé a-t-il un quart (start+end) sur l'un des jours donnés ?
 function empWorkedOnDays(emp, days) {
   const sh = (emp && emp.shifts) || {};
@@ -222,6 +230,10 @@ function visibleScheduleEmployees(weekDays, weekKey) {
     .sort((a, b) => {
       const ai = orderIdx(a.id), bi = orderIdx(b.id);
       if (ai !== bi) return ai - bi;
+      // Pas d'ordre explicite pour cet employé cette semaine : on groupe par
+      // défaut Cuisine → Service → Autre avant de départager par sortOrder.
+      const sp = employeeSectionPriority(a) - employeeSectionPriority(b);
+      if (sp !== 0) return sp;
       return (a.sortOrder || 0) - (b.sortOrder || 0);
     });
 }
@@ -668,7 +680,10 @@ function renderEmployes() {
       <!-- ══ Cartes équipe ══ -->
       <h3 class="section-title">Équipe</h3>
       <div class="card-grid">
-        ${activeEmployees().slice().sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0)).map(emp => `<div class="card team-card">
+        ${activeEmployees().slice().sort((a,b)=>{
+          const sp = employeeSectionPriority(a) - employeeSectionPriority(b);
+          return sp !== 0 ? sp : (a.sortOrder||0)-(b.sortOrder||0);
+        }).map(emp => `<div class="card team-card">
           <div class="team-card__head">
             <div class="team-card__info">
               <div class="team-card__name">${icon("user", 14)} ${esc(emp.name || "")}${emp.noTips ? ` <span class="no-tips-badge" title="Exclu du partage des pourboires">${icon("ban", 10)} Sans pourboire</span>` : ""}</div>
@@ -883,6 +898,24 @@ async function duplicateScheduleToNextWeek() {
         }
       });
       if (changed) batch.update(db.collection("employees").doc(emp.id), { shifts });
+    }
+    // v3.62.0 — Copier aussi l'ORDRE d'affichage de la semaine source vers la
+    // semaine cible : sans ça, la cible n'avait pas de weekOrder propre et
+    // retombait sur l'ordre global (sortOrder), différent de ce qui était
+    // affiché → obligeait à tout réordonner manuellement après chaque copie.
+    const curWeekDays = curDates.map(dk => {
+      const [y, m, d] = dk.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    });
+    const weekKeyCur = dayKey(weekStart);
+    const nextWeekStart = new Date(weekStart);
+    nextWeekStart.setDate(nextWeekStart.getDate() + 7);
+    const weekKeyNext = dayKey(nextWeekStart);
+    const orderToCopy = visibleScheduleEmployees(curWeekDays, weekKeyCur).map(e => e.id);
+    if (orderToCopy.length > 0) {
+      batch.set(db.collection("settings").doc("schedule"), {
+        weekOrder: { [weekKeyNext]: orderToCopy }
+      }, { merge: true });
     }
     await batch.commit();
     await addLog("—", "Horaire copié", `Semaine ${weekNum} → Semaine ${nextWeekNum}`);
