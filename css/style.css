@@ -9550,6 +9550,39 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 .schedule-empgrid-emp.is-other{
   border-left-color:#888780;
 }
+/* Légende couleurs Cuisine/Service/Autre (v3.63.0) — réutilisée sur Horaires,
+   Salaires & Pourboires et Simulation paie, juste au-dessus de la grille empgrid. */
+.section-legend{
+  display:flex;
+  flex-wrap:wrap;
+  gap:14px;
+  align-items:center;
+  padding:2px 2px 10px;
+  font-family:var(--font-mono);
+  font-size:11px;
+  color:var(--text2);
+}
+.section-legend__item{
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+.section-legend__dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--text3);
+  flex:none;
+}
+.section-legend__dot.is-kitchen{
+  background:#BA7517;
+}
+.section-legend__dot.is-service{
+  background:#378ADD;
+}
+.section-legend__dot.is-other{
+  background:#888780;
+}
 .schedule-empgrid-emp-name{
   font-family:var(--font-body);
   font-size:13px;

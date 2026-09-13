@@ -198,6 +198,18 @@ function employeeSectionPriority(emp) {
   const sec = (emp && emp.section) || "service";
   return sec === "cuisine" ? 0 : sec === "service" ? 1 : 2;
 }
+// v3.63.0 — Petite légende couleurs (Cuisine/Service/Autre), réutilisée sur les
+// 3 grilles empgrid (Horaires, Salaires & Pourboires, Simulation paie) pour que
+// le sens des couleurs soit visible directement dans l'UI plutôt que déduit.
+// Ne concerne QUE la section réelle de l'employé — pas le statut pourboire
+// (« Sans pourboire » reste indiqué par son propre badge, voir v3.63.0 plus bas).
+function renderSectionLegend() {
+  return `<div class="section-legend">
+    <span class="section-legend__item"><span class="section-legend__dot is-kitchen"></span> Cuisine</span>
+    <span class="section-legend__item"><span class="section-legend__dot is-service"></span> Service</span>
+    <span class="section-legend__item"><span class="section-legend__dot is-other"></span> Autre</span>
+  </div>`;
+}
 // Un employé a-t-il un quart (start+end) sur l'un des jours donnés ?
 function empWorkedOnDays(emp, days) {
   const sh = (emp && emp.shifts) || {};
@@ -466,6 +478,7 @@ function renderEmployes() {
 
       <!-- ══ Grille employés × jours avec cartes shift (v3.24.1) ══ -->
       <!-- Liste des employés à gauche, 7 colonnes jour, totaux à droite. -->
+      ${renderSectionLegend()}
       <div class="schedule-empgrid" style="--n-days:${nCols};">
         <!-- Header : labels jours + colonne totaux -->
         <div class="schedule-empgrid-header">

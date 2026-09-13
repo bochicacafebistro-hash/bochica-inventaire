@@ -1145,6 +1145,7 @@ function renderSalaires() {
       })()}
 
       <!-- ══ Grille empgrid Salaires & Pourboires (v3.27.0) ══ -->
+      ${renderSectionLegend()}
       <div class="schedule-empgrid payroll-empgrid" style="--n-days:${weekDays.length};">
         <!-- Header -->
         <div class="schedule-empgrid-header">
@@ -1170,6 +1171,18 @@ function renderSalaires() {
           const groupClass = row.group === "cuisine" ? "is-kitchen"
                           : row.group === "service" ? "is-service"
                           : "is-excluded";
+          // v3.63.0 — Couleur de la CELLULE employé = section réelle (comme Horaires),
+          // jamais le groupe de pourboires effectif : avant, un employé "Sans pourboire"
+          // (noTips ou dérogation "Exclu") passait toute sa ligne en gris même s'il est
+          // en Cuisine/Service, ce qui semblait incohérent avec la couleur affichée sur
+          // Horaires pour le même employé. Le badge "Sans pourb." (déjà visible à côté
+          // du nom) reste le seul indicateur d'exclusion des pourboires ; le sélecteur
+          // de groupe (`groupClass`, inchangé) garde lui la couleur "Exclu" car c'est
+          // justement sa fonction d'afficher le groupe de pourboires effectif.
+          const empSection = row.emp.section || "service";
+          const sectionClass = empSection === "cuisine" ? "is-kitchen"
+                            : empSection === "service" ? "is-service"
+                            : "is-other";
           const gapCls = row.gap > 0.01 ? "is-positive" : row.gap < -0.01 ? "is-negative" : "";
           const gapArrow = row.gap > 0.01 ? "▲" : row.gap < -0.01 ? "▼" : "";
           return `<div class="schedule-empgrid-row payroll-empgrid-row ${row.isManual ? "is-manual-emp" : ""} ${hasNoHours ? "is-no-hours" : ""}" data-emp-id="${row.emp.id}"
@@ -1178,7 +1191,7 @@ function renderSalaires() {
             ondrop="payrollRowDrop(event,'${row.emp.id}')"
             ondragend="payrollRowDragEnd(event)"`}>
             <!-- Cellule employé : drag + nom + EXTRA + section + rate + trash -->
-            <div class="schedule-empgrid-emp payroll-empgrid-emp ${groupClass} ${row.emp.archived ? "is-archived-emp" : ""}">
+            <div class="schedule-empgrid-emp payroll-empgrid-emp ${sectionClass} ${row.emp.archived ? "is-archived-emp" : ""}">
               <div class="payroll-empgrid-emp-row">
                 ${isLocked ? "" : `<span class="payroll-drag-handle" draggable="true" ondragstart="payrollRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 12)}</span>`}
                 <span class="schedule-empgrid-emp-name">${esc(row.emp.name || "")}</span>
@@ -1251,7 +1264,7 @@ function renderSalaires() {
                     ${isLocked ? "" : `ondragover="payrollShiftDragOver(event,'${dk}')"
                     ondragleave="payrollShiftDragLeave(event)"
                     ondrop="payrollShiftDrop(event,'${row.emp.id}','${dk}')"`}>
-                  <div class="shift-card shift-card--compact shift-card--partial ${groupClass}"
+                  <div class="shift-card shift-card--compact shift-card--partial ${sectionClass}"
                       ${isLocked ? "" : `onclick="openPayrollShiftModal('${row.emp.id}','${dk}')"`}
                       title="${sub} — cliquer pour ${inProgress ? "saisir la sortie" : "corriger"}">
                     <div class="shift-card-time">${label}</div>
@@ -1325,7 +1338,7 @@ function renderSalaires() {
                   ${isLocked ? "" : `ondragover="payrollShiftDragOver(event,'${dk}')"
                   ondragleave="payrollShiftDragLeave(event)"
                   ondrop="payrollShiftDrop(event,'${row.emp.id}','${dk}')"`}>
-                <div class="shift-card shift-card--compact ${groupClass} ${isAutoFilled ? "shift-card--auto-filled" : ""} ${isAutoFilledNoStart ? "shift-card--auto-filled-no-start" : ""}"
+                <div class="shift-card shift-card--compact ${sectionClass} ${isAutoFilled ? "shift-card--auto-filled" : ""} ${isAutoFilledNoStart ? "shift-card--auto-filled-no-start" : ""}"
                     ${isLocked ? "" : `draggable="true"
                     data-emp-id="${row.emp.id}"
                     data-from-day="${dk}"
@@ -1344,7 +1357,7 @@ function renderSalaires() {
               </div>`;
             }).join("")}
             <!-- Cellule totaux (Hrs réel/planif + Écart + Salaire + Pourb + Total) -->
-            <div class="schedule-empgrid-total payroll-empgrid-total ${groupClass}">
+            <div class="schedule-empgrid-total payroll-empgrid-total ${sectionClass}">
               <div class="payroll-empgrid-total-row">
                 <span class="payroll-empgrid-total-lbl">Hrs</span>
                 <span class="payroll-empgrid-total-val">

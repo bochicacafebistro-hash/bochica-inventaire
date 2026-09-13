@@ -240,7 +240,10 @@ function renderPage() {
     employes:    { label: t("nav_employees"),   icon: "users" },
     salaires:    { label: t("nav_salaires"),    icon: "dollar-sign" },
     simulations: { label: "Simulation paie",    icon: "trending-up" },
-    depenses:    { label: t("nav_expenses"),    icon: "wallet" },
+    // v3.63.0 — topbar aligné sur le H1 réel de la page ("Dépenses & Revenus",
+    // exp_title) plutôt que le libellé court de la sidebar (nav_expenses), qui
+    // ne disaient pas la même chose.
+    depenses:    { label: t("exp_title"),        icon: "wallet" },
     taxes:       { label: "TPS/TVQ",            icon: "shield-check" },
     rapports:    { label: "Rapports mensuels",  icon: "bar-chart" },
     menu:        { label: t("nav_menu"),        icon: "utensils" },

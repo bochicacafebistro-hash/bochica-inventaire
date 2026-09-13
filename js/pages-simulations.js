@@ -600,6 +600,7 @@ function renderSimulationEditorHTML(sim) {
     </div>
 
     <!-- ═ Grille employés × jours (v3.26.0 — empgrid comme Horaires) ═ -->
+    ${renderSectionLegend()}
     <div class="schedule-empgrid sim-empgrid" style="--n-days:7;">
       <!-- Header -->
       <div class="schedule-empgrid-header">
