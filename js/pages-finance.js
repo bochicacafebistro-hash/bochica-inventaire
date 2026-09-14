@@ -241,21 +241,64 @@ function setExpenseMonthYear(val) { selectedExpenseMonth = Number(val); renderPa
 function setExpenseYear(val) { selectedExpenseYear = Number(val); renderPage(); }
 
 // ── Modal Dépense ─────────────────────────────────────
-function openExpenseModal(id) {
+// État temporaire des lignes "Frais supplémentaires" (livraison, etc.) de la dépense en cours d'édition
+let expenseExtraRows = [];
+
+// Capture les valeurs actuellement tapées dans le formulaire dépense (pour les restaurer
+// après un aller-retour par les modales rapides "+ Fournisseur" / "+ Catégorie")
+function captureExpenseDraft() {
+  return {
+    description: document.getElementById("ex-desc")?.value || "",
+    supplier: document.getElementById("ex-sup")?.value || "",
+    category: document.getElementById("ex-cat")?.value || "",
+    type: document.getElementById("ex-type")?.value || "",
+    date: document.getElementById("ex-date")?.value || "",
+    amount: document.getElementById("ex-amt")?.value || "",
+    tps: document.getElementById("ex-tps")?.value || "",
+    tvq: document.getElementById("ex-tvq")?.value || "",
+    noTax: !!document.getElementById("ex-notax")?.checked,
+    notes: document.getElementById("ex-notes")?.value || "",
+    extras: expenseExtraRows.map(r => ({ ...r }))
+  };
+}
+
+function openExpenseModal(id, draft, overrides) {
   const e = id ? expenses.find(x => x.id === id) : null;
   const today = new Date().toISOString().slice(0, 10);
   const cats = getAllExpenseCats();
-  const currentCat = e?.category || cats[0];
-  const currentType = e?.type || getExpenseCatType(currentCat);
+
+  // Montant de base = montant total - frais supplémentaires déjà inclus (rétrocompat : customLines absent = 0)
+  const extraLines = (e?.customLines || []).map(l => ({ description: l.description || "", amount: l.amount ?? "" }));
+  const baseAmount = e ? (Number(e.amount || 0) - extraLines.reduce((s, l) => s + (Number(l.amount) || 0), 0)) : "";
+
+  // Valeurs initiales : overrides (retour d'une création rapide) > brouillon (retour d'une modale rapide) > dépense existante > défaut
+  const init = Object.assign({
+    description: e?.description || "",
+    supplier: e?.supplier || "",
+    category: e?.category || cats[0],
+    date: e?.date || today,
+    amount: e ? ((Math.round(baseAmount * 100) / 100) || "") : "",
+    tps: e?.tps ?? "",
+    tvq: e?.tvq ?? "",
+    noTax: !!e?.noTax,
+    notes: e?.notes || "",
+    extras: extraLines
+  }, draft || {}, overrides || {});
+  init.type = (overrides && overrides.type) || (draft && draft.type) || e?.type || getExpenseCatType(init.category);
+
+  expenseExtraRows = (init.extras || []).map(x => ({ description: x.description || "", amount: x.amount ?? "" }));
 
   showModal(`<div class="modal">
     <div class="modal-header"><h3>${e ? t("exp_modal_edit") : t("exp_modal_add")}</h3><button class="close-btn" onclick="closeModal()">${icon("x", 18)}</button></div>
 
     <label>${t("exp_table_desc")}
-      <input id="ex-desc" value="${esc(e?.description||"")}"/>
+      <input id="ex-desc" value="${esc(init.description)}"/>
     </label>
     <label>${t("exp_field_supplier")}
-      <input id="ex-sup" list="ex-sup-list" value="${esc(e?.supplier||"")}" placeholder="${t(`exp_field_supplier_ph`)}" autocomplete="off"/>
+      <div class="field-with-add">
+        <input id="ex-sup" list="ex-sup-list" value="${esc(init.supplier)}" placeholder="${t(`exp_field_supplier_ph`)}" autocomplete="off"/>
+        <button type="button" class="btn-icon-only" onclick="openQuickSupplier('${id||""}', captureExpenseDraft())" aria-label="${t("exp_quick_add_supplier")}" title="${t("exp_quick_add_supplier")}">${icon("plus", 16)}</button>
+      </div>
       <datalist id="ex-sup-list">
         ${suppliers.map(s => `<option value="${esc(s.name)}"></option>`).join("")}
       </datalist>
@@ -264,41 +307,59 @@ function openExpenseModal(id) {
 
     <div class="form-row">
       <label>${t("exp_field_category")}
-        <select id="ex-cat" onchange="updateExpenseType()">
-          ${cats.map(c => `<option value="${c}" ${currentCat===c?"selected":""}>${c}</option>`).join("")}
-        </select>
+        <div class="field-with-add">
+          <select id="ex-cat" onchange="updateExpenseType()">
+            ${cats.map(c => `<option value="${c}" ${init.category===c?"selected":""}>${c}</option>`).join("")}
+          </select>
+          <button type="button" class="btn-icon-only" onclick="openQuickCat('${id||""}', captureExpenseDraft())" aria-label="${t("exp_quick_add_cat")}" title="${t("exp_quick_add_cat")}">${icon("plus", 16)}</button>
+        </div>
       </label>
       <label>${t("exp_field_type")}
         <select id="ex-type">
-          <option value="variable" ${currentType==="variable"?"selected":""}>${icon("bar-chart", 14)} ${t("exp_type_variable")}</option>
-          <option value="fixe" ${currentType==="fixe"?"selected":""}>🔒 ${t("exp_type_fixed")}</option>
+          <option value="variable" ${init.type==="variable"?"selected":""}>${icon("bar-chart", 14)} ${t("exp_type_variable")}</option>
+          <option value="fixe" ${init.type==="fixe"?"selected":""}>🔒 ${t("exp_type_fixed")}</option>
         </select>
       </label>
     </div>
 
-    <label>${t("exp_table_date")}<input id="ex-date" type="date" value="${e?.date||today}"/></label>
+    <label>${t("exp_table_date")}<input id="ex-date" type="date" value="${init.date}"/></label>
 
     <label>${t("exp_field_amount_pre")}
-      <input id="ex-amt" type="number" step="0.01" value="${e?.amount||""}" oninput="calcExpenseTaxes()"/>
+      <input id="ex-amt" type="number" step="0.01" value="${init.amount}" oninput="calcExpenseTaxes()"/>
+    </label>
+
+    <div class="expense-extras">
+      <div class="expense-extras__header">
+        <span class="icon-inline">${icon("plus", 13)} ${t("exp_field_extras")}</span>
+        <button type="button" class="btn-icon-only" style="width:30px;height:30px" onclick="addExpenseExtraRow()" aria-label="${t("exp_extras_add")}" title="${t("exp_extras_add")}">${icon("plus", 14)}</button>
+      </div>
+      <small class="field-hint" style="display:block;margin:-2px 0 8px">${t("exp_field_extras_hint")}</small>
+      <div id="ex-extras-rows"></div>
+    </div>
+
+    <label class="emp-salaried-toggle" style="margin-top:0">
+      <input type="checkbox" id="ex-notax" ${init.noTax?"checked":""} onchange="toggleExpenseNoTax()"/>
+      <span>${t("exp_field_notax")}</span>
     </label>
 
     <div class="form-row">
       <label>${t("exp_field_tps")}
-        <input id="ex-tps" type="number" step="0.01" value="${e?.tps||""}"/>
+        <input id="ex-tps" type="number" step="0.01" value="${init.tps}" ${init.noTax?"disabled":""} oninput="this.dataset.manual='1';calcExpenseTaxes()"/>
       </label>
       <label>${t("exp_field_tvq")}
-        <input id="ex-tvq" type="number" step="0.01" value="${e?.tvq||""}"/>
+        <input id="ex-tvq" type="number" step="0.01" value="${init.tvq}" ${init.noTax?"disabled":""} oninput="this.dataset.manual='1';calcExpenseTaxes()"/>
       </label>
     </div>
     <div id="ex-total-preview" style="font-size:13px;color:var(--text2);margin-bottom:10px;text-align:right"></div>
 
-    <label>${t("exp_table_notes")}<textarea id="ex-notes" style="height:60px">${e?.notes||""}</textarea></label>
+    <label>${t("exp_table_notes")}<textarea id="ex-notes" style="height:60px">${init.notes}</textarea></label>
 
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModal()">${t("cancel")}</button>
       <button class="btn btn-primary" onclick="saveExpense('${id||""}')">${t("save")}</button>
     </div>
   </div>`);
+  renderExpenseExtraRows();
   setTimeout(calcExpenseTaxes, 50);
 }
 
@@ -309,21 +370,82 @@ function updateExpenseType() {
   if (el) el.value = type;
 }
 
+// ── Frais supplémentaires (livraison, etc.) ───────────
+function renderExpenseExtraRows() {
+  const box = document.getElementById("ex-extras-rows");
+  if (!box) return;
+  box.innerHTML = expenseExtraRows.length === 0
+    ? `<p class="field-hint" style="margin:0 0 4px">${t("exp_extras_empty")}</p>`
+    : expenseExtraRows.map((row, idx) => `
+      <div class="expense-extra-row" data-idx="${idx}">
+        <input type="text" placeholder="${t("exp_extras_desc_ph")}" value="${esc(row.description||"")}" oninput="updateExpenseExtraRow(${idx},'description',this.value)" aria-label="${t("exp_extras_desc_ph")}"/>
+        <input type="number" step="0.01" placeholder="0.00" value="${row.amount ?? ""}" oninput="updateExpenseExtraRow(${idx},'amount',this.value)" aria-label="${t("exp_field_amount_pre")}"/>
+        <button type="button" class="btn-icon-only" onclick="removeExpenseExtraRow(${idx})" aria-label="${t("delete")}" title="${t("delete")}">${icon("trash", 14)}</button>
+      </div>`).join("");
+}
+
+function addExpenseExtraRow() {
+  expenseExtraRows.push({ description: "", amount: "" });
+  renderExpenseExtraRows();
+  calcExpenseTaxes();
+  setTimeout(() => document.querySelector("#ex-extras-rows .expense-extra-row:last-child input")?.focus(), 30);
+}
+
+function updateExpenseExtraRow(idx, field, value) {
+  if (!expenseExtraRows[idx]) return;
+  expenseExtraRows[idx][field] = value;
+  calcExpenseTaxes();
+}
+
+function removeExpenseExtraRow(idx) {
+  expenseExtraRows.splice(idx, 1);
+  renderExpenseExtraRows();
+  calcExpenseTaxes();
+}
+
+function getExpenseExtrasTotal() {
+  return expenseExtraRows.reduce((s, r) => s + (Number(r.amount) || 0), 0);
+}
+
+function toggleExpenseNoTax() {
+  const noTax = !!document.getElementById("ex-notax")?.checked;
+  const tpsEl = document.getElementById("ex-tps");
+  const tvqEl = document.getElementById("ex-tvq");
+  if (tpsEl) { delete tpsEl.dataset.manual; tpsEl.disabled = noTax; }
+  if (tvqEl) { delete tvqEl.dataset.manual; tvqEl.disabled = noTax; }
+  calcExpenseTaxes();
+}
+
 function calcExpenseTaxes() {
   const amt = Number(document.getElementById("ex-amt")?.value) || 0;
+  const extrasTotal = getExpenseExtrasTotal();
+  const subtotal = amt + extrasTotal;
+  const noTax = !!document.getElementById("ex-notax")?.checked;
   const tpsEl = document.getElementById("ex-tps");
   const tvqEl = document.getElementById("ex-tvq");
   const prev = document.getElementById("ex-total-preview");
-  if (tpsEl && !tpsEl.dataset.manual) tpsEl.value = amt > 0 ? (amt * TPS_RATE).toFixed(2) : "";
-  if (tvqEl && !tvqEl.dataset.manual) tvqEl.value = amt > 0 ? (amt * TVQ_RATE).toFixed(2) : "";
-  const tps = Number(tpsEl?.value) || 0;
-  const tvq = Number(tvqEl?.value) || 0;
-  if (prev && amt > 0) prev.innerHTML = `${t("exp_total_with_tax")} : <strong>${fmtMoney(amt + tps + tvq)}</strong>`;
+  if (noTax) {
+    if (tpsEl) tpsEl.value = "";
+    if (tvqEl) tvqEl.value = "";
+  } else {
+    if (tpsEl && !tpsEl.dataset.manual) tpsEl.value = subtotal > 0 ? (subtotal * TPS_RATE).toFixed(2) : "";
+    if (tvqEl && !tvqEl.dataset.manual) tvqEl.value = subtotal > 0 ? (subtotal * TVQ_RATE).toFixed(2) : "";
+  }
+  const tps = noTax ? 0 : (Number(tpsEl?.value) || 0);
+  const tvq = noTax ? 0 : (Number(tvqEl?.value) || 0);
+  if (prev) prev.innerHTML = subtotal > 0
+    ? `${extrasTotal > 0 ? `${t("exp_extras_subtotal")}: <strong>${fmtMoney(subtotal)}</strong><br>` : ""}${t("exp_total_with_tax")} : <strong>${fmtMoney(subtotal + tps + tvq)}</strong>`
+    : "";
 }
 async function saveExpense(id) {
   const sup = document.getElementById("ex-sup").value.trim();
   const desc = document.getElementById("ex-desc").value.trim();
-  const amt = Number(document.getElementById("ex-amt").value) || 0;
+  const baseAmt = Number(document.getElementById("ex-amt").value) || 0;
+  const customLines = expenseExtraRows
+    .map(r => ({ description: (r.description || "").trim(), amount: Number(r.amount) || 0 }))
+    .filter(r => r.description || r.amount);
+  const extrasTotal = customLines.reduce((s, l) => s + l.amount, 0);
+  const amt = baseAmt + extrasTotal;
   if (!desc) return toast(t("err_enter_desc"), "error");
   if (!amt) return toast(t("err_enter_amount"), "error");
 
@@ -347,13 +469,16 @@ async function saveExpense(id) {
     }
   }
 
+  const noTax = !!document.getElementById("ex-notax")?.checked;
   const type = document.getElementById("ex-type").value;
   const data = {
     supplier: sup,
     description: desc,
     amount: amt,
-    tps: Number(document.getElementById("ex-tps").value) || 0,
-    tvq: Number(document.getElementById("ex-tvq").value) || 0,
+    tps: noTax ? 0 : (Number(document.getElementById("ex-tps").value) || 0),
+    tvq: noTax ? 0 : (Number(document.getElementById("ex-tvq").value) || 0),
+    noTax,
+    customLines,
     date: document.getElementById("ex-date").value,
     category: document.getElementById("ex-cat").value,
     type,
@@ -363,8 +488,6 @@ async function saveExpense(id) {
   else { const nid = genId(); await db.collection("expenses").doc(nid).set({ ...data, id: nid }); }
   closeModal();
 }
-
-// ── Modal Revenu ──────────────────────────────────────
 function openRevenueModal(id) {
   const r = id ? revenues.find(x => x.id === id) : null;
   const today = new Date().toISOString().slice(0, 10);
@@ -475,29 +598,69 @@ function fmtRevenuePeriod(r) {
 }
 
 // ── Modal Fournisseur rapide ──────────────────────────
-function openQuickSupplier() {
+let _qsExpenseCtx = null;
+function openQuickSupplier(id, draft) {
+  _qsExpenseCtx = { id: id || "", draft: draft || null };
   showModal(`<div class="modal" style="max-width:380px">
-    <div class="modal-header"><h3>🏪 Nouveau fournisseur</h3><button class="close-btn" onclick="openExpenseModal()">${icon("x", 18)}</button></div>
+    <div class="modal-header"><h3>🏪 Nouveau fournisseur</h3><button class="close-btn" onclick="closeQuickSupplier()">${icon("x", 18)}</button></div>
     <label>Nom<input id="qs-name" placeholder="Nom du fournisseur"/></label>
     <label>Téléphone<input id="qs-phone"/></label>
     <label>Courriel<input id="qs-email"/></label>
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="openExpenseModal()">${t("cancel")}</button>
+      <button class="btn-cancel" onclick="closeQuickSupplier()">${t("cancel")}</button>
       <button class="btn btn-primary" onclick="saveQuickSupplier()">Créer</button>
     </div>
   </div>`);
+  setTimeout(() => document.getElementById("qs-name")?.focus(), 50);
 }
-
+function closeQuickSupplier() {
+  const ctx = _qsExpenseCtx || {};
+  openExpenseModal(ctx.id || "", ctx.draft || null);
+}
 async function saveQuickSupplier() {
   const name = document.getElementById("qs-name").value.trim();
   if (!name) return toast("Entrez un nom.", "error");
   const nid = genId();
   await db.collection("suppliers").doc(nid).set({ id: nid, name, contact: document.getElementById("qs-phone").value, email: document.getElementById("qs-email").value, notes: "" });
-  closeModal();
-  setTimeout(() => openExpenseModal(), 300);
+  const ctx = _qsExpenseCtx || {};
+  openExpenseModal(ctx.id || "", ctx.draft || null, { supplier: name });
 }
 
-// ── Modal Catégories de dépenses ──────────────────────
+// ── Modal Catégorie rapide (depuis le formulaire dépense) ──
+let _qcExpenseCtx = null;
+function openQuickCat(id, draft) {
+  _qcExpenseCtx = { id: id || "", draft: draft || null };
+  showModal(`<div class="modal" style="max-width:380px">
+    <div class="modal-header"><h3>${icon("tag", 16)} ${t("exp_quick_new_cat_title")}</h3><button class="close-btn" onclick="closeQuickCat()">${icon("x", 18)}</button></div>
+    <label>${t("exp_field_category")}<input id="qc-name" placeholder="${t("exp_quick_new_cat_ph")}"/></label>
+    <label>${t("exp_field_type")}
+      <select id="qc-type">
+        <option value="variable">${icon("bar-chart", 14)} ${t("exp_type_variable")}</option>
+        <option value="fixe">🔒 ${t("exp_type_fixed")}</option>
+      </select>
+    </label>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeQuickCat()">${t("cancel")}</button>
+      <button class="btn btn-primary" onclick="saveQuickCat()">${t("save")}</button>
+    </div>
+  </div>`);
+  setTimeout(() => document.getElementById("qc-name")?.focus(), 50);
+}
+function closeQuickCat() {
+  const ctx = _qcExpenseCtx || {};
+  openExpenseModal(ctx.id || "", ctx.draft || null);
+}
+async function saveQuickCat() {
+  const name = document.getElementById("qc-name").value.trim();
+  const type = document.getElementById("qc-type").value;
+  if (!name) return toast("Entrez un nom.", "error");
+  if (getAllExpenseCats().some(c => c.toLowerCase() === name.toLowerCase())) return toast(t("exp_cat_exists"), "error");
+  const nid = genId();
+  await db.collection("expenseCategories").doc(nid).set({ id: nid, name, type });
+  const ctx = _qcExpenseCtx || {};
+  openExpenseModal(ctx.id || "", ctx.draft || null, { category: name, type });
+}
+// ── Modal Catégories de dépenses (gestion complète) ──
 function openExpenseCatModal() {
   const customs = expenseCategories;
   showModal(`<div class="modal">
