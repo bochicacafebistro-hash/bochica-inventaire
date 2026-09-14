@@ -2529,7 +2529,19 @@ function generatePayrollPDF() {
       totalPay: grossWage + tipShare + bonus,
       isManual: isManualEmployee(emp)
     };
+  }).filter(r => {
+    // v3.65.0 — le rapport PDF n'affiche que les employés actifs, avec un
+    // salaire configuré et ayant réellement travaillé cette semaine.
+    if (r.emp.archived) return false;           // employé supprimé/archivé
+    if (!(r.rate > 0)) return false;             // aucun salaire configuré
+    if (!(r.totalHours > 0)) return false;       // aucune heure travaillée
+    return true;
   });
+
+  if (empRows.length === 0) {
+    toast("Aucun employé actif avec des heures et un salaire à inclure dans le rapport.", "warning");
+    return;
+  }
 
   const sumGross = empRows.reduce((s, r) => s + r.grossWage, 0);
   const sumTips = empRows.reduce((s, r) => s + r.tipShare, 0);
@@ -3212,18 +3224,26 @@ async function generateBiWeeklyPDF() {
       });
     }
   }
-  const aggregatedRows = Array.from(empMap.values());
+  // v3.65.0 — le rapport PDF n'affiche que les employés actifs, avec un
+  // salaire configuré et ayant réellement travaillé au moins une des 2
+  // semaines (heures combinées des 2 semaines > 0).
+  const aggregatedRows = Array.from(empMap.values()).filter(r => {
+    if (r.emp.archived) return false;                 // employé supprimé/archivé
+    if (!(r.rate > 0)) return false;                   // aucun salaire configuré
+    if (!((r.hrs1 + r.hrs2) > 0)) return false;        // aucune heure travaillée sur les 2 sem
+    return true;
+  });
   if (aggregatedRows.length === 0) {
-    toast("Aucun employé sur ces 2 semaines.", "warning");
+    toast("Aucun employé actif avec des heures et un salaire sur ces 2 semaines.", "warning");
     return;
   }
 
   const sumsCombined = {
-    gross: w1.sums.gross + w2.sums.gross,
-    tips: w1.sums.tips + w2.sums.tips,
-    bonus: (w1.sums.bonus || 0) + (w2.sums.bonus || 0),
-    total: w1.sums.total + w2.sums.total,
-    hours: w1.sums.hours + w2.sums.hours
+    gross: aggregatedRows.reduce((s, r) => s + r.sal1 + r.sal2, 0),
+    tips: aggregatedRows.reduce((s, r) => s + r.tips1 + r.tips2, 0),
+    bonus: aggregatedRows.reduce((s, r) => s + r.bonus1 + r.bonus2, 0),
+    total: aggregatedRows.reduce((s, r) => s + r.total1 + r.total2, 0),
+    hours: aggregatedRows.reduce((s, r) => s + r.hrs1 + r.hrs2, 0)
   };
 
   // ─ Setup jsPDF — landscape Letter ─────────────────────
