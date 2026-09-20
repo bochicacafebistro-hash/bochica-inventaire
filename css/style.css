@@ -4111,6 +4111,9 @@ textarea.md-input{
    chaque tuile, comme un vieux flexbox-grid — la séparation est garantie
    par la boîte de chaque tuile elle-même, pas par un espace calculé entre
    elles. */
+.payroll-overview-card{
+  background:var(--surface2);
+}
 .payroll-overview-card .stat-grid{
   display:flex;
   flex-wrap:wrap;
@@ -4120,7 +4123,7 @@ textarea.md-input{
 .payroll-overview-card .stat-card{
   flex:1 1 180px;
   margin:var(--sp-5) 0 0 var(--sp-5);
-  background:var(--surface2);
+  background:var(--surface, #ffffff);
   border-color:var(--border-strong);
   box-shadow:0 2px 6px rgba(14,13,12,.12);
 }
@@ -4187,7 +4190,7 @@ textarea.md-input{
 .payroll-tips-day{
   flex:1 1 160px;
   margin:var(--sp-4) 0 0 var(--sp-4);
-  background:var(--surface2);
+  background:var(--surface, #ffffff);
   border:1px solid var(--border-strong);
   border-radius:var(--radius-md);
   padding:10px 12px;
