@@ -4103,16 +4103,23 @@ textarea.md-input{
   line-height:1.4;
 }
 
-/* v3.73.0 puis v3.74.0 — les tuiles du stat-grid avaient le même fond que
-   la carte .payroll-overview-card et un contour quasi invisible (border 10%
-   + shadow-sm ~5%) : elles se lisaient comme "collées" même avec un gap.
-   v3.74.0 renforce les 3 leviers à la fois (gap encore élargi, bordure et
-   ombre bien plus marquées) pour que chaque tuile se détache clairement,
-   peu importe la teinte de fond derrière. Scopé à cette carte seulement. */
+/* v3.73.0, v3.74.0, puis v3.75.0 — les tuiles du stat-grid continuaient à
+   paraître "collées" malgré 2 correctifs basés sur `gap` + bordure + ombre.
+   v3.75.0 abandonne `gap` pour cette carte et repasse en flex "rows" avec
+   marges classiques (technique qui ne dépend d'aucun support de `gap`) :
+   marge négative sur le conteneur pour compenser la marge positive de
+   chaque tuile, comme un vieux flexbox-grid — la séparation est garantie
+   par la boîte de chaque tuile elle-même, pas par un espace calculé entre
+   elles. */
 .payroll-overview-card .stat-grid{
-  gap:var(--sp-5);
+  display:flex;
+  flex-wrap:wrap;
+  gap:0;
+  margin:calc(var(--sp-5) * -1) 0 0 calc(var(--sp-5) * -1);
 }
 .payroll-overview-card .stat-card{
+  flex:1 1 180px;
+  margin:var(--sp-5) 0 0 var(--sp-5);
   background:var(--surface2);
   border-color:var(--border-strong);
   box-shadow:0 2px 6px rgba(14,13,12,.12);
@@ -4231,66 +4238,36 @@ textarea.md-input{
   font-weight:600;
 }
 
-/* Pools cuisine / service */
-/* v3.73.0 — les 2 cartes Pool Cuisine / Pool Service (chacune avec sa
-   propre bordure/fond) sont fusionnées en UNE seule carte à 3 colonnes
-   (Total pourboires, Cuisine, Service), séparées par des liserés internes
-   plutôt que par un gap entre 2 boîtes distinctes. */
-.payroll-tips-pools{
-  display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
-  background:var(--surface2);
-  border:1px solid var(--border);
-  border-radius:var(--radius-md);
-  overflow:hidden;
-}
-.payroll-tips-pool{
-  padding:var(--sp-4);
+/* v3.75.0 — Pool Cuisine / Pool Service pliés dans la tuile "Pourboires"
+   du stat-grid (l'ancienne rangée pleine largeur .payroll-tips-pools est
+   retirée : "trop d'espace pour rien"). Reprend les couleurs de section
+   déjà utilisées ailleurs dans l'app (cuisine #BA7517, service #378ADD). */
+.payroll-overview-pools{
+  margin-top:8px;
+  padding-top:8px;
+  border-top:1px dashed var(--border);
   display:flex;
   flex-direction:column;
-  gap:4px;
-  border-left:1px solid var(--border);
-  border-top:3px solid transparent;
+  gap:3px;
 }
-.payroll-tips-pool:first-child{
-  border-left:none;
-}
-.payroll-tips-pool--total{
-  border-top-color:var(--accent, #F7B32C);
-  background:rgba(247,179,44,.06);
-}
-.payroll-tips-pool--kitchen{
-  border-top-color:#BA7517;
-  background:rgba(247,179,44,.10);
-}
-.payroll-tips-pool--service{
-  border-top-color:#378ADD;
-  background:rgba(74,144,226,.10);
-}
-.payroll-tips-pool__label{
+.payroll-overview-pools__item{
   font-family:var(--font-body);
-  font-size:var(--fs-xs);
-  font-weight:700;
-  text-transform:uppercase;
-  letter-spacing:.06em;
+  font-size:11px;
+  font-weight:600;
   color:var(--text2);
-  display:inline-flex;
+  display:flex;
   align-items:center;
-  gap:6px;
+  gap:4px;
 }
-.payroll-tips-pool__amount{
+.payroll-overview-pools__item strong{
+  margin-left:auto;
   font-family:var(--font-heading);
-  font-size:32px;
+  font-size:13px;
+  font-weight:400;
   color:var(--text);
-  letter-spacing:.02em;
-  line-height:1.1;
 }
-.payroll-tips-pool__hint{
-  font-family:var(--font-body);
-  font-size:var(--fs-xs);
-  color:var(--text3);
-  font-style:italic;
-}
+.payroll-overview-pools__item--kitchen{ color:#BA7517; }
+.payroll-overview-pools__item--service{ color:#378ADD; }
 
 /* Total ventes nettes (v3.59.0) — même carte que le total pourboires,
    accent bleu pour la distinguer d'un coup d'œil. */
@@ -5806,12 +5783,6 @@ textarea.md-input{
 }
 
 /* Dark mode adaptations */
-.dark .payroll-tips-pool--kitchen{
-  background:rgba(247,179,44,.15);
-}
-.dark .payroll-tips-pool--service{
-  background:rgba(74,144,226,.15);
-}
 /* (v3.16.1 : fond is-modified retiré en dark mode aussi — voir la règle
    light mode plus haut. La barre ambrée à gauche suffit comme indicateur.) */
 
