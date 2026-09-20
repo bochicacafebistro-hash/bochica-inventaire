@@ -1020,14 +1020,14 @@ function renderSalaires() {
         </div>
       </div>
 
-      <!-- ══ Carte "Vue d'ensemble financière" (v3.71.0) — fusion des 3 anciennes
-           cartes (Ratio salaires/ventes, Estimé vs payé, Rentabilité) en une
-           seule carte compacte, pour alléger la page. Chaque ancienne carte
-           avait son propre en-tête + long sous-titre explicatif toujours
-           affiché ; ici un seul en-tête, et les formules détaillées sont
-           dans l'info-bulle au survol au lieu d'être écrites en permanence.
-           Le détail par jour (payroll-profit-days) est conservé tel quel,
-           demandé explicitement par l'utilisateur. ══ -->
+      <!-- ══ Carte "Vue d'ensemble financière" (v3.72.0) — fusion de l'ancienne
+           carte "Vue d'ensemble financière" (v3.71.0) et de la carte "Pourboires
+           & ventes nettes" (v3.59.0) en une seule carte. Les totaux Pourboires /
+           Ventes nettes / % Pourboire rejoignent les autres chiffres clés en
+           haut (6 tuiles), et la grille par jour combine maintenant la saisie
+           (pourboire + net) et la rentabilité du jour dans une seule cellule par
+           jour au lieu de deux grilles séparées. Les pools Cuisine/Service
+           restent en bas, inchangés. ══ -->
       <div class="card payroll-overview-card">
         <div class="payroll-overview-head">
           <h3 class="payroll-service-title">${icon("trending-up", 16)} Vue d'ensemble financière de la semaine
@@ -1037,6 +1037,7 @@ function renderSalaires() {
                 <strong>Ratio salaires/ventes</strong> = salaires bruts ÷ ventes réelles saisies dans Employés & Horaires.<br>
                 <strong>Salaires payés</strong> = heures réellement pointées cette semaine · <strong>Estimé</strong> = ce que l'horaire planifié aurait coûté au même taux.<br>
                 <strong>Rentabilité</strong> = ventes nettes atteintes vs ce qu'il aurait fallu vendre pour que les salaires réels respectent la cible.<br>
+                <strong>% Pourboire</strong> = pourboires ÷ ventes nettes de la semaine.<br>
                 Cible actuelle : <strong>${(targetRatio * 100).toFixed(0)}%</strong> (réglage Employés & Horaires).
               </span>
             </span>
@@ -1058,17 +1059,61 @@ function renderSalaires() {
             <div class="stat-label">Rentabilité — % atteint</div>
             <div class="payroll-overview-sub">${totalNet > 0 ? (weekSurplus >= 0 ? `✓ +${fmtMoney(weekSurplus)} vs cible` : `⚠ ${fmtMoney(Math.abs(weekSurplus))} manquant`) : "Aucune vente nette saisie"}</div>
           </div>
+          <div class="stat-card" style="border-left:4px solid var(--accent, #F7B32C)">
+            <div class="stat-num">${fmtMoney(totalTips)}</div>
+            <div class="stat-label">Pourboires</div>
+            <div class="payroll-overview-sub">Total de la semaine</div>
+          </div>
+          <div class="stat-card" style="border-left:4px solid #3b7cc6">
+            <div class="stat-num">${fmtMoney(totalNet)}</div>
+            <div class="stat-label">Ventes nettes</div>
+            <div class="payroll-overview-sub">Total de la semaine</div>
+          </div>
+          <div class="stat-card" style="border-left:4px solid var(--status-green, #7dbf66)">
+            <div class="stat-num">${totalNet > 0 ? `${(totalTips / totalNet * 100).toFixed(1)}%` : "—"}</div>
+            <div class="stat-label">% Pourboire</div>
+            <div class="payroll-overview-sub">Pourboires ÷ ventes nettes</div>
+          </div>
         </div>
-        ${totalNet > 0 ? `<div class="payroll-profit-days">
-          ${dayProfitList.map(dp => {
+        <div class="payroll-tips-grid">
+          ${weekDays.map((d, k) => {
+            const dk = dayKey(d);
+            const dowIdx = visibleIdx[k];
+            const val = Number(tipsByDay[dk] || 0);
+            const netVal = Number(netByDay[dk] || 0);
+            const dayTipPct = netVal > 0 ? (val / netVal * 100) : null;
+            const dp = dayProfitList[k];
             const dCls = !dp.hasNet ? "is-empty" : dp.pctReached >= 100 ? "is-good" : "is-bad";
-            return `<div class="payroll-profit-day payroll-profit-day--${dCls}" title="${dp.hasNet ? `Salaires réels ${fmtMoney(dp.labor)} ÷ Net ${fmtMoney(dp.net)} — cible ${(targetRatio * 100).toFixed(0)}% (ventes nécessaires ${fmtMoney(dp.salesNeeded)} pour ce coût réel)` : "Aucune vente nette saisie ce jour"}">
-              <div class="payroll-profit-day__name">${DAYS_FR[dp.dowIdx]} <span>${dp.date.getDate()}/${dp.date.getMonth() + 1}</span></div>
-              <div class="payroll-profit-day__pct">${dp.hasNet ? `${dp.pctReached.toFixed(0)}%<span class="payroll-profit-day__pct-label">atteint</span>` : "—"}</div>
-              <div class="payroll-profit-day__amt">${dp.hasNet ? (dp.surplus >= 0 ? `+${fmtMoney(dp.surplus)}` : `${fmtMoney(Math.abs(dp.surplus))} manquant`) : ""}</div>
+            return `<div class="payroll-tips-day">
+              <div class="payroll-tips-day__name">${DAYS_FR[dowIdx]} <span class="payroll-tips-day__date">${d.getDate()}/${d.getMonth() + 1}</span></div>
+              <div class="payroll-tips-day__input" title="Pourboire reçu">
+                <input type="number" min="0" step="0.01" placeholder="0.00" value="${val || ""}" onchange="updateTipForDay('${dk}',this.value)" aria-label="Pourboires ${DAYS_FR[dowIdx]} ${d.getDate()}/${d.getMonth() + 1}"/>
+                <span>$</span>
+              </div>
+              <div class="payroll-tips-day__input payroll-tips-day__input--net" title="Ventes nettes de taxes">
+                <input type="number" min="0" step="0.01" placeholder="Net 0.00" value="${netVal || ""}" onchange="updateNetForDay('${dk}',this.value)" aria-label="Ventes nettes ${DAYS_FR[dowIdx]} ${d.getDate()}/${d.getMonth() + 1}"/>
+                <span>$</span>
+              </div>
+              <div class="payroll-tips-day__pct" title="Pourboire ÷ ventes nettes de la journée">${dayTipPct !== null ? `${dayTipPct.toFixed(1)}% pourboire` : "—"}</div>
+              <div class="payroll-tips-day__profit payroll-tips-day__profit--${dCls}" title="${dp.hasNet ? `Salaires réels ${fmtMoney(dp.labor)} ÷ Net ${fmtMoney(dp.net)} — cible ${(targetRatio * 100).toFixed(0)}% (ventes nécessaires ${fmtMoney(dp.salesNeeded)} pour ce coût réel)` : "Aucune vente nette saisie ce jour"}">
+                <div class="payroll-tips-day__profit-pct">${dp.hasNet ? `${dp.pctReached.toFixed(0)}%<span class="payroll-tips-day__profit-label">atteint</span>` : "—"}</div>
+                <div class="payroll-tips-day__profit-amt">${dp.hasNet ? (dp.surplus >= 0 ? `+${fmtMoney(dp.surplus)}` : `${fmtMoney(Math.abs(dp.surplus))} manquant`) : ""}</div>
+              </div>
             </div>`;
           }).join("")}
-        </div>` : ""}
+        </div>
+        <div class="payroll-tips-pools">
+          <div class="payroll-tips-pool payroll-tips-pool--kitchen">
+            <div class="payroll-tips-pool__label">${icon("utensils", 12)} Pool Cuisine (${(tipShares.cuisine * 100).toFixed(0)}%)</div>
+            <div class="payroll-tips-pool__amount">${fmtMoney(poolCuisine)}</div>
+            <div class="payroll-tips-pool__hint">${fmtHours(totalCuisineHrs)}h éligibles</div>
+          </div>
+          <div class="payroll-tips-pool payroll-tips-pool--service">
+            <div class="payroll-tips-pool__label">${icon("users", 12)} Pool Service + Admin (${(tipShares.service * 100).toFixed(0)}%)</div>
+            <div class="payroll-tips-pool__amount">${fmtMoney(poolService)}</div>
+            <div class="payroll-tips-pool__hint">${fmtHours(totalServiceHrs)}h éligibles</div>
+          </div>
+        </div>
       </div>
 
       ${alerts.length > 0 ? `
@@ -1172,63 +1217,6 @@ function renderSalaires() {
         </p>
       </div>
       ` : ""}
-
-      <!-- ══ Pourboires + ventes nettes par jour + total auto + pools (v3.59.0) ══ -->
-      <div class="card payroll-tips-card">
-        <div class="payroll-tips-head">
-          <div>
-            <h3 class="payroll-service-title">${icon("dollar-sign", 16)} Pourboires & ventes nettes</h3>
-            <div class="payroll-service-sub">Saisis le pourboire reçu et les ventes nettes de taxes de chaque jour — les totaux et la rentabilité se calculent automatiquement</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <div class="payroll-tips-total">
-              <div class="payroll-tips-total__label">Pourboires</div>
-              <div class="payroll-tips-total__amount">${fmtMoney(totalTips)}</div>
-            </div>
-            <div class="payroll-tips-total payroll-tips-total--net">
-              <div class="payroll-tips-total__label">Ventes nettes</div>
-              <div class="payroll-tips-total__amount">${fmtMoney(totalNet)}</div>
-            </div>
-            <div class="payroll-tips-total payroll-tips-total--pct" title="Pourboires ÷ ventes nettes de la semaine">
-              <div class="payroll-tips-total__label">% Pourboire</div>
-              <div class="payroll-tips-total__amount">${totalNet > 0 ? `${(totalTips / totalNet * 100).toFixed(1)}%` : "—"}</div>
-            </div>
-          </div>
-        </div>
-        <div class="payroll-tips-grid">
-          ${weekDays.map((d, k) => {
-            const dk = dayKey(d);
-            const dowIdx = visibleIdx[k];
-            const val = Number(tipsByDay[dk] || 0);
-            const netVal = Number(netByDay[dk] || 0);
-            const dayTipPct = netVal > 0 ? (val / netVal * 100) : null;
-            return `<div class="payroll-tips-day">
-              <div class="payroll-tips-day__name">${DAYS_FR[dowIdx]} <span class="payroll-tips-day__date">${d.getDate()}/${d.getMonth() + 1}</span></div>
-              <div class="payroll-tips-day__input" title="Pourboire reçu">
-                <input type="number" min="0" step="0.01" placeholder="0.00" value="${val || ""}" onchange="updateTipForDay('${dk}',this.value)" aria-label="Pourboires ${DAYS_FR[dowIdx]} ${d.getDate()}/${d.getMonth() + 1}"/>
-                <span>$</span>
-              </div>
-              <div class="payroll-tips-day__input payroll-tips-day__input--net" title="Ventes nettes de taxes">
-                <input type="number" min="0" step="0.01" placeholder="Net 0.00" value="${netVal || ""}" onchange="updateNetForDay('${dk}',this.value)" aria-label="Ventes nettes ${DAYS_FR[dowIdx]} ${d.getDate()}/${d.getMonth() + 1}"/>
-                <span>$</span>
-              </div>
-              <div class="payroll-tips-day__pct" title="Pourboire ÷ ventes nettes de la journée">${dayTipPct !== null ? `${dayTipPct.toFixed(1)}% pourboire` : "—"}</div>
-            </div>`;
-          }).join("")}
-        </div>
-        <div class="payroll-tips-pools">
-          <div class="payroll-tips-pool payroll-tips-pool--kitchen">
-            <div class="payroll-tips-pool__label">${icon("utensils", 12)} Pool Cuisine (${(tipShares.cuisine * 100).toFixed(0)}%)</div>
-            <div class="payroll-tips-pool__amount">${fmtMoney(poolCuisine)}</div>
-            <div class="payroll-tips-pool__hint">${fmtHours(totalCuisineHrs)}h éligibles</div>
-          </div>
-          <div class="payroll-tips-pool payroll-tips-pool--service">
-            <div class="payroll-tips-pool__label">${icon("users", 12)} Pool Service + Admin (${(tipShares.service * 100).toFixed(0)}%)</div>
-            <div class="payroll-tips-pool__amount">${fmtMoney(poolService)}</div>
-            <div class="payroll-tips-pool__hint">${fmtHours(totalServiceHrs)}h éligibles</div>
-          </div>
-        </div>
-      </div>
 
       ${(() => {
         const hiddenIds = getPayrollHidden();

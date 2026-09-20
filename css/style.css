@@ -4151,7 +4151,7 @@ textarea.md-input{
 /* Grille des inputs pourboires par jour */
 .payroll-tips-grid{
   display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
+  grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
   gap:var(--sp-2);
   margin-bottom:var(--sp-4);
 }
@@ -4281,6 +4281,46 @@ textarea.md-input{
   font-weight:600;
   color:var(--text3);
   text-align:center;
+}
+
+/* Rentabilité du jour (v3.72.0) — sous-bloc ajouté dans chaque case de
+   .payroll-tips-grid lors de la fusion des cartes "Vue d'ensemble" et
+   "Pourboires & ventes nettes". Reprend le langage visuel de
+   .payroll-profit-day (vert/rouge selon la cible atteinte ou non), en
+   version compacte avec une ligne de séparation au-dessus. */
+.payroll-tips-day__profit{
+  margin-top:4px;
+  padding-top:6px;
+  border-top:1px dashed var(--border);
+  text-align:center;
+}
+.payroll-tips-day__profit--is-good{ border-top-color:rgba(125,191,102,.4); }
+.payroll-tips-day__profit--is-bad{ border-top-color:rgba(217,83,79,.4); }
+.payroll-tips-day__profit--is-empty{ opacity:.55; }
+.payroll-tips-day__profit-pct{
+  font-family:var(--font-heading);
+  font-size:16px;
+  color:var(--text);
+  line-height:1.1;
+}
+.payroll-tips-day__profit--is-good .payroll-tips-day__profit-pct{ color:var(--status-green, #7dbf66); }
+.payroll-tips-day__profit--is-bad .payroll-tips-day__profit-pct{ color:var(--status-red, #d9534f); }
+.payroll-tips-day__profit-label{
+  font-family:var(--font-body);
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  color:var(--text3);
+  margin-left:3px;
+}
+.payroll-tips-day__profit--is-good .payroll-tips-day__profit-label{ color:var(--status-green, #7dbf66); }
+.payroll-tips-day__profit--is-bad .payroll-tips-day__profit-label{ color:var(--status-red, #d9534f); }
+.payroll-tips-day__profit-amt{
+  font-family:var(--font-body);
+  font-size:11px;
+  color:var(--text3);
+  margin-top:2px;
 }
 
 /* Second input (ventes nettes) sous le pourboire dans chaque case jour */
