@@ -4102,6 +4102,18 @@ textarea.md-input{
   margin-top:4px;
   line-height:1.4;
 }
+
+/* v3.73.0 — les tuiles du stat-grid avaient le même fond que la carte
+   .payroll-overview-card (var(--surface) des deux côtés) : elles se
+   lisaient comme "collées" malgré le gap. Fond contrasté + espacement
+   accru, scopés à cette carte pour ne pas affecter les autres .stat-grid
+   de l'app (Dashboard, Dépenses, etc.). */
+.payroll-overview-card .stat-grid{
+  gap:var(--sp-4);
+}
+.payroll-overview-card .stat-card{
+  background:var(--surface2);
+}
 .payroll-service-sub{
   font-family:var(--font-body);
   font-size:var(--fs-sm);
@@ -4164,6 +4176,8 @@ textarea.md-input{
   flex-direction:column;
   gap:6px;
 }
+.payroll-tips-day--is-good{ background:rgba(125,191,102,.12); border-color:rgba(125,191,102,.4); }
+.payroll-tips-day--is-bad{ background:rgba(217,83,79,.12); border-color:rgba(217,83,79,.4); }
 .payroll-tips-day__name{
   font-family:var(--font-heading);
   font-size:16px;
@@ -4212,27 +4226,40 @@ textarea.md-input{
 }
 
 /* Pools cuisine / service */
+/* v3.73.0 — les 2 cartes Pool Cuisine / Pool Service (chacune avec sa
+   propre bordure/fond) sont fusionnées en UNE seule carte à 3 colonnes
+   (Total pourboires, Cuisine, Service), séparées par des liserés internes
+   plutôt que par un gap entre 2 boîtes distinctes. */
 .payroll-tips-pools{
   display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(220px, 1fr));
-  gap:var(--sp-3);
-}
-.payroll-tips-pool{
+  grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
   background:var(--surface2);
   border:1px solid var(--border);
   border-radius:var(--radius-md);
+  overflow:hidden;
+}
+.payroll-tips-pool{
   padding:var(--sp-4);
   display:flex;
   flex-direction:column;
   gap:4px;
+  border-left:1px solid var(--border);
+  border-top:3px solid transparent;
+}
+.payroll-tips-pool:first-child{
+  border-left:none;
+}
+.payroll-tips-pool--total{
+  border-top-color:var(--accent, #F7B32C);
+  background:rgba(247,179,44,.06);
 }
 .payroll-tips-pool--kitchen{
+  border-top-color:#BA7517;
   background:rgba(247,179,44,.10);
-  border-color:rgba(247,179,44,.35);
 }
 .payroll-tips-pool--service{
+  border-top-color:#378ADD;
   background:rgba(74,144,226,.10);
-  border-color:rgba(74,144,226,.35);
 }
 .payroll-tips-pool__label{
   font-family:var(--font-body);

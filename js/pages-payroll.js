@@ -1054,11 +1054,6 @@ function renderSalaires() {
             <div class="stat-label">Salaires payés</div>
             <div class="payroll-overview-sub">Estimé ${fmtMoney(estimatedWage)} · Écart ${wageDelta > 0 ? "+" : ""}${fmtMoney(wageDelta)}</div>
           </div>
-          <div class="stat-card" style="border-left:4px solid ${totalNet === 0 ? "var(--border)" : weekProfitCls === "is-good" ? "var(--status-green, #7dbf66)" : "var(--status-red, #d9534f)"}">
-            <div class="stat-num" style="${totalNet === 0 ? "" : `color:${weekProfitCls === "is-good" ? "var(--status-green, #7dbf66)" : "var(--status-red, #d9534f)"}`}">${totalNet > 0 ? `${weekPctReached.toFixed(0)}%` : "—"}</div>
-            <div class="stat-label">Rentabilité — % atteint</div>
-            <div class="payroll-overview-sub">${totalNet > 0 ? (weekSurplus >= 0 ? `✓ +${fmtMoney(weekSurplus)} vs cible` : `⚠ ${fmtMoney(Math.abs(weekSurplus))} manquant`) : "Aucune vente nette saisie"}</div>
-          </div>
           <div class="stat-card" style="border-left:4px solid var(--accent, #F7B32C)">
             <div class="stat-num">${fmtMoney(totalTips)}</div>
             <div class="stat-label">Pourboires</div>
@@ -1074,6 +1069,11 @@ function renderSalaires() {
             <div class="stat-label">% Pourboire</div>
             <div class="payroll-overview-sub">Pourboires ÷ ventes nettes</div>
           </div>
+          <div class="stat-card" style="border-left:4px solid ${totalNet === 0 ? "var(--border)" : weekProfitCls === "is-good" ? "var(--status-green, #7dbf66)" : "var(--status-red, #d9534f)"}">
+            <div class="stat-num" style="${totalNet === 0 ? "" : `color:${weekProfitCls === "is-good" ? "var(--status-green, #7dbf66)" : "var(--status-red, #d9534f)"}`}">${totalNet > 0 ? `${weekPctReached.toFixed(0)}%` : "—"}</div>
+            <div class="stat-label">Rentabilité — % atteint</div>
+            <div class="payroll-overview-sub">${totalNet > 0 ? (weekSurplus >= 0 ? `✓ +${fmtMoney(weekSurplus)} vs cible` : `⚠ ${fmtMoney(Math.abs(weekSurplus))} manquant`) : "Aucune vente nette saisie"}</div>
+          </div>
         </div>
         <div class="payroll-tips-grid">
           ${weekDays.map((d, k) => {
@@ -1084,7 +1084,7 @@ function renderSalaires() {
             const dayTipPct = netVal > 0 ? (val / netVal * 100) : null;
             const dp = dayProfitList[k];
             const dCls = !dp.hasNet ? "is-empty" : dp.pctReached >= 100 ? "is-good" : "is-bad";
-            return `<div class="payroll-tips-day">
+            return `<div class="payroll-tips-day payroll-tips-day--${dCls}">
               <div class="payroll-tips-day__name">${DAYS_FR[dowIdx]} <span class="payroll-tips-day__date">${d.getDate()}/${d.getMonth() + 1}</span></div>
               <div class="payroll-tips-day__input" title="Pourboire reçu">
                 <input type="number" min="0" step="0.01" placeholder="0.00" value="${val || ""}" onchange="updateTipForDay('${dk}',this.value)" aria-label="Pourboires ${DAYS_FR[dowIdx]} ${d.getDate()}/${d.getMonth() + 1}"/>
@@ -1103,6 +1103,11 @@ function renderSalaires() {
           }).join("")}
         </div>
         <div class="payroll-tips-pools">
+          <div class="payroll-tips-pool payroll-tips-pool--total">
+            <div class="payroll-tips-pool__label">${icon("dollar-sign", 12)} Total pourboires</div>
+            <div class="payroll-tips-pool__amount">${fmtMoney(totalTips)}</div>
+            <div class="payroll-tips-pool__hint">${totalNet > 0 ? `${(totalTips / totalNet * 100).toFixed(1)}% des ventes nettes` : "—"}</div>
+          </div>
           <div class="payroll-tips-pool payroll-tips-pool--kitchen">
             <div class="payroll-tips-pool__label">${icon("utensils", 12)} Pool Cuisine (${(tipShares.cuisine * 100).toFixed(0)}%)</div>
             <div class="payroll-tips-pool__amount">${fmtMoney(poolCuisine)}</div>
