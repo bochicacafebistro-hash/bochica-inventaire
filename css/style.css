@@ -4089,6 +4089,19 @@ textarea.md-input{
   align-items:center;
   gap:8px;
 }
+
+/* v3.71.0 — Carte "Vue d'ensemble financière" (fusion Ratio/Estimé-payé/
+   Rentabilité) : en-tête + petite légende sous chaque tuile stat-card. */
+.payroll-overview-head{
+  margin-bottom:var(--sp-3);
+}
+.payroll-overview-sub{
+  font-family:var(--font-body);
+  font-size:11px;
+  color:var(--text3);
+  margin-top:4px;
+  line-height:1.4;
+}
 .payroll-service-sub{
   font-family:var(--font-body);
   font-size:var(--fs-sm);
