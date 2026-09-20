@@ -104,19 +104,22 @@ function initPayrollCharts() {
   const yAxisMoney = { ticks: { color: textColor, font: { size: 11 }, callback: (v) => fmtMoney(v) }, grid: { color: gridColor } };
 
   // ── Chart 1 : coût salarial par jour — réel vs planifié ──
-  // La barre "Réel" est verte quand ce jour est resté sous (ou égal à) ce
-  // qui était planifié, rouge quand il l'a dépassé — visible en un coup
-  // d'œil sans avoir à comparer les 2 barres au pixel près.
+  // Une couleur FIXE par série (Réel = vert, Planifié = gris), pour que la
+  // légende corresponde toujours aux barres. (v3.69.0 — la 1ère version
+  // colorait chaque barre "Réel" en rouge/vert selon dépassement du budget
+  // CE jour-là, mais Chart.js n'affiche qu'une seule couleur dans la
+  // légende : elle ne correspondait plus aux barres individuelles et
+  // semblait buguée. Le dépassement reste lisible via l'écart entre les 2
+  // barres et le badge ▲/▼ sur les cartes de quart.)
   const ctxDaily = document.getElementById("payroll-chart-daily-cost");
   if (ctxDaily) {
-    const overBudget = data.laborActual.map((v, i) => v > (data.laborPlanned[i] || 0) + 0.01);
     _payrollChartInstances.daily = new Chart(ctxDaily, {
       type: "bar",
       data: {
         labels: data.dayLabels,
         datasets: [
           { label: "Planifié", data: data.laborPlanned, backgroundColor: plannedC + "55", borderColor: plannedC, borderWidth: 1, borderRadius: 5, order: 2 },
-          { label: "Réel", data: data.laborActual, backgroundColor: overBudget.map(o => (o ? redC : greenC) + "cc"), borderColor: overBudget.map(o => (o ? redC : greenC)), borderWidth: 1, borderRadius: 5, order: 1 }
+          { label: "Réel", data: data.laborActual, backgroundColor: greenC + "cc", borderColor: greenC, borderWidth: 1, borderRadius: 5, order: 1 }
         ]
       },
       options: {
