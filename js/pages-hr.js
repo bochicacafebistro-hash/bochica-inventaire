@@ -696,7 +696,13 @@ function renderEmployes() {
         ${activeEmployees().slice().sort((a,b)=>{
           const sp = employeeSectionPriority(a) - employeeSectionPriority(b);
           return sp !== 0 ? sp : (a.sortOrder||0)-(b.sortOrder||0);
-        }).map(emp => `<div class="card team-card">
+        }).map(emp => {
+          // v3.67.0 — Couleur de section (Cuisine/Service/Autre), comme sur
+          // Horaires/Salaires/Simulation, pour que la fiche employé ait le
+          // même code couleur partout (voir aussi .schedule-empgrid-emp).
+          const teamSecCls = emp.section === "cuisine" ? "is-kitchen"
+                          : emp.section === "service" ? "is-service" : "is-other";
+          return `<div class="card team-card ${teamSecCls}">
           <div class="team-card__head">
             <div class="team-card__info">
               <div class="team-card__name">${icon("user", 14)} ${esc(emp.name || "")}${emp.noTips ? ` <span class="no-tips-badge" title="Exclu du partage des pourboires">${icon("ban", 10)} Sans pourboire</span>` : ""}</div>
@@ -714,7 +720,8 @@ function renderEmployes() {
               <button class="text-danger" onclick="askDeleteEmployee('${emp.id}','${esc(emp.name || "")}');closeAllDrops()">${icon("trash", 14)} Supprimer</button>
             </div></div>
           </div>
-        </div>`).join("")}
+        </div>`;
+        }).join("")}
       </div>
 
       ${(() => {

@@ -1624,7 +1624,42 @@ tr:last-child td{border-bottom:none}
 
 /* ═══════════════════════════════════════════════════════════════
    CARTES ÉQUIPE (section Équipe sous l'horaire)
+   v3.67.0 — Même traitement visuel que .payroll-recap-card-emp (Salaires &
+   Pourboires) : bande de couleur + fond teinté selon la section, nom en
+   police d'affiche. « Autre » (grise) est propre à cette carte : le récap
+   pourboires n'a que Cuisine/Service.
    ═══════════════════════════════════════════════════════════════ */
+.team-card{
+  position:relative;
+  overflow:hidden;
+}
+.team-card::before{
+  content:"";
+  position:absolute;
+  top:0; left:0;
+  width:4px; height:100%;
+}
+.team-card.is-kitchen{
+  background:rgba(247,179,44,.08);
+  border-color:rgba(247,179,44,.3);
+}
+.team-card.is-kitchen::before{
+  background:var(--accent);
+}
+.team-card.is-service{
+  background:rgba(74,144,226,.08);
+  border-color:rgba(74,144,226,.3);
+}
+.team-card.is-service::before{
+  background:#4a90e2;
+}
+.team-card.is-other{
+  background:rgba(136,135,128,.08);
+  border-color:rgba(136,135,128,.3);
+}
+.team-card.is-other::before{
+  background:#888780;
+}
 .team-card__head{
   display:flex;
   justify-content:space-between;
@@ -1642,9 +1677,10 @@ tr:last-child td{border-bottom:none}
   display:inline-flex;
   align-items:center;
   gap:6px;
-  font-family:var(--font-body);
-  font-size:var(--fs-md);
-  font-weight:700;
+  font-family:var(--font-heading);
+  font-size:22px;
+  letter-spacing:.02em;
+  line-height:1.1;
   color:var(--text);
 }
 .team-card__role{
