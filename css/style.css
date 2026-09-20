@@ -9523,8 +9523,8 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 .schedule-totals-grid{
   display:grid;
-  /* Doit matcher EXACTEMENT .schedule-empgrid : 160px + N × minmax(110px,1fr) + 96px */
-  grid-template-columns:160px repeat(var(--n-days, 5), minmax(110px, 1fr)) 96px;
+  /* Doit matcher EXACTEMENT .schedule-empgrid : 160px + N × minmax(110px,1fr) + 180px */
+  grid-template-columns:160px repeat(var(--n-days, 5), minmax(110px, 1fr)) 180px;
   gap:1px;
   align-items:stretch;
 }
@@ -9594,7 +9594,7 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 .schedule-totals-day-row{
   display:grid;
   /* Match strict avec .schedule-empgrid et .schedule-totals-grid */
-  grid-template-columns:160px repeat(var(--n-days, 5), minmax(110px, 1fr)) 96px;
+  grid-template-columns:160px repeat(var(--n-days, 5), minmax(110px, 1fr)) 180px;
   gap:1px;
   margin-top:0;
   padding-top:0;
@@ -9646,8 +9646,8 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   }
   .schedule-totals-grid,
   .schedule-totals-day-row{
-    /* Match avec la version mobile de .schedule-empgrid (130 + 78px) */
-    grid-template-columns:130px repeat(var(--n-days, 5), minmax(95px, 1fr)) 78px;
+    /* Match avec la version mobile de .schedule-empgrid (130 + 140px) */
+    grid-template-columns:130px repeat(var(--n-days, 5), minmax(95px, 1fr)) 140px;
     overflow-x:auto;
   }
 }
@@ -9667,8 +9667,11 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 
 .schedule-empgrid{
   display:grid;
-  /* 1 col employé (160px) + N cols jour (1fr) + 1 col total (96px) */
-  grid-template-columns:160px repeat(var(--n-days, 5), minmax(110px, 1fr)) 96px;
+  /* 1 col employé (160px) + N cols jour (1fr) + 1 col total (180px, v3.80.0 —
+     élargie pour que « Sans pourb. / Pourboires / Avec pourb. » tiennent sur
+     une seule ligne chacun, sans que le libellé ni le montant ne retombent
+     à la ligne) */
+  grid-template-columns:160px repeat(var(--n-days, 5), minmax(110px, 1fr)) 180px;
   gap:1px;
   background:var(--border);
   border:0.5px solid var(--border);
@@ -9995,7 +9998,7 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 /* Mobile : scroll horizontal */
 @media (max-width:900px){
   .schedule-empgrid{
-    grid-template-columns:130px repeat(var(--n-days, 5), minmax(95px, 1fr)) 78px;
+    grid-template-columns:130px repeat(var(--n-days, 5), minmax(95px, 1fr)) 140px;
     overflow-x:auto;
     min-width:0;
   }
@@ -10681,11 +10684,16 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
    + rate. Cellule totaux multi-lignes Hrs/Écart/Sal/Pourb/Total.
    ─────────────────────────────────────────────────────────────── */
 
+/* v3.81.0 — dernière colonne élargie (140px -> 190px) : le panneau
+   « Totaux semaine » (.payroll-totals-final) affiche 3 lignes avec des
+   libellés longs (SANS POURB. / POURBOIRES / AVEC POURB.) qui retombaient
+   à la ligne dans 140px ; la colonne « Total » par employé au-dessus
+   garde la même largeur pour rester alignée (labels courts, plus d'air). */
 .schedule-empgrid.payroll-empgrid{
-  grid-template-columns:200px repeat(var(--n-days, 5), minmax(110px, 1fr)) 140px;
+  grid-template-columns:200px repeat(var(--n-days, 5), minmax(110px, 1fr)) 190px;
 }
 .schedule-totals-panel.payroll-totals-panel .schedule-totals-grid{
-  grid-template-columns:200px repeat(var(--n-days, 5), minmax(110px, 1fr)) 140px;
+  grid-template-columns:200px repeat(var(--n-days, 5), minmax(110px, 1fr)) 190px;
 }
 
 /* Cellule employé Salaires */
@@ -10923,7 +10931,7 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 @media (max-width:900px){
   .schedule-empgrid.payroll-empgrid,
   .schedule-totals-panel.payroll-totals-panel .schedule-totals-grid{
-    grid-template-columns:170px repeat(var(--n-days, 5), minmax(95px, 1fr)) 110px;
+    grid-template-columns:170px repeat(var(--n-days, 5), minmax(95px, 1fr)) 150px;
   }
 }
 
