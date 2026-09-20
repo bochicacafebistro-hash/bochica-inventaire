@@ -84,6 +84,13 @@ function hasActualThisPayrollWeek(empId) {
   const a = (payrollWeekData?.actualShifts || {})[empId];
   return !!(a && Object.keys(a).length > 0);
 }
+// Clé de semaine partagée avec Horaires (lundi, format dayKey) — permet de
+// lire/écrire scheduleSettings.weekOrder au même endroit que pages-hr.js,
+// pour que l'ordre des employés reste identique entre les 2 pages (v3.66.0).
+function payrollScheduleWeekKey() {
+  return dayKey(getWeekStart(payrollWeekOffset));
+}
+
 function getAllPayrollEmployees() {
   const manual = getManualEmployees();
   const hidden = new Set(getPayrollHidden());
@@ -95,10 +102,26 @@ function getAllPayrollEmployees() {
     return hasActualThisPayrollWeek(e.id);
   });
   const all = [...reals, ...manual.filter(m => !hidden.has(m.id))];
-  const order = Array.isArray(payrollWeekData?.empOrder) ? payrollWeekData.empOrder : [];
-  if (order.length === 0) return all;
+
+  // v3.66.0 — Ordre PARTAGÉ avec la page Horaires : même source de vérité
+  // (scheduleSettings.weekOrder[weekKey], settings/schedule) que le
+  // glisser-déposer de pages-hr.js, pour ne plus avoir 2 ordres différents
+  // à maintenir. Fallback sur l'ancien empOrder propre à la paie (semaines
+  // déjà personnalisées avant ce changement), puis sur le même tri par
+  // défaut que Horaires (Cuisine → Service → Autre) si aucun ordre explicite
+  // n'existe nulle part.
+  const weekKey = payrollScheduleWeekKey();
+  const sharedOrder = (scheduleSettings?.weekOrder && Array.isArray(scheduleSettings.weekOrder[weekKey]))
+    ? scheduleSettings.weekOrder[weekKey] : [];
+  const legacyOrder = Array.isArray(payrollWeekData?.empOrder) ? payrollWeekData.empOrder : [];
+  const order = sharedOrder.length > 0 ? sharedOrder : legacyOrder;
+
+  if (order.length === 0) {
+    return all.slice().sort((a, b) => employeeSectionPriority(a) - employeeSectionPriority(b));
+  }
   // Tri stable : on respecte l'ordre déclaré pour ceux qui sont dans order,
-  // les autres (nouveaux employés/extras pas encore ordonnés) vont à la fin.
+  // les autres (nouveaux employés/extras pas encore ordonnés) vont à la fin,
+  // groupés Cuisine → Service → Autre comme sur Horaires.
   const indexOf = id => {
     const i = order.indexOf(id);
     return i === -1 ? Infinity : i;
@@ -107,7 +130,7 @@ function getAllPayrollEmployees() {
     const ai = indexOf(a.id);
     const bi = indexOf(b.id);
     if (ai !== bi) return ai - bi;
-    return 0;
+    return employeeSectionPriority(a) - employeeSectionPriority(b);
   });
 }
 
@@ -1193,7 +1216,7 @@ function renderSalaires() {
             <!-- Cellule employé : drag + nom + EXTRA + section + rate + trash -->
             <div class="schedule-empgrid-emp payroll-empgrid-emp ${sectionClass} ${row.emp.archived ? "is-archived-emp" : ""}">
               <div class="payroll-empgrid-emp-row">
-                ${isLocked ? "" : `<span class="payroll-drag-handle" draggable="true" ondragstart="payrollRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 12)}</span>`}
+                ${isLocked ? "" : `<span class="schedule-emp-drag-handle" draggable="true" ondragstart="payrollRowDragStart(event,'${row.emp.id}')" aria-label="Glisser pour réordonner" title="Glisser pour réordonner">${icon("grip-vertical", 12)}</span>`}
                 <span class="schedule-empgrid-emp-name">${esc(row.emp.name || "")}</span>
                 ${row.isManual ? `<span class="payroll-manual-badge">EXTRA</span>` : ""}
                 ${row.emp.noTips && !row.groupOverride ? `<span class="no-tips-badge" title="Exclu du partage des pourboires (réglage de la fiche employé)">${icon("ban", 9)} Sans pourb.</span>` : ""}
@@ -1202,7 +1225,7 @@ function renderSalaires() {
                 ${!row.isManual && !isLocked ? `<button class="emp-week-remove" onclick="hideEmpFromPayrollWeek('${row.emp.id}')" title="Retirer de cette semaine de paie (n'affecte pas les autres semaines)" aria-label="Retirer ${esc(row.emp.name || "")} de cette semaine">${icon("x", 12)}</button>` : ""}
               </div>
               <div class="payroll-empgrid-emp-meta">
-                <select class="payroll-section-select ${groupClass} ${isOverridden ? "is-overridden" : ""}"
+                <select class="payroll-section-select ${isOverridden ? groupClass + " is-overridden" : "is-auto"}"
                   onchange="updateSectionOverride('${row.emp.id}', this.value)"
                   ${isLocked ? "disabled" : ""}
                   title="${isOverridden ? "⚠ Section dérogée pour cette semaine" : "Section pour les pourboires"}"
@@ -2289,6 +2312,18 @@ async function saveManualEmployee() {
       updatedAt: Date.now()
     }, { merge: true });
 
+    // v3.66.0 — Ajoute aussi l'extra à la fin de l'ordre PARTAGÉ (Horaires ↔
+    // Salaires) pour qu'il garde sa place si l'ordre est ensuite retouché
+    // depuis l'une ou l'autre page.
+    const weekKey = payrollScheduleWeekKey();
+    const sharedOrder = (scheduleSettings?.weekOrder && Array.isArray(scheduleSettings.weekOrder[weekKey]))
+      ? scheduleSettings.weekOrder[weekKey] : [];
+    if (sharedOrder.length > 0) {
+      await db.collection("settings").doc("schedule").set({
+        weekOrder: { [weekKey]: [...sharedOrder, newId] }
+      }, { merge: true });
+    }
+
     closeModal();
     toast(`Extra « ${name} » ajouté pour cette semaine.`, "success");
   } catch (err) {
@@ -2347,6 +2382,18 @@ async function doRemoveManualEmployee(id) {
 
     // Set sans merge pour les sous-objets (on a déjà fait le diff côté client)
     await ref.set(update, { merge: true });
+
+    // v3.66.0 — Retire aussi l'id de l'ordre PARTAGÉ (Horaires ↔ Salaires),
+    // sinon un id d'extra supprimé traînerait sans effet dans le tableau.
+    const weekKey = payrollScheduleWeekKey();
+    const sharedOrder = (scheduleSettings?.weekOrder && Array.isArray(scheduleSettings.weekOrder[weekKey]))
+      ? scheduleSettings.weekOrder[weekKey] : [];
+    if (sharedOrder.includes(id)) {
+      await db.collection("settings").doc("schedule").set({
+        weekOrder: { [weekKey]: sharedOrder.filter(eid => eid !== id) }
+      }, { merge: true });
+    }
+
     toast("Extra retiré.", "success");
   } catch (err) {
     console.error("doRemoveManualEmployee failed:", err);
@@ -2417,15 +2464,21 @@ async function payrollRowDrop(e, targetId) {
   insertAt = Math.max(0, Math.min(insertAt, ids.length));
   ids.splice(insertAt, 0, srcId);
 
+  // v3.66.0 — Écrit dans la MÊME source que Horaires (settings/schedule
+  // .weekOrder[weekKey]) au lieu de payroll/{weekId}.empOrder, pour que
+  // l'ordre reste identique sur les 2 pages sans double réordonnancement.
   try {
-    const ws = getWeekStart(payrollWeekOffset);
-    const wid = payrollWeekId(ws);
-    await db.collection("payroll").doc(wid).set({
-      weekId: wid,
-      weekStart: dayKey(ws),
-      empOrder: ids,
-      updatedAt: Date.now()
+    const weekKey = payrollScheduleWeekKey();
+    const prevOrder = (scheduleSettings?.weekOrder && Array.isArray(scheduleSettings.weekOrder[weekKey]))
+      ? scheduleSettings.weekOrder[weekKey] : [];
+    await db.collection("settings").doc("schedule").set({
+      weekOrder: { [weekKey]: ids }
     }, { merge: true });
+    if (typeof pushScheduleUndo === "function") {
+      pushScheduleUndo("Réordonnancement des employés (Salaires & Pourboires)", () =>
+        db.collection("settings").doc("schedule").set({ weekOrder: { [weekKey]: prevOrder } }, { merge: true }));
+    }
+    toast("Ordre mis à jour (partagé avec Horaires).", "success", 2200);
   } catch (err) {
     console.error("payrollRowDrop failed:", err);
     toast("Erreur réorganisation : " + (err.message || err.code || err), "error", 5000);

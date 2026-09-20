@@ -10477,7 +10477,6 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   flex-direction:column;
   justify-content:center;
   padding:8px 10px;
-  gap:5px;
 }
 .payroll-empgrid-emp-row{
   display:flex;
@@ -10492,22 +10491,15 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   white-space:nowrap;
   min-width:0;
 }
-.payroll-empgrid-emp-row .payroll-drag-handle{
-  flex-shrink:0;
-  color:var(--text3);
-  cursor:grab;
-}
-.payroll-empgrid-emp-row .payroll-drag-handle:active{cursor:grabbing}
 .payroll-empgrid-emp-meta{
   display:flex;
-  align-items:center;
-  gap:5px;
-  flex-wrap:wrap;
+  flex-direction:column;
+  gap:1px;
+  margin-top:3px;
 }
 .payroll-empgrid-rate{
   font-family:var(--font-body);
   font-size:10px;
-  font-weight:600;
   color:var(--text3);
   font-variant-numeric:tabular-nums;
 }
@@ -10535,10 +10527,20 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 
 /* Override le select section dans la nouvelle cellule */
 .payroll-empgrid-emp-meta .payroll-section-select{
-  flex:1;
   font-size:10px;
   min-width:0;
-  max-width:none;
+}
+/* v3.66.0 — État "auto" (pas de dérogation) : look neutre, identique au
+   badge de section texte de la page Horaires (.schedule-empgrid-emp-section)
+   pour que la fiche employé soit visuellement la même sur les 2 pages.
+   La couleur pleine (is-kitchen/is-service/is-excluded) n'apparaît plus que
+   lors d'une dérogation active (is-overridden), pour continuer à la signaler. */
+.payroll-section-select.is-auto{
+  color:var(--text3);
+  text-transform:uppercase;
+  letter-spacing:.05em;
+  font-weight:600;
+  background-color:transparent;
 }
 
 /* Carte shift avec tip — adaptation pour Salaires */
