@@ -1226,11 +1226,13 @@ function renderSalaires() {
       })()}
 
       <!-- ══ Grille empgrid Salaires & Pourboires (v3.27.0) ══ -->
-      ${renderSectionLegend()}
       <div class="schedule-empgrid payroll-empgrid" style="--n-days:${weekDays.length};">
         <!-- Header -->
         <div class="schedule-empgrid-header">
-          <div class="schedule-empgrid-emp-head">Employé · Section</div>
+          <div class="schedule-empgrid-emp-head">
+            <span class="schedule-empgrid-emp-head__label">Employé · Section</span>
+            ${renderSectionLegend()}
+          </div>
           ${weekDays.map((d, k) => {
             const dowIdx = visibleIdx[k];
             const swLabel = serviceWindowsLabel((payrollSettings?.defaultServiceHours || {})[dowIdx]);

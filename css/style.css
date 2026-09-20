@@ -9696,6 +9696,25 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
 }
 .schedule-empgrid-emp-head{
   text-align:left;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap:3px;
+}
+/* v3.79.0 — légende Cuisine/Service/Autre repliée directement dans
+   l'en-tête "Employé" (plutôt qu'au-dessus de toute la grille), pour
+   éviter qu'elle flotte sans lien visuel avec la colonne qu'elle explique. */
+.schedule-empgrid-emp-head .section-legend{
+  padding:0;
+  gap:7px;
+  font-size:9px;
+  font-weight:500;
+  text-transform:none;
+  letter-spacing:0;
+}
+.schedule-empgrid-emp-head .section-legend__dot{
+  width:6px;
+  height:6px;
 }
 .schedule-empgrid-day-name{
   font-size:11px;
@@ -9761,7 +9780,9 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   border-left-color:#888780;
 }
 /* Légende couleurs Cuisine/Service/Autre (v3.63.0) — réutilisée sur Horaires,
-   Salaires & Pourboires et Simulation paie, juste au-dessus de la grille empgrid. */
+   Salaires & Pourboires et Simulation paie. Repliée dans l'en-tête "Employé"
+   de la grille empgrid depuis la v3.79.0 (voir .schedule-empgrid-emp-head
+   .section-legend ci-dessus, qui la rend plus compacte à cet endroit). */
 .section-legend{
   display:flex;
   flex-wrap:wrap;

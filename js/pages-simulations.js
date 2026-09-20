@@ -600,11 +600,13 @@ function renderSimulationEditorHTML(sim) {
     </div>
 
     <!-- ═ Grille employés × jours (v3.26.0 — empgrid comme Horaires) ═ -->
-    ${renderSectionLegend()}
     <div class="schedule-empgrid sim-empgrid" style="--n-days:7;">
       <!-- Header -->
       <div class="schedule-empgrid-header">
-        <div class="schedule-empgrid-emp-head">Employé · Taux · Section</div>
+        <div class="schedule-empgrid-emp-head">
+          <span class="schedule-empgrid-emp-head__label">Employé · Taux · Section</span>
+          ${renderSectionLegend()}
+        </div>
         ${allIdx.map(dow => {
           if (!isDayOpen(dow)) {
             return `<div class="schedule-empgrid-day-head schedule-empgrid-day-head--closed">

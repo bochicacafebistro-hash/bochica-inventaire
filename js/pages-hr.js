@@ -478,11 +478,13 @@ function renderEmployes() {
 
       <!-- ══ Grille employés × jours avec cartes shift (v3.24.1) ══ -->
       <!-- Liste des employés à gauche, 7 colonnes jour, totaux à droite. -->
-      ${renderSectionLegend()}
       <div class="schedule-empgrid" style="--n-days:${nCols};">
         <!-- Header : labels jours + colonne totaux -->
         <div class="schedule-empgrid-header">
-          <div class="schedule-empgrid-emp-head">Employé</div>
+          <div class="schedule-empgrid-emp-head">
+            <span class="schedule-empgrid-emp-head__label">Employé</span>
+            ${renderSectionLegend()}
+          </div>
           ${weekDays.map((d, k) => {
             const dk = dayKey(d);
             const dowIdx = visibleIdx[k];
