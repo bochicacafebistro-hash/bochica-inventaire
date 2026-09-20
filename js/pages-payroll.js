@@ -968,7 +968,14 @@ function renderSalaires() {
   // ─ HTML ───────────────────────────────────────────
   return `<div class="page page--wide ${isLocked ? "is-payroll-locked" : ""}">
     <div class="toolbar">
-      <h2 class="page-title">${icon("dollar-sign", 22)} Salaires & Pourboires${isLocked ? ` <span class="payroll-locked-inline-badge">${icon("shield-check", 14)} Payée</span>` : ""}</h2>
+      <h2 class="page-title">${icon("dollar-sign", 22)} Salaires & Pourboires${isLocked ? ` <span class="payroll-locked-inline-badge">${icon("shield-check", 14)} Payée</span>` : ""}
+        <span class="info-tip" tabindex="0">
+          ${icon("info", 12)} Comment ça marche ?
+          <span class="info-tip__popup">
+            Les cellules se remplissent avec les <strong>pointages</strong> (page <strong>Pointage</strong>) ou la <strong>saisie manuelle</strong> de l'admin. L'horaire planifié n'est plus auto-importé — il s'affiche en <strong>petite référence grise sous chaque cellule vide</strong> pour repérer qui devait travailler mais n'a pas encore pointé. Fond bleuté = employé prévu sans pointage. Colonne « Réel / Planif » à droite pour la comparaison.
+          </span>
+        </span>
+      </h2>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn-secondary btn-sm" onclick="generatePayrollPDF()" title="Générer un rapport PDF complet de la semaine courante" ${allEmps.length === 0 ? "disabled" : ""}>${icon("download", 14)} PDF 1 sem</button>
         <button class="btn-secondary btn-sm" onclick="generateBiWeeklyPDF()" title="Générer un rapport PDF couvrant cette semaine ET la précédente (paie aux 2 semaines)" ${allEmps.length === 0 ? "disabled" : ""}>${icon("download", 14)} PDF 2 sem</button>
@@ -985,14 +992,6 @@ function renderSalaires() {
         </div>
       </div>
     ` : `
-      <!-- ══ Bannière d'info : source des heures (v3.17.3) ══ -->
-      <div class="payroll-info-banner">
-        ${icon("clock", 16)}
-        <div>
-          Les cellules se remplissent avec les <strong>pointages</strong> (page <strong>Pointage</strong>) ou la <strong>saisie manuelle</strong> de l'admin. L'horaire planifié n'est plus auto-importé — il s'affiche en <strong>petite référence grise sous chaque cellule vide</strong> pour repérer qui devait travailler mais n'a pas encore pointé. Fond bleuté = employé prévu sans pointage. Colonne « Réel / Planif » à droite pour la comparaison.
-        </div>
-      </div>
-
       <!-- ══ Sélecteur de semaine + actions ══ -->
       <div class="schedule-header">
         <div class="schedule-nav">
