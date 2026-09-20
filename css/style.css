@@ -4103,16 +4103,22 @@ textarea.md-input{
   line-height:1.4;
 }
 
-/* v3.73.0 — les tuiles du stat-grid avaient le même fond que la carte
-   .payroll-overview-card (var(--surface) des deux côtés) : elles se
-   lisaient comme "collées" malgré le gap. Fond contrasté + espacement
-   accru, scopés à cette carte pour ne pas affecter les autres .stat-grid
-   de l'app (Dashboard, Dépenses, etc.). */
+/* v3.73.0 puis v3.74.0 — les tuiles du stat-grid avaient le même fond que
+   la carte .payroll-overview-card et un contour quasi invisible (border 10%
+   + shadow-sm ~5%) : elles se lisaient comme "collées" même avec un gap.
+   v3.74.0 renforce les 3 leviers à la fois (gap encore élargi, bordure et
+   ombre bien plus marquées) pour que chaque tuile se détache clairement,
+   peu importe la teinte de fond derrière. Scopé à cette carte seulement. */
 .payroll-overview-card .stat-grid{
-  gap:var(--sp-4);
+  gap:var(--sp-5);
 }
 .payroll-overview-card .stat-card{
   background:var(--surface2);
+  border-color:var(--border-strong);
+  box-shadow:0 2px 6px rgba(14,13,12,.12);
+}
+.dark .payroll-overview-card .stat-card{
+  box-shadow:0 2px 6px rgba(0,0,0,.35);
 }
 .payroll-service-sub{
   font-family:var(--font-body);

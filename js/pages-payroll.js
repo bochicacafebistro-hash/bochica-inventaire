@@ -1057,17 +1057,12 @@ function renderSalaires() {
           <div class="stat-card" style="border-left:4px solid var(--accent, #F7B32C)">
             <div class="stat-num">${fmtMoney(totalTips)}</div>
             <div class="stat-label">Pourboires</div>
-            <div class="payroll-overview-sub">Total de la semaine</div>
+            <div class="payroll-overview-sub">${totalNet > 0 ? `${(totalTips / totalNet * 100).toFixed(1)}% des ventes nettes` : "Aucune vente nette saisie"}</div>
           </div>
           <div class="stat-card" style="border-left:4px solid #3b7cc6">
             <div class="stat-num">${fmtMoney(totalNet)}</div>
             <div class="stat-label">Ventes nettes</div>
             <div class="payroll-overview-sub">Total de la semaine</div>
-          </div>
-          <div class="stat-card" style="border-left:4px solid var(--status-green, #7dbf66)">
-            <div class="stat-num">${totalNet > 0 ? `${(totalTips / totalNet * 100).toFixed(1)}%` : "—"}</div>
-            <div class="stat-label">% Pourboire</div>
-            <div class="payroll-overview-sub">Pourboires ÷ ventes nettes</div>
           </div>
           <div class="stat-card" style="border-left:4px solid ${totalNet === 0 ? "var(--border)" : weekProfitCls === "is-good" ? "var(--status-green, #7dbf66)" : "var(--status-red, #d9534f)"}">
             <div class="stat-num" style="${totalNet === 0 ? "" : `color:${weekProfitCls === "is-good" ? "var(--status-green, #7dbf66)" : "var(--status-red, #d9534f)"}`}">${totalNet > 0 ? `${weekPctReached.toFixed(0)}%` : "—"}</div>
