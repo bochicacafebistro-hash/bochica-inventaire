@@ -927,9 +927,12 @@ function renderSalaires() {
   const weekSurplus = totalNet - weekSalesNeeded; // + = ventes au-dessus de la cible, − = ventes manquantes
   const weekProfitCls = totalNet === 0 ? "is-empty" : weekRatio <= targetRatio ? "is-good" : "is-bad";
 
-  // ─ Ratio salaires/ventes (utilise actualSales saisis dans Horaires) ─
-  const actualSales = scheduleSettings.actualSales || {};
-  const weekSales = weekDays.reduce((sum, d) => sum + (Number(actualSales[dayKey(d)]) || 0), 0);
+  // ─ Ratio salaires/ventes (v3.76.0 — utilise les ventes nettes déjà
+  //   saisies sur CETTE page, netByDay/totalNet, même source que la
+  //   rentabilité et le % pourboire. Remplace l'ancien champ "Ventes
+  //   réelles" de Employés & Horaires, retiré pour éviter la double saisie
+  //   — on saisit les ventes une seule fois, ici. ─
+  const weekSales = totalNet;
   const salesRatio = weekSales > 0 ? (sumGross / weekSales) : 0;
   // % de pourboires sur les ventes de la semaine (pourboires entrés ÷ ventes)
   const tipPctSales = weekSales > 0 ? (totalTips / weekSales) : 0;
@@ -2705,9 +2708,11 @@ function generatePayrollPDF() {
   const sumBonus = empRows.reduce((s, r) => s + r.bonus, 0);
   const sumTotal = empRows.reduce((s, r) => s + r.totalPay, 0);
   const sumActualHours = empRows.reduce((s, r) => s + r.totalHours, 0);
-  // Ventes réelles de la semaine + % de pourboires sur ventes
-  const _actualSales = (typeof scheduleSettings !== "undefined" && scheduleSettings.actualSales) || {};
-  const weekSales = weekDays.reduce((s, d) => s + (Number(_actualSales[dayKey(d)]) || 0), 0);
+  // Ventes nettes de la semaine (v3.76.0 — saisies sur cette page,
+  // netByDay/payrollWeekData, remplace l'ancien champ Employés & Horaires)
+  // + % de pourboires sur ventes
+  const netByDay = payrollWeekData?.netByDay || {};
+  const weekSales = weekDays.reduce((s, d) => s + (Number(netByDay[dayKey(d)]) || 0), 0);
   const tipPctSales = weekSales > 0 ? (totalTips / weekSales) : 0;
 
   // ─ Setup jsPDF — landscape Letter ─────────────────────
@@ -3214,6 +3219,8 @@ async function _computePayrollWeekData(offset) {
   const totalTips = weekDays.reduce((s, d) => s + (Number(tipsByDay[dayKey(d)]) || 0), 0) || legacyTotal;
   const poolCuisine = totalTips * (Number(tipShares.cuisine) || 0);
   const poolService = totalTips * (Number(tipShares.service) || 0);
+  const netByDay = weekData?.netByDay || {};
+  const totalNet = weekDays.reduce((s, d) => s + (Number(netByDay[dayKey(d)]) || 0), 0);
 
   // Liste fusionnée employés réels + extras de la semaine (avec ordre custom)
   const manualEmps = Array.isArray(weekData?.manualEmployees) ? weekData.manualEmployees : [];
@@ -3304,16 +3311,16 @@ async function _computePayrollWeekData(offset) {
     hours: empRows.reduce((s, r) => s + r.totalHours, 0)
   };
 
-  // Ventes réelles de la semaine + % de pourboires sur ventes
-  const _actualSales = (scheduleSettings && scheduleSettings.actualSales) || {};
-  const weekSales = weekDays.reduce((s, d) => s + (Number(_actualSales[dayKey(d)]) || 0), 0);
+  // Ventes nettes de la semaine (v3.76.0 — saisies dans Salaires &
+  // Pourboires, netByDay ci-dessus) + % de pourboires sur ventes
+  const weekSales = totalNet;
   const tipPctSales = weekSales > 0 ? (totalTips / weekSales) : 0;
 
   return {
     weekStart, weekEnd, weekNum, weekLabel, startLabel, endLabel,
     weekDays, visibleIdx, weekSales, tipPctSales,
     empRows, sums,
-    tipsByDay, totalTips, poolCuisine, poolService,
+    tipsByDay, totalTips, poolCuisine, poolService, netByDay, totalNet,
     tipShares
   };
 }

@@ -184,7 +184,7 @@ function buildLeaveTypeOptions(selected) {
 // Ordre et masquage par semaine (Horaires) — stockés dans settings/schedule :
 //   • weekOrder[weekKey]  = [empId, …]  ordre d'affichage pour cette semaine
 //   • weekHidden[weekKey] = [empId, …]  employés masqués pour cette semaine
-// weekKey = clé du lundi (dayKey du début de semaine), comme actualSales.
+// weekKey = clé du lundi (dayKey du début de semaine).
 
 // Employés non archivés (liste de travail courante).
 function activeEmployees() {
@@ -630,44 +630,6 @@ function renderEmployes() {
           }).join("")}
           <div class="schedule-totals-val schedule-totals-val--total schedule-totals-val--predicted">${fmtMoney(ratio > 0 ? weekTotalCost / ratio : 0)}</div>
 
-          <div class="schedule-totals-label">Ventes réelles</div>
-          ${weekDays.map((d, k) => {
-            const dk = dayKey(d);
-            const val = Number(scheduleSettings.actualSales?.[dk] || 0);
-            const dayName = DAYS_FR[visibleIdx[k]];
-            const dateLabel = `${d.getDate()}/${d.getMonth() + 1}`;
-            return `<div class="schedule-totals-val schedule-totals-val--input">
-              <input type="number" step="0.01" min="0" class="schedule-sales-input" placeholder="—" value="${val || ""}" onchange="updateActualSales('${dk}',this.value)" aria-label="Ventes réelles ${dayName} ${dateLabel}"/>
-            </div>`;
-          }).join("")}
-          <div class="schedule-totals-val schedule-totals-val--total">${(() => {
-            const total = weekDays.reduce((sum, d) => sum + (Number(scheduleSettings.actualSales?.[dayKey(d)] || 0)), 0);
-            return total ? fmtMoney(total) : "—";
-          })()}</div>
-
-          <div class="schedule-totals-label">${icon("trending-up", 12)} Écart</div>
-          ${weekDays.map((d, k) => {
-            const dk = dayKey(d);
-            const actual = Number(scheduleSettings.actualSales?.[dk] || 0);
-            const predicted = ratio > 0 ? dayTotalsCost[k] / ratio : 0;
-            const gap = actual - predicted;
-            const cls = gap > 0.01 ? "is-positive" : gap < -0.01 ? "is-negative" : "";
-            const arrow = gap > 0.01 ? "▲" : gap < -0.01 ? "▼" : "";
-            const content = (actual || predicted) ? `<span class="gap-arrow">${arrow}</span>${fmtMoney(gap)}` : "—";
-            return `<div class="schedule-totals-val schedule-totals-val--gap ${cls}">${content}</div>`;
-          }).join("")}
-          <div class="schedule-totals-val schedule-totals-val--total schedule-totals-val--gap ${(() => {
-            const totalActual = weekDays.reduce((sum, d) => sum + (Number(scheduleSettings.actualSales?.[dayKey(d)] || 0)), 0);
-            const totalPredicted = ratio > 0 ? weekTotalCost / ratio : 0;
-            const gap = totalActual - totalPredicted;
-            return gap > 0.01 ? "is-positive" : gap < -0.01 ? "is-negative" : "";
-          })()}">${(() => {
-            const totalActual = weekDays.reduce((sum, d) => sum + (Number(scheduleSettings.actualSales?.[dayKey(d)] || 0)), 0);
-            const totalPredicted = ratio > 0 ? weekTotalCost / ratio : 0;
-            const gap = totalActual - totalPredicted;
-            const arrow = gap > 0.01 ? "▲" : gap < -0.01 ? "▼" : "";
-            return (totalActual || totalPredicted) ? `<span class="gap-arrow">${arrow}</span>${fmtMoney(gap)}` : "—";
-          })()}</div>
         </div>
       </div>
 
@@ -803,19 +765,6 @@ function updateSalesRatioLive(percentStr) {
   }
 }
 
-// Met à jour les ventes réelles pour un jour donné (clé YYYY-MM-DD)
-async function updateActualSales(dk, value) {
-  const v = Number(value);
-  const actualSales = { ...(scheduleSettings.actualSales || {}) };
-  if (!v || isNaN(v) || v <= 0) {
-    delete actualSales[dk];
-  } else {
-    actualSales[dk] = v;
-  }
-  await db.collection("settings").doc("schedule").set({
-    actualSales
-  }, { merge: true });
-}
 
 // ═ Jours d'ouverture (réglage global) ═══════════════════
 function openOpenDaysModal() {
@@ -2312,8 +2261,6 @@ async function exportScheduleAsPNGAdmin() {
   // → retombait toujours sur 0.30, d'où des ventes prévues différentes du web.
   const ratio = Number(scheduleSettings.salesRatio) || 0.32;
   const expectedSales = ratio > 0 ? (weekTotalCost / ratio) : 0;
-  const actualSales = scheduleSettings.actualSales || {};
-  const weekActualSales = weekDays.reduce((sum, d) => sum + (Number(actualSales[dayKey(d)]) || 0), 0);
 
   // Construit un DOM off-screen pour l'export (nettoyage défensif d'abord).
   document.getElementById("_schedule-png-export-admin")?.remove();
@@ -2384,7 +2331,7 @@ async function exportScheduleAsPNGAdmin() {
 
     <!-- Panneau de totaux semaine -->
     <div style="margin-top:18px; padding:16px; background:#fff; border:1.5px solid #c8bca5; border-radius:10px">
-      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:16px; text-align:center">
+      <div style="display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; text-align:center">
         <div>
           <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Heures totales</div>
           <div style="font-size:22px; font-weight:800; color:#0e0d0c; margin-top:4px">${fmtHours(weekTotalHours)}h</div>
@@ -2397,11 +2344,6 @@ async function exportScheduleAsPNGAdmin() {
           <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Ventes prévues</div>
           <div style="font-size:22px; font-weight:800; color:#0e0d0c; margin-top:4px">${fmtMoney(expectedSales)}</div>
           <div style="font-size:10px; color:#666; margin-top:2px">cible ${(ratio * 100).toFixed(1)}%</div>
-        </div>
-        <div>
-          <div style="font-size:11px; color:#666; text-transform:uppercase; letter-spacing:.05em; font-weight:600">Ventes réelles</div>
-          <div style="font-size:22px; font-weight:800; color:${weekActualSales > 0 ? "#0e0d0c" : "#999"}; margin-top:4px">${weekActualSales > 0 ? fmtMoney(weekActualSales) : "—"}</div>
-          ${weekActualSales > 0 ? `<div style="font-size:10px; color:${weekTotalCost / weekActualSales <= ratio ? "#3f9142" : "#c0392b"}; margin-top:2px; font-weight:700">${weekTotalCost / weekActualSales <= ratio ? "✓" : "⚠"} ratio réel ${(weekTotalCost / weekActualSales * 100).toFixed(1)}% (cible ${(ratio * 100).toFixed(0)}%)</div>` : ""}
         </div>
       </div>
       ${empsWithShifts.length < weekVisibleEmps.length

@@ -4173,21 +4173,31 @@ textarea.md-input{
   letter-spacing:.02em;
 }
 
-/* Grille des inputs pourboires par jour */
+/* Grille des inputs pourboires par jour (v3.76.0 — repassée en "rows" flex
+   + marges, même technique que .payroll-overview-card .stat-grid en
+   v3.75.0, avec bordure/ombre renforcées : l'ancienne version en
+   display:grid + gap:8px + bordure à 10% d'opacité restait visuellement
+   "collée" par rapport aux tuiles du haut. */
 .payroll-tips-grid{
-  display:grid;
-  grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
-  gap:var(--sp-2);
-  margin-bottom:var(--sp-4);
+  display:flex;
+  flex-wrap:wrap;
+  gap:0;
+  margin:calc(var(--sp-4) * -1) 0 0 calc(var(--sp-4) * -1);
 }
 .payroll-tips-day{
+  flex:1 1 160px;
+  margin:var(--sp-4) 0 0 var(--sp-4);
   background:var(--surface2);
-  border:1px solid var(--border);
+  border:1px solid var(--border-strong);
   border-radius:var(--radius-md);
   padding:10px 12px;
   display:flex;
   flex-direction:column;
   gap:6px;
+  box-shadow:0 2px 6px rgba(14,13,12,.12);
+}
+.dark .payroll-tips-day{
+  box-shadow:0 2px 6px rgba(0,0,0,.35);
 }
 .payroll-tips-day--is-good{ background:rgba(125,191,102,.12); border-color:rgba(125,191,102,.4); }
 .payroll-tips-day--is-bad{ background:rgba(217,83,79,.12); border-color:rgba(217,83,79,.4); }
