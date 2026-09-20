@@ -4103,26 +4103,23 @@ textarea.md-input{
   line-height:1.4;
 }
 
-/* v3.73.0, v3.74.0, puis v3.75.0 — les tuiles du stat-grid continuaient à
-   paraître "collées" malgré 2 correctifs basés sur `gap` + bordure + ombre.
-   v3.75.0 abandonne `gap` pour cette carte et repasse en flex "rows" avec
-   marges classiques (technique qui ne dépend d'aucun support de `gap`) :
-   marge négative sur le conteneur pour compenser la marge positive de
-   chaque tuile, comme un vieux flexbox-grid — la séparation est garantie
-   par la boîte de chaque tuile elle-même, pas par un espace calculé entre
-   elles. */
+/* v3.73.0 à v3.77.0 — plusieurs correctifs de "collé" (gap, bordure,
+   ombre, puis inversion des couleurs). v3.78.0 — BUG RÉEL TROUVÉ par
+   inspection live : la technique "marge négative sur le conteneur" de
+   v3.75.0 tirait .stat-grid VERS LE HAUT et le faisait chevaucher l'en-tête
+   de la carte juste au-dessus. Cette technique n'est valide que pour un
+   conteneur SANS voisin précédent — ici il y en a un, donc la marge
+   négative empiétait dessus au lieu de s'auto-compenser proprement.
+   Retour à display:grid + gap (aucun souci de support navigateur ici). */
 .payroll-overview-card{
   background:var(--surface2);
 }
 .payroll-overview-card .stat-grid{
-  display:flex;
-  flex-wrap:wrap;
-  gap:0;
-  margin:calc(var(--sp-5) * -1) 0 0 calc(var(--sp-5) * -1);
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));
+  gap:var(--sp-5);
 }
 .payroll-overview-card .stat-card{
-  flex:1 1 180px;
-  margin:var(--sp-5) 0 0 var(--sp-5);
   background:var(--surface, #ffffff);
   border-color:var(--border-strong);
   box-shadow:0 2px 6px rgba(14,13,12,.12);
@@ -4176,20 +4173,20 @@ textarea.md-input{
   letter-spacing:.02em;
 }
 
-/* Grille des inputs pourboires par jour (v3.76.0 — repassée en "rows" flex
-   + marges, même technique que .payroll-overview-card .stat-grid en
-   v3.75.0, avec bordure/ombre renforcées : l'ancienne version en
-   display:grid + gap:8px + bordure à 10% d'opacité restait visuellement
-   "collée" par rapport aux tuiles du haut. */
+/* Grille des inputs pourboires par jour (v3.78.0 — même correctif que
+   .stat-grid ci-dessus : la marge négative du conteneur (v3.76.0) tirait
+   cette grille vers le haut et la faisait chevaucher .stat-grid juste
+   au-dessus — c'était le vrai bug derrière "cartes collées", trouvé par
+   inspection live de l'utilisateur (DevTools). Retour à display:grid +
+   gap, avec une marge explicite vers le haut pour l'espacement avec la
+   rangée de tuiles précédente. */
 .payroll-tips-grid{
-  display:flex;
-  flex-wrap:wrap;
-  gap:0;
-  margin:calc(var(--sp-4) * -1) 0 0 calc(var(--sp-4) * -1);
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(160px, 1fr));
+  gap:var(--sp-4);
+  margin-top:var(--sp-4);
 }
 .payroll-tips-day{
-  flex:1 1 160px;
-  margin:var(--sp-4) 0 0 var(--sp-4);
   background:var(--surface, #ffffff);
   border:1px solid var(--border-strong);
   border-radius:var(--radius-md);
