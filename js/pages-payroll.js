@@ -1058,6 +1058,14 @@ function renderSalaires() {
             <div class="stat-num">${fmtMoney(totalTips)}</div>
             <div class="stat-label">Pourboires</div>
             <div class="payroll-overview-sub">${totalNet > 0 ? `${(totalTips / totalNet * 100).toFixed(1)}% des ventes nettes` : "Aucune vente nette saisie"}</div>
+            <div class="payroll-overview-pools">
+              <div class="payroll-overview-pools__item payroll-overview-pools__item--kitchen" title="Pool Cuisine (${(tipShares.cuisine * 100).toFixed(0)}%) · ${fmtHours(totalCuisineHrs)}h éligibles">
+                ${icon("utensils", 10)} Cuisine <strong>${fmtMoney(poolCuisine)}</strong>
+              </div>
+              <div class="payroll-overview-pools__item payroll-overview-pools__item--service" title="Pool Service + Admin (${(tipShares.service * 100).toFixed(0)}%) · ${fmtHours(totalServiceHrs)}h éligibles">
+                ${icon("users", 10)} Service <strong>${fmtMoney(poolService)}</strong>
+              </div>
+            </div>
           </div>
           <div class="stat-card" style="border-left:4px solid #3b7cc6">
             <div class="stat-num">${fmtMoney(totalNet)}</div>
@@ -1096,23 +1104,6 @@ function renderSalaires() {
               </div>
             </div>`;
           }).join("")}
-        </div>
-        <div class="payroll-tips-pools">
-          <div class="payroll-tips-pool payroll-tips-pool--total">
-            <div class="payroll-tips-pool__label">${icon("dollar-sign", 12)} Total pourboires</div>
-            <div class="payroll-tips-pool__amount">${fmtMoney(totalTips)}</div>
-            <div class="payroll-tips-pool__hint">${totalNet > 0 ? `${(totalTips / totalNet * 100).toFixed(1)}% des ventes nettes` : "—"}</div>
-          </div>
-          <div class="payroll-tips-pool payroll-tips-pool--kitchen">
-            <div class="payroll-tips-pool__label">${icon("utensils", 12)} Pool Cuisine (${(tipShares.cuisine * 100).toFixed(0)}%)</div>
-            <div class="payroll-tips-pool__amount">${fmtMoney(poolCuisine)}</div>
-            <div class="payroll-tips-pool__hint">${fmtHours(totalCuisineHrs)}h éligibles</div>
-          </div>
-          <div class="payroll-tips-pool payroll-tips-pool--service">
-            <div class="payroll-tips-pool__label">${icon("users", 12)} Pool Service + Admin (${(tipShares.service * 100).toFixed(0)}%)</div>
-            <div class="payroll-tips-pool__amount">${fmtMoney(poolService)}</div>
-            <div class="payroll-tips-pool__hint">${fmtHours(totalServiceHrs)}h éligibles</div>
-          </div>
         </div>
       </div>
 
