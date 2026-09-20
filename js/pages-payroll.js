@@ -67,6 +67,102 @@ function buildPayrollTimeOptions(selectedValue) {
 // celui de pages-hr.js : _empDragId)
 let _payrollDragId = null;
 
+// v3.68.0 — Instances Chart.js de la section "Analyse de la semaine"
+// (voir initPayrollCharts()), détruites/recréées à chaque render.
+let _payrollChartInstances = { daily: null, overview: null };
+
+// Construit les 2 graphiques Chart.js de bas de page Salaires & Pourboires :
+// (1) coût salarial par jour réel vs planifié, (2) vue d'ensemble de la
+// semaine (ventes nettes vs masse salariale + seuil cible). Lit les données
+// injectées en JSON par renderSalaires() (#payroll-chart-data), même patron
+// que initExpenseCharts() / initReportsCharts().
+function initPayrollCharts() {
+  if (typeof Chart === "undefined") return; // Chart.js pas encore chargé
+  const dataEl = document.getElementById("payroll-chart-data");
+  if (!dataEl) return;
+  let data;
+  try { data = JSON.parse(dataEl.textContent); } catch { return; }
+
+  if (_payrollChartInstances.daily) { try { _payrollChartInstances.daily.destroy(); } catch (_) {} _payrollChartInstances.daily = null; }
+  if (_payrollChartInstances.overview) { try { _payrollChartInstances.overview.destroy(); } catch (_) {} _payrollChartInstances.overview = null; }
+
+  const isDark = data.darkMode;
+  const textColor = isDark ? "rgba(245,241,232,.72)" : "rgba(14,13,12,.72)";
+  const gridColor = isDark ? "rgba(245,241,232,.08)" : "rgba(14,13,12,.08)";
+  const tooltipBg = isDark ? "#25201d" : "#ffffff";
+  const tooltipText = isDark ? "#f5f1e8" : "#0e0d0c";
+  const tooltipBorder = isDark ? "rgba(245,241,232,.22)" : "rgba(14,13,12,.18)";
+  const greenC = "#7dbf66";
+  const redC = "#d9534f";
+  const plannedC = isDark ? "#9c968a" : "#b0aa9c";
+  const legendOpts = {
+    position: "top",
+    labels: { color: textColor, font: { family: "Inter, sans-serif", size: 12, weight: 500 }, usePointStyle: true, pointStyle: "rectRounded", padding: 14 }
+  };
+  const tooltipBase = { backgroundColor: tooltipBg, titleColor: tooltipText, bodyColor: tooltipText, borderColor: tooltipBorder, borderWidth: 1, padding: 12 };
+  const xAxis = { ticks: { color: textColor, font: { size: 11 } }, grid: { display: false } };
+  const yAxisMoney = { ticks: { color: textColor, font: { size: 11 }, callback: (v) => fmtMoney(v) }, grid: { color: gridColor } };
+
+  // ── Chart 1 : coût salarial par jour — réel vs planifié ──
+  // La barre "Réel" est verte quand ce jour est resté sous (ou égal à) ce
+  // qui était planifié, rouge quand il l'a dépassé — visible en un coup
+  // d'œil sans avoir à comparer les 2 barres au pixel près.
+  const ctxDaily = document.getElementById("payroll-chart-daily-cost");
+  if (ctxDaily) {
+    const overBudget = data.laborActual.map((v, i) => v > (data.laborPlanned[i] || 0) + 0.01);
+    _payrollChartInstances.daily = new Chart(ctxDaily, {
+      type: "bar",
+      data: {
+        labels: data.dayLabels,
+        datasets: [
+          { label: "Planifié", data: data.laborPlanned, backgroundColor: plannedC + "55", borderColor: plannedC, borderWidth: 1, borderRadius: 5, order: 2 },
+          { label: "Réel", data: data.laborActual, backgroundColor: overBudget.map(o => (o ? redC : greenC) + "cc"), borderColor: overBudget.map(o => (o ? redC : greenC)), borderWidth: 1, borderRadius: 5, order: 1 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: legendOpts,
+          tooltip: { ...tooltipBase, callbacks: { label: (ctx) => `${ctx.dataset.label} : ${fmtMoney(ctx.parsed.y)}` } }
+        },
+        scales: { x: xAxis, y: yAxisMoney }
+      }
+    });
+  }
+
+  // ── Chart 2 : vue d'ensemble de la semaine ──
+  // Ventes nettes et masse salariale réelle en barres, + ligne pointillée
+  // "ventes nécessaires" (le montant de ventes qu'il aurait fallu faire pour
+  // que le coût réel respecte la cible réglée dans Employés & Horaires) —
+  // reprend les mêmes chiffres que la carte "Rentabilité de la semaine"
+  // au-dessus, mais en un seul coup d'œil visuel.
+  const ctxOverview = document.getElementById("payroll-chart-week-overview");
+  if (ctxOverview) {
+    _payrollChartInstances.overview = new Chart(ctxOverview, {
+      data: {
+        labels: data.dayLabels,
+        datasets: [
+          { type: "bar", label: "Ventes nettes", data: data.netSales, backgroundColor: greenC + "aa", borderColor: greenC, borderWidth: 1, borderRadius: 5, order: 2 },
+          { type: "bar", label: "Masse salariale", data: data.laborActual, backgroundColor: redC + "aa", borderColor: redC, borderWidth: 1, borderRadius: 5, order: 2 },
+          { type: "line", label: `Ventes nécessaires (cible ${(data.targetRatio * 100).toFixed(0)}%)`, data: data.salesNeeded, borderColor: "#F7B32C", backgroundColor: "#F7B32C", borderWidth: 2, borderDash: [6, 4], pointRadius: 3, pointBackgroundColor: "#F7B32C", fill: false, spanGaps: true, order: 1 }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: "index", intersect: false },
+        plugins: {
+          legend: legendOpts,
+          tooltip: { ...tooltipBase, callbacks: { label: (ctx) => `${ctx.dataset.label} : ${ctx.parsed.y == null ? "—" : fmtMoney(ctx.parsed.y)}` } }
+        },
+        scales: { x: xAxis, y: yAxisMoney }
+      }
+    });
+  }
+}
+
 // Liste des employés "ad-hoc" stockés dans la semaine courante
 function getManualEmployees() {
   return Array.isArray(payrollWeekData?.manualEmployees) ? payrollWeekData.manualEmployees : [];
@@ -755,10 +851,13 @@ function renderSalaires() {
   // pointées). Estimé = ce que l'horaire planifié dans « Employés &
   // Horaires » devrait coûter, calculé avec les mêmes taux datés — permet
   // de voir si la semaine dépasse le budget prévu par le planning.
-  // On calcule en même temps le coût salarial RÉEL par jour (dayLaborByDk),
-  // réutilisé plus bas pour la rentabilité jour/semaine.
+  // On calcule en même temps le coût salarial RÉEL par jour (dayLaborByDk)
+  // ET le coût ESTIMÉ (planifié) par jour (dayEstimatedByDk, v3.68.0),
+  // réutilisés plus bas pour la rentabilité jour/semaine et le graphique
+  // « coût par jour : réel vs planifié ».
   const dayLaborByDk = {};
-  weekDays.forEach(d => { dayLaborByDk[dayKey(d)] = 0; });
+  const dayEstimatedByDk = {};
+  weekDays.forEach(d => { dayLaborByDk[dayKey(d)] = 0; dayEstimatedByDk[dayKey(d)] = 0; });
   let estimatedWage = 0;
   for (const row of empRows) {
     if (row.isSal) {
@@ -767,12 +866,14 @@ function renderSalaires() {
       // pas de coût quotidien naturel). Estimé = payé (pas d'écart possible
       // pour un salaire fixe).
       const perDay = weekDays.length > 0 ? (row.fixedHours * row.rate) / weekDays.length : 0;
-      weekDays.forEach(d => { dayLaborByDk[dayKey(d)] += perDay; });
+      weekDays.forEach(d => { dayLaborByDk[dayKey(d)] += perDay; dayEstimatedByDk[dayKey(d)] += perDay; });
       estimatedWage += row.fixedHours * row.rate;
     } else {
       for (const dd of row.daily) {
         dayLaborByDk[dd.dk] += dd.hours * effectiveHourlyRate(row.emp, dd.dk);
-        estimatedWage += dd.pHours * effectiveHourlyRate(row.emp, dd.dk);
+        const dayEstAmount = dd.pHours * effectiveHourlyRate(row.emp, dd.dk);
+        dayEstimatedByDk[dd.dk] += dayEstAmount;
+        estimatedWage += dayEstAmount;
       }
     }
   }
@@ -1322,6 +1423,12 @@ function renderSalaires() {
                   : "";
                 const offLabel = plannedHint ? plannedHint : "Congé";
                 const offSub = plannedHint ? "Pas pointé" : (isLocked ? "—" : "+ Saisir");
+                // v3.68.0 — Écart CE JOUR (planifié non pointé = journée entière
+                // manquante) : distinct du total hebdo, qui peut être masqué par
+                // un autre jour en surplus.
+                const dayGapBadge = (plannedHint && d.pHours > 0.01)
+                  ? `<div class="shift-card-daygap is-negative" title="Écart ce jour : 0h réel vs ${fmtHours(d.pHours)}h planifié">▼-${fmtHours(d.pHours)}h</div>`
+                  : "";
                 return `<div class="schedule-empgrid-cell schedule-empgrid-cell--empty ${plannedHint ? "is-scheduled-empty" : ""}"
                     data-day-key="${dk}"
                     ${isLocked ? "" : `ondragover="payrollShiftDragOver(event,'${dk}')"
@@ -1332,11 +1439,22 @@ function renderSalaires() {
                       title="${plannedHint ? `Prévu à l'horaire : ${plannedHint}` : "Aucun pointage"}">
                     <div class="shift-off-label">${offLabel}</div>
                     <div class="shift-off-add">${offSub}</div>
+                    ${dayGapBadge}
                   </div>
                 </div>`;
               }
               const dayTipPart = d.dayTip > 0
                 ? `<div class="shift-card-tip" title="Pourboire reçu ce jour">+${fmtMoney(d.dayTip)}</div>`
+                : "";
+              // v3.68.0 — Écart CE JOUR (réel − planifié de CE jour précis),
+              // affiché en plus du total hebdo (schedule-empgrid-total) qui
+              // peut masquer un manque un jour par un surplus un autre jour.
+              // Seulement si un quart était planifié ce jour-là (sinon rien
+              // à comparer) et pas encore auto-rempli (heure de sortie non
+              // confirmée → écart pas fiable tant que ce n'est pas validé).
+              const dayGap = d.pHours > 0.01 ? (d.hours - d.pHours) : null;
+              const dayGapBadge = (dayGap !== null && Math.abs(dayGap) >= 0.01 && !d.actualShift?.autoFilled)
+                ? `<div class="shift-card-daygap ${dayGap > 0 ? "is-positive" : "is-negative"}" title="Écart ce jour : ${fmtHours(d.hours)}h réel vs ${fmtHours(d.pHours)}h planifié">${dayGap > 0 ? "▲+" : "▼"}${fmtHours(dayGap)}h</div>`
                 : "";
               // v3.29.0 / v3.29.1 — Auto-rempli depuis l'horaire planifié :
               // la carte passe en orange avec un tag distinct selon le cas.
@@ -1376,6 +1494,7 @@ function renderSalaires() {
                       : `<span>${fmtHours(d.hours)}h</span>
                          ${dayTipPart || `<span class="shift-card-cost">${d.tipHours > 0 ? fmtHours(d.tipHours) + "h★" : ""}</span>`}`}
                   </div>
+                  ${dayGapBadge}
                 </div>
               </div>`;
             }).join("")}
@@ -1503,6 +1622,34 @@ function renderSalaires() {
               <strong>${fmtMoney(sumTips)}</strong>
             </div>`}
       </div>
+
+      <!-- ══ Graphiques de la semaine (v3.68.0) ══════════════════════ -->
+      <h3 class="section-title">${icon("bar-chart", 18)} Analyse de la semaine</h3>
+      <div class="payroll-charts-wrap">
+        <div class="card chart-card">
+          <div class="chart-card__header">
+            <div class="chart-card__title">${icon("bar-chart", 16)} Coût salarial par jour — réel vs planifié</div>
+            <div class="chart-card__sub">Masse salariale réellement payée chaque jour, comparée à ce que l'horaire planifié dans Employés & Horaires aurait coûté</div>
+          </div>
+          <div class="chart-canvas-wrap"><canvas id="payroll-chart-daily-cost"></canvas></div>
+        </div>
+        <div class="card chart-card">
+          <div class="chart-card__header">
+            <div class="chart-card__title">${icon("trending-up", 16)} Vue d'ensemble de la semaine</div>
+            <div class="chart-card__sub">Ventes nettes vs masse salariale réelle chaque jour, avec le seuil de ventes nécessaires pour respecter la cible (${(targetRatio * 100).toFixed(0)}%)</div>
+          </div>
+          <div class="chart-canvas-wrap"><canvas id="payroll-chart-week-overview"></canvas></div>
+        </div>
+      </div>
+      <script type="application/json" id="payroll-chart-data">${JSON.stringify({
+        dayLabels: weekDays.map((d, k) => `${DAYS_FR[visibleIdx[k]]} ${d.getDate()}/${d.getMonth() + 1}`),
+        laborActual: weekDays.map(d => dayLaborByDk[dayKey(d)] || 0),
+        laborPlanned: weekDays.map(d => dayEstimatedByDk[dayKey(d)] || 0),
+        netSales: dayProfitList.map(dp => dp.hasNet ? dp.net : null),
+        salesNeeded: dayProfitList.map(dp => dp.hasNet ? dp.salesNeeded : null),
+        targetRatio,
+        darkMode
+      })}</script>
 
       <p class="payroll-legend">
         ${icon("info", 12)}

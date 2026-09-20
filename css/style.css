@@ -2990,6 +2990,20 @@ tr.drag-over td{border-top:2px solid var(--accent)}
   .chart-card--wide{grid-column:span 1}
   .chart-canvas-wrap{height:240px}
 }
+
+/* v3.68.0 — Section "Analyse de la semaine" (Salaires & Pourboires) : 2
+   graphiques de largeur égale, côte à côte sur grand écran, empilés en
+   dessous de 900px. Réutilise .card/.chart-card/.chart-canvas-wrap. */
+.payroll-charts-wrap{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(420px, 1fr));
+  gap:var(--sp-4);
+  margin:var(--sp-3) 0 var(--sp-5);
+  width:100%;
+}
+@media(max-width:900px){
+  .payroll-charts-wrap{grid-template-columns:1fr}
+}
 @media(max-width:480px){
   .chart-canvas-wrap{height:220px}
   .chart-card{padding:var(--sp-4)}
@@ -10578,6 +10592,22 @@ body.dark .reports-yoy-col{background:rgba(var(--accent-rgb),.08)}
   font-weight:600;
   background-color:transparent;
 }
+
+/* v3.68.0 — Écart CE JOUR (réel vs planifié de ce jour précis), affiché en
+   plus du total hebdo de la cellule Totaux — évite qu'un jour en manque soit
+   masqué par un autre jour en surplus dans le seul chiffre hebdomadaire. */
+.shift-card-daygap{
+  margin-top:2px;
+  font-family:var(--font-body);
+  font-size:9px;
+  font-weight:700;
+  letter-spacing:.02em;
+  font-variant-numeric:tabular-nums;
+}
+.shift-card-daygap.is-positive{ color:#1f7a1f; }
+.shift-card-daygap.is-negative{ color:#b32820; }
+[data-theme="dark"] .shift-card-daygap.is-positive{ color:#7fd86b; }
+[data-theme="dark"] .shift-card-daygap.is-negative{ color:#ff7a72; }
 
 /* Carte shift avec tip — adaptation pour Salaires */
 .shift-card.shift-card--compact .shift-card-tip{

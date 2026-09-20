@@ -335,6 +335,8 @@ function renderPage() {
     // S'abonner au doc payroll de la semaine courante (idempotent)
     if (typeof subscribePayrollWeek === "function") subscribePayrollWeek();
     pc.innerHTML = renderSalaires();
+    // Init des graphiques (coût par jour + vue d'ensemble) après injection DOM
+    setTimeout(() => { if (typeof initPayrollCharts === "function") initPayrollCharts(); }, 50);
   }
   else if (activePage === "simulations") {
     // Si on est en train d'éditer une sim, montrer l'éditeur ; sinon la liste
