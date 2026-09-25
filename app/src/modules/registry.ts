@@ -7,7 +7,6 @@
  * à partir de cette liste.
  */
 import {
-  ChartColumn,
   Calendar,
   CalendarCheck,
   ClipboardList,
@@ -31,6 +30,7 @@ import {
 import type { Role } from "@/core/auth/roles";
 import type { AppModule, LegacyModule, NavGroup } from "./types";
 import { accueilModule } from "./accueil";
+import { rapportsModule } from "./rapports";
 
 const ADMIN: Role[] = ["global_admin"];
 const ADMIN_CHEF: Role[] = ["global_admin", "chef"];
@@ -68,7 +68,7 @@ export const MODULES: AppModule[] = [
   legacy("depenses", "Dépenses & Revenus", Wallet, "finances", ADMIN),
   legacy("factures", "Factures", Receipt, "finances", ADMIN),
   legacy("taxes", "TPS/TVQ", ShieldCheck, "finances", ADMIN),
-  legacy("rapports", "Rapports mensuels", ChartColumn, "finances", ADMIN),
+  rapportsModule,
 
   // Clients & Événements
   legacy("evenements", "Événements", Calendar, "clients", ADMIN_CHEF),
