@@ -1,0 +1,101 @@
+.bg {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: var(--sp-6) var(--sp-4);
+  background:
+    radial-gradient(circle at 20% 10%, rgba(var(--accent-rgb), 0.18), transparent 45%),
+    var(--bg);
+}
+.wrap {
+  width: 100%;
+  max-width: 380px;
+}
+.brand {
+  text-align: center;
+  margin-bottom: var(--sp-6);
+}
+.logo {
+  font-family: var(--font-heading);
+  font-size: 56px;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+.logo span {
+  color: var(--accent);
+}
+.tagline {
+  color: var(--text3);
+  font-size: var(--fs-sm);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.flag {
+  display: flex;
+  height: 4px;
+  width: 64px;
+  margin: var(--sp-3) auto 0;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.flag i:nth-child(1) { flex: 2; background: var(--accent); }
+.flag i:nth-child(2) { flex: 1; background: var(--blue); }
+.flag i:nth-child(3) { flex: 1; background: var(--red); }
+.form {
+  display: grid;
+  gap: var(--sp-4);
+}
+.title {
+  font-size: var(--fs-2xl);
+}
+.field {
+  display: grid;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  font-weight: 400;
+  font-size: var(--fs-md);
+}
+.pwWrap {
+  position: relative;
+}
+.pwWrap .input {
+  padding-right: 44px;
+}
+.pwToggle {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+}
+.error {
+  padding: var(--sp-3);
+  border-radius: var(--radius-md);
+  background: var(--status-red-bg);
+  border: 1px solid var(--status-red-border);
+  color: var(--status-red);
+  font-size: var(--fs-sm);
+}
+.version {
+  margin-top: var(--sp-4);
+  text-align: center;
+  font-size: var(--fs-xs);
+  color: var(--text3);
+}

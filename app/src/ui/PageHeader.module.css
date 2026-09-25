@@ -1,0 +1,23 @@
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-6);
+}
+.eyebrow {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent-warm);
+  margin-bottom: var(--sp-1);
+}
+.title {
+  font-size: var(--fs-3xl);
+}
+.actions {
+  display: flex;
+  gap: var(--sp-2);
+}
