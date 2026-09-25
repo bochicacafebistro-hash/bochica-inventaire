@@ -12,3 +12,7 @@ export const fmtDec1 = (n: number) => dec1.format(n || 0);
 /** 47 236 → « 47,2 k $ » (axes de graphiques). */
 export const fmtMoneyCompact = (n: number) => `${compact.format(n || 0)} $`;
 export const fmtPct = (n: number) => `${n > 0 ? "+" : ""}${dec1.format(n)} %`;
+
+const unitCost = new Intl.NumberFormat("fr-CA", { style: "currency", currency: "CAD", minimumFractionDigits: 2, maximumFractionDigits: 4 });
+/** Coût unitaire : jusqu'à 4 décimales pour les petits montants (0,0180 $/g). */
+export const fmtUnitCost = (n: number) => (Math.abs(n) < 1 ? unitCost.format(n || 0) : money.format(n || 0));

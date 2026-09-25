@@ -1,0 +1,61 @@
+.md {
+  display: grid;
+  gap: var(--sp-2);
+  line-height: 1.6;
+}
+.md ul,
+.md ol {
+  padding-left: 1.4em;
+  display: grid;
+  gap: 4px;
+}
+.md ol li::marker {
+  font-weight: 700;
+  color: var(--accent-warm);
+}
+.editor {
+  display: grid;
+  gap: var(--sp-1);
+}
+.editorHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--sp-2);
+}
+.label {
+  font-size: var(--fs-sm);
+  font-weight: 600;
+}
+.toolbar {
+  display: flex;
+  gap: 2px;
+}
+.toolbar button {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+}
+.toolbar button:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+.textarea {
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  resize: vertical;
+  line-height: 1.5;
+}
+.hint {
+  font-size: var(--fs-xs);
+  color: var(--text3);
+}

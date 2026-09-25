@@ -47,3 +47,6 @@ npm-debug.log*
 # Fichier de test créé par erreur pendant une session de debug (non supprimable
 # depuis cet environnement — ignoré pour ne jamais être commité par accident)
 _delete_test.txt
+
+# Captures envoyées par Claude (Cowork) — pas du code
+Claude outputs/

@@ -12,16 +12,12 @@ import {
   ClipboardList,
   Clock,
   DollarSign,
-  FileText,
   ListChecks,
   Receipt,
   ShieldCheck,
-  ShoppingCart,
   Sun,
-  Tag,
   TrendingUp,
   Users,
-  Utensils,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
@@ -31,6 +27,8 @@ import { accueilModule } from "./accueil";
 import { rapportsModule } from "./rapports";
 import { fournisseursModule } from "./fournisseurs";
 import { aCommanderModule, inventaireModule } from "./inventaire";
+import { listeIngredientsModule } from "./liste-ingredients";
+import { ingredientsModule, menuModule, recettesModule } from "./cuisine";
 
 const ADMIN: Role[] = ["global_admin"];
 const ADMIN_CHEF: Role[] = ["global_admin", "chef"];
@@ -47,7 +45,7 @@ export const MODULES: AppModule[] = [
   // Inventaire
   inventaireModule,
   aCommanderModule,
-  legacy("liste-ingredients", "Liste d'ingrédients", ShoppingCart, "inventaire", ADMIN_CHEF),
+  listeIngredientsModule,
   fournisseursModule,
 
   // RH & Horaires
@@ -60,9 +58,9 @@ export const MODULES: AppModule[] = [
   legacy("pointage", "Pointage", Clock, "rh", ALL),
 
   // Cuisine
-  legacy("menu", "Menu", Utensils, "cuisine", ADMIN_CHEF),
-  legacy("ingredients", "Ingrédients", Tag, "cuisine", ADMIN_CHEF),
-  legacy("recettes", "Recettes", FileText, "cuisine", ADMIN_CHEF),
+  menuModule,
+  ingredientsModule,
+  recettesModule,
 
   // Finances
   legacy("depenses", "Dépenses & Revenus", Wallet, "finances", ADMIN),
