@@ -5,9 +5,15 @@ import { useTenant } from "@/core/tenant/TenantContext";
 import { modulesForRole } from "@/modules/registry";
 import { Card } from "@/ui/Card";
 import { PageHeader } from "@/ui/PageHeader";
+import { EmployeeHome } from "@/modules/equipe/EmployeeHome";
 import styles from "./AccueilPage.module.css";
 
 export default function AccueilPage() {
+  const user = useSessionUser();
+  return user.role === "employee" ? <EmployeeHome /> : <AdminHome />;
+}
+
+function AdminHome() {
   const user = useSessionUser();
   const tenant = useTenant();
   const modules = modulesForRole(user.role);

@@ -5,6 +5,7 @@ import type { AppModule } from "../types";
 export const inventaireModule: AppModule = {
   id: "inventaire",
   label: "Inventaire",
+  labelEs: "Inventario",
   icon: Package,
   group: "inventaire",
   roles: ["global_admin", "chef", "employee"],

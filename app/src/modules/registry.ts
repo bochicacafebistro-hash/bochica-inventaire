@@ -7,12 +7,8 @@
  * à partir de cette liste.
  */
 import {
-  CalendarCheck,
-  ClipboardList,
   Clock,
   DollarSign,
-  ListChecks,
-  Sun,
   TrendingUp,
   Users,
   type LucideIcon,
@@ -28,13 +24,14 @@ import { ingredientsModule, menuModule, recettesModule } from "./cuisine";
 import { evenementsModule } from "./evenements";
 import { soumissionsModule } from "./soumissions";
 import { depensesModule, facturesModule, taxesModule } from "./finances";
+import { mesTachesModule, ouvertureFermetureModule, tachesJourModule, tachesModule } from "./operations";
+import { demandeCongeModule, demandesCongeModule, monHoraireModule } from "./equipe";
 
 const ADMIN: Role[] = ["global_admin"];
 const ALL: Role[] = ["global_admin", "chef", "employee"];
-const EMPLOYEE: Role[] = ["employee"];
 
-function legacy(id: string, label: string, icon: LucideIcon, group: NavGroup, roles: Role[]): LegacyModule {
-  return { id, label, icon, group, roles, status: "legacy" };
+function legacy(id: string, label: string, icon: LucideIcon, group: NavGroup, roles: Role[], labelEs?: string): LegacyModule {
+  return { id, label, labelEs, icon, group, roles, status: "legacy" };
 }
 
 export const MODULES: AppModule[] = [
@@ -50,10 +47,10 @@ export const MODULES: AppModule[] = [
   legacy("employes", "Employés & Horaires", Users, "rh", ADMIN),
   legacy("salaires", "Salaires & Pourboires", DollarSign, "rh", ADMIN),
   legacy("simulations", "Simulation paie", TrendingUp, "rh", ADMIN),
-  legacy("demandes-conge", "Demandes de congé", Sun, "rh", ADMIN),
-  legacy("taches", "Tâches", ClipboardList, "rh", ADMIN),
-  legacy("taches-jour", "Tâches du jour", ListChecks, "rh", ADMIN),
-  legacy("pointage", "Pointage", Clock, "rh", ALL),
+  demandesCongeModule,
+  tachesModule,
+  tachesJourModule,
+  legacy("pointage", "Pointage", Clock, "rh", ALL, "Fichaje"),
 
   // Cuisine
   menuModule,
@@ -71,10 +68,10 @@ export const MODULES: AppModule[] = [
   soumissionsModule,
 
   // Espace employé
-  legacy("mon-horaire", "Mon horaire", CalendarCheck, "employe", EMPLOYEE),
-  legacy("mes-taches", "Mes tâches", ListChecks, "employe", EMPLOYEE),
-  legacy("demande-conge", "Demande de congé", Sun, "employe", EMPLOYEE),
-  legacy("ouverture-fermeture", "Ouverture / Fermeture", ClipboardList, "employe", ALL),
+  monHoraireModule,
+  mesTachesModule,
+  demandeCongeModule,
+  ouvertureFermetureModule,
 ];
 
 export function modulesForRole(role: Role): AppModule[] {

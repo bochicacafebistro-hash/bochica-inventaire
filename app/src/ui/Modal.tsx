@@ -1,5 +1,6 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
+import { useCommon } from "@/core/i18n/i18n";
 import styles from "./Modal.module.css";
 
 interface Props {
@@ -14,6 +15,7 @@ interface Props {
 /** Fenêtre modale accessible (<dialog> natif : Échap, focus, arrière-plan inerte). */
 export function Modal({ open, title, onClose, children, footer, width = 480 }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
+  const c = useCommon();
 
   useEffect(() => {
     const d = ref.current;
@@ -42,7 +44,7 @@ export function Modal({ open, title, onClose, children, footer, width = 480 }: P
             <h2 id="modal-title" className={styles.title}>
               {title}
             </h2>
-            <button className={styles.close} onClick={onClose} aria-label="Fermer">
+            <button className={styles.close} onClick={onClose} aria-label={c.close}>
               <X size={18} />
             </button>
           </header>

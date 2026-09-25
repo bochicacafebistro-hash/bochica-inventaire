@@ -10,6 +10,8 @@ import { PageHeader } from "@/ui/PageHeader";
 import { SearchInput } from "@/ui/SearchInput";
 import { Spinner } from "@/ui/Spinner";
 import { useToast } from "@/ui/Toast";
+import { fill, useLang, useMessages } from "@/core/i18n/i18n";
+import { INV_MESSAGES, sectionLabel } from "./inventaire.messages";
 import {
   ALL,
   countProducts,
@@ -32,6 +34,10 @@ import { StockInput } from "./components/StockInput";
 import styles from "./Inventaire.module.css";
 
 const COL = "products";
+const orderLabelEs = (p: Product) => {
+  const q = Number(p.orderQty) || 0;
+  return isBox(p) ? `${q} caja${q > 1 ? "s" : ""}` : `${q} unidad${q > 1 ? "es" : ""}`;
+};
 type Editing = { product: Product | null } | null;
 
 export default function InventairePage() {
@@ -41,6 +47,8 @@ export default function InventairePage() {
   const actions = useDataActions();
   const confirm = useConfirm();
   const toast = useToast();
+  const m = useMessages(INV_MESSAGES);
+  const lang = useLang();
 
   const [section, setSection] = useState(ALL);
   const [query, setQuery] = useState("");
@@ -53,7 +61,7 @@ export default function InventairePage() {
     () => filterProducts(products, { section, query, archived: showArchived }),
     [products, section, query, showArchived],
   );
-  const supplierName = useMemo(() => new Map(suppliers.map((s) => [s.id, s.name || "(sans nom)"])), [suppliers]);
+  const supplierName = useMemo(() => new Map(suppliers.map((s) => [s.id, s.name || m.noName])), [suppliers, m.noName]);
 
   const fail = (what: string) => (err: unknown) => toast(`${what} impossible : ${(err as Error).message}`, "error");
 
@@ -62,9 +70,9 @@ export default function InventairePage() {
     try {
       await actions.update(COL, p.id, { currentStock: qty });
       await actions.log(p.name ?? "—", "Mise à jour stock", `${old} → ${qty} unités`);
-      toast(`${p.name} : ${old} → ${qty}`, "success");
+      toast(fill(m.stockSaved, { name: p.name ?? "", old, qty }), "success");
     } catch (err) {
-      fail("Mise à jour")(err);
+      toast(fill(m.updateError, { msg: (err as Error).message }), "error");
     }
   }
 
@@ -178,16 +186,15 @@ export default function InventairePage() {
     }
   }
 
-  if (loading) return <Spinner label="Chargement de l'inventaire…" />;
-  if (error) return <p style={{ color: "var(--status-red)" }}>Lecture impossible : {error.message}</p>;
+  if (loading) return <Spinner label={m.loading} />;
+  if (error) return <p style={{ color: "var(--status-red)" }}>{fill(m.readError, { msg: error.message })}</p>;
 
   const tabs = [ALL, ...sections];
 
   return (
     <>
       <PageHeader
-        eyebrow="Inventaire"
-        title="Inventaire"
+        title={m.title}
         actions={
           canManage && !showArchived ? (
             <Button onClick={() => setEditing({ product: null })}>
@@ -200,24 +207,24 @@ export default function InventairePage() {
       <div className={styles.stats}>
         <div className={styles.stat}>
           <div className={styles.statValue}>{counts.total}</div>
-          <div className={styles.statLabel}>Produits</div>
+          <div className={styles.statLabel}>{m.products}</div>
         </div>
         <div className={styles.stat}>
           <div className={styles.statValue}>{counts.red}</div>
           <div className={styles.statLabel}>
-            <span className={`${styles.dot} ${styles.dot_red}`} aria-hidden /> À commander
+            <span className={`${styles.dot} ${styles.dot_red}`} aria-hidden /> {m.toOrder}
           </div>
         </div>
         <div className={styles.stat}>
           <div className={styles.statValue}>{counts.yellow}</div>
           <div className={styles.statLabel}>
-            <span className={`${styles.dot} ${styles.dot_yellow}`} aria-hidden /> Bientôt bas
+            <span className={`${styles.dot} ${styles.dot_yellow}`} aria-hidden /> {m.soonLow}
           </div>
         </div>
         <div className={styles.stat}>
           <div className={styles.statValue}>{counts.green}</div>
           <div className={styles.statLabel}>
-            <span className={`${styles.dot} ${styles.dot_green}`} aria-hidden /> En stock
+            <span className={`${styles.dot} ${styles.dot_green}`} aria-hidden /> {m.inStock}
           </div>
         </div>
       </div>
@@ -232,14 +239,14 @@ export default function InventairePage() {
         </div>
       ) : (
         <div className={styles.tabsRow}>
-          <div className={styles.tabs} role="tablist" aria-label="Catégories">
+          <div className={styles.tabs} role="tablist" aria-label={m.categories}>
             {tabs.map((s) => {
               const low = s === ALL ? counts.red + counts.yellow : (counts.lowBySection.get(s) ?? 0);
               return (
                 <button key={s} role="tab" aria-selected={section === s} className={styles.tab} onClick={() => setSection(s)}>
-                  {s}
+                  {sectionLabel(s, lang)}
                   {low > 0 && (
-                    <span className={styles.tabCount} aria-label={`${low} à surveiller`}>
+                    <span className={styles.tabCount} aria-label={fill(m.toWatch, { n: low })}>
                       {low}
                     </span>
                   )}
@@ -256,7 +263,7 @@ export default function InventairePage() {
       )}
 
       <div className={styles.toolbar}>
-        <SearchInput value={query} onChange={setQuery} placeholder="Rechercher un produit…" />
+        <SearchInput value={query} onChange={setQuery} placeholder={m.search} />
         <span className={styles.spacer} />
         {canManage && !showArchived && counts.archived > 0 && (
           <Button variant="ghost" onClick={() => setShowArchived(true)}>
@@ -266,21 +273,21 @@ export default function InventairePage() {
       </div>
 
       {shown.length === 0 ? (
-        <EmptyState icon={Package} title={query ? "Aucun résultat" : showArchived ? "Aucun produit archivé" : "Aucun produit ici"}>
-          {query && <p>Aucun produit ne correspond à « {query} ».</p>}
+        <EmptyState icon={Package} title={query ? m.noResult : showArchived ? m.noArchived : m.noProduct}>
+          {query && <p>{fill(m.noMatch, { q: query })}</p>}
         </EmptyState>
       ) : (
-        <div className={styles.list} role="table" aria-label="Produits">
+        <div className={styles.list} role="table" aria-label={m.products}>
           <div className={styles.head} role="row">
-            <span role="columnheader">Produit</span>
-            <span role="columnheader">Stock</span>
-            <span role="columnheader">Nouvelle qté</span>
-            <span role="columnheader">Min.</span>
-            <span role="columnheader">Fournisseur</span>
-            <span role="columnheader">Statut</span>
-            <span role="columnheader">À commander</span>
+            <span role="columnheader">{m.colProduct}</span>
+            <span role="columnheader">{m.colStock}</span>
+            <span role="columnheader">{m.colNew}</span>
+            <span role="columnheader">{m.colMin}</span>
+            <span role="columnheader">{m.colSupplier}</span>
+            <span role="columnheader">{m.colStatus}</span>
+            <span role="columnheader">{m.colOrder}</span>
             <span role="columnheader">
-              <span className="visually-hidden">Actions</span>
+              <span className="visually-hidden">{m.actions}</span>
             </span>
           </div>
           {shown.map((p) => {
@@ -289,31 +296,31 @@ export default function InventairePage() {
               <div key={p.id} className={`${styles.row} ${styles[`row_${st}`]}`} role="row">
                 <div className={styles.cName} role="cell">
                   <div className={styles.name}>{p.name}</div>
-                  {(section === ALL || showArchived) && <div className={styles.sub}>{p.section}</div>}
+                  {(section === ALL || showArchived) && <div className={styles.sub}>{sectionLabel(p.section ?? "", lang)}</div>}
                   {p.note && <div className={styles.note}>{p.note}</div>}
                 </div>
                 <div className={`${styles.cStock} ${styles.stock} ${styles.num}`} role="cell">
-                  <span className={styles.cellLabel}>Stock actuel</span>
+                  <span className={styles.cellLabel}>{m.currentStock}</span>
                   {stockOf(p)}
                 </div>
                 <div className={styles.cInput} role="cell">
                   {!showArchived && <StockInput productName={p.name ?? ""} onCommit={(q) => updateStock(p, q)} />}
                 </div>
                 <div className={`${styles.cMin} ${styles.num}`} role="cell">
-                  <span className={styles.cellLabel}>Minimum</span>
+                  <span className={styles.cellLabel}>{m.minimum}</span>
                   {minimumOf(p)}
                 </div>
                 <div className={styles.cSup} role="cell">
-                  <span className={styles.cellLabel}>Fournisseur</span>
-                  {p.supplierId ? (supplierName.get(p.supplierId) ?? "Fournisseur supprimé") : "—"}
+                  <span className={styles.cellLabel}>{m.colSupplier}</span>
+                  {p.supplierId ? (supplierName.get(p.supplierId) ?? m.supplierDeleted) : "—"}
                 </div>
                 <div className={styles.cStatus} role="cell">
                   <StatusBadge status={st} />
                 </div>
                 <div className={`${styles.cOrder} ${styles.order}`} role="cell">
-                  <span className={styles.cellLabel}>À commander</span>
-                  {orderLabel(p)}
-                  {isBox(p) && <div className={styles.sub}>= {unitsFor(p, p.orderQty ?? 0)} unités</div>}
+                  <span className={styles.cellLabel}>{m.colOrder}</span>
+                  {lang === "es" ? orderLabelEs(p) : orderLabel(p)}
+                  {isBox(p) && <div className={styles.sub}>{fill(m.units, { n: unitsFor(p, p.orderQty ?? 0) })}</div>}
                 </div>
                 <div className={styles.cMenu} role="cell">
                   {canManage && (

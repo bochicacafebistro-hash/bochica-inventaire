@@ -99,3 +99,7 @@
   font-size: var(--fs-xs);
   color: var(--text3);
 }
+.titleRow { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); }
+.lang { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--radius-pill); background: var(--surface2); }
+.lang button { border: 0; background: transparent; font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: var(--radius-pill); cursor: pointer; color: var(--text2); }
+.lang button[aria-pressed="true"] { background: var(--text); color: var(--bg); }

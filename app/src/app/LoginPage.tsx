@@ -4,7 +4,38 @@ import { useAuth } from "@/core/auth/AuthContext";
 import { authErrorMessage } from "@/core/auth/authErrors";
 import { Button } from "@/ui/Button";
 import { Card } from "@/ui/Card";
+import { LANGS, useLang, useMessages, useSetLang, type Messages } from "@/core/i18n/i18n";
 import styles from "./LoginPage.module.css";
+
+const fr = {
+  tagline: "Gestion interne",
+  title: "Connexion",
+  user: "Nom d'utilisateur ou courriel",
+  userPh: "ex. Bochica",
+  password: "Mot de passe",
+  hidePw: "Masquer le mot de passe",
+  showPw: "Afficher le mot de passe",
+  busy: "Connexion…",
+  submit: "Se connecter",
+  version: "Nouvelle version (v2) — en construction",
+  language: "Langue",
+};
+const MESSAGES: Messages<typeof fr> = {
+  fr,
+  es: {
+    tagline: "Gestión interna",
+    title: "Iniciar sesión",
+    user: "Usuario o correo",
+    userPh: "ej. Bochica",
+    password: "Contraseña",
+    hidePw: "Ocultar la contraseña",
+    showPw: "Mostrar la contraseña",
+    busy: "Conectando…",
+    submit: "Entrar",
+    version: "Nueva versión (v2) — en construcción",
+    language: "Idioma",
+  },
+};
 
 export function LoginPage() {
   const { state, login } = useAuth();
@@ -13,6 +44,9 @@ export function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const m = useMessages(MESSAGES);
+  const lang = useLang();
+  const setLang = useSetLang();
 
   const profileError = state.status === "signedOut" ? state.error : undefined;
   const shownError = error ?? profileError;
@@ -24,7 +58,7 @@ export function LoginPage() {
     try {
       await login(username, password);
     } catch (err) {
-      setError(authErrorMessage(err));
+      setError(authErrorMessage(err, lang));
       setBusy(false);
     }
   }
@@ -36,7 +70,7 @@ export function LoginPage() {
           <div className={styles.logo}>
             BOCHI<span>CA</span>
           </div>
-          <div className={styles.tagline}>Gestion interne</div>
+          <div className={styles.tagline}>{m.tagline}</div>
           <div className={styles.flag} aria-hidden>
             <i />
             <i />
@@ -46,10 +80,19 @@ export function LoginPage() {
 
         <Card>
           <form className={styles.form} onSubmit={onSubmit} noValidate>
-            <h1 className={styles.title}>Connexion</h1>
+            <div className={styles.titleRow}>
+              <h1 className={styles.title}>{m.title}</h1>
+              <div className={styles.lang} role="group" aria-label={m.language}>
+                {LANGS.map((l) => (
+                  <button type="button" key={l.value} aria-pressed={lang === l.value} onClick={() => setLang(l.value)}>
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <label className={styles.field}>
-              Nom d'utilisateur ou courriel
+              {m.user}
               <input
                 className={styles.input}
                 value={username}
@@ -57,14 +100,14 @@ export function LoginPage() {
                 autoComplete="username"
                 autoCapitalize="none"
                 spellCheck={false}
-                placeholder="ex. Bochica"
+                placeholder={m.userPh}
                 required
                 autoFocus
               />
             </label>
 
             <label className={styles.field}>
-              Mot de passe
+              {m.password}
               <div className={styles.pwWrap}>
                 <input
                   className={styles.input}
@@ -79,7 +122,7 @@ export function LoginPage() {
                   type="button"
                   className={styles.pwToggle}
                   onClick={() => setShowPw((v) => !v)}
-                  aria-label={showPw ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                  aria-label={showPw ? m.hidePw : m.showPw}
                 >
                   {showPw ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
@@ -93,11 +136,11 @@ export function LoginPage() {
             )}
 
             <Button type="submit" block disabled={busy || !username || !password}>
-              {busy ? "Connexion…" : "Se connecter"}
+              {busy ? m.busy : m.submit}
             </Button>
           </form>
         </Card>
-        <p className={styles.version}>Nouvelle version (v2) — en construction</p>
+        <p className={styles.version}>{m.version}</p>
       </div>
     </div>
   );

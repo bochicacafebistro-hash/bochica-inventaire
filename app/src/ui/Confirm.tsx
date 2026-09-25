@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from "react";
 import { Button } from "./Button";
 import { Modal } from "./Modal";
+import { useCommon } from "@/core/i18n/i18n";
 
 interface ConfirmOptions {
   title: string;
@@ -14,6 +15,7 @@ const ConfirmContext = createContext<ConfirmFn>(async () => false);
 
 /** `const ok = await confirm({ title, message, danger: true })` */
 export function ConfirmProvider({ children }: { children: ReactNode }) {
+  const c = useCommon();
   const [opts, setOpts] = useState<ConfirmOptions | null>(null);
   const resolver = useRef<(v: boolean) => void>(undefined);
 
@@ -43,10 +45,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         footer={
           <>
             <Button variant="secondary" onClick={() => close(false)}>
-              Annuler
+              {c.cancel}
             </Button>
             <Button variant={opts?.danger ? "danger" : "primary"} onClick={() => close(true)} autoFocus>
-              {opts?.confirmLabel ?? (opts?.danger ? "Supprimer" : "Confirmer")}
+              {opts?.confirmLabel ?? (opts?.danger ? c.delete : c.confirm)}
             </Button>
           </>
         }
