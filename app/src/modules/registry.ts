@@ -7,7 +7,6 @@
  * à partir de cette liste.
  */
 import {
-  Calendar,
   CalendarCheck,
   ClipboardList,
   Clock,
@@ -29,9 +28,10 @@ import { fournisseursModule } from "./fournisseurs";
 import { aCommanderModule, inventaireModule } from "./inventaire";
 import { listeIngredientsModule } from "./liste-ingredients";
 import { ingredientsModule, menuModule, recettesModule } from "./cuisine";
+import { evenementsModule } from "./evenements";
+import { soumissionsModule } from "./soumissions";
 
 const ADMIN: Role[] = ["global_admin"];
-const ADMIN_CHEF: Role[] = ["global_admin", "chef"];
 const ALL: Role[] = ["global_admin", "chef", "employee"];
 const EMPLOYEE: Role[] = ["employee"];
 
@@ -69,8 +69,8 @@ export const MODULES: AppModule[] = [
   rapportsModule,
 
   // Clients & Événements
-  legacy("evenements", "Événements", Calendar, "clients", ADMIN_CHEF),
-  legacy("soumissions", "Soumissions", Receipt, "clients", ADMIN),
+  evenementsModule,
+  soumissionsModule,
 
   // Espace employé
   legacy("mon-horaire", "Mon horaire", CalendarCheck, "employe", EMPLOYEE),
