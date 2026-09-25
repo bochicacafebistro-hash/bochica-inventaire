@@ -40,3 +40,15 @@
 .block {
   width: 100%;
 }
+.danger {
+  background: #b93a32; /* 5,4:1 avec le blanc */
+  color: #fff;
+}
+.danger:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+.icon {
+  min-height: 34px;
+  width: 34px;
+  padding: 0;
+}

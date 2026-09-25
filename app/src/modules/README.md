@@ -30,3 +30,17 @@ modules/rapports/
 1. Créer le dossier et son `index.ts` avec `status: "migrated"`.
 2. Dans `registry.ts`, importer le module et retirer sa ligne `legacy(...)`.
 3. Vérifier `firestore.rules` (à la racine du dépôt) si de nouveaux accès sont nécessaires.
+
+## Briques partagées (étape 0)
+
+| Besoin | Où | Utilisation |
+|---|---|---|
+| Lire une collection en temps réel | `core/data/useCollection` | `useCollection<Supplier>("suppliers")` |
+| Créer / modifier / supprimer + journal | `core/data/useDataActions` | `const a = useDataActions(); await a.create("suppliers", {...}); await a.log(nom, "Ajouté")` |
+| Fenêtre modale | `ui/Modal` | `<Modal open title onClose footer>` |
+| Confirmation | `ui/Confirm` | `if (await confirm({ title, message, danger: true })) …` |
+| Notification | `ui/Toast` | `toast("Enregistré.", "success")` |
+| Champs de formulaire | `ui/Field` | `<TextField label required error />`, `<TextArea />` |
+| Recherche | `ui/SearchInput` | recherche sans accents : `normalize()` dans `fournisseurs.logic.ts` |
+| Graphiques | `ui/chartTheme` + Recharts | couleurs validées, voir le module rapports |
+| Tests | `*.logic.test.ts` (Vitest) | `npm test` — lancés aussi à chaque build Vercel |

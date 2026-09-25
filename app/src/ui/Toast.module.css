@@ -1,0 +1,38 @@
+.stack {
+  position: fixed;
+  right: var(--sp-4);
+  bottom: var(--sp-4);
+  z-index: 100;
+  display: grid;
+  gap: var(--sp-2);
+  max-width: min(380px, calc(100vw - 32px));
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-3) var(--sp-3) var(--sp-4);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-lg);
+  font-size: var(--fs-sm);
+  animation: in 0.18s ease;
+}
+.toast span {
+  flex: 1;
+}
+.toast button {
+  border: 0;
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  display: inline-flex;
+}
+.success svg:first-child { color: var(--status-green); }
+.error svg:first-child { color: var(--status-red); }
+.info svg:first-child { color: var(--blue-text); }
+.error { border-color: var(--status-red-border); }
+@keyframes in {
+  from { opacity: 0; transform: translateY(6px); }
+}

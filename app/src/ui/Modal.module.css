@@ -1,0 +1,57 @@
+.dialog {
+  width: calc(100vw - 32px);
+  margin: auto;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-lg);
+  max-height: calc(100vh - 32px);
+}
+.dialog::backdrop {
+  background: rgba(14, 13, 12, 0.45);
+}
+.inner {
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 34px);
+}
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  padding: var(--sp-5) var(--sp-5) var(--sp-3);
+}
+.title {
+  font-family: var(--font-body);
+  font-size: var(--fs-lg);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.close {
+  border: 0;
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+  display: inline-flex;
+  padding: var(--sp-1);
+  border-radius: var(--radius-sm);
+}
+.close:hover {
+  background: var(--surface2);
+}
+.body {
+  padding: 0 var(--sp-5) var(--sp-4);
+  overflow-y: auto;
+  display: grid;
+  gap: var(--sp-4);
+}
+.footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--sp-2);
+  padding: var(--sp-4) var(--sp-5);
+  border-top: 1px solid var(--border);
+}

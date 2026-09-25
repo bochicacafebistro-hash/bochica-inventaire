@@ -4,6 +4,8 @@ import { RouterProvider } from "react-router";
 import { AuthProvider } from "@/core/auth/AuthContext";
 import { TenantProvider } from "@/core/tenant/TenantContext";
 import { router } from "@/app/router";
+import { ConfirmProvider } from "@/ui/Confirm";
+import { ToastProvider } from "@/ui/Toast";
 import "@/ui/global.css";
 
 // Applique le thème sauvegardé avant le premier rendu (évite un flash)
@@ -19,7 +21,11 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <TenantProvider>
       <AuthProvider>
-        <RouterProvider router={router} />
+        <ToastProvider>
+          <ConfirmProvider>
+            <RouterProvider router={router} />
+          </ConfirmProvider>
+        </ToastProvider>
       </AuthProvider>
     </TenantProvider>
   </StrictMode>,

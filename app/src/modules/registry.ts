@@ -18,7 +18,6 @@ import {
   Receipt,
   ShieldCheck,
   ShoppingCart,
-  Store,
   Sun,
   Tag,
   TrendingUp,
@@ -31,6 +30,7 @@ import type { Role } from "@/core/auth/roles";
 import type { AppModule, LegacyModule, NavGroup } from "./types";
 import { accueilModule } from "./accueil";
 import { rapportsModule } from "./rapports";
+import { fournisseursModule } from "./fournisseurs";
 
 const ADMIN: Role[] = ["global_admin"];
 const ADMIN_CHEF: Role[] = ["global_admin", "chef"];
@@ -48,7 +48,7 @@ export const MODULES: AppModule[] = [
   legacy("inventaire", "Inventaire", Package, "inventaire", ALL),
   legacy("a-commander", "À commander", ShoppingCart, "inventaire", ADMIN),
   legacy("liste-ingredients", "Liste d'ingrédients", ShoppingCart, "inventaire", ADMIN_CHEF),
-  legacy("fournisseurs", "Fournisseurs", Store, "inventaire", ADMIN),
+  fournisseursModule,
 
   // RH & Horaires
   legacy("employes", "Employés & Horaires", Users, "rh", ADMIN),

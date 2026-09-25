@@ -1,0 +1,127 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-5);
+}
+.count {
+  margin-left: auto;
+  font-size: var(--fs-sm);
+  color: var(--text3);
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--sp-4);
+}
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: var(--sp-5);
+  min-width: 0;
+}
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-2);
+}
+.name {
+  font-family: var(--font-body);
+  font-size: var(--fs-md);
+  font-weight: 700;
+  letter-spacing: 0;
+  overflow-wrap: anywhere;
+}
+.actions {
+  display: flex;
+  gap: 2px;
+  flex: none;
+}
+.iconBtn {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--text3);
+  cursor: pointer;
+}
+.iconBtn:hover {
+  background: var(--surface2);
+  color: var(--text);
+}
+.iconBtn.danger:hover {
+  color: var(--status-red);
+  background: var(--status-red-bg);
+}
+.contacts {
+  display: grid;
+  gap: var(--sp-1);
+  font-size: var(--fs-sm);
+}
+.contact {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  color: var(--text2);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+a.contact:hover {
+  color: var(--blue-text);
+  text-decoration: underline;
+}
+.notes {
+  font-size: var(--fs-sm);
+  color: var(--text2);
+  white-space: pre-wrap;
+  background: var(--surface2);
+  border-radius: var(--radius-md);
+  padding: var(--sp-2) var(--sp-3);
+}
+.products {
+  margin-top: auto;
+  padding-top: var(--sp-3);
+  border-top: 1px solid var(--border);
+}
+.productsLabel {
+  font-size: var(--fs-xs);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: var(--sp-2);
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+.tag {
+  font-size: var(--fs-xs);
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.more {
+  font-size: var(--fs-xs);
+  padding: 2px 8px;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--surface2);
+  color: var(--text2);
+  cursor: pointer;
+}
+.noProducts {
+  font-size: var(--fs-xs);
+  color: var(--text3);
+}
