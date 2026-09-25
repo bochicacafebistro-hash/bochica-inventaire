@@ -1,11 +1,8 @@
 import type { ProductRef, Supplier, SupplierDraft } from "./fournisseurs.types";
 
-const collator = new Intl.Collator("fr-CA", { sensitivity: "base", numeric: true });
+import { frCollator as collator, normalize, telHref } from "@/core/text";
 
-/** Minuscules sans accents, pour une recherche tolérante. */
-export function normalize(s: string): string {
-  return s.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().trim();
-}
+export { normalize, telHref };
 
 export function sortSuppliers(list: Supplier[]): Supplier[] {
   return [...list].sort((a, b) => collator.compare(a.name ?? "", b.name ?? ""));
@@ -58,12 +55,6 @@ export function validateDraft(d: SupplierDraft, existing: Supplier[], editingId?
 /** Nettoie le brouillon avant l'enregistrement. */
 export function cleanDraft(d: SupplierDraft): SupplierDraft {
   return { name: d.name.trim(), contact: d.contact.trim(), email: d.email.trim().toLowerCase(), notes: d.notes.trim() };
-}
-
-/** Lien tel: à partir d'un numéro saisi librement (« 418 555-1234 poste 2 »). */
-export function telHref(phone: string): string | null {
-  const digits = phone.split(/poste|ext|#/i)[0]!.replace(/[^\d+]/g, "");
-  return digits.length >= 7 ? `tel:${digits}` : null;
 }
 
 export function copyName(name: string, existing: Supplier[]): string {

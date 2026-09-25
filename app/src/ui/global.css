@@ -57,3 +57,15 @@ textarea {
   clip: rect(0 0 0 0);
   white-space: nowrap;
 }
+
+/* Impression : seulement le contenu de la page */
+@media print {
+  .no-print,
+  aside,
+  nav {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+}

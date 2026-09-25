@@ -179,3 +179,17 @@
     padding: var(--sp-5) var(--sp-4) var(--sp-8);
   }
 }
+
+@media print {
+  .shell {
+    display: block;
+  }
+  .sidebar,
+  .topbar,
+  .backdrop {
+    display: none !important;
+  }
+  .main {
+    padding: 0;
+  }
+}

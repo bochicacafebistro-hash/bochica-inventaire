@@ -14,7 +14,6 @@ import {
   DollarSign,
   FileText,
   ListChecks,
-  Package,
   Receipt,
   ShieldCheck,
   ShoppingCart,
@@ -31,6 +30,7 @@ import type { AppModule, LegacyModule, NavGroup } from "./types";
 import { accueilModule } from "./accueil";
 import { rapportsModule } from "./rapports";
 import { fournisseursModule } from "./fournisseurs";
+import { aCommanderModule, inventaireModule } from "./inventaire";
 
 const ADMIN: Role[] = ["global_admin"];
 const ADMIN_CHEF: Role[] = ["global_admin", "chef"];
@@ -45,8 +45,8 @@ export const MODULES: AppModule[] = [
   accueilModule,
 
   // Inventaire
-  legacy("inventaire", "Inventaire", Package, "inventaire", ALL),
-  legacy("a-commander", "À commander", ShoppingCart, "inventaire", ADMIN),
+  inventaireModule,
+  aCommanderModule,
   legacy("liste-ingredients", "Liste d'ingrédients", ShoppingCart, "inventaire", ADMIN_CHEF),
   fournisseursModule,
 
