@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { ChartColumn, Table2 } from "lucide-react";
-import styles from "../Rapports.module.css";
+import styles from "./charts.module.css";
 
 export interface LegendEntry {
   label: string;

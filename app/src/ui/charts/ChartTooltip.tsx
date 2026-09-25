@@ -1,4 +1,4 @@
-import styles from "../Rapports.module.css";
+import styles from "./charts.module.css";
 
 export interface TooltipLine {
   label: string;

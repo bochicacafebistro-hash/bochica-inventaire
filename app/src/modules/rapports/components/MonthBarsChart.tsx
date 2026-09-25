@@ -1,7 +1,7 @@
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useChartTheme } from "@/ui/chartTheme";
 import type { MonthPoint } from "../rapports.logic";
-import { ChartTooltipBox } from "./ChartTooltip";
+import { ChartTooltipBox } from "@/ui/charts/ChartTooltip";
 
 type NumKey = "revenue" | "tips" | "hours";
 type PrevKey = "revenuePrev" | "tipsPrev" | "hoursPrev";

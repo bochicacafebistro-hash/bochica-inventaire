@@ -26,11 +26,11 @@ import {
   type Totals,
 } from "./rapports.logic";
 import { useMonthlyReports } from "./useMonthlyReports";
-import { ChartCard } from "./components/ChartCard";
+import { ChartCard } from "@/ui/charts/ChartCard";
 import { ChannelsChart, channelColor } from "./components/ChannelsChart";
 import { Delta } from "./components/Delta";
 import { MonthBarsChart } from "./components/MonthBarsChart";
-import { RankedBarsChart } from "./components/RankedBarsChart";
+import { RankedBarsChart } from "@/ui/charts/RankedBarsChart";
 import { ChannelsTable, MonthValuesTable, RankedTable, RecapTable, TopItemsTable } from "./components/Tables";
 import styles from "./Rapports.module.css";
 

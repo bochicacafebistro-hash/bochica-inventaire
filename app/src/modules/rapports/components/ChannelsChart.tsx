@@ -2,7 +2,7 @@ import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxi
 import { useChartTheme } from "@/ui/chartTheme";
 import { fmtMoney0, fmtMoneyCompact } from "@/ui/format";
 import { CHANNELS, type ChannelKey, type ChannelRow } from "../rapports.logic";
-import { ChartTooltipBox } from "./ChartTooltip";
+import { ChartTooltipBox } from "@/ui/charts/ChartTooltip";
 
 interface TipProps {
   active?: boolean;

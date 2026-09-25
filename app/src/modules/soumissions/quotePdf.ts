@@ -20,12 +20,8 @@ import type { Quote, QuoteTemplate } from "./soumissions.types";
 
 type RGB = [number, number, number];
 
-/** 1234.5 → « 1 234,50 $ » (espaces simples : les polices PDF standard n'ont pas l'espace fine). */
-export function pdfMoney(n: number): string {
-  const [int, dec] = Math.abs(n).toFixed(2).split(".");
-  const grouped = int!.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
-  return `${n < 0 ? "-" : ""}${grouped},${dec} $`;
-}
+export { pdfMoney } from "@/ui/pdfFormat";
+import { pdfMoney } from "@/ui/pdfFormat";
 
 const MENU_URL = "https://bochicacafebistro.ca/";
 

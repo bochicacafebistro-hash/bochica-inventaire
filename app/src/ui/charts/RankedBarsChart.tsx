@@ -1,8 +1,12 @@
 import { Bar, BarChart, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { useChartTheme } from "@/ui/chartTheme";
 import { fmtMoney0 } from "@/ui/format";
-import type { RankedRow } from "../rapports.logic";
 import { ChartTooltipBox } from "./ChartTooltip";
+
+export interface RankedRow {
+  name: string;
+  total: number;
+}
 
 interface TipProps {
   active?: boolean;
@@ -10,12 +14,12 @@ interface TipProps {
 }
 
 /** Barres horizontales classées (une seule série → une seule couleur). */
-export function RankedBarsChart({ rows, share }: { rows: RankedRow[]; share?: boolean }) {
+export function RankedBarsChart({ rows, share, format = fmtMoney0 }: { rows: RankedRow[]; share?: boolean; format?: (n: number) => string }) {
   const t = useChartTheme();
   const sum = rows.reduce((s, r) => s + r.total, 0);
   const label = (v: unknown) => {
     const n = Number(v) || 0;
-    return share && sum > 0 ? `${fmtMoney0(n)} · ${Math.round((n / sum) * 100)} %` : fmtMoney0(n);
+    return share && sum > 0 ? `${format(n)} · ${Math.round((n / sum) * 100)} %` : format(n);
   };
 
   return (

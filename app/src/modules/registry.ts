@@ -12,12 +12,9 @@ import {
   Clock,
   DollarSign,
   ListChecks,
-  Receipt,
-  ShieldCheck,
   Sun,
   TrendingUp,
   Users,
-  Wallet,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/core/auth/roles";
@@ -30,6 +27,7 @@ import { listeIngredientsModule } from "./liste-ingredients";
 import { ingredientsModule, menuModule, recettesModule } from "./cuisine";
 import { evenementsModule } from "./evenements";
 import { soumissionsModule } from "./soumissions";
+import { depensesModule, facturesModule, taxesModule } from "./finances";
 
 const ADMIN: Role[] = ["global_admin"];
 const ALL: Role[] = ["global_admin", "chef", "employee"];
@@ -63,9 +61,9 @@ export const MODULES: AppModule[] = [
   recettesModule,
 
   // Finances
-  legacy("depenses", "Dépenses & Revenus", Wallet, "finances", ADMIN),
-  legacy("factures", "Factures", Receipt, "finances", ADMIN),
-  legacy("taxes", "TPS/TVQ", ShieldCheck, "finances", ADMIN),
+  depensesModule,
+  facturesModule,
+  taxesModule,
   rapportsModule,
 
   // Clients & Événements

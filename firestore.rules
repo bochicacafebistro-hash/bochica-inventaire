@@ -251,6 +251,13 @@ service cloud.firestore {
       allow read, write: if isAdmin();
     }
 
+    // ── /taxRemittances : remises TPS/TVQ marquées comme payées (admin seul) ──
+    // Ajouté le 25 sept. 2026 (v2) : sans cette règle, le bouton « Marquer
+    // comme remis » de la v1 était refusé par le « refus par défaut ».
+    match /taxRemittances/{doc=**} {
+      allow read, write: if isAdmin();
+    }
+
     // ── /logs : historique (lecture authentifiée, écriture par app) ──
     match /logs/{doc=**} {
       allow read:  if isAuthed();
