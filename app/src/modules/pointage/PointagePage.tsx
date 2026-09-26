@@ -108,8 +108,9 @@ export default function PointagePage() {
         setScreen({ kind: "done", emp, action, time });
       }
       later(1800);
-    } catch {
-      setScreen({ kind: "error", msg: m.errSave });
+    } catch (err) {
+      // Semaine verrouillée par l'admin : la base refuse toute écriture (règle du 26 sept. 2026)
+      setScreen({ kind: "error", msg: (err as { code?: string }).code === "permission-denied" ? m.errLocked : m.errSave });
       later(2500);
     } finally {
       setBusy(false);

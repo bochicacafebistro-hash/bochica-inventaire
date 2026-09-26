@@ -1,6 +1,6 @@
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
-import { Eye, LogOut, Menu, Moon, Sun, X } from "lucide-react";
+import { ChevronRight, Eye, LogOut, Menu, Moon, Sun, X } from "lucide-react";
 import { useAuth, useSessionUser, type PreviewRole } from "@/core/auth/AuthContext";
 import { ROLE_LABELS, ROLE_LABELS_ES } from "@/core/auth/roles";
 import { LANGS, useLang, useMessages, useSetLang, type Messages } from "@/core/i18n/i18n";
@@ -9,6 +9,15 @@ import { NAV_GROUP_LABELS, NAV_GROUP_LABELS_ES, type AppModule, type NavGroup } 
 import { Spinner } from "@/ui/Spinner";
 import { useTheme } from "@/ui/useTheme";
 import styles from "./AppShell.module.css";
+
+const OPEN_KEY = "bochica-nav-open";
+const readOpen = (): string[] => {
+  try {
+    return JSON.parse(sessionStorage.getItem(OPEN_KEY) ?? "[]") as string[];
+  } catch {
+    return [];
+  }
+};
 
 function groupModules(modules: AppModule[]) {
   const groups = new Map<NavGroup, AppModule[]>();
@@ -76,6 +85,22 @@ export function AppShell() {
   const es = lang === "es";
   const location = useLocation();
   const groups = groupModules(modulesForRole(user.role));
+  // Catégories repliées par défaut ; celle de la page ouverte s'ouvre toute seule.
+  // La tablette (employé, peu de liens) garde tout ouvert.
+  const collapsible = user.role !== "employee";
+  const activeGroup = groups.find(([, mods]) => mods.some((mod) => location.pathname === `/${mod.id}` || location.pathname.startsWith(`/${mod.id}/`)))?.[0];
+  const [open, setOpen] = useState<string[]>(readOpen);
+  useEffect(() => {
+    if (activeGroup && !open.includes(activeGroup)) setOpen((o) => [...o, activeGroup]);
+  }, [activeGroup]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(OPEN_KEY, JSON.stringify(open));
+    } catch {
+      /* stockage indisponible : l'état reste en mémoire */
+    }
+  }, [open]);
+  const toggleGroup = (g: string) => setOpen((o) => (o.includes(g) ? o.filter((x) => x !== g) : [...o, g]));
 
   // Ferme le menu mobile à chaque navigation
   const [lastPath, setLastPath] = useState(location.pathname);
@@ -97,22 +122,35 @@ export function AppShell() {
         </div>
 
         <nav className={styles.nav}>
-          {groups.map(([group, modules]) => (
-            <div key={group} className={styles.group}>
-              {group !== "general" && <div className={styles.groupLabel}>{(es ? NAV_GROUP_LABELS_ES : NAV_GROUP_LABELS)[group]}</div>}
-              {modules.map((mod) => (
-                <NavLink
-                  key={mod.id}
-                  to={`/${mod.id}`}
-                  className={({ isActive }) => `${styles.link} ${isActive ? styles.active : ""}`}
-                >
-                  <mod.icon size={16} aria-hidden />
-                  <span className={styles.linkLabel}>{es && mod.labelEs ? mod.labelEs : mod.label}</span>
-                  {mod.status === "legacy" && <span className={styles.legacyTag}>V1</span>}
-                </NavLink>
-              ))}
-            </div>
-          ))}
+          {groups.map(([group, modules]) => {
+            const labelled = group !== "general";
+            const isOpen = !labelled || !collapsible || open.includes(group);
+            const label = (es ? NAV_GROUP_LABELS_ES : NAV_GROUP_LABELS)[group];
+            return (
+              <div key={group} className={`${styles.group} ${labelled ? styles.groupLabelled : ""}`}>
+                {labelled &&
+                  (collapsible ? (
+                    <button className={`${styles.groupToggle} ${group === activeGroup ? styles.groupCurrent : ""}`} onClick={() => toggleGroup(group)} aria-expanded={isOpen} aria-controls={`nav-${group}`}>
+                      <span>{label}</span>
+                      <ChevronRight size={14} className={`${styles.chevron} ${isOpen ? styles.chevronOpen : ""}`} aria-hidden />
+                    </button>
+                  ) : (
+                    <div className={styles.groupLabel}>{label}</div>
+                  ))}
+                {isOpen && (
+                  <div id={`nav-${group}`} className={labelled ? styles.groupItems : undefined}>
+                    {modules.map((mod) => (
+                      <NavLink key={mod.id} to={`/${mod.id}`} className={({ isActive }) => `${styles.link} ${isActive ? styles.active : ""}`}>
+                        <mod.icon size={16} aria-hidden />
+                        <span className={styles.linkLabel}>{es && mod.labelEs ? mod.labelEs : mod.label}</span>
+                        {mod.status === "legacy" && <span className={styles.legacyTag}>V1</span>}
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </nav>
 
         <div className={styles.footer}>

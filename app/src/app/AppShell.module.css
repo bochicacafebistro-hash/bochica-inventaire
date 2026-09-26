@@ -37,15 +37,63 @@
   padding: 0 var(--sp-3) var(--sp-4);
 }
 .group + .group {
-  margin-top: var(--sp-4);
+  margin-top: var(--sp-2);
 }
-.groupLabel {
-  padding: 0 var(--sp-3) var(--sp-1);
+/* Catégorie : titre en jaune, repliable ; ses onglets décalés à droite avec un filet */
+.groupToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  min-height: 36px;
+  padding: var(--sp-2) var(--sp-3);
+  border: 0;
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
   font-size: var(--fs-xs);
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--on-dark2);
+  cursor: pointer;
+}
+.groupToggle:hover,
+.groupToggle:focus-visible {
+  background: rgba(245, 241, 232, 0.08);
+}
+.groupCurrent::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-right: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  flex: none;
+}
+.groupToggle > span {
+  flex: 1;
+  text-align: left;
+}
+.chevron {
+  transition: transform var(--transition-fast);
+  opacity: 0.8;
+}
+.chevronOpen {
+  transform: rotate(90deg);
+}
+.groupItems {
+  margin: 2px 0 var(--sp-2) var(--sp-4);
+  padding-left: var(--sp-2);
+  border-left: 1px solid rgba(245, 241, 232, 0.14);
+}
+.groupLabel {
+  padding: var(--sp-2) var(--sp-3) var(--sp-1);
+  font-size: var(--fs-xs);
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--accent);
 }
 .link {
   display: flex;

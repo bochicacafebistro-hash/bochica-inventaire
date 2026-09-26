@@ -196,12 +196,30 @@ service cloud.firestore {
     //     pourboires, multiplicateurs, verrouillage, etc. → ces champs et la
     //     suppression restent admin only.
     //   - admin garde l'accès complet (lecture + écriture sans restriction).
+    //
+    // 26 sept. 2026 — VERROUILLAGE APPLIQUÉ PAR LA BASE (après l'incident du
+    // 25 sept.) : quand une semaine est verrouillée (`locked == true`), PLUS
+    // PERSONNE ne peut modifier ses heures, pourboires, ventes, bonus, etc. —
+    // ni l'admin, ni la tablette, ni une erreur de code dans l'une ou l'autre
+    // app. Seuls les champs du verrou peuvent changer (pour déverrouiller).
+    // Une semaine verrouillée ne peut pas non plus être supprimée.
     match /payroll/{doc=**} {
       allow read:   if isAuthed();
-      allow write:  if isAdmin();                                   // admin = tout
-      allow create: if isAuthed() && _payrollPunchCreateOnly();     // non-admin : create restreint
-      allow update: if isAuthed() && _payrollPunchUpdateOnly();     // non-admin : update restreint
-      allow delete: if isAdmin();                                   // suppression admin only
+      allow create: if isAdmin() || (isAuthed() && _payrollPunchCreateOnly());
+      allow update: if (isAdmin() || (isAuthed() && _payrollPunchUpdateOnly())) && _payrollLockRespected();
+      allow delete: if isAdmin() && !_payrollIsLocked();
+    }
+
+    function _payrollIsLocked() {
+      return resource.data.get('locked', false) == true;
+    }
+
+    // Semaine verrouillée → seuls les champs du verrou (et la méta technique)
+    // peuvent changer. Semaine ouverte → pas de restriction supplémentaire.
+    function _payrollLockRespected() {
+      return !_payrollIsLocked()
+        || request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['locked', 'lockedAt', 'lockedAmount', 'expenseId', 'lockedBy', 'updatedAt', 'weekId', 'weekStart']);
     }
 
     // Pour un CREATE : le nouveau doc ne doit contenir QUE les champs autorisés

@@ -102,7 +102,13 @@ export default function SalairesPage() {
   const confirm = useConfirm();
   const toast = useToast();
   const theme = useChartTheme();
-  const fail = (what: string) => (err: unknown) => toast(`${what} impossible : ${(err as Error).message}`, "error");
+  const fail = (what: string) => (err: unknown) =>
+    toast(
+      (err as { code?: string }).code === "permission-denied"
+        ? `${what} impossible : la semaine est verrouillée (ou les nouvelles règles Firestore ne sont pas publiées). Déverrouille-la pour modifier.`
+        : `${what} impossible : ${(err as Error).message}`,
+      "error",
+    );
 
   const schedule = schedQ.data ?? {};
   const week = weekQ.data;
