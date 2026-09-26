@@ -35,7 +35,8 @@ export function usePayrollWrites(monday: string) {
     autoFill: (items: { empId: string; dk: string; start: string; end: string; noStart: boolean }[]) => {
       const now = Date.now();
       const shifts: Record<string, Record<string, unknown>> = {};
-      for (const c of items) (shifts[c.empId] ??= {})[c.dk] = { start: c.start, end: c.end, autoFilled: true, autoFilledAt: now, ...(c.noStart ? { autoFilledNoStart: true } : {}) };
+      // Sortie manquante : on n'écrit QUE la sortie (l'entrée pointée est conservée par la fusion).
+      for (const c of items) (shifts[c.empId] ??= {})[c.dk] = c.noStart ? { start: c.start, end: c.end, autoFilled: true, autoFilledAt: now, autoFilledNoStart: true } : { end: c.end, autoFilled: true, autoFilledAt: now };
       return put({ actualShifts: shifts });
     },
     setTip: (dk: string, raw: string) => put({ tipsByDay: { [dk]: amountOrDelete(raw) } }),
