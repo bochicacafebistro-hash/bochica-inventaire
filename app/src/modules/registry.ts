@@ -6,11 +6,7 @@
  * La navigation, les routes et les permissions se construisent toutes
  * à partir de cette liste.
  */
-import {
-  DollarSign,
-  TrendingUp,
-  type LucideIcon,
-} from "lucide-react";
+import { TrendingUp, type LucideIcon } from "lucide-react";
 import type { Role } from "@/core/auth/roles";
 import type { AppModule, LegacyModule, NavGroup } from "./types";
 import { accueilModule } from "./accueil";
@@ -24,6 +20,7 @@ import { soumissionsModule } from "./soumissions";
 import { depensesModule, facturesModule, taxesModule } from "./finances";
 import { mesTachesModule, ouvertureFermetureModule, tachesJourModule, tachesModule } from "./operations";
 import { pointageModule } from "./pointage";
+import { salairesModule } from "./paie";
 import { demandeCongeModule, demandesCongeModule, employesModule, monHoraireModule } from "./equipe";
 
 const ADMIN: Role[] = ["global_admin"];
@@ -43,7 +40,7 @@ export const MODULES: AppModule[] = [
 
   // RH & Horaires
   employesModule,
-  legacy("salaires", "Salaires & Pourboires", DollarSign, "rh", ADMIN),
+  salairesModule,
   legacy("simulations", "Simulation paie", TrendingUp, "rh", ADMIN),
   demandesCongeModule,
   tachesModule,

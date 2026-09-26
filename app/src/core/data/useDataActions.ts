@@ -16,6 +16,8 @@ export function useDataActions() {
       updateMany: (collection: string, updates: { id: string; data: DocumentData }[]) =>
         updateMany(tenant, collection, updates),
       setFixed: (collection: string, id: string, data: DocumentData) => setFixedDoc(tenant, collection, id, data),
+      /** Remplace tout le document (sans fusion) — ex. settings/payroll. */
+      replace: (collection: string, id: string, data: DocumentData) => setFixedDoc(tenant, collection, id, data, false),
       log: (subject: string, action: string, detail?: string) => logAction(tenant, user, { subject, action, detail }),
     }),
     [tenant, user],

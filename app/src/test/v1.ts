@@ -46,3 +46,12 @@ export function rng(seed = 42) {
     return s / 2 ** 32;
   };
 }
+
+/** Comme loadV1, mais avec des fonctions venant de plusieurs fichiers v1. */
+export function loadV1Multi<T>(sources: [file: string, names: string[]][], globals: Record<string, unknown> = {}): T {
+  const all = sources.flatMap(([, n]) => n);
+  const body = sources.flatMap(([f, names]) => names.map((n) => v1Source(f, n))).join("\n");
+  const keys = Object.keys(globals);
+  const factory = new Function(...keys, `${body}\nreturn { ${all.join(", ")} };`);
+  return factory(...keys.map((k) => globals[k])) as T;
+}
