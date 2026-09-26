@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
-import { Check, Delete, Sun } from "lucide-react";
+import { Check, Delete, Sun, type LucideIcon } from "lucide-react";
 import { useMessages } from "@/core/i18n/i18n";
 import { EQUIPE_MESSAGES } from "../equipe.messages";
 import styles from "../Equipe.module.css";
 
 /** Clavier NIP à 4 chiffres (tactile + clavier physique). Valide tout seul au 4e chiffre. */
-export function PinPad({ title, subtitle, hint, onSubmit }: { title: string; subtitle: string; hint: string; onSubmit: (pin: string) => boolean }) {
+export function PinPad({ title, subtitle, hint, onSubmit, icon: Icon = Sun, errorText }: { title: string; subtitle: string; hint: string; onSubmit: (pin: string) => boolean; icon?: LucideIcon; errorText?: string }) {
   const m = useMessages(EQUIPE_MESSAGES);
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
@@ -40,7 +40,7 @@ export function PinPad({ title, subtitle, hint, onSubmit }: { title: string; sub
   return (
     <div className={styles.pinScreen}>
       <h1 className={styles.pinTitle}>
-        <Sun size={30} aria-hidden /> {title}
+        <Icon size={30} aria-hidden /> {title}
       </h1>
       <p className={styles.pinSub}>{subtitle}</p>
       <div className={`${styles.dots} ${error ? styles.shake : ""}`} aria-label={`${pin.length}/4`}>
@@ -49,7 +49,7 @@ export function PinPad({ title, subtitle, hint, onSubmit }: { title: string; sub
         ))}
       </div>
       <div className={styles.pinError} role="alert">
-        {error ? m.pinUnknown : ""}
+        {error ? (errorText ?? m.pinUnknown) : ""}
       </div>
       <div className={styles.keypad} role="group" aria-label={m.pinPad}>
         {["1", "2", "3", "4", "5", "6", "7", "8", "9"].map((d) => (

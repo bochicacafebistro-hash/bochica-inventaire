@@ -1,0 +1,45 @@
+.kiosk { max-width: 720px; margin: 0 auto; display: grid; gap: var(--sp-4); }
+.clockRow { text-align: center; display: grid; gap: 2px; }
+.clock { font-family: var(--font-heading); font-size: 64px; line-height: 1; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.date { color: var(--text2); }
+.sec2 { font-size: 0.45em; color: var(--text3); }
+.tz { font-size: 11px; color: var(--text3); }
+
+.empScreen { display: grid; justify-items: center; gap: var(--sp-2); text-align: center; position: relative; padding-top: var(--sp-6); }
+.back { position: absolute; left: 0; top: 0; display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--border-strong); background: var(--surface); border-radius: var(--radius-pill); padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer; color: inherit; }
+.hello { color: var(--text2); font-size: var(--fs-lg); }
+.name { font-family: var(--font-heading); font-size: 44px; line-height: 1.05; }
+.sec { display: inline-flex; gap: 4px; align-items: center; font-size: var(--fs-xs); font-weight: 700; padding: 3px 10px; border-radius: var(--radius-pill); }
+.sec_cuisine { background: rgba(95, 158, 74, 0.15); color: #3f7d2e; }
+.sec_service { background: rgba(42, 120, 214, 0.12); color: #2c5f9e; }
+.sec_other { background: var(--surface2); color: var(--text2); }
+:root[data-theme="dark"] .sec_cuisine { color: #8fcf78; }
+:root[data-theme="dark"] .sec_service { color: #9cc3f2; }
+.planned { font-size: var(--fs-sm); color: var(--text2); }
+.state { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--sp-4); padding: var(--sp-2) var(--sp-4); border-radius: var(--radius-md); background: var(--surface2); font-size: var(--fs-md); margin: var(--sp-2) 0; }
+.state span { display: inline-flex; gap: 6px; align-items: center; }
+.stateNight { background: #fff4e0; color: #9a5b00; border: 1px solid #f0c98a; max-width: 520px; }
+:root[data-theme="dark"] .stateNight { background: rgba(217, 119, 6, 0.15); color: #f0b060; }
+.buttons { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-4); width: 100%; }
+@media (max-width: 480px) { .buttons { grid-template-columns: 1fr; } }
+.big { display: grid; justify-items: center; gap: 4px; padding: var(--sp-6) var(--sp-4); border-radius: var(--radius-xl); border: 0; font: inherit; cursor: pointer; color: #fff; min-height: 190px; align-content: center; box-shadow: var(--shadow-md); transition: transform var(--transition-fast); }
+.big:active { transform: scale(0.98); }
+.big:disabled { opacity: 0.6; }
+.big:focus-visible { outline: 4px solid var(--accent); outline-offset: 3px; }
+.in { background: #2f7d32; }
+.out { background: #b3402e; }
+.bigLabel { font-family: var(--font-heading); font-size: 40px; line-height: 1; letter-spacing: 0.04em; }
+.bigTime { font-size: var(--fs-xl); font-weight: 700; font-variant-numeric: tabular-nums; }
+.bigSub { font-size: var(--fs-xs); opacity: 0.9; }
+.sub { font-size: var(--fs-sm); color: var(--text3); max-width: 520px; }
+
+.done { display: grid; justify-items: center; gap: var(--sp-2); text-align: center; padding: var(--sp-6) var(--sp-4); border-radius: var(--radius-xl); background: var(--surface); border: 1px solid var(--border); }
+.doneCheck { width: 140px; height: 140px; border-radius: 50%; display: grid; place-items: center; color: #fff; }
+.doneIn .doneCheck { background: #2f7d32; }
+.doneOut .doneCheck { background: #b3402e; }
+.doneLabel { font-weight: 800; letter-spacing: 0.05em; font-size: var(--fs-lg); }
+.doneTime { font-size: var(--fs-xl); font-weight: 700; font-variant-numeric: tabular-nums; }
+.wish { color: var(--text2); }
+.errIcon { color: var(--status-red); }
+.next { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--border-strong); background: var(--surface); border-radius: var(--radius-pill); padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; color: inherit; margin-top: var(--sp-2); }
+@media (max-width: 600px) { .back { position: static; justify-self: start; } .empScreen { padding-top: 0; } .clock { font-size: 52px; } }

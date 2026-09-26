@@ -7,7 +7,6 @@
  * à partir de cette liste.
  */
 import {
-  Clock,
   DollarSign,
   TrendingUp,
   type LucideIcon,
@@ -24,10 +23,10 @@ import { evenementsModule } from "./evenements";
 import { soumissionsModule } from "./soumissions";
 import { depensesModule, facturesModule, taxesModule } from "./finances";
 import { mesTachesModule, ouvertureFermetureModule, tachesJourModule, tachesModule } from "./operations";
+import { pointageModule } from "./pointage";
 import { demandeCongeModule, demandesCongeModule, employesModule, monHoraireModule } from "./equipe";
 
 const ADMIN: Role[] = ["global_admin"];
-const ALL: Role[] = ["global_admin", "chef", "employee"];
 
 function legacy(id: string, label: string, icon: LucideIcon, group: NavGroup, roles: Role[], labelEs?: string): LegacyModule {
   return { id, label, labelEs, icon, group, roles, status: "legacy" };
@@ -49,7 +48,7 @@ export const MODULES: AppModule[] = [
   demandesCongeModule,
   tachesModule,
   tachesJourModule,
-  legacy("pointage", "Pointage", Clock, "rh", ALL, "Fichaje"),
+  pointageModule,
 
   // Cuisine
   menuModule,
