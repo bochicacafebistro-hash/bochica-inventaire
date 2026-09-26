@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle,
   ArrowDown,
@@ -127,16 +127,22 @@ export default function SalairesPage() {
   const sharedOrder = schedule.weekOrder?.[monday] ?? [];
   const hidden = week?.hiddenEmps ?? [];
 
-  // ── Sorties manquantes remplies depuis l'horaire, 1 h après la fin prévue (comme la v1) ──
-  const tried = useRef(new Set<string>());
+  // ── Remplir depuis l'horaire (sorties manquantes / aucun pointage), 1 h après la fin prévue ──
+  // ⚠ Jamais automatique dans la v2 : seulement sur clic, avec les données de CETTE semaine
+  // chargées (incident du 26 sept. 2026 : un remplissage automatique sur des données
+  // périmées avait écrasé des heures pointées).
   const ready = !empQ.loading && !compQ.loading && !leaveQ.loading && !weekQ.loading && !schedQ.loading;
-  useEffect(() => {
-    if (!ready || locked) return;
-    const c = autoFillCandidates(res.rows, locked, Date.now(), onLeave).filter((x) => !tried.current.has(`${w.wid}|${x.empId}|${x.dk}`));
-    if (!c.length) return;
-    c.forEach((x) => tried.current.add(`${w.wid}|${x.empId}|${x.dk}`));
-    w.autoFill(c).catch(fail("Remplissage automatique"));
-  }, [ready, locked, res.rows]); // eslint-disable-line react-hooks/exhaustive-deps
+  const fillable = ready && !locked ? autoFillCandidates(res.rows, false, Date.now(), onLeave) : [];
+  async function fillFromSchedule() {
+    const noStart = fillable.filter((c) => c.noStart).length;
+    const ok = await confirm({
+      title: `Remplir ${fillable.length} quart${fillable.length > 1 ? "s" : ""} depuis l'horaire ?`,
+      message: `${fillable.length - noStart ? `${fillable.length - noStart} sortie(s) manquante(s) prendront l'heure de fin prévue. ` : ""}${noStart ? `${noStart} quart(s) sans aucun pointage seront remplis avec l'horaire prévu et marqués « Présence ? » à vérifier. ` : ""}Les heures déjà pointées ne sont jamais modifiées.`,
+      confirmLabel: "Remplir",
+    });
+    if (!ok) return;
+    await w.autoFill(fillable).then(() => toast("Quarts remplis depuis l'horaire — à vérifier.", "success"), fail("Remplissage"));
+  }
 
   // ── PDF de paie (même calcul que l'écran) ──
   function pdfWeek(mon: string, result: typeof res) {
@@ -420,6 +426,16 @@ export default function SalairesPage() {
             </div>
           </section>
 
+          {fillable.length > 0 && (
+            <div className={styles.fillBar}>
+              <span>
+                <strong>{fillable.length}</strong> quart{fillable.length > 1 ? "s" : ""} prévu{fillable.length > 1 ? "s" : ""} sans sortie ou sans pointage (terminé depuis plus d'une heure).
+              </span>
+              <Button variant="secondary" onClick={() => void fillFromSchedule()}>
+                <RefreshCw size={16} aria-hidden /> Remplir depuis l'horaire
+              </Button>
+            </div>
+          )}
           {alerts.length > 0 && <Alerts alerts={alerts} warnCount={warnCount} dayShort={dayShort} />}
 
           {hidden.length > 0 && (

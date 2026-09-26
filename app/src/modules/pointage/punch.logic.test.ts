@@ -26,9 +26,8 @@ describe("pointage", () => {
     expect(openOvernight(11, undefined, y)).toBeNull();
   });
   it("pointer garde l'autre champ", () => {
-    expect(punchedShift(undefined, "start", "16:02")).toEqual({ start: "16:02", end: "" });
-    expect(punchedShift({ start: "16:02" }, "end", "22:10")).toEqual({ start: "16:02", end: "22:10" });
-    expect(punchedShift({ start: "16:02", end: "22:10" }, "start", "16:05")).toEqual({ start: "16:05", end: "22:10" });
+    expect(punchedShift("start", "16:02")).toEqual({ start: "16:02" });
+    expect(punchedShift("end", "22:10")).toEqual({ end: "22:10" }); // l'entrée déjà enregistrée n'est jamais réécrite
   });
 });
 

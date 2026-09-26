@@ -94,11 +94,11 @@ export default function PointagePage() {
           weekId: ty2.weekId,
           weekStart: ty2.weekStart,
           updatedAt: Date.now(),
-          actualShifts: { [emp.id]: { [ty2.dk]: { start: yShift!.start, end: time, ...CLEAR } } },
+          actualShifts: { [emp.id]: { [ty2.dk]: { end: time, ...CLEAR } } }, // l'entrée d'hier est conservée par la fusion
         });
         setScreen({ kind: "done", emp, action, time, note: fill(m.overnightClosed, { start: yShift!.start!, end: time }) });
       } else {
-        const next = punchedShift(todayShift, action === "entree" ? "start" : "end", time);
+        const next = punchedShift(action === "entree" ? "start" : "end", time);
         await actions.setFixed("payroll", tt.weekId, {
           weekId: tt.weekId,
           weekStart: tt.weekStart,

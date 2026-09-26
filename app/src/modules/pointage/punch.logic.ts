@@ -52,12 +52,13 @@ export function openOvernight(hour: number, today: ActualShift | undefined, yest
   return yesterday?.start && !yesterday.end && !yesterday.markedAbsent ? yesterday : null;
 }
 
-/** Nouveau quart après un pointage (on garde l'autre champ ; les marques « auto » et « absent » sont retirées). */
-export function punchedShift(current: ActualShift | undefined, field: "start" | "end", time: string) {
-  return {
-    start: field === "start" ? time : (current?.start ?? ""),
-    end: field === "end" ? time : (current?.end ?? ""),
-  };
+/**
+ * Champ écrit par un pointage : SEULEMENT l'heure pointée. L'autre champ est
+ * conservé par la fusion Firestore — on ne le réécrit jamais à partir des
+ * données affichées (qui pourraient être en retard ou pas encore chargées).
+ */
+export function punchedShift(field: "start" | "end", time: string): { start: string } | { end: string } {
+  return field === "start" ? { start: time } : { end: time };
 }
 
 /** Où écrire : document de la semaine + clé du jour (la veille peut être dans la semaine précédente). */
