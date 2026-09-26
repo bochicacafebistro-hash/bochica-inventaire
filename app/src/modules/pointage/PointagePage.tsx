@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { deleteField } from "firebase/firestore";
-import { ArrowLeft, ArrowRight, Check, CircleAlert, Clock, Info, LogIn, LogOut, Users, Utensils } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleAlert, Info, LogIn, LogOut, Users, Utensils } from "lucide-react";
 import { toISO } from "@/core/dates";
 import { useCollection } from "@/core/data/useCollection";
 import { useDataActions } from "@/core/data/useDataActions";
 import { useDocument } from "@/core/data/useDocument";
-import { fill, localeOf, useLang, useMessages } from "@/core/i18n/i18n";
+import { fill, useMessages } from "@/core/i18n/i18n";
 import { Spinner } from "@/ui/Spinner";
 import { PinPad } from "@/modules/equipe/components/PinPad";
 import { findByPin, hasShift } from "@/modules/equipe/equipe.logic";
@@ -17,7 +17,6 @@ import styles from "./Pointage.module.css";
 type Screen = { kind: "keypad" } | { kind: "employee"; emp: Employee } | { kind: "done"; emp: Employee; action: "entree" | "sortie"; time: string; note?: string } | { kind: "error"; msg: string };
 
 const CLEAR = { autoFilled: deleteField(), autoFilledAt: deleteField(), autoFilledNoStart: deleteField(), markedAbsent: deleteField(), markedAbsentAt: deleteField() };
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const IDLE_MS = 30_000; // tablette partagée : retour au clavier si personne ne touche l'écran
 
 function useNow() {
@@ -32,7 +31,6 @@ function useNow() {
 /** Kiosque de pointage par NIP (tablette). Écrit dans payroll/{semaine}.actualShifts. */
 export default function PointagePage() {
   const m = useMessages(PUNCH_MESSAGES);
-  const locale = localeOf(useLang());
   const now = useNow();
   const today = toISO(now);
   const t = target(today);
@@ -117,16 +115,11 @@ export default function PointagePage() {
     }
   }
 
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "?";
   const header = (
     <div className={styles.clockRow}>
       <div className={styles.clock} aria-hidden>
         {hhmm(now)}
         <span className={styles.sec2}>:{String(now.getSeconds()).padStart(2, "0")}</span>
-      </div>
-      <div className={styles.date}>{cap(now.toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long", year: "numeric" }))}</div>
-      <div className={styles.tz} title={m.sysDayTitle}>
-        {tz} · {m.sysDay} {today}
       </div>
     </div>
   );
@@ -136,10 +129,8 @@ export default function PointagePage() {
   else if (screen.kind === "keypad") {
     body = (
       <PinPad
-        icon={Clock}
-        title={m.title}
         subtitle={m.subtitle}
-        hint={m.hint}
+        subtitleBelow
         errorText={m.pinUnknown}
         onSubmit={(pin) => {
           const emp = findByPin(empQ.data, pin);

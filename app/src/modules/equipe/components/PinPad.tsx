@@ -5,7 +5,8 @@ import { EQUIPE_MESSAGES } from "../equipe.messages";
 import styles from "../Equipe.module.css";
 
 /** Clavier NIP à 4 chiffres (tactile + clavier physique). Valide tout seul au 4e chiffre. */
-export function PinPad({ title, subtitle, hint, onSubmit, icon: Icon = Sun, errorText }: { title: string; subtitle: string; hint: string; onSubmit: (pin: string) => boolean; icon?: LucideIcon; errorText?: string }) {
+/** `title`/`hint` optionnels ; `subtitleBelow` place le message sous le clavier (écran de pointage épuré). */
+export function PinPad({ title, subtitle, hint, onSubmit, icon: Icon = Sun, errorText, subtitleBelow = false }: { title?: string; subtitle: string; hint?: string; onSubmit: (pin: string) => boolean; icon?: LucideIcon; errorText?: string; subtitleBelow?: boolean }) {
   const m = useMessages(EQUIPE_MESSAGES);
   const [pin, setPin] = useState("");
   const [error, setError] = useState(false);
@@ -39,10 +40,12 @@ export function PinPad({ title, subtitle, hint, onSubmit, icon: Icon = Sun, erro
 
   return (
     <div className={styles.pinScreen}>
-      <h1 className={styles.pinTitle}>
-        <Icon size={30} aria-hidden /> {title}
-      </h1>
-      <p className={styles.pinSub}>{subtitle}</p>
+      {title && (
+        <h1 className={styles.pinTitle}>
+          <Icon size={30} aria-hidden /> {title}
+        </h1>
+      )}
+      {!subtitleBelow && <p className={styles.pinSub}>{subtitle}</p>}
       <div className={`${styles.dots} ${error ? styles.shake : ""}`} aria-label={`${pin.length}/4`}>
         {[0, 1, 2, 3].map((i) => (
           <span key={i} className={`${styles.dotPin} ${pin.length > i ? styles.dotFilled : ""}`} />
@@ -67,7 +70,8 @@ export function PinPad({ title, subtitle, hint, onSubmit, icon: Icon = Sun, erro
           <Check size={28} />
         </button>
       </div>
-      <p className={styles.pinSub}>{hint}</p>
+      {subtitleBelow && <p className={styles.pinSub}>{subtitle}</p>}
+      {hint && <p className={styles.pinSub}>{hint}</p>}
     </div>
   );
 }
