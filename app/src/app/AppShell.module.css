@@ -206,3 +206,4 @@
 .previewBar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 16px; background: #7c2d12; color: #fff; font-size: var(--fs-sm); }
 .previewBar span { flex: 1; min-width: 200px; }
 .previewBar button { border: 0; border-radius: var(--radius-pill); padding: 5px 14px; background: #fff; color: #7c2d12; font: inherit; font-weight: 800; cursor: pointer; }
+@media (max-width: 900px) { .previewBar { position: static; } }
