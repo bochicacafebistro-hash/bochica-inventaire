@@ -1,7 +1,7 @@
 import { Suspense, useState } from "react";
-import { Link, NavLink, Outlet, useLocation } from "react-router";
-import { LogOut, Menu, Moon, Sun, X } from "lucide-react";
-import { useAuth, useSessionUser } from "@/core/auth/AuthContext";
+import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router";
+import { Eye, LogOut, Menu, Moon, Sun, X } from "lucide-react";
+import { useAuth, useSessionUser, type PreviewRole } from "@/core/auth/AuthContext";
 import { ROLE_LABELS, ROLE_LABELS_ES } from "@/core/auth/roles";
 import { LANGS, useLang, useMessages, useSetLang, type Messages } from "@/core/i18n/i18n";
 import { modulesForRole } from "@/modules/registry";
@@ -29,6 +29,13 @@ const fr = {
   dark: "Sombre",
   logout: "Déconnexion",
   language: "Langue",
+  viewAs: "Voir l'app comme",
+  asAdmin: "Admin (moi)",
+  asChef: "Chef de cuisine",
+  asEmployee: "Employé (tablette)",
+  preview: "Aperçu",
+  previewHint: "tu vois l'app comme ce rôle. Tes modifications sont réelles.",
+  backToAdmin: "Revenir en admin",
 };
 const MESSAGES: Messages<typeof fr> = {
   fr,
@@ -41,14 +48,28 @@ const MESSAGES: Messages<typeof fr> = {
     dark: "Oscuro",
     logout: "Cerrar sesión",
     language: "Idioma",
+    viewAs: "Ver la app como",
+    asAdmin: "Admin (yo)",
+    asChef: "Jefe de cocina",
+    asEmployee: "Empleado (tableta)",
+    preview: "Vista previa",
+    previewHint: "ves la app como este rol. Tus cambios son reales.",
+    backToAdmin: "Volver a admin",
   },
 };
 
 export function AppShell() {
   const user = useSessionUser();
-  const { logout } = useAuth();
-  const { theme, toggle } = useTheme();
+  const { logout, previewRole, setPreviewRole } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
+  const navigate = useNavigate();
+  const isRealAdmin = user.realRole === "global_admin";
+  const changePreview = (r: PreviewRole | null) => {
+    setPreviewRole(r);
+    setMenuOpen(false);
+    navigate("/");
+  };
+  const { theme, toggle } = useTheme();
   const m = useMessages(MESSAGES);
   const lang = useLang();
   const setLang = useSetLang();
@@ -99,6 +120,18 @@ export function AppShell() {
             <div>{user.email}</div>
             <div className={styles.userRole}>{(es ? ROLE_LABELS_ES : ROLE_LABELS)[user.role]}</div>
           </div>
+          {isRealAdmin && (
+            <label className={styles.preview}>
+              <span>
+                <Eye size={12} aria-hidden /> {m.viewAs}
+              </span>
+              <select value={previewRole ?? ""} onChange={(e) => changePreview((e.target.value || null) as PreviewRole | null)}>
+                <option value="">{m.asAdmin}</option>
+                <option value="chef">{m.asChef}</option>
+                <option value="employee">{m.asEmployee}</option>
+              </select>
+            </label>
+          )}
           <div className={styles.langSwitch} role="group" aria-label={m.language}>
             {LANGS.map((l) => (
               <button key={l.value} aria-pressed={lang === l.value} onClick={() => setLang(l.value)} lang={l.value}>
@@ -133,6 +166,18 @@ export function AppShell() {
             BOCHI<span>CA</span>
           </span>
         </div>
+        {previewRole && (
+          <div className={styles.previewBar} role="status">
+            <Eye size={16} aria-hidden />
+            <span>
+              <strong>
+                {m.preview} : {(es ? ROLE_LABELS_ES : ROLE_LABELS)[previewRole]}
+              </strong>{" "}
+              — {m.previewHint}
+            </span>
+            <button onClick={() => changePreview(null)}>{m.backToAdmin}</button>
+          </div>
+        )}
         <main className={styles.main}>
           <Suspense fallback={<Spinner />}>
             <Outlet />

@@ -197,3 +197,12 @@
 .langSwitch { justify-self: start; display: inline-flex; gap: 2px; padding: 2px; margin-bottom: var(--sp-2); border-radius: var(--radius-pill); background: rgba(255, 255, 255, 0.08); }
 .langSwitch button { border: 0; background: transparent; color: inherit; opacity: 0.7; font-size: 12px; font-weight: 700; padding: 3px 12px; border-radius: var(--radius-pill); cursor: pointer; }
 .langSwitch button[aria-pressed="true"] { background: var(--accent); color: #0e0d0c; opacity: 1; }
+
+/* Aperçu admin (voir l'app comme le chef ou la tablette) */
+.preview { display: grid; gap: 4px; margin-bottom: var(--sp-2); font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; opacity: 0.9; }
+.preview span { display: inline-flex; align-items: center; gap: 4px; }
+.preview select { font: inherit; font-size: 13px; text-transform: none; letter-spacing: 0; font-weight: 600; padding: 5px 8px; border-radius: var(--radius-md); border: 1px solid rgba(255, 255, 255, 0.2); background: rgba(255, 255, 255, 0.08); color: inherit; }
+.preview select option { color: #0e0d0c; }
+.previewBar { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; padding: 8px 16px; background: #7c2d12; color: #fff; font-size: var(--fs-sm); }
+.previewBar span { flex: 1; min-width: 200px; }
+.previewBar button { border: 0; border-radius: var(--radius-pill); padding: 5px 14px; background: #fff; color: #7c2d12; font: inherit; font-weight: 800; cursor: pointer; }

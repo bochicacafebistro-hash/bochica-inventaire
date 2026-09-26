@@ -63,7 +63,7 @@ export async function logAction(
       action: entry.action,
       detail: entry.detail ?? "",
       ts: serverTimestamp(),
-      role: user.role === "employee" ? "employé" : "admin",
+      role: (user.realRole ?? user.role) === "employee" ? "employé" : "admin", // aperçu admin : on journalise le vrai rôle
       userName: user.email,
       userId: user.uid,
       source: "v2",

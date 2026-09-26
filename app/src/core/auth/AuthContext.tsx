@@ -7,7 +7,20 @@ import { isRole, toLoginEmail, type Role } from "./roles";
 export interface SessionUser {
   uid: string;
   email: string;
+  /** Rôle affiché (en mode aperçu : le rôle prévisualisé). */
   role: Role;
+  /** Vrai rôle du compte (identique à `role` hors aperçu). */
+  realRole?: Role;
+}
+
+/** Rôles que l'admin peut prévisualiser (mode aperçu, comme la v1 v3.28). */
+export type PreviewRole = "chef" | "employee";
+const PREVIEW_KEY = "bochica-preview-role";
+
+/** Rôle affiché : l'aperçu ne s'applique qu'au vrai admin (un chef ou un employé ne peut jamais changer de rôle). */
+export function withPreview(user: SessionUser, preview: PreviewRole | null): SessionUser {
+  const real = user.realRole ?? user.role;
+  return { ...user, role: real === "global_admin" && preview ? preview : real, realRole: real };
 }
 
 type AuthState =
@@ -17,6 +30,9 @@ type AuthState =
 
 interface AuthApi {
   state: AuthState;
+  /** Aperçu admin : voir l'app comme le chef ou la tablette employé, sans changer de compte. */
+  previewRole: PreviewRole | null;
+  setPreviewRole: (r: PreviewRole | null) => void;
   login: (usernameOrEmail: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -40,6 +56,23 @@ async function loadProfile(fbUser: User): Promise<SessionUser> {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({ status: "loading" });
+  const [previewRole, setPreview] = useState<PreviewRole | null>(() => {
+    try {
+      const v = sessionStorage.getItem(PREVIEW_KEY);
+      return v === "chef" || v === "employee" ? v : null;
+    } catch {
+      return null;
+    }
+  });
+  const setPreviewRole = (r: PreviewRole | null) => {
+    setPreview(r);
+    try {
+      if (r) sessionStorage.setItem(PREVIEW_KEY, r);
+      else sessionStorage.removeItem(PREVIEW_KEY);
+    } catch {
+      /* stockage indisponible : l'aperçu dure jusqu'au rechargement */
+    }
+  };
 
   useEffect(
     () =>
@@ -58,15 +91,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [],
   );
 
+  // L'aperçu n'est permis qu'au vrai admin ; il n'élargit jamais les droits :
+  // les écritures passent toujours par le vrai compte et les règles Firestore.
+  const effective = useMemo<AuthState>(() => {
+    if (state.status !== "signedIn") return state;
+    return { status: "signedIn", user: withPreview(state.user, previewRole) };
+  }, [state, previewRole]);
+
   const api = useMemo<AuthApi>(
     () => ({
-      state,
+      state: effective,
+      previewRole: effective.status === "signedIn" && effective.user.realRole === "global_admin" ? previewRole : null,
+      setPreviewRole,
       login: async (usernameOrEmail, password) => {
         await signInWithEmailAndPassword(auth, toLoginEmail(usernameOrEmail), password);
       },
-      logout: () => signOut(auth),
+      logout: async () => {
+        setPreviewRole(null);
+        await signOut(auth);
+      },
     }),
-    [state],
+    [effective, previewRole], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   return <AuthContext.Provider value={api}>{children}</AuthContext.Provider>;
