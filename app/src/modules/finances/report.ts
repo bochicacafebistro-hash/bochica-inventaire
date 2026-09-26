@@ -1,6 +1,7 @@
 /**
  * Rapport personnalisé (Excel / PDF) — même contenu que la v1
- * (js/pages-finance.js, exportReportExcel / exportReportPDF).
+ * (js/pages-finance.js, exportReportExcel / exportReportPDF) ; PDF au style
+ * moderne commun (ui/pdfTheme.ts).
  * Bibliothèques chargées seulement au clic.
  */
 import { revenuePeriodLabel, revenueStart, round2 } from "./finances.logic";
@@ -74,89 +75,66 @@ export async function exportExcel(r: ReportInput): Promise<string> {
 }
 
 export async function exportPdf(r: ReportInput): Promise<string> {
-  const [{ jsPDF }, { default: autoTable }] = await Promise.all([import("jspdf"), import("jspdf-autotable")]);
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const [{ jsPDF }, T] = await Promise.all([import("jspdf"), import("@/ui/pdfTheme")]);
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "letter" });
+  const MG = 16;
   const s = reportSummary(r);
-  const lastY = () => (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY;
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(20);
-  doc.text("BOCHICA", 14, 18);
-  doc.setFillColor(247, 179, 44);
-  doc.rect(14, 22, 18, 1.5, "F");
-  doc.setFillColor(74, 144, 226);
-  doc.rect(32, 22, 18, 1.5, "F");
-  doc.setFillColor(231, 76, 60);
-  doc.rect(50, 22, 18, 1.5, "F");
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(14);
-  doc.text("Rapport personnalisé", 14, 32);
-  doc.setFontSize(10);
-  doc.setTextColor(100);
-  doc.text(`Période : du ${r.start} au ${r.end}`, 14, 38);
-  doc.text(`Généré le ${generated()}`, 14, 43);
-  doc.setTextColor(0);
-  doc.setFont("helvetica", "bold");
-  doc.setFontSize(12);
-  doc.text("Résumé", 14, 52);
-  const body: string[][] = [];
-  if (r.includeRevenues) body.push(["Total revenus (avant taxes)", money(s.rev), `${s.revCount} entrée(s)`]);
-  if (r.includeExpenses) body.push(["Total dépenses (avant taxes)", money(s.exp), `${s.expCount} entrée(s)`]);
-  if (r.includeRevenues) body.push(["Taxes perçues (TPS + TVQ)", money(s.revTps + s.revTvq), ""]);
-  if (r.includeExpenses) body.push(["Taxes payées (TPS + TVQ)", money(s.expTps + s.expTvq), ""]);
+  const period = r.start === r.end ? `Le ${r.start}` : `Du ${r.start} au ${r.end}`;
+  let y = T.header(doc, { title: "Rapport financier", subtitle: period, meta: `Généré le ${generated()}` }, MG);
+
+  const k: { label: string; value: string; note?: string; tone?: "green" | "red" | "blue" | "accent" }[] = [];
+  if (r.includeRevenues) k.push({ label: "Revenus (avant taxes)", value: money(s.rev), note: `${s.revCount} entrée(s)`, tone: "green" });
+  if (r.includeExpenses) k.push({ label: "Dépenses (avant taxes)", value: money(s.exp), note: `${s.expCount} entrée(s)`, tone: "red" });
   if (r.includeRevenues && r.includeExpenses) {
     const p = s.rev - s.exp;
-    body.push([p >= 0 ? "Profit (avant taxes)" : "Déficit (avant taxes)", money(Math.abs(p)), p >= 0 ? "positif" : "négatif"]);
+    k.push({ label: p >= 0 ? "Profit (avant taxes)" : "Déficit (avant taxes)", value: money(Math.abs(p)), note: p >= 0 ? "positif" : "négatif", tone: p >= 0 ? "green" : "red" });
   }
-  autoTable(doc, { startY: 55, head: [["", "Montant", "Détail"]], body, theme: "striped", headStyles: { fillColor: [14, 13, 12], textColor: 255 }, styles: { fontSize: 10 }, margin: { left: 14, right: 14 } });
-  let y = lastY() + 10;
+  if (k.length) y = T.kpis(doc, y, k, MG);
+
+  // Taxes
+  const taxRows: string[][] = [];
+  if (r.includeRevenues) taxRows.push(["Perçues (sur les revenus)", money(s.revTps), money(s.revTvq), money(s.revTps + s.revTvq)]);
+  if (r.includeExpenses) taxRows.push(["Payées (sur les dépenses)", money(s.expTps), money(s.expTvq), money(s.expTps + s.expTvq)]);
+  const foot = r.includeRevenues && r.includeExpenses ? [["Solde net", money(s.revTps - s.expTps), money(s.revTvq - s.expTvq), money(s.revTps + s.revTvq - s.expTps - s.expTvq)]] : undefined;
+  y = T.section(doc, y, "Taxes", "TPS 5 % · TVQ 9,975 %", MG);
+  y = T.table(doc, { y, margin: MG, head: [["", "TPS", "TVQ", "Total"]], body: taxRows, foot, right: [1, 2, 3], columnStyles: { 0: { fontStyle: "bold" } }, extra: { alternateRowStyles: { fillColor: T.C.white } } });
+
+  const repeat = `Rapport financier · ${period}`;
   if (r.includeRevenues && r.revenues.length) {
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("Revenus", 14, y);
-    autoTable(doc, {
-      startY: y + 3,
+    if (y > 230) (doc.addPage(), (y = 24));
+    y = T.section(doc, y, "Revenus", `${r.revenues.length} entrée(s)`, MG);
+    y = T.table(doc, {
+      y,
+      margin: MG,
+      repeatHeader: repeat,
+      fontSize: 8.3,
       head: [["Période", "Description", "Montant", "TPS", "TVQ", "Total"]],
       body: [...r.revenues]
         .sort((a, b) => revenueStart(a).localeCompare(revenueStart(b)))
         .map((x) => [revenuePeriodLabel(x), x.description || "", money(num(x.amount)), money(num(x.tps)), money(num(x.tvq)), money(num(x.amount) + num(x.tps) + num(x.tvq))]),
-      theme: "striped",
-      headStyles: { fillColor: [63, 143, 44], textColor: 255 },
-      styles: { fontSize: 9, cellPadding: 2 },
-      columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" }, 5: { halign: "right" } },
-      margin: { left: 14, right: 14 },
+      foot: [["Total", "", money(s.rev), money(s.revTps), money(s.revTvq), money(s.rev + s.revTps + s.revTvq)]],
+      right: [2, 3, 4, 5],
+      columnStyles: { 5: { fontStyle: "bold" } },
     });
-    y = lastY() + 10;
   }
   if (r.includeExpenses && r.expenses.length) {
-    if (y > 240) {
-      doc.addPage();
-      y = 20;
-    }
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
-    doc.text("Dépenses", 14, y);
-    autoTable(doc, {
-      startY: y + 3,
+    if (y > 230) (doc.addPage(), (y = 24));
+    y = T.section(doc, y, "Dépenses", `${r.expenses.length} entrée(s)`, MG);
+    T.table(doc, {
+      y,
+      margin: MG,
+      repeatHeader: repeat,
+      fontSize: 8.3,
       head: [["Date", "Description", "Fournisseur", "Catégorie", "Montant", "Total"]],
       body: [...r.expenses]
         .sort((a, b) => (a.date ?? "").localeCompare(b.date ?? ""))
         .map((x) => [x.date || "", x.description || "", x.supplier || "", x.category || "", money(num(x.amount)), money(num(x.amount) + num(x.tps) + num(x.tvq))]),
-      theme: "striped",
-      headStyles: { fillColor: [192, 57, 43], textColor: 255 },
-      styles: { fontSize: 9, cellPadding: 2 },
-      columnStyles: { 4: { halign: "right" }, 5: { halign: "right" } },
-      margin: { left: 14, right: 14 },
+      foot: [["Total", "", "", "", money(s.exp), money(s.exp + s.expTps + s.expTvq)]],
+      right: [4, 5],
+      columnStyles: { 0: { cellWidth: 22 }, 5: { fontStyle: "bold" } },
     });
   }
-  const pages = doc.getNumberOfPages();
-  for (let i = 1; i <= pages; i++) {
-    doc.setPage(i);
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(8);
-    doc.setTextColor(120);
-    doc.text(`Page ${i} / ${pages}`, 196, 290, { align: "right" });
-    doc.text("Bochica — Restaurant Colombien · 430 Rue Saint-Vallier Ouest, Québec", 14, 290);
-  }
+  T.footer(doc, "Bochica Café Bistro · 430, rue Saint-Vallier Ouest, Québec", MG);
   const name = `${fileBase(r)}.pdf`;
   doc.save(name);
   return name;

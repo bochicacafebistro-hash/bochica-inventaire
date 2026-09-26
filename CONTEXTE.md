@@ -682,6 +682,15 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 26 septembre 2026 — v2 : nouveau style des PDF (fond blanc, moderne) 📄
+
+**Demande** — Les PDF (paie, soumissions, factures, rapport) faisaient « vieux » ; style plus moderne sur fond blanc.
+
+**Changements** (`app/`)
+- Nouveau thème commun `src/ui/pdfTheme.ts` : en-tête BOCHICA espacé + titre à droite, filet tricolore discret, cartes-chiffres gris doux, tableaux épurés (jspdf-autotable, en-têtes répétés, rangées jamais coupées entre 2 pages), pied « Page x / n ».
+- Refaits avec ce thème : `paie/payrollPdf.ts` (semaine + 2 semaines), `soumissions/quotePdf.ts` (cartes forfait, suppléments à gauche / totaux à droite, QR du menu), `finances/invoicePdf.ts` (passé en mm), `finances/report.ts` (rapport financier : cartes revenus/dépenses/profit, tableau des taxes, totaux).
+- Aperçu local sans navigateur : `npx vitest run -c .harness/pdf/vitest.pdf.config.mjs` (données fictives), puis déplacer les PDF créés à la racine de `app/` vers `.harness/pdf/` (ignoré par git).
+
 ### 20 juillet 2026 — Horaires : heures exceptionnelles un jour de congé (v3.58.0) 🏖️⏱️
 
 **Demande** — Un employé marqué en congé une journée peut parfois venir travailler exceptionnellement 1-2 h ce jour-là ; avant, la grille bloquait complètement l'assignation d'un quart tant que le congé n'était pas retiré.
