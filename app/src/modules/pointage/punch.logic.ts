@@ -69,3 +69,18 @@ export function target(dk: string) {
 
 export const yesterdayOf = (dk: string) => addDays(dk, -1);
 export const isValidDay = (dk: string) => !!isoToDate(dk);
+
+export type PunchMode = "in" | "out" | "complete";
+
+/**
+ * Bouton affiché à l'employé (un seul à la fois, pour éviter les erreurs) :
+ * - rien de pointé → ENTRÉE (ou SORTIE s'il déclare avoir oublié son entrée) ;
+ * - entrée pointée → SORTIE ;
+ * - sortie pointée → journée complète, plus aucun bouton (pas de correction par l'employé).
+ * Un quart de nuit ouvert depuis hier → SORTIE (il ferme le quart d'hier).
+ */
+export function punchMode(today: ActualShift | undefined, overnightOpen: boolean, forgotEntry: boolean): PunchMode {
+  if (today?.end) return "complete";
+  if (overnightOpen || today?.start) return "out";
+  return forgotEntry ? "out" : "in";
+}

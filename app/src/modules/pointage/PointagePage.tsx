@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { deleteField } from "firebase/firestore";
-import { ArrowLeft, ArrowRight, Check, CircleAlert, Info, LogIn, LogOut, Users, Utensils } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, CircleAlert, LogIn, LogOut, Users, Utensils } from "lucide-react";
 import { toISO } from "@/core/dates";
 import { useCollection } from "@/core/data/useCollection";
 import { useDataActions } from "@/core/data/useDataActions";
@@ -10,7 +10,7 @@ import { Spinner } from "@/ui/Spinner";
 import { PinPad } from "@/modules/equipe/components/PinPad";
 import { findByPin, hasShift } from "@/modules/equipe/equipe.logic";
 import type { Employee } from "@/modules/equipe/equipe.types";
-import { closesOvernight, hhmm, openOvernight, punchedShift, target, yesterdayOf, type PayrollWeek } from "./punch.logic";
+import { closesOvernight, hhmm, openOvernight, punchedShift, punchMode, target, yesterdayOf, type PayrollWeek } from "./punch.logic";
 import { PUNCH_MESSAGES } from "./punch.messages";
 import styles from "./Pointage.module.css";
 
@@ -41,10 +41,12 @@ export default function PointagePage() {
   const actions = useDataActions();
   const [screen, setScreen] = useState<Screen>({ kind: "keypad" });
   const [busy, setBusy] = useState(false);
+  const [forgot, setForgot] = useState(false); // « J'ai oublié de pointer mon entrée »
   const timer = useRef<number | undefined>(undefined);
 
   const reset = () => {
     window.clearTimeout(timer.current);
+    setForgot(false);
     setScreen({ kind: "keypad" });
   };
   const later = (ms: number) => {
@@ -147,6 +149,7 @@ export default function PointagePage() {
     const planned = emp.shifts?.[today];
     const sec = emp.section === "cuisine" ? "cuisine" : (emp.section ?? "service") === "service" ? "service" : "other";
     const time = hhmm(now);
+    const mode = punchMode(cur, !!night, forgot);
     body = (
       <div className={styles.empScreen}>
         <button className={styles.back} onClick={reset}>
@@ -158,45 +161,58 @@ export default function PointagePage() {
           {sec === "cuisine" ? <Utensils size={12} aria-hidden /> : <Users size={12} aria-hidden />} {sec === "cuisine" ? m.kitchen : sec === "service" ? m.service : m.other}
         </span>
         {hasShift(planned) && <div className={styles.planned}>{fill(m.planned, { start: planned!.start!, end: planned!.end! })}</div>}
-        <div className={`${styles.state} ${night ? styles.stateNight : ""}`} role="status">
-          {night ? (
-            <>
-              <LogIn size={14} aria-hidden /> {fill(m.overnight, { t: night.start! })}
-            </>
-          ) : !cur?.start && !cur?.end ? (
-            <>
-              <Info size={14} aria-hidden /> {m.noToday}
-            </>
-          ) : (
-            <>
-              {cur?.start && (
+        {mode === "complete" ? (
+          <div className={styles.complete} role="status">
+            <Check size={28} aria-hidden />
+            <div className={styles.completeLabel}>{m.dayComplete}</div>
+            <div className={styles.completeTimes}>
+              {cur?.start ?? "—"} – {cur?.end}
+            </div>
+            {!cur?.start && <div className={styles.sub}>{m.missingEntry}</div>}
+          </div>
+        ) : (
+          <>
+            {night ? (
+              <div className={`${styles.state} ${styles.stateNight}`} role="status">
+                <LogIn size={14} aria-hidden /> {fill(m.overnight, { t: night.start! })}
+              </div>
+            ) : cur?.start ? (
+              <div className={styles.state} role="status">
                 <span>
                   <LogIn size={14} aria-hidden /> {m.entry} : <strong>{cur.start}</strong>
                 </span>
+              </div>
+            ) : null}
+            <div className={styles.single}>
+              {mode === "in" ? (
+                <button className={`${styles.big} ${styles.in}`} onClick={() => void punch(emp, "entree")} disabled={busy}>
+                  <LogIn size={40} aria-hidden />
+                  <span className={styles.bigLabel}>{m.in}</span>
+                  <span className={styles.bigTime}>{time}</span>
+                </button>
+              ) : (
+                <button className={`${styles.big} ${styles.out}`} onClick={() => void punch(emp, "sortie")} disabled={busy}>
+                  <LogOut size={40} aria-hidden />
+                  <span className={styles.bigLabel}>{m.out}</span>
+                  <span className={styles.bigTime}>{time}</span>
+                </button>
               )}
-              {cur?.end && (
-                <span>
-                  <LogOut size={14} aria-hidden /> {m.exit} : <strong>{cur.end}</strong>
-                </span>
-              )}
-            </>
-          )}
-        </div>
-        <div className={styles.buttons}>
-          <button className={`${styles.big} ${styles.in}`} onClick={() => void punch(emp, "entree")} disabled={busy}>
-            <LogIn size={40} aria-hidden />
-            <span className={styles.bigLabel}>{m.in}</span>
-            <span className={styles.bigTime}>{time}</span>
-            {cur?.start && <span className={styles.bigSub}>{fill(m.replace, { t: cur.start })}</span>}
-          </button>
-          <button className={`${styles.big} ${styles.out}`} onClick={() => void punch(emp, "sortie")} disabled={busy}>
-            <LogOut size={40} aria-hidden />
-            <span className={styles.bigLabel}>{m.out}</span>
-            <span className={styles.bigTime}>{time}</span>
-            {cur?.end && <span className={styles.bigSub}>{fill(m.replace, { t: cur.end })}</span>}
-          </button>
-        </div>
-        <p className={styles.sub}>{m.actionSub}</p>
+            </div>
+            {mode === "in" && (
+              <button className={styles.linkBtn} onClick={() => (setForgot(true), later(IDLE_MS))}>
+                {m.forgotEntry}
+              </button>
+            )}
+            {mode === "out" && forgot && !cur?.start && !night && (
+              <>
+                <p className={styles.sub}>{m.forgotNote}</p>
+                <button className={styles.linkBtn} onClick={() => (setForgot(false), later(IDLE_MS))}>
+                  {m.forgotCancel}
+                </button>
+              </>
+            )}
+          </>
+        )}
       </div>
     );
   } else if (screen.kind === "done") {

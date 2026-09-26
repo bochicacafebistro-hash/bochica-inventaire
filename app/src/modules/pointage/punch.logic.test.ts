@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { hasV1, loadV1 } from "@/test/v1";
 import { addDays } from "@/core/dates";
-import { closesOvernight, openOvernight, payrollWeekId, punchedShift, target } from "./punch.logic";
+import { closesOvernight, openOvernight, payrollWeekId, punchedShift, punchMode, target } from "./punch.logic";
 
 describe("pointage", () => {
   it("identifiant de semaine de paie", () => {
@@ -40,4 +40,21 @@ describe.skipIf(!hasV1)("parité avec la v1 — semaine de paie", () => {
       expect(payrollWeekId(d)).toBe(v1.payrollWeekId(new Date(y!, m! - 1, day!)));
     }
   });
+});
+
+describe("punchMode — un seul bouton selon l'état", () => {
+  it("rien pointé → ENTRÉE", () => {
+    expect(punchMode(undefined, false, false)).toBe("in");
+    expect(punchMode({ markedAbsent: true } as never, false, false)).toBe("in");
+  });
+  it("entrée oubliée déclarée → SORTIE", () => expect(punchMode(undefined, false, true)).toBe("out"));
+  it("entrée pointée → SORTIE (jamais ENTRÉE de nouveau)", () => {
+    expect(punchMode({ start: "10:54" }, false, false)).toBe("out");
+    expect(punchMode({ start: "10:54" }, false, true)).toBe("out");
+  });
+  it("sortie pointée → journée complète", () => {
+    expect(punchMode({ start: "10:54", end: "18:02" }, false, false)).toBe("complete");
+    expect(punchMode({ end: "18:02" }, false, false)).toBe("complete");
+  });
+  it("quart de nuit ouvert depuis hier → SORTIE", () => expect(punchMode(undefined, true, false)).toBe("out"));
 });

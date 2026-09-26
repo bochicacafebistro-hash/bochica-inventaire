@@ -682,6 +682,16 @@ bochica-inventaire/
 
 ## 📝 CHANGELOG
 
+### 26 septembre 2026 — v2 : pointage à un seul bouton 🕐
+
+**Demande** — Éviter les erreurs de pointage : afficher seulement le bouton dont l'employé a besoin.
+
+**Changements** (`app/src/modules/pointage/`)
+- Écran du clavier épuré : seulement l'heure en haut et « Entre ton NIP… » sous le clavier (`PinPad` : `title`/`hint` optionnels, `subtitleBelow`).
+- `punchMode()` (testée) : rien de pointé → **ENTRÉE** seulement ; entrée pointée → **SORTIE** seulement ; sortie pointée → « Journée complète » sans bouton. Taper son NIP sans pointer ne change rien.
+- Lien « J'ai oublié de pointer mon entrée » → affiche SORTIE ; l'admin complète l'entrée dans Salaires (bouton « Annuler » pour revenir).
+- **Voulu :** l'employé ne peut plus corriger/remplacer son entrée ni sa sortie (seul l'admin corrige dans Salaires). Semaine verrouillée / absent : inchangé.
+
 ### 26 septembre 2026 — v2 : nouveau style des PDF (fond blanc, moderne) 📄
 
 **Demande** — Les PDF (paie, soumissions, factures, rapport) faisaient « vieux » ; style plus moderne sur fond blanc.
@@ -2020,6 +2030,8 @@ Trois fonctionnalités significatives ajoutées à la page **Salaires & Pourboir
 - Animations modale : fadeIn + slideUp
 
 ## 📝 Reste à faire
+
+- **Pointage — quarts qui passent minuit et quarts coupés** (plusieurs entrées/sorties le même jour) : pas prioritaire (on ferme avant minuit). Le modèle actuel n'a qu'une entrée + une sortie par jour.
 - [ ] Optimiser `icon-maskable-512.png` (actuellement copie de icon-512.png — devrait avoir un padding pour la "safe zone" Android)
 - [ ] Tester l'installation PWA sur iOS et Android
 - [ ] Ajouter une page « À propos » / « Versions » pour suivre les mises à jour

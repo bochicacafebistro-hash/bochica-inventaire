@@ -32,6 +32,11 @@ const fr = {
   sysDay: "jour système :",
   sysDayTitle: "Fuseau horaire détecté et jour utilisé pour le pointage. Si ce n'est pas la bonne date, préviens l'admin.",
   loading: "Chargement…",
+  dayComplete: "Journée complète",
+  missingEntry: "Entrée non pointée — l'admin complétera ton heure d'entrée.",
+  forgotEntry: "J'ai oublié de pointer mon entrée",
+  forgotNote: "Pointe ta sortie. L'admin complétera ton heure d'entrée.",
+  forgotCancel: "Annuler — je veux pointer mon entrée",
 };
 
 export const PUNCH_MESSAGES: Messages<typeof fr> = {
@@ -68,5 +73,10 @@ export const PUNCH_MESSAGES: Messages<typeof fr> = {
     sysDay: "día del sistema:",
     sysDayTitle: "Zona horaria detectada y día usado para el fichaje. Si no es la fecha correcta, avisa al admin.",
     loading: "Cargando…",
+    dayComplete: "Jornada completa",
+    missingEntry: "Entrada no fichada — el admin completará tu hora de entrada.",
+    forgotEntry: "Olvidé fichar mi entrada",
+    forgotNote: "Ficha tu salida. El admin completará tu hora de entrada.",
+    forgotCancel: "Cancelar — quiero fichar mi entrada",
   },
 };

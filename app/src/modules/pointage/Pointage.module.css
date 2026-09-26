@@ -43,3 +43,12 @@
 .errIcon { color: var(--status-red); }
 .next { display: inline-flex; gap: 6px; align-items: center; border: 1px solid var(--border-strong); background: var(--surface); border-radius: var(--radius-pill); padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; color: inherit; margin-top: var(--sp-2); }
 @media (max-width: 600px) { .back { position: static; justify-self: start; } .empScreen { padding-top: 0; } .clock { font-size: 52px; } }
+
+/* Un seul bouton à la fois (26 sept. 2026) */
+.single { display: grid; width: 100%; max-width: 440px; margin-top: var(--sp-2); }
+.linkBtn { background: none; border: 0; padding: var(--sp-2); font: inherit; font-size: var(--fs-sm); color: var(--text2); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.linkBtn:focus-visible { outline: 2px solid var(--accent); border-radius: var(--radius-sm); }
+.complete { display: grid; justify-items: center; gap: 6px; padding: var(--sp-6) var(--sp-8); border-radius: var(--radius-xl); background: var(--surface2); color: var(--text); margin-top: var(--sp-2); min-width: 280px; }
+.complete svg { color: #2f7d32; }
+.completeLabel { font-weight: 700; font-size: var(--fs-lg); }
+.completeTimes { font-size: 2rem; font-weight: 700; font-variant-numeric: tabular-nums; }
