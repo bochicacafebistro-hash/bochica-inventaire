@@ -10,7 +10,6 @@ import {
   Clock,
   DollarSign,
   TrendingUp,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/core/auth/roles";
@@ -25,7 +24,7 @@ import { evenementsModule } from "./evenements";
 import { soumissionsModule } from "./soumissions";
 import { depensesModule, facturesModule, taxesModule } from "./finances";
 import { mesTachesModule, ouvertureFermetureModule, tachesJourModule, tachesModule } from "./operations";
-import { demandeCongeModule, demandesCongeModule, monHoraireModule } from "./equipe";
+import { demandeCongeModule, demandesCongeModule, employesModule, monHoraireModule } from "./equipe";
 
 const ADMIN: Role[] = ["global_admin"];
 const ALL: Role[] = ["global_admin", "chef", "employee"];
@@ -44,7 +43,7 @@ export const MODULES: AppModule[] = [
   fournisseursModule,
 
   // RH & Horaires
-  legacy("employes", "Employés & Horaires", Users, "rh", ADMIN),
+  employesModule,
   legacy("salaires", "Salaires & Pourboires", DollarSign, "rh", ADMIN),
   legacy("simulations", "Simulation paie", TrendingUp, "rh", ADMIN),
   demandesCongeModule,

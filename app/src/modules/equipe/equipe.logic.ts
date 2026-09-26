@@ -34,8 +34,7 @@ const sectionPriority = (e: Employee) => (e.section === "cuisine" ? 0 : (e.secti
  * admin (visibleScheduleEmployees) : masqués exclus, archivés seulement s'ils
  * ont travaillé, ordre de la semaine puis Cuisine → Service → Autre.
  */
-export function visibleEmployees(list: Employee[], days: string[], settings: ScheduleSettings): Employee[] {
-  const key = days[0]!;
+export function visibleEmployees<E extends Employee>(list: E[], days: string[], settings: ScheduleSettings, key = days[0]!): E[] {
   const hidden = new Set(settings.weekHidden?.[key] ?? []);
   const order = settings.weekOrder?.[key] ?? [];
   const idx = (id: string) => {

@@ -8,6 +8,12 @@ export interface Shift {
 export interface Employee {
   id: string;
   name?: string;
+  role?: string;
+  phone?: string;
+  email?: string;
+  notes?: string;
+  noTips?: boolean; // exclu du partage des pourboires
+  archivedAt?: number;
   section?: "cuisine" | "service" | string;
   pin?: string | number;
   archived?: boolean;
@@ -32,7 +38,29 @@ export interface LeaveRequest {
   decidedBy?: string | null;
 }
 
+/** /employeesComp/{empId} — rémunération, lisible par l'admin seulement. */
+export interface RateStep {
+  rate: number;
+  from: string; // AAAA-MM-JJ
+}
+export interface EmployeeComp {
+  id: string;
+  hourlyRate?: number; // taux en vigueur aujourd'hui (dérivé de l'historique)
+  rateHistory?: RateStep[];
+  isSalaried?: boolean;
+  fixedWeeklyHours?: number;
+}
+
+/** Employé + rémunération fusionnée (vue admin). */
+export interface PaidEmployee extends Employee {
+  hourlyRate: number;
+  rateHistory: RateStep[];
+  isSalaried: boolean;
+  fixedWeeklyHours: number;
+}
+
 export interface ScheduleSettings {
+  salesRatio?: number; // ratio salaires / ventes (0,32 = 32 %)
   openDays?: number[]; // 0 = lundi … 6 = dimanche
   weekOrder?: Record<string, string[]>;
   weekHidden?: Record<string, string[]>;

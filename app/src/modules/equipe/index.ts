@@ -1,5 +1,5 @@
 import { lazy } from "react";
-import { CalendarClock, Sun, SunMedium } from "lucide-react";
+import { CalendarClock, Sun, SunMedium, Users } from "lucide-react";
 import type { AppModule } from "../types";
 
 export const monHoraireModule: AppModule = {
@@ -32,4 +32,14 @@ export const demandesCongeModule: AppModule = {
   roles: ["global_admin"],
   status: "migrated",
   page: lazy(() => import("./DemandesCongePage")),
+};
+
+export const employesModule: AppModule = {
+  id: "employes",
+  label: "Employés & Horaires",
+  icon: Users,
+  group: "rh",
+  roles: ["global_admin"],
+  status: "migrated",
+  page: lazy(() => import("./EmployesPage")),
 };
