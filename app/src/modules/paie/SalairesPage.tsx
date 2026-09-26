@@ -9,6 +9,7 @@ import {
   Clock,
   DollarSign,
   EyeOff,
+  FileText,
   Info,
   Lock,
   LogOut,
@@ -21,7 +22,8 @@ import {
   UserPlus,
   UserX,
 } from "lucide-react";
-import { isoToDate, todayISO } from "@/core/dates";
+import { addDays, isoToDate, todayISO } from "@/core/dates";
+import { payrollWeekId } from "@/modules/pointage/punch.logic";
 import { useCollection } from "@/core/data/useCollection";
 import { useDocument } from "@/core/data/useDocument";
 import { hasShift, isoWeek, leaveMeta, openDayIndexes, partialFor, timeOffFor, weekDays, weekStart } from "@/modules/equipe/equipe.logic";
@@ -95,6 +97,8 @@ export default function SalairesPage() {
   const schedQ = useDocument<ScheduleSettings>("settings", "schedule");
   const paySetQ = useDocument<PayrollSettings>("settings", "payroll");
   const weekQ = useDocument<PayrollWeekDoc>("payroll", w.wid);
+  const prevMonday = addDays(monday, -7);
+  const prevQ = useDocument<PayrollWeekDoc>("payroll", payrollWeekId(prevMonday));
   const confirm = useConfirm();
   const toast = useToast();
   const theme = useChartTheme();
@@ -133,6 +137,37 @@ export default function SalairesPage() {
     c.forEach((x) => tried.current.add(`${w.wid}|${x.empId}|${x.dk}`));
     w.autoFill(c).catch(fail("Remplissage automatique"));
   }, [ready, locked, res.rows]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── PDF de paie (même calcul que l'écran) ──
+  function pdfWeek(mon: string, result: typeof res) {
+    const all = weekDays(mon);
+    const f = (iso: string, o: Intl.DateTimeFormatOptions) => isoToDate(iso)!.toLocaleDateString("fr-CA", o);
+    const DAY = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+    return {
+      weekNum: isoWeek(all[3]!),
+      monday: mon,
+      startLabel: f(all[0]!, { day: "numeric", month: "short" }),
+      endLabel: f(all[6]!, { day: "numeric", month: "short", year: "numeric" }),
+      dayLabels: dows.map((i) => `${DAY[i]} ${Number(all[i]!.slice(8))}/${Number(all[i]!.slice(5, 7))}`),
+      res: result,
+    };
+  }
+  async function pdf(two: boolean) {
+    try {
+      const mod = await import("./payrollPdf");
+      let name: string | null;
+      if (two) {
+        const prevDays = dows.map((i) => weekDays(prevMonday)[i]!);
+        const prevPeople = payrollPeople(empQ.data, compQ.data, prevQ.data, schedule, prevMonday, today);
+        const prevRes = computePayroll({ people: prevPeople, week: prevQ.data, settings, monday: prevMonday, days: prevDays, dows, targetRatio });
+        name = mod.exportTwoWeekPdf(pdfWeek(prevMonday, prevRes), pdfWeek(monday, res));
+      } else name = mod.exportWeekPdf(pdfWeek(monday, res));
+      if (!name) toast(two ? "Aucun employé actif avec des heures et un salaire sur ces 2 semaines." : "Aucun employé actif avec des heures et un salaire à inclure dans le rapport.", "error");
+      else toast(`Rapport PDF généré : ${name}`, "success");
+    } catch (err) {
+      fail("PDF")(err);
+    }
+  }
 
   const lockedMsg = () => toast("Semaine verrouillée — déverrouille avant de modifier.", "error");
   const guard = (fn: () => void) => () => (locked ? lockedMsg() : fn());
@@ -219,7 +254,7 @@ export default function SalairesPage() {
     setModal({ kind: "reset" });
   }
 
-  const loading = empQ.loading || schedQ.loading || weekQ.loading;
+  const loading = empQ.loading || schedQ.loading || weekQ.loading || prevQ.loading;
   const error = empQ.error || weekQ.error || schedQ.error;
   const warnCount = alerts.filter((a) => a.severity === "warning").length;
   const S = res.sums;
@@ -286,6 +321,8 @@ export default function SalairesPage() {
             <ActionMenu
               label="Plus d'actions sur la paie"
               items={[
+                { label: "PDF de la semaine", icon: <FileText size={16} />, onSelect: () => void pdf(false) },
+                { label: `PDF 2 semaines (S${isoWeek(addDays(prevMonday, 3))} + S${weekNum})`, icon: <FileText size={16} />, onSelect: () => void pdf(true) },
                 { label: "Heures de service", icon: <Clock size={16} />, onSelect: () => setModal({ kind: "service" }) },
                 { label: "Répartition des pourboires", icon: <Percent size={16} />, onSelect: () => setModal({ kind: "shares" }) },
                 { label: "Effacer les saisies de la semaine", icon: <Trash2 size={16} />, onSelect: openReset, danger: true },

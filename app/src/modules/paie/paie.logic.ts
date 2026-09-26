@@ -375,3 +375,47 @@ export function entryCount(week: PayrollWeekDoc | null) {
 
 export const isFilled = (a: ActualShift | null | undefined) => !!(a?.start && a.end);
 export { hasShift };
+
+// ── PDF de paie ───────────────────────────────────────
+
+/**
+ * Lignes imprimées : employés non archivés, avec un taux et des heures (règle v1 v3.65).
+ * Correction v2 : un salarié est payé même sans pointage → toujours imprimé (la v1 l'omettait).
+ */
+const paid = (r: { emp: PayrollPerson; rate: number }, hours: number) => !r.emp.archived && r.rate > 0 && (hours > 0 || (r.emp.isSalaried && r.emp.fixedWeeklyHours > 0));
+export const pdfRows = (rows: PayRow[]) => rows.filter((r) => paid(r, r.totalHours));
+
+export interface TwoWeekRow {
+  emp: PayrollPerson;
+  rate: number;
+  group: TipGroup;
+  hrs: [number, number];
+  sal: [number, number];
+  tips: [number, number];
+  bonus: [number, number];
+  total: [number, number];
+}
+
+/**
+ * Paie aux 2 semaines : union des employés (ordre de la semaine la plus récente,
+ * puis ceux présents seulement la semaine d'avant), mêmes montants que l'écran
+ * de chaque semaine. Filtre : non archivé, taux > 0, heures des 2 semaines > 0.
+ */
+export function mergeTwoWeeks(older: PayRow[], recent: PayRow[]): TwoWeekRow[] {
+  const map = new Map<string, TwoWeekRow>();
+  const put = (r: PayRow, i: 0 | 1) => {
+    let e = map.get(r.emp.id);
+    if (!e) {
+      e = { emp: r.emp, rate: r.rate, group: r.group, hrs: [0, 0], sal: [0, 0], tips: [0, 0], bonus: [0, 0], total: [0, 0] };
+      map.set(r.emp.id, e);
+    }
+    e.hrs[i] = r.totalHours;
+    e.sal[i] = r.grossWage;
+    e.tips[i] = r.tipShare;
+    e.bonus[i] = r.bonus;
+    e.total[i] = r.totalPay;
+  };
+  recent.forEach((r) => put(r, 1));
+  older.forEach((r) => put(r, 0));
+  return [...map.values()].filter((r) => paid(r, r.hrs[0] + r.hrs[1]));
+}

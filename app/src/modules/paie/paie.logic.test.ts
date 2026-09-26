@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { autoFillCandidates, computePayroll, detectAlerts, effectiveGroup, entryCount, intersectHours, lockAmount, normalizeWindows, payrollPeople, windowsLabel } from "./paie.logic";
+import { autoFillCandidates, computePayroll, detectAlerts, effectiveGroup, entryCount, intersectHours, lockAmount, mergeTwoWeeks, normalizeWindows, payrollPeople, pdfRows, windowsLabel } from "./paie.logic";
 import type { PayrollPerson, PayrollWeekDoc } from "./paie.types";
 
 const MON = "2026-09-21";
@@ -109,5 +109,24 @@ describe("alertes et remplissage automatique", () => {
   });
   it("compte les saisies à effacer", () => {
     expect(entryCount({ ...week, tipsByDay: { x: 1 } })).toEqual({ shifts: 3, tips: 1, net: 0 });
+  });
+});
+
+describe("PDF de paie", () => {
+  const week = (id: string, hours: string, tips = 0): PayrollWeekDoc => ({ actualShifts: { [id]: { [DAYS[0]!]: { start: "10:00", end: hours } } }, tipsByDay: { [DAYS[0]!]: tips } });
+  it("n'imprime que les employés actifs, payés, avec des heures", () => {
+    const r = calc([person("a"), person("b", { hourlyRate: 0 }), person("c", { archived: true }), person("d")], { actualShifts: { a: { [DAYS[0]!]: { start: "10:00", end: "12:00" } }, b: { [DAYS[0]!]: { start: "10:00", end: "12:00" } }, c: { [DAYS[0]!]: { start: "10:00", end: "12:00" } } } });
+    expect(pdfRows(r.rows).map((x) => x.emp.id)).toEqual(["a"]);
+    const s = calc([person("m", { isSalaried: true, fixedWeeklyHours: 35 })], {});
+    expect(pdfRows(s.rows).map((x) => x.emp.id)).toEqual(["m"]); // salarié sans pointage : payé, donc imprimé
+  });
+  it("fusionne 2 semaines (ordre de la plus récente, puis les autres)", () => {
+    const w1 = calc([person("a"), person("b")], { actualShifts: { a: { [DAYS[0]!]: { start: "10:00", end: "12:00" } }, b: { [DAYS[0]!]: { start: "10:00", end: "14:00" } } } });
+    const w2 = calc([person("c"), person("a")], week("a", "13:00"));
+    const m = mergeTwoWeeks(w1.rows, w2.rows);
+    expect(m.map((x) => x.emp.id)).toEqual(["a", "b"]);
+    expect(m[0]!.hrs).toEqual([2, 3]);
+    expect(m[0]!.sal).toEqual([40, 60]);
+    expect(m[1]!.total).toEqual([80, 0]);
   });
 });

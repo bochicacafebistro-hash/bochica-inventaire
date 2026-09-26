@@ -1,14 +1,15 @@
 /**
  * Registre des modules — la liste de tout ce que l'app sait faire.
  *
- * Pour migrer un module : créer son dossier `modules/<id>/` (index.ts +
- * pages + données), l'importer ici et retirer sa ligne `legacy(...)`.
+ * Pour ajouter un module : créer son dossier `modules/<id>/` (index.ts +
+ * pages + données) et l'importer ici. (Tous les modules de la v1 sont
+ * migrés depuis le 26 sept. 2026 ; le type LegacyModule reste disponible
+ * pour renvoyer vers une page externe si besoin.)
  * La navigation, les routes et les permissions se construisent toutes
  * à partir de cette liste.
  */
-import { TrendingUp, type LucideIcon } from "lucide-react";
 import type { Role } from "@/core/auth/roles";
-import type { AppModule, LegacyModule, NavGroup } from "./types";
+import type { AppModule } from "./types";
 import { accueilModule } from "./accueil";
 import { rapportsModule } from "./rapports";
 import { fournisseursModule } from "./fournisseurs";
@@ -21,13 +22,8 @@ import { depensesModule, facturesModule, taxesModule } from "./finances";
 import { mesTachesModule, ouvertureFermetureModule, tachesJourModule, tachesModule } from "./operations";
 import { pointageModule } from "./pointage";
 import { salairesModule } from "./paie";
+import { simulationModule } from "./simulation";
 import { demandeCongeModule, demandesCongeModule, employesModule, monHoraireModule } from "./equipe";
-
-const ADMIN: Role[] = ["global_admin"];
-
-function legacy(id: string, label: string, icon: LucideIcon, group: NavGroup, roles: Role[], labelEs?: string): LegacyModule {
-  return { id, label, labelEs, icon, group, roles, status: "legacy" };
-}
 
 export const MODULES: AppModule[] = [
   accueilModule,
@@ -41,7 +37,7 @@ export const MODULES: AppModule[] = [
   // RH & Horaires
   employesModule,
   salairesModule,
-  legacy("simulations", "Simulation paie", TrendingUp, "rh", ADMIN),
+  simulationModule,
   demandesCongeModule,
   tachesModule,
   tachesJourModule,

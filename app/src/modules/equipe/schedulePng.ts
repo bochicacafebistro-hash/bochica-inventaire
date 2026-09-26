@@ -7,18 +7,18 @@ import { isoToDate } from "@/core/dates";
 import { fmtMoney } from "@/ui/format";
 import { fmtHours, type WeekRow } from "./horaire.logic";
 
-const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+export const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
 const DOW = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
-const accent = (sec?: string) => (sec === "cuisine" ? "#BA7517" : (sec ?? "service") === "service" ? "#378ADD" : "#888780");
-const tint = (sec?: string) => (sec === "cuisine" ? "rgba(186,117,23,.10)" : (sec ?? "service") === "service" ? "rgba(55,138,221,.08)" : "#f5f1e8");
-const secLabel = (sec?: string) => (sec === "cuisine" ? "Cuisine" : (sec ?? "service") === "service" ? "Service" : "Autre");
+export const accent = (sec?: string) => (sec === "cuisine" ? "#BA7517" : (sec ?? "service") === "service" ? "#378ADD" : "#888780");
+export const tint = (sec?: string) => (sec === "cuisine" ? "rgba(186,117,23,.10)" : (sec ?? "service") === "service" ? "rgba(55,138,221,.08)" : "#f5f1e8");
+export const secLabel = (sec?: string) => (sec === "cuisine" ? "Cuisine" : (sec ?? "service") === "service" ? "Service" : "Autre");
 const dayHead = (dk: string) => {
   const d = isoToDate(dk)!;
   return `${DOW[(d.getDay() + 6) % 7]}|${d.getDate()}/${d.getMonth() + 1}`;
 };
 const h = (n: number) => `${fmtHours(n) || "0"}h`;
 
-function header(title: string, weekLabel: string, internal: boolean) {
+export function pngHeader(title: string, weekLabel: string, internal: boolean) {
   return `<div style="text-align:center;margin-bottom:22px;padding-bottom:16px;border-bottom:2px solid #0e0d0c">
     <div style="font-family:'Bebas Neue',Impact,sans-serif;font-size:42px;letter-spacing:.08em;line-height:1">BOCHICA</div>
     <div style="font-size:13px;color:#6e5f50;margin-top:2px">Restaurant Colombien</div>
@@ -29,7 +29,7 @@ function header(title: string, weekLabel: string, internal: boolean) {
   </div>`;
 }
 
-async function render(html: string, width: number, filename: string) {
+export async function renderPng(html: string, width: number, filename: string) {
   const { default: html2canvas } = await import("html2canvas");
   const box = document.createElement("div");
   box.style.cssText = `position:fixed;left:-99999px;top:0;z-index:-1;background:#fdf6e7;padding:32px;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;color:#0e0d0c;width:${width}px`;
@@ -74,7 +74,7 @@ export async function exportTeamPng(p: PngInput): Promise<string | null> {
   const rows = p.rows.filter(worked);
   if (!rows.length) return null;
   const heads = p.days.map((dk) => dayHead(dk).split("|"));
-  const html = `${header(`Horaire — Semaine ${p.weekNum}`, p.weekLabel, false)}
+  const html = `${pngHeader(`Horaire — Semaine ${p.weekNum}`, p.weekLabel, false)}
   <div style="display:grid;grid-template-columns:180px repeat(${p.days.length},1fr);gap:1px;background:#c8bca5;border:1px solid #c8bca5;border-radius:8px;overflow:hidden">
     <div style="background:#ede3d2;padding:12px;font-size:12px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.05em">Employé</div>
     ${heads.map(([dn, dd]) => `<div style="background:#ede3d2;padding:12px;text-align:center"><div style="font-size:11px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.05em">${dn}</div><div style="font-size:18px;font-weight:700;margin-top:2px">${dd}</div></div>`).join("")}
@@ -96,7 +96,7 @@ export async function exportTeamPng(p: PngInput): Promise<string | null> {
   </div>
   <div style="margin-top:24px;padding-top:14px;border-top:1px dashed #c8bca5;display:flex;justify-content:space-between;font-size:11px;color:#6e5f50">
     <div>Bochica Café Bistro</div><div>Affiché le ${new Date().toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })}</div></div>`;
-  return render(html, 1200, `Bochica_Horaire_Sem${p.weekNum}_${p.monday}.png`);
+  return renderPng(html, 1200, `Bochica_Horaire_Sem${p.weekNum}_${p.monday}.png`);
 }
 
 /** Version admin : taux, coût par quart, totaux, ventes prévues. */
@@ -107,7 +107,7 @@ export async function exportAdminPng(p: PngInput): Promise<string | null> {
   const expected = p.ratio > 0 ? p.totalCost / p.ratio : 0;
   const heads = p.days.map((dk) => dayHead(dk).split("|"));
   const now = new Date();
-  const html = `${header(`Horaire ADMIN — Semaine ${p.weekNum}`, p.weekLabel, true)}
+  const html = `${pngHeader(`Horaire ADMIN — Semaine ${p.weekNum}`, p.weekLabel, true)}
   <div style="display:grid;grid-template-columns:200px repeat(${p.days.length},1fr) 130px;gap:1px;background:#c8bca5;border:1px solid #c8bca5;border-radius:8px;overflow:hidden">
     <div style="background:#ede3d2;padding:12px;font-size:12px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.05em">Employé · Taux</div>
     ${heads.map(([dn, dd], k) => `<div style="background:#ede3d2;padding:12px;text-align:center"><div style="font-size:11px;font-weight:600;color:#444;text-transform:uppercase;letter-spacing:.05em">${dn}</div><div style="font-size:18px;font-weight:700;margin-top:2px">${dd}</div><div style="font-size:10px;color:#666;margin-top:2px">${h(p.dayHours[k]!)} · ${fmtMoney(p.dayCost[k]!)}</div></div>`).join("")}
@@ -140,5 +140,5 @@ export async function exportAdminPng(p: PngInput): Promise<string | null> {
   </div>
   <div style="margin-top:18px;padding-top:14px;border-top:1px dashed #c8bca5;display:flex;justify-content:space-between;font-size:11px;color:#6e5f50">
     <div>Bochica Café Bistro — Document interne admin</div><div>Généré le ${now.toLocaleDateString("fr-CA", { day: "numeric", month: "long", year: "numeric" })} à ${now.toLocaleTimeString("fr-CA", { hour: "2-digit", minute: "2-digit" })}</div></div>`;
-  return render(html, 1400, `Bochica_HoraireAdmin_Sem${p.weekNum}_${p.monday}.png`);
+  return renderPng(html, 1400, `Bochica_HoraireAdmin_Sem${p.weekNum}_${p.monday}.png`);
 }
